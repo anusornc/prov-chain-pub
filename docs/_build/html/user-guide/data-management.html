@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Management &mdash; ProvChainOrg 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=3afbad45" />
+      <link rel="stylesheet" type="text/css" href="../_static/interactive.css?v=267755d7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=01f34227"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=f281be69"></script>
+        <script src="../_static/interactive.js?v=fc12431e"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ProvChainOrg
+          </a>
+              <div class="version">
+                0.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction to ProvChainOrg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first-steps.html">First Steps with ProvChainOrg</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/rest-api.html">REST API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/sparql-api.html">SPARQL API Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/websocket-api.html">WebSocket API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/authentication.html">Authentication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/client-libraries.html">Client Libraries</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Research Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../research/index.html">Research Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../research/rdf-canonicalization-algorithm.html">RDF Canonicalization Algorithm for Semantic Blockchains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../research/technical-specifications.html">Technical Specifications</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-provchainorg.html">Introduction to ProvChainOrg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-rdf-blockchain.html">Introduction to RDF Blockchain</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-supply-chain-traceability.html">Introduction to Supply Chain Traceability</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../stack/intro-to-stack.html">Introduction to the ProvChainOrg Stack</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/first-supply-chain.html">Your First Supply Chain Application</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ProvChainOrg</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Data Management</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/user-guide/data-management.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="data-management">
+<h1>Data Management<a class="headerlink" href="#data-management" title="Link to this heading"></a></h1>
+<p>Complete guide to managing supply chain data in ProvChainOrg.</p>
+<div class="hero-section">
+  <div class="hero-content">
+    <h1>Data Management</h1>
+    <p class="hero-subtitle">Complete guide to managing supply chain data</p>
+    <div class="hero-badges">
+      <span class="badge badge-data">Data</span>
+      <span class="badge badge-management">Management</span>
+      <span class="badge badge-guide">Guide</span>
+    </div>
+  </div>
+</div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This guide provides comprehensive information about managing supply chain data in ProvChainOrg, including importing, exporting, validating, and organizing data for optimal performance and traceability.</p>
+</div>
+<section id="data-models-and-formats">
+<h2>Data Models and Formats<a class="headerlink" href="#data-models-and-formats" title="Link to this heading"></a></h2>
+<p>ProvChainOrg supports several standard semantic web data formats for representing supply chain information.</p>
+<p>### Supported Formats</p>
+<ol class="arabic simple">
+<li><p><strong>Turtle (.ttl)</strong> - Primary format for semantic data (recommended)</p></li>
+<li><p><strong>JSON-LD (.jsonld)</strong> - JSON-based linked data format</p></li>
+<li><p><strong>N-Triples (.nt)</strong> - Simple triple format</p></li>
+<li><p><strong>RDF/XML (.rdf)</strong> - XML-based RDF format</p></li>
+<li><p><strong>TriG (.trig)</strong> - TriG format for named graphs</p></li>
+</ol>
+<p>### Core Data Model</p>
+<p>ProvChainOrg uses an ontology-based approach to data modeling. The core concepts include:</p>
+<p>#### Entities
+- <strong>ProductBatch</strong>: A batch of products in the supply chain
+- <strong>Farm/Producer</strong>: Origin of raw materials
+- <strong>ProcessingFacility</strong>: Facilities that process products
+- <strong>Transportation</strong>: Movement of products between locations
+- <strong>Retailer</strong>: Final destination for products
+- <strong>EnvironmentalCondition</strong>: Environmental data during transport/storage</p>
+<p>#### Relationships
+- <strong>originatedFrom</strong>: Links a batch to its origin
+- <strong>processedAt</strong>: Links a batch to processing facility
+- <strong>transportedTo</strong>: Links a batch to destination
+- <strong>storedAt</strong>: Links a batch to storage location
+- <strong>testedFor</strong>: Links a batch to quality tests</p>
+<p>### Example Data Structure</p>
+<div class="highlight-turtle notranslate"><div class="highlight"><pre><span></span><span class="k">@prefix</span><span class="w"> </span><span class="nn">:</span><span class="w"> </span><span class="nv">&lt;http://example.org/supply-chain#&gt;</span><span class="w"> </span><span class="p">.</span>
+<span class="k">@prefix</span><span class="w"> </span><span class="nn">xsd:</span><span class="w"> </span><span class="nv">&lt;http://www.w3.org/2001/XMLSchema#&gt;</span><span class="w"> </span><span class="p">.</span>
+<span class="k">@prefix</span><span class="w"> </span><span class="nn">prov:</span><span class="w"> </span><span class="nv">&lt;http://www.w3.org/ns/prov#&gt;</span><span class="w"> </span><span class="p">.</span>
+
+<span class="c"># Product batch</span>
+<span class="p">:</span><span class="nt">Batch001</span> <span class="kt">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">hasBatchID</span> <span class="s">&quot;TOMATO-2025-001&quot;</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">product</span> <span class="p">:</span><span class="nt">OrganicTomatoes</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">originFarm</span> <span class="p">:</span><span class="nt">GreenValleyFarm</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">harvestDate</span> <span class="s">&quot;2025-01-15&quot;</span><span class="p">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">date</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">quantity</span> <span class="mi">1000</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">unit</span> <span class="s">&quot;kg&quot;</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">certifiedOrganic</span> <span class="l">true</span> <span class="p">;</span>
+    <span class="nn">prov</span><span class="p">:</span><span class="nt">wasGeneratedBy</span> <span class="p">:</span><span class="nt">HarvestActivity001</span> <span class="p">.</span>
+
+<span class="c"># Harvest activity</span>
+<span class="p">:</span><span class="nt">HarvestActivity001</span> <span class="kt">a</span> <span class="nn">prov</span><span class="p">:</span><span class="nt">Activity</span> <span class="p">;</span>
+    <span class="nn">prov</span><span class="p">:</span><span class="nt">startedAtTime</span> <span class="s">&quot;2025-01-15T08:00:00Z&quot;</span><span class="p">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">dateTime</span> <span class="p">;</span>
+    <span class="nn">prov</span><span class="p">:</span><span class="nt">endedAtTime</span> <span class="s">&quot;2025-01-15T12:00:00Z&quot;</span><span class="p">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">dateTime</span> <span class="p">;</span>
+    <span class="nn">prov</span><span class="p">:</span><span class="nt">wasAssociatedWith</span> <span class="p">:</span><span class="nt">Worker001</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">weatherConditions</span> <span class="p">[</span>
+        <span class="p">:</span><span class="nt">temperature</span> <span class="s">&quot;18&quot;</span><span class="p">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">decimal</span> <span class="p">;</span>
+        <span class="p">:</span><span class="nt">humidity</span> <span class="s">&quot;65&quot;</span><span class="p">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">decimal</span> <span class="p">;</span>
+        <span class="p">:</span><span class="nt">precipitation</span> <span class="s">&quot;0&quot;</span><span class="p">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">decimal</span>
+    <span class="p">]</span> <span class="p">.</span>
+</pre></div>
+</div>
+</section>
+<section id="data-import">
+<h2>Data Import<a class="headerlink" href="#data-import" title="Link to this heading"></a></h2>
+<p>Importing data into ProvChainOrg can be done through several methods.</p>
+<p>### Command Line Import</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import a single file</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>supply_chain_data.ttl
+
+<span class="c1"># Import multiple files</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>data1.ttl<span class="w"> </span>data2.ttl<span class="w"> </span>data3.ttl
+
+<span class="c1"># Import from stdin</span>
+cat<span class="w"> </span>data.ttl<span class="w"> </span><span class="p">|</span><span class="w"> </span>provchain-org<span class="w"> </span>add-file<span class="w"> </span>-
+
+<span class="c1"># Import with specific format</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>data.rdf<span class="w"> </span>--format<span class="w"> </span>rdfxml
+</pre></div>
+</div>
+<p>### API Import</p>
+<p>Using the REST API to import data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import using curl</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/v1/data&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer YOUR_API_KEY&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: text/turtle&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>--data-binary<span class="w"> </span>@supply_chain_data.ttl
+</pre></div>
+</div>
+<p>### Batch Import</p>
+<p>For large datasets, use batch import:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a batch import file (JSON)</span>
+<span class="o">{</span>
+<span class="w">  </span><span class="s2">&quot;batches&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;Batch001&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;data&quot;</span>:<span class="w"> </span><span class="s2">&quot;@prefix : &lt;http://example.org/&gt; . :Batch001 :product :Tomatoes .&quot;</span>
+<span class="w">    </span><span class="o">}</span>,
+<span class="w">    </span><span class="o">{</span>
+<span class="w">      </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;Batch002&quot;</span>,
+<span class="w">      </span><span class="s2">&quot;data&quot;</span>:<span class="w"> </span><span class="s2">&quot;@prefix : &lt;http://example.org/&gt; . :Batch002 :product :Lettuce .&quot;</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">  </span><span class="o">]</span>
+<span class="o">}</span>
+
+<span class="c1"># Import batch</span>
+provchain-org<span class="w"> </span>batch<span class="w"> </span>import<span class="w"> </span>--file<span class="w"> </span>batches.json
+</pre></div>
+</div>
+<p>### Import Validation</p>
+<p>ProvChainOrg validates data during import to ensure:</p>
+<ol class="arabic simple">
+<li><p><strong>Syntax correctness</strong>: Data is valid RDF</p></li>
+<li><p><strong>Ontology compliance</strong>: Data conforms to the supply chain ontology</p></li>
+<li><p><strong>Integrity</strong>: Required properties are present</p></li>
+<li><p><strong>Consistency</strong>: No conflicting information</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import with validation</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>data.ttl<span class="w"> </span>--validate
+
+<span class="c1"># Import without validation (faster but less safe)</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>data.ttl<span class="w"> </span>--no-validate
+</pre></div>
+</div>
+</section>
+<section id="data-export">
+<h2>Data Export<a class="headerlink" href="#data-export" title="Link to this heading"></a></h2>
+<p>Exporting data from ProvChainOrg for analysis or sharing.</p>
+<p>### Command Line Export</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Export all data</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--output<span class="w"> </span>all_data.ttl
+
+<span class="c1"># Export in specific format</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--output<span class="w"> </span>data.jsonld<span class="w"> </span>--format<span class="w"> </span>jsonld
+
+<span class="c1"># Export specific block range</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--start<span class="w"> </span><span class="m">100</span><span class="w"> </span>--end<span class="w"> </span><span class="m">200</span><span class="w"> </span>--output<span class="w"> </span>range.ttl
+
+<span class="c1"># Export specific named graph</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--graph<span class="w"> </span><span class="s2">&quot;http://example.org/batch001&quot;</span><span class="w"> </span>--output<span class="w"> </span>batch001.ttl
+</pre></div>
+</div>
+<p>### API Export</p>
+<p>Using the REST API to export data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Export using curl</span>
+curl<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/v1/data&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer YOUR_API_KEY&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>-H<span class="w"> </span><span class="s2">&quot;Accept: text/turtle&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>-o<span class="w"> </span>exported_data.ttl
+</pre></div>
+</div>
+<p>### SPARQL Export</p>
+<p>Export data using SPARQL queries:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Export with SPARQL query</span>
+provchain-org<span class="w"> </span>query<span class="w"> </span>export_query.sparql<span class="w"> </span>--output<span class="w"> </span>results.ttl
+
+<span class="c1"># Export in different formats</span>
+provchain-org<span class="w"> </span>query<span class="w"> </span>export_query.sparql<span class="w"> </span>--output<span class="w"> </span>results.json<span class="w"> </span>--format<span class="w"> </span>json
+provchain-org<span class="w"> </span>query<span class="w"> </span>export_query.sparql<span class="w"> </span>--output<span class="w"> </span>results.csv<span class="w"> </span>--format<span class="w"> </span>csv
+</pre></div>
+</div>
+<p>### Selective Export</p>
+<p>Export specific subsets of data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Export by product type</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;product=OrganicTomatoes&quot;</span><span class="w"> </span>--output<span class="w"> </span>tomatoes.ttl
+
+<span class="c1"># Export by date range</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;date&gt;=2025-01-01&amp;date&lt;=2025-01-31&quot;</span><span class="w"> </span>--output<span class="w"> </span>january.ttl
+
+<span class="c1"># Export by location</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;location=GreenValleyFarm&quot;</span><span class="w"> </span>--output<span class="w"> </span>farm_data.ttl
+</pre></div>
+</div>
+</section>
+<section id="data-validation">
+<h2>Data Validation<a class="headerlink" href="#data-validation" title="Link to this heading"></a></h2>
+<p>Ensuring data quality and compliance with standards.</p>
+<p>### Automatic Validation</p>
+<p>ProvChainOrg automatically validates data during import:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import with automatic validation</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>data.ttl
+
+<span class="c1"># Check validation results</span>
+provchain-org<span class="w"> </span>validate<span class="w"> </span>last-import
+</pre></div>
+</div>
+<p>### Manual Validation</p>
+<p>Validate existing data or external datasets:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Validate a file</span>
+provchain-org<span class="w"> </span>validate<span class="w"> </span>file<span class="w"> </span>data.ttl
+
+<span class="c1"># Validate data in the blockchain</span>
+provchain-org<span class="w"> </span>validate<span class="w"> </span>blockchain
+
+<span class="c1"># Validate specific blocks</span>
+provchain-org<span class="w"> </span>validate<span class="w"> </span>blocks<span class="w"> </span><span class="m">100</span>-200
+</pre></div>
+</div>
+<p>### Validation Reports</p>
+<p>Generate detailed validation reports:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate validation report</span>
+provchain-org<span class="w"> </span>validate<span class="w"> </span>file<span class="w"> </span>data.ttl<span class="w"> </span>--report<span class="w"> </span>validation_report.json
+
+<span class="c1"># Generate HTML report</span>
+provchain-org<span class="w"> </span>validate<span class="w"> </span>file<span class="w"> </span>data.ttl<span class="w"> </span>--report<span class="w"> </span>validation_report.html<span class="w"> </span>--format<span class="w"> </span>html
+</pre></div>
+</div>
+<p>### Validation Rules</p>
+<p>ProvChainOrg checks for:</p>
+<ol class="arabic simple">
+<li><p><strong>Syntax errors</strong>: Invalid RDF syntax</p></li>
+<li><p><strong>Schema compliance</strong>: Conformance to supply chain ontology</p></li>
+<li><p><strong>Required properties</strong>: Presence of mandatory fields</p></li>
+<li><p><strong>Data types</strong>: Correct data type usage</p></li>
+<li><p><strong>Referential integrity</strong>: Valid references between entities</p></li>
+<li><p><strong>Business rules</strong>: Domain-specific constraints</p></li>
+</ol>
+</section>
+<section id="data-organization">
+<h2>Data Organization<a class="headerlink" href="#data-organization" title="Link to this heading"></a></h2>
+<p>Organizing data for efficient querying and management.</p>
+<p>### Named Graphs</p>
+<p>ProvChainOrg uses named graphs to organize data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import data into a specific named graph</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>data.ttl<span class="w"> </span>--graph<span class="w"> </span><span class="s2">&quot;http://example.org/batch001&quot;</span>
+
+<span class="c1"># Query specific named graph</span>
+provchain-org<span class="w"> </span>query<span class="w"> </span>query.sparql<span class="w"> </span>--graph<span class="w"> </span><span class="s2">&quot;http://example.org/batch001&quot;</span>
+</pre></div>
+</div>
+<p>### Data Partitioning</p>
+<p>Organize data by:</p>
+<ol class="arabic simple">
+<li><p><strong>Time periods</strong>: Monthly, quarterly, yearly</p></li>
+<li><p><strong>Product categories</strong>: Vegetables, fruits, grains</p></li>
+<li><p><strong>Supply chain stages</strong>: Farm, processing, distribution</p></li>
+<li><p><strong>Geographic regions</strong>: By country, state, or facility</p></li>
+</ol>
+<p>### Indexing</p>
+<p>ProvChainOrg automatically indexes data for efficient querying:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Rebuild indexes</span>
+provchain-org<span class="w"> </span>index<span class="w"> </span>rebuild
+
+<span class="c1"># Optimize indexes</span>
+provchain-org<span class="w"> </span>index<span class="w"> </span>optimize
+
+<span class="c1"># Check index status</span>
+provchain-org<span class="w"> </span>index<span class="w"> </span>status
+</pre></div>
+</div>
+</section>
+<section id="data-archiving">
+<h2>Data Archiving<a class="headerlink" href="#data-archiving" title="Link to this heading"></a></h2>
+<p>Managing historical data for long-term storage.</p>
+<p>### Archive Policies</p>
+<p>Define policies for data archiving:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[archiving]</span>
+<span class="c1"># Archive data older than 2 years</span>
+<span class="n">retention_period_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">730</span>
+
+<span class="c1"># Compress archived data</span>
+<span class="n">compression_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1"># Store archives in separate location</span>
+<span class="n">archive_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/archive/provchain&quot;</span>
+</pre></div>
+</div>
+<p>### Archive Commands</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Archive old data</span>
+provchain-org<span class="w"> </span>archive<span class="w"> </span>create<span class="w"> </span>--before<span class="w"> </span><span class="m">2023</span>-01-01<span class="w"> </span>--output<span class="w"> </span>archive_2023.ttl
+
+<span class="c1"># List archives</span>
+provchain-org<span class="w"> </span>archive<span class="w"> </span>list
+
+<span class="c1"># Restore from archive</span>
+provchain-org<span class="w"> </span>archive<span class="w"> </span>restore<span class="w"> </span>--input<span class="w"> </span>archive_2023.ttl
+</pre></div>
+</div>
+<p>### Archive Formats</p>
+<p>Support for multiple archive formats:</p>
+<ol class="arabic simple">
+<li><p><strong>Turtle</strong>: Human-readable format</p></li>
+<li><p><strong>Binary RDF</strong>: Compact format for large datasets</p></li>
+<li><p><strong>Compressed</strong>: GZIP or ZIP compressed archives</p></li>
+</ol>
+</section>
+<section id="data-security">
+<h2>Data Security<a class="headerlink" href="#data-security" title="Link to this heading"></a></h2>
+<p>Protecting sensitive supply chain data.</p>
+<p>### Access Control</p>
+<p>Control who can access what data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set permissions for a dataset</span>
+provchain-org<span class="w"> </span>access<span class="w"> </span><span class="nb">set</span><span class="w"> </span>--dataset<span class="w"> </span><span class="s2">&quot;batch001&quot;</span><span class="w"> </span>--user<span class="w"> </span><span class="s2">&quot;analyst1&quot;</span><span class="w"> </span>--permission<span class="w"> </span><span class="s2">&quot;read&quot;</span>
+
+<span class="c1"># Revoke permissions</span>
+provchain-org<span class="w"> </span>access<span class="w"> </span>revoke<span class="w"> </span>--dataset<span class="w"> </span><span class="s2">&quot;batch001&quot;</span><span class="w"> </span>--user<span class="w"> </span><span class="s2">&quot;analyst1&quot;</span>
+
+<span class="c1"># List permissions</span>
+provchain-org<span class="w"> </span>access<span class="w"> </span>list<span class="w"> </span>--dataset<span class="w"> </span><span class="s2">&quot;batch001&quot;</span>
+</pre></div>
+</div>
+<p>### Encryption</p>
+<p>Encrypt sensitive data:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[security]</span>
+<span class="c1"># Enable encryption at rest</span>
+<span class="n">encryption_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="c1"># Encryption key management</span>
+<span class="n">key_management</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;vault&quot;</span>
+</pre></div>
+</div>
+<p>### Auditing</p>
+<p>Track data access and modifications:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable auditing</span>
+provchain-org<span class="w"> </span>audit<span class="w"> </span><span class="nb">enable</span>
+
+<span class="c1"># View audit logs</span>
+provchain-org<span class="w"> </span>audit<span class="w"> </span>logs<span class="w"> </span>--tail<span class="w"> </span><span class="m">100</span>
+
+<span class="c1"># Export audit report</span>
+provchain-org<span class="w"> </span>audit<span class="w"> </span>report<span class="w"> </span>--output<span class="w"> </span>audit_report.json
+</pre></div>
+</div>
+</section>
+<section id="performance-optimization">
+<h2>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h2>
+<p>Optimizing data management for better performance.</p>
+<p>### Bulk Operations</p>
+<p>Use bulk operations for large datasets:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Bulk import</span>
+provchain-org<span class="w"> </span>bulk<span class="w"> </span>import<span class="w"> </span>--directory<span class="w"> </span>/path/to/data/files/
+
+<span class="c1"># Bulk export</span>
+provchain-org<span class="w"> </span>bulk<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--directory<span class="w"> </span>/path/to/export/<span class="w"> </span>--format<span class="w"> </span>turtle
+</pre></div>
+</div>
+<p>### Caching</p>
+<p>Configure caching for frequently accessed data:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[performance]</span>
+<span class="c1"># Enable query caching</span>
+<span class="n">query_cache_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">query_cache_size_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="c1"># Enable data caching</span>
+<span class="n">data_cache_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">data_cache_size_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span>
+</pre></div>
+</div>
+<p>### Parallel Processing</p>
+<p>Process data in parallel:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import with parallel processing</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>data.ttl<span class="w"> </span>--parallel<span class="w"> </span><span class="m">4</span>
+
+<span class="c1"># Export with parallel processing</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--parallel<span class="w"> </span><span class="m">4</span><span class="w"> </span>--output<span class="w"> </span>data.ttl
+</pre></div>
+</div>
+</section>
+<section id="data-quality-assurance">
+<h2>Data Quality Assurance<a class="headerlink" href="#data-quality-assurance" title="Link to this heading"></a></h2>
+<p>Ensuring high-quality data throughout the supply chain.</p>
+<p>### Data Profiling</p>
+<p>Analyze data characteristics:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Profile a dataset</span>
+provchain-org<span class="w"> </span>profile<span class="w"> </span>data.ttl<span class="w"> </span>--output<span class="w"> </span>profile_report.json
+
+<span class="c1"># Compare datasets</span>
+provchain-org<span class="w"> </span>profile<span class="w"> </span>compare<span class="w"> </span>dataset1.ttl<span class="w"> </span>dataset2.ttl
+</pre></div>
+</div>
+<p>### Data Cleansing</p>
+<p>Clean and standardize data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clean a dataset</span>
+provchain-org<span class="w"> </span>clean<span class="w"> </span>data.ttl<span class="w"> </span>--output<span class="w"> </span>clean_data.ttl
+
+<span class="c1"># Standardize formats</span>
+provchain-org<span class="w"> </span>standardize<span class="w"> </span>data.ttl<span class="w"> </span>--output<span class="w"> </span>standardized_data.ttl
+</pre></div>
+</div>
+<p>### Data Enrichment</p>
+<p>Enhance data with additional information:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enrich with external data</span>
+provchain-org<span class="w"> </span>enrich<span class="w"> </span>data.ttl<span class="w"> </span>--with<span class="w"> </span>weather_data.ttl<span class="w"> </span>--output<span class="w"> </span>enriched_data.ttl
+</pre></div>
+</div>
+</section>
+<section id="integration-with-external-systems">
+<h2>Integration with External Systems<a class="headerlink" href="#integration-with-external-systems" title="Link to this heading"></a></h2>
+<p>Connecting ProvChainOrg with other systems.</p>
+<p>### API Integration</p>
+<p>Connect via REST API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ProvChainClient</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_url</span><span class="p">,</span> <span class="n">api_key</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="o">=</span> <span class="n">base_url</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;Authorization&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;Bearer </span><span class="si">{</span><span class="n">api_key</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;text/turtle&#39;</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="si">}</span><span class="s1">/api/v1/data&#39;</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>### Database Integration</p>
+<p>Connect to external databases:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import from database</span>
+provchain-org<span class="w"> </span>import<span class="w"> </span>db<span class="w"> </span>--connection<span class="w"> </span><span class="s2">&quot;postgresql://user:pass@host:port/db&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                        </span>--query<span class="w"> </span><span class="s2">&quot;SELECT * FROM supply_chain_data&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                        </span>--output<span class="w"> </span>data.ttl
+</pre></div>
+</div>
+<p>### File System Integration</p>
+<p>Monitor directories for new data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Watch directory for new files</span>
+provchain-org<span class="w"> </span>watch<span class="w"> </span>/path/to/data/directory<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">&quot;*.ttl&quot;</span><span class="w"> </span>--auto-import
+</pre></div>
+</div>
+<p>### IoT Integration</p>
+<p>Integrate with IoT devices:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import from IoT device</span>
+provchain-org<span class="w"> </span>import<span class="w"> </span>iot<span class="w"> </span>--device-id<span class="w"> </span><span class="s2">&quot;sensor_001&quot;</span><span class="w"> </span>--output<span class="w"> </span>sensor_data.ttl
+</pre></div>
+</div>
+</section>
+<section id="monitoring-and-maintenance">
+<h2>Monitoring and Maintenance<a class="headerlink" href="#monitoring-and-maintenance" title="Link to this heading"></a></h2>
+<p>Monitoring data management operations and maintaining system health.</p>
+<p>### Monitoring Commands</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check data storage usage</span>
+provchain-org<span class="w"> </span>storage<span class="w"> </span>usage
+
+<span class="c1"># Monitor import/export operations</span>
+provchain-org<span class="w"> </span>monitor<span class="w"> </span>operations
+
+<span class="c1"># Check data integrity</span>
+provchain-org<span class="w"> </span>integrity<span class="w"> </span>check
+</pre></div>
+</div>
+<p>### Maintenance Tasks</p>
+<p>Regular maintenance tasks:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compact database</span>
+provchain-org<span class="w"> </span>maintenance<span class="w"> </span>compact
+
+<span class="c1"># Optimize performance</span>
+provchain-org<span class="w"> </span>maintenance<span class="w"> </span>optimize
+
+<span class="c1"># Clean temporary files</span>
+provchain-org<span class="w"> </span>maintenance<span class="w"> </span>cleanup
+</pre></div>
+</div>
+<p>### Health Checks</p>
+<p>Verify system health:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run health check</span>
+provchain-org<span class="w"> </span>health<span class="w"> </span>check
+
+<span class="c1"># Detailed health report</span>
+provchain-org<span class="w"> </span>health<span class="w"> </span>report<span class="w"> </span>--output<span class="w"> </span>health_report.json
+</pre></div>
+</div>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<p>Guidelines for effective data management.</p>
+<p>### Data Modeling Best Practices</p>
+<ol class="arabic simple">
+<li><p><strong>Use consistent URIs</strong>: Establish naming conventions for entities</p></li>
+<li><p><strong>Include provenance</strong>: Track data origin and transformations</p></li>
+<li><p><strong>Use standard vocabularies</strong>: Leverage existing ontologies when possible</p></li>
+<li><p><strong>Document assumptions</strong>: Include metadata about data collection methods</p></li>
+</ol>
+<p>### Import Best Practices</p>
+<ol class="arabic simple">
+<li><p><strong>Validate before import</strong>: Check data quality before adding to blockchain</p></li>
+<li><p><strong>Batch large imports</strong>: Process large datasets in smaller chunks</p></li>
+<li><p><strong>Monitor resource usage</strong>: Watch memory and CPU during imports</p></li>
+<li><p><strong>Keep backups</strong>: Maintain copies of original data</p></li>
+</ol>
+<p>### Query Best Practices</p>
+<ol class="arabic simple">
+<li><p><strong>Use indexes</strong>: Structure queries to leverage indexing</p></li>
+<li><p><strong>Limit result sets</strong>: Avoid returning excessive data</p></li>
+<li><p><strong>Cache frequent queries</strong>: Store results of common queries</p></li>
+<li><p><strong>Optimize patterns</strong>: Use efficient SPARQL patterns</p></li>
+</ol>
+<p>### Security Best Practices</p>
+<ol class="arabic simple">
+<li><p><strong>Encrypt sensitive data</strong>: Protect confidential information</p></li>
+<li><p><strong>Control access</strong>: Implement role-based access control</p></li>
+<li><p><strong>Audit changes</strong>: Track all data modifications</p></li>
+<li><p><strong>Regular backups</strong>: Maintain secure copies of important data</p></li>
+</ol>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<p>Common issues and solutions for data management.</p>
+<p>### Import Issues</p>
+<p><strong>Problem</strong>: Import fails with syntax error
+<strong>Solution</strong>: Validate RDF syntax using online tools or command line validators</p>
+<p><strong>Problem</strong>: Import rejected due to ontology validation
+<strong>Solution</strong>: Check data against the supply chain ontology and correct violations</p>
+<p><strong>Problem</strong>: Import takes too long
+<strong>Solution</strong>: Break large files into smaller chunks and use parallel processing</p>
+<p>### Export Issues</p>
+<p><strong>Problem</strong>: Export returns empty results
+<strong>Solution</strong>: Check query filters and ensure data exists matching criteria</p>
+<p><strong>Problem</strong>: Export file is too large
+<strong>Solution</strong>: Use pagination or more specific filters to limit results</p>
+<p><strong>Problem</strong>: Export format not supported
+<strong>Solution</strong>: Check supported formats and convert data if necessary</p>
+<p>### Performance Issues</p>
+<p><strong>Problem</strong>: Slow query performance
+<strong>Solution</strong>: Add indexes, optimize queries, and check system resources</p>
+<p><strong>Problem</strong>: High memory usage during import
+<strong>Solution</strong>: Reduce batch size and monitor memory consumption</p>
+<p><strong>Problem</strong>: Disk space issues
+<strong>Solution</strong>: Clean up temporary files and archive old data</p>
+<p>### Security Issues</p>
+<p><strong>Problem</strong>: Unauthorized data access
+<strong>Solution</strong>: Review and update access control policies</p>
+<p><strong>Problem</strong>: Data corruption
+<strong>Solution</strong>: Verify data integrity and restore from backups if necessary</p>
+</section>
+<section id="support">
+<h2>Support<a class="headerlink" href="#support" title="Link to this heading"></a></h2>
+<p>For additional help with data management:</p>
+<ol class="arabic simple">
+<li><p>Check the online documentation</p></li>
+<li><p>Join our community forum</p></li>
+<li><p>Contact support at <a class="reference external" href="mailto:support&#37;&#52;&#48;provchain-org&#46;com">support<span>&#64;</span>provchain-org<span>&#46;</span>com</a></p></li>
+<li><p>Refer to the API documentation for programmatic data management</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Effective data management is crucial for successful supply chain traceability. Follow these guidelines and best practices to ensure your data is accurate, secure, and accessible for all stakeholders.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, ProvChainOrg Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

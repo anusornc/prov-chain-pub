@@ -1,0 +1,103 @@
+@prefix : <http://provchain.org/test-owl2#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+#################################################################
+# Test OWL2 Features Ontology
+# Purpose: Test owl:hasKey and other OWL2 features
+#################################################################
+
+:TestEntity a owl:Class ;
+  rdfs:label "TestEntity" ;
+  rdfs:subClassOf prov:Entity ;
+  rdfs:comment "Test entity for OWL2 feature validation" .
+
+# Test owl:hasKey with single property
+:Batch a owl:Class ;
+  rdfs:label "Batch" ;
+  rdfs:subClassOf :TestEntity ;
+  owl:hasKey ( :batchId ) ;
+  rdfs:comment "A batch with a unique batch ID" .
+
+# Test owl:hasKey with multiple properties
+:ProductBatch a owl:Class ;
+  rdfs:label "ProductBatch" ;
+  rdfs:subClassOf :TestEntity ;
+  owl:hasKey ( :productId :batchNumber ) ;
+  rdfs:comment "A product batch with a composite key" .
+
+# Test property chains
+:suppliedTo a owl:ObjectProperty ;
+  rdfs:label "suppliedTo" ;
+  rdfs:domain :TestEntity ;
+  rdfs:range :TestEntity ;
+  rdfs:comment "Direct supply relationship" .
+
+:transitivelySuppliedTo a owl:ObjectProperty ;
+  rdfs:label "transitivelySuppliedTo" ;
+  rdfs:domain :TestEntity ;
+  rdfs:range :TestEntity ;
+  rdfs:comment "Transitive supply relationship" ;
+  owl:propertyChainAxiom ( :suppliedTo :suppliedTo ) .
+
+# Test qualified cardinality restrictions
+:ManufacturingProcess a owl:Class ;
+  rdfs:label "ManufacturingProcess" ;
+  rdfs:subClassOf prov:Activity ;
+  rdfs:comment "A manufacturing process with required inputs" ;
+  rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty :requiresIngredient ;
+    owl:qualifiedCardinality "2"^^xsd:nonNegativeInteger ;
+    owl:onClass :MilkIngredient
+  ] ;
+  rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty :requiresCertificate ;
+    owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+    owl:onClass :SafetyCertificate
+  ] .
+
+# Test data properties
+:batchId a owl:DatatypeProperty ;
+  rdfs:label "batchId" ;
+  rdfs:domain :Batch ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Unique identifier for the batch" .
+
+:productId a owl:DatatypeProperty ;
+  rdfs:label "productId" ;
+  rdfs:domain :ProductBatch ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Product identifier" .
+
+:batchNumber a owl:DatatypeProperty ;
+  rdfs:label "batchNumber" ;
+  rdfs:domain :ProductBatch ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Batch number" .
+
+:requiresIngredient a owl:ObjectProperty ;
+  rdfs:label "requiresIngredient" ;
+  rdfs:domain :ManufacturingProcess ;
+  rdfs:range :TestEntity ;
+  rdfs:comment "Required ingredient for manufacturing" .
+
+:requiresCertificate a owl:ObjectProperty ;
+  rdfs:label "requiresCertificate" ;
+  rdfs:domain :ManufacturingProcess ;
+  rdfs:range :TestEntity ;
+  rdfs:comment "Required certificate for manufacturing" .
+
+:MilkIngredient a owl:Class ;
+  rdfs:label "MilkIngredient" ;
+  rdfs:subClassOf :TestEntity ;
+  rdfs:comment "Milk ingredient for manufacturing" .
+
+:SafetyCertificate a owl:Class ;
+  rdfs:label "SafetyCertificate" ;
+  rdfs:subClassOf :TestEntity ;
+  rdfs:comment "Safety certificate for manufacturing" .

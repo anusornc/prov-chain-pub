@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuration Guide &mdash; ProvChainOrg 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=3afbad45" />
+      <link rel="stylesheet" type="text/css" href="../_static/interactive.css?v=267755d7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=01f34227"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=f281be69"></script>
+        <script src="../_static/interactive.js?v=fc12431e"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ProvChainOrg
+          </a>
+              <div class="version">
+                0.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction to ProvChainOrg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first-steps.html">First Steps with ProvChainOrg</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/rest-api.html">REST API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/sparql-api.html">SPARQL API Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/websocket-api.html">WebSocket API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/authentication.html">Authentication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/client-libraries.html">Client Libraries</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Research Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../research/index.html">Research Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../research/rdf-canonicalization-algorithm.html">RDF Canonicalization Algorithm for Semantic Blockchains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../research/technical-specifications.html">Technical Specifications</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-provchainorg.html">Introduction to ProvChainOrg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-rdf-blockchain.html">Introduction to RDF Blockchain</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-supply-chain-traceability.html">Introduction to Supply Chain Traceability</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../stack/intro-to-stack.html">Introduction to the ProvChainOrg Stack</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/first-supply-chain.html">Your First Supply Chain Application</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ProvChainOrg</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Configuration Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/user-guide/configuration.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="configuration-guide">
+<h1>Configuration Guide<a class="headerlink" href="#configuration-guide" title="Link to this heading"></a></h1>
+<p>Complete guide to configuring ProvChainOrg for your environment.</p>
+<div class="hero-section">
+  <div class="hero-content">
+    <h1>Configuration Guide</h1>
+    <p class="hero-subtitle">Complete guide to configuring ProvChainOrg</p>
+    <div class="hero-badges">
+      <span class="badge badge-config">Configuration</span>
+      <span class="badge badge-admin">Administration</span>
+      <span class="badge badge-advanced">Advanced</span>
+    </div>
+  </div>
+</div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This guide provides comprehensive information about configuring ProvChainOrg for different environments and use cases. Proper configuration is essential for optimal performance and security.</p>
+</div>
+<section id="configuration-methods">
+<h2>Configuration Methods<a class="headerlink" href="#configuration-methods" title="Link to this heading"></a></h2>
+<p>ProvChainOrg can be configured using several methods, which are applied in the following order of precedence:</p>
+<ol class="arabic simple">
+<li><p><strong>Command Line Arguments</strong> - Highest precedence</p></li>
+<li><p><strong>Environment Variables</strong> - Medium precedence</p></li>
+<li><p><strong>Configuration File</strong> - Lowest precedence (default values)</p></li>
+</ol>
+</section>
+<section id="configuration-file">
+<h2>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h2>
+<p>The primary configuration file is in TOML format. By default, ProvChainOrg looks for configuration files in the following locations:</p>
+<ol class="arabic simple">
+<li><p><cite>./config.toml</cite> (current directory)</p></li>
+<li><p><cite>~/.provchain/config.toml</cite> (user home directory)</p></li>
+<li><p><cite>/etc/provchain/config.toml</cite> (system-wide configuration)</p></li>
+</ol>
+<p>### Basic Configuration File Structure</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Server configuration</span>
+<span class="k">[server]</span>
+<span class="n">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;127.0.0.1&quot;</span>
+<span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8080</span>
+<span class="n">workers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span>
+
+<span class="c1"># Database configuration</span>
+<span class="k">[database]</span>
+<span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./data&quot;</span>
+<span class="n">backup_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">backup_interval_hours</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">24</span>
+
+<span class="c1"># Logging configuration</span>
+<span class="k">[logging]</span>
+<span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;info&quot;</span>
+<span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./logs/provchain.log&quot;</span>
+<span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;json&quot;</span>
+
+<span class="c1"># Network configuration</span>
+<span class="k">[network]</span>
+<span class="n">discovery_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">max_peers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span>
+<span class="n">listen_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/ip4/0.0.0.0/tcp/4001&quot;</span>
+
+<span class="c1"># Security configuration</span>
+<span class="k">[security]</span>
+<span class="n">jwt_secret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;your-secret-key-here&quot;</span>
+<span class="n">api_key_ttl_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">90</span>
+</pre></div>
+</div>
+<p>### Server Configuration</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[server]</span>
+<span class="c1"># Host to bind to (use 0.0.0.0 for external access)</span>
+<span class="n">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;127.0.0.1&quot;</span>
+
+<span class="c1"># Port to listen on</span>
+<span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8080</span>
+
+<span class="c1"># Number of worker threads</span>
+<span class="n">workers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span>
+
+<span class="c1"># Enable HTTPS</span>
+<span class="n">https_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+
+<span class="c1"># SSL certificate and key paths (if HTTPS is enabled)</span>
+<span class="n">ssl_cert_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/path/to/cert.pem&quot;</span>
+<span class="n">ssl_key_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/path/to/key.pem&quot;</span>
+
+<span class="c1"># CORS settings</span>
+<span class="n">cors_allowed_origins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">]</span>
+<span class="n">cors_allowed_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;POST&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PUT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;DELETE&quot;</span><span class="p">]</span>
+<span class="n">cors_allowed_headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Authorization&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>### Database Configuration</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[database]</span>
+<span class="c1"># Path to store blockchain data</span>
+<span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./data&quot;</span>
+
+<span class="c1"># Enable automatic backups</span>
+<span class="n">backup_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1"># Backup interval in hours</span>
+<span class="n">backup_interval_hours</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">24</span>
+
+<span class="c1"># Maximum number of backup files to keep</span>
+<span class="n">max_backup_files</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span>
+
+<span class="c1"># Enable data compression</span>
+<span class="n">compression_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1"># Enable encryption at rest</span>
+<span class="n">encryption_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+
+<span class="c1"># Cache size in MB</span>
+<span class="n">cache_size_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
+</pre></div>
+</div>
+<p>### Logging Configuration</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[logging]</span>
+<span class="c1"># Log level (trace, debug, info, warn, error)</span>
+<span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;info&quot;</span>
+
+<span class="c1"># Log file path</span>
+<span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./logs/provchain.log&quot;</span>
+
+<span class="c1"># Log format (json, text)</span>
+<span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;json&quot;</span>
+
+<span class="c1"># Enable console logging</span>
+<span class="n">console_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1"># Enable file logging</span>
+<span class="n">file_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1"># Maximum log file size in MB</span>
+<span class="n">max_file_size_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="c1"># Maximum number of log files to keep</span>
+<span class="n">max_files</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span>
+</pre></div>
+</div>
+<p>### Network Configuration</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[network]</span>
+<span class="c1"># Enable peer discovery</span>
+<span class="n">discovery_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1"># Maximum number of connected peers</span>
+<span class="n">max_peers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span>
+
+<span class="c1"># Listen address for P2P connections</span>
+<span class="n">listen_address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/ip4/0.0.0.0/tcp/4001&quot;</span>
+
+<span class="c1"># Bootstrap peers</span>
+<span class="n">bootstrap_peers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="s2">&quot;/ip4/10.0.0.1/tcp/4001&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;/ip4/10.0.0.2/tcp/4001&quot;</span>
+<span class="p">]</span>
+
+<span class="c1"># Network ID (for network isolation)</span>
+<span class="n">network_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;provchain-mainnet&quot;</span>
+
+<span class="c1"># Enable NAT traversal</span>
+<span class="n">nat_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</pre></div>
+</div>
+<p>### Security Configuration</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[security]</span>
+<span class="c1"># JWT secret for token signing</span>
+<span class="n">jwt_secret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;your-secret-key-here&quot;</span>
+
+<span class="c1"># API key time-to-live in days</span>
+<span class="n">api_key_ttl_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">90</span>
+
+<span class="c1"># Enable rate limiting</span>
+<span class="n">rate_limiting_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1"># Maximum requests per minute per IP</span>
+<span class="n">max_requests_per_minute</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span>
+
+<span class="c1"># Enable IP whitelisting</span>
+<span class="n">ip_whitelist_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+
+<span class="c1"># Whitelisted IP addresses</span>
+<span class="n">whitelisted_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;10.0.0.0/8&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>### Performance Configuration</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[performance]</span>
+<span class="c1"># Enable query caching</span>
+<span class="n">query_cache_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1"># Query cache size in MB</span>
+<span class="n">query_cache_size_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span>
+
+<span class="c1"># Enable canonicalization caching</span>
+<span class="n">canonicalization_cache_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1"># Canonicalization cache size in MB</span>
+<span class="n">canonicalization_cache_size_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="c1"># Enable concurrent operations</span>
+<span class="n">concurrent_operations_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="c1"># Maximum concurrent operations</span>
+<span class="n">max_concurrent_operations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
+</pre></div>
+</div>
+</section>
+<section id="environment-variables">
+<h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading"></a></h2>
+<p>All configuration options can also be set using environment variables. Environment variables take precedence over configuration file settings.</p>
+<p>### Naming Convention</p>
+<p>Environment variables follow the pattern: <cite>PROVCHAIN_{SECTION}_{KEY}</cite> where:
+- Section names are capitalized
+- Key names are capitalized
+- Dots and hyphens are replaced with underscores</p>
+<p>### Examples</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set server host</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_SERVER_HOST</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span>
+
+<span class="c1"># Set server port</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_SERVER_PORT</span><span class="o">=</span><span class="s2">&quot;8080&quot;</span>
+
+<span class="c1"># Set log level</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_LOGGING_LEVEL</span><span class="o">=</span><span class="s2">&quot;debug&quot;</span>
+
+<span class="c1"># Set database path</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_DATABASE_PATH</span><span class="o">=</span><span class="s2">&quot;/var/lib/provchain&quot;</span>
+
+<span class="c1"># Enable HTTPS</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_SERVER_HTTPS_ENABLED</span><span class="o">=</span><span class="s2">&quot;true&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_SERVER_SSL_CERT_PATH</span><span class="o">=</span><span class="s2">&quot;/path/to/cert.pem&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_SERVER_SSL_KEY_PATH</span><span class="o">=</span><span class="s2">&quot;/path/to/key.pem&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="command-line-arguments">
+<h2>Command Line Arguments<a class="headerlink" href="#command-line-arguments" title="Link to this heading"></a></h2>
+<p>Command line arguments have the highest precedence and override both environment variables and configuration file settings.</p>
+<p>### Common Arguments</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set configuration file</span>
+provchain-org<span class="w"> </span>--config<span class="w"> </span>/path/to/config.toml
+
+<span class="c1"># Set log level</span>
+provchain-org<span class="w"> </span>--log-level<span class="w"> </span>debug
+
+<span class="c1"># Set server host and port</span>
+provchain-org<span class="w"> </span>server<span class="w"> </span>start<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
+
+<span class="c1"># Enable verbose output</span>
+provchain-org<span class="w"> </span>--verbose
+
+<span class="c1"># Output in JSON format</span>
+provchain-org<span class="w"> </span>--json
+</pre></div>
+</div>
+</section>
+<section id="configuration-validation">
+<h2>Configuration Validation<a class="headerlink" href="#configuration-validation" title="Link to this heading"></a></h2>
+<p>ProvChainOrg validates configuration at startup and reports any issues.</p>
+<p>### Validation Commands</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Validate configuration file</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span>validate<span class="w"> </span>--config<span class="w"> </span>/path/to/config.toml
+
+<span class="c1"># Show current configuration</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span>show
+
+<span class="c1"># Check for configuration issues</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span>check
+</pre></div>
+</div>
+<p>### Common Validation Errors</p>
+<ol class="arabic simple">
+<li><p><strong>Invalid paths</strong>: Ensure all file paths exist and are accessible</p></li>
+<li><p><strong>Port conflicts</strong>: Ensure ports are not already in use</p></li>
+<li><p><strong>Missing required values</strong>: Some configuration options are mandatory</p></li>
+<li><p><strong>Invalid values</strong>: Ensure values are within acceptable ranges</p></li>
+</ol>
+</section>
+<section id="production-configuration">
+<h2>Production Configuration<a class="headerlink" href="#production-configuration" title="Link to this heading"></a></h2>
+<p>For production deployments, consider these additional configuration recommendations:</p>
+<p>### Security Hardening</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[security]</span>
+<span class="c1"># Use a strong JWT secret</span>
+<span class="n">jwt_secret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;a-very-long-random-secret-string&quot;</span>
+
+<span class="c1"># Limit API key TTL</span>
+<span class="n">api_key_ttl_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">30</span>
+
+<span class="c1"># Enable rate limiting</span>
+<span class="n">rate_limiting_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">max_requests_per_minute</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="c1"># Enable IP whitelisting for admin endpoints</span>
+<span class="n">ip_whitelist_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">whitelisted_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;10.0.0.0/8&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;172.16.0.0/12&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>### Performance Optimization</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[performance]</span>
+<span class="c1"># Increase cache sizes</span>
+<span class="n">query_cache_size_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">200</span>
+<span class="n">canonicalization_cache_size_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span>
+
+<span class="c1"># Optimize worker count for your hardware</span>
+<span class="k">[server]</span>
+<span class="n">workers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
+
+<span class="k">[database]</span>
+<span class="c1"># Enable compression for large datasets</span>
+<span class="n">compression_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</pre></div>
+</div>
+<p>### Backup and Recovery</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[database]</span>
+<span class="c1"># Enable regular backups</span>
+<span class="n">backup_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">backup_interval_hours</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">6</span>
+<span class="n">max_backup_files</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">30</span>
+
+<span class="c1"># Store backups in a separate location</span>
+<span class="n">backup_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/backup/provchain&quot;</span>
+</pre></div>
+</div>
+<p>### Monitoring</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[logging]</span>
+<span class="c1"># Enable detailed logging for monitoring</span>
+<span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;info&quot;</span>
+<span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/var/log/provchain/provchain.log&quot;</span>
+
+<span class="k">[performance]</span>
+<span class="c1"># Enable metrics collection</span>
+<span class="n">metrics_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">metrics_port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8081</span>
+</pre></div>
+</div>
+</section>
+<section id="development-configuration">
+<h2>Development Configuration<a class="headerlink" href="#development-configuration" title="Link to this heading"></a></h2>
+<p>For development environments, you might want to use these settings:</p>
+<p>### Development Settings</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[server]</span>
+<span class="c1"># Enable external access for development</span>
+<span class="n">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;0.0.0.0&quot;</span>
+<span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8080</span>
+
+<span class="k">[logging]</span>
+<span class="c1"># Enable debug logging</span>
+<span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;debug&quot;</span>
+<span class="n">console_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+
+<span class="k">[database]</span>
+<span class="c1"># Disable backups for faster development</span>
+<span class="n">backup_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+
+<span class="k">[security]</span>
+<span class="c1"># Relax security for development</span>
+<span class="n">rate_limiting_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</pre></div>
+</div>
+<p>### Environment-Specific Configuration</p>
+<p>You can use different configuration files for different environments:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Development</span>
+provchain-org<span class="w"> </span>--config<span class="w"> </span>config.dev.toml
+
+<span class="c1"># Staging</span>
+provchain-org<span class="w"> </span>--config<span class="w"> </span>config.staging.toml
+
+<span class="c1"># Production</span>
+provchain-org<span class="w"> </span>--config<span class="w"> </span>config.prod.toml
+</pre></div>
+</div>
+</section>
+<section id="dynamic-configuration">
+<h2>Dynamic Configuration<a class="headerlink" href="#dynamic-configuration" title="Link to this heading"></a></h2>
+<p>Some configuration options can be changed at runtime:</p>
+<p>### Runtime Configuration Commands</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># View current configuration</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span>show
+
+<span class="c1"># Set a configuration value at runtime</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>logging.level<span class="w"> </span>debug
+
+<span class="c1"># Reset a configuration value to default</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span>reset<span class="w"> </span>logging.level
+</pre></div>
+</div>
+<p>### Hot-Reloadable Options</p>
+<p>The following options can be changed without restarting the server:</p>
+<ul class="simple">
+<li><p>Log level</p></li>
+<li><p>Rate limiting settings</p></li>
+<li><p>Cache sizes (with some limitations)</p></li>
+</ul>
+</section>
+<section id="configuration-best-practices">
+<h2>Configuration Best Practices<a class="headerlink" href="#configuration-best-practices" title="Link to this heading"></a></h2>
+<p>### Security Best Practices</p>
+<ol class="arabic simple">
+<li><p><strong>Never commit secrets to version control</strong></p></li>
+<li><p><strong>Use environment variables for sensitive data</strong></p></li>
+<li><p><strong>Regularly rotate API keys and secrets</strong></p></li>
+<li><p><strong>Enable rate limiting in production</strong></p></li>
+<li><p><strong>Use IP whitelisting for administrative endpoints</strong></p></li>
+</ol>
+<p>### Performance Best Practices</p>
+<ol class="arabic simple">
+<li><p><strong>Set appropriate cache sizes for your workload</strong></p></li>
+<li><p><strong>Configure worker count based on CPU cores</strong></p></li>
+<li><p><strong>Use SSD storage for database files</strong></p></li>
+<li><p><strong>Enable compression for large datasets</strong></p></li>
+<li><p><strong>Monitor resource usage and adjust accordingly</strong></p></li>
+</ol>
+<p>### Reliability Best Practices</p>
+<ol class="arabic simple">
+<li><p><strong>Enable regular backups</strong></p></li>
+<li><p><strong>Store backups in a separate location</strong></p></li>
+<li><p><strong>Test backup restoration procedures</strong></p></li>
+<li><p><strong>Monitor disk space and system resources</strong></p></li>
+<li><p><strong>Set up alerting for critical issues</strong></p></li>
+</ol>
+<p>### Maintenance Best Practices</p>
+<ol class="arabic simple">
+<li><p><strong>Regularly review and update configuration</strong></p></li>
+<li><p><strong>Document all configuration changes</strong></p></li>
+<li><p><strong>Use version control for configuration files</strong></p></li>
+<li><p><strong>Test configuration changes in staging first</strong></p></li>
+<li><p><strong>Monitor logs for configuration-related issues</strong></p></li>
+</ol>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<p>### Common Issues</p>
+<p><strong>Problem</strong>: Configuration file not found
+<strong>Solution</strong>: Ensure the configuration file exists in one of the default locations or specify it explicitly</p>
+<p><strong>Problem</strong>: Invalid configuration value
+<strong>Solution</strong>: Check the error message and correct the value according to the documentation</p>
+<p><strong>Problem</strong>: Permission denied when accessing files
+<strong>Solution</strong>: Ensure the user running ProvChainOrg has appropriate permissions</p>
+<p><strong>Problem</strong>: Port already in use
+<strong>Solution</strong>: Change the port or stop the conflicting process</p>
+<p>### Diagnostic Commands</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Show effective configuration</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span>show<span class="w"> </span>--effective
+
+<span class="c1"># Validate configuration</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span>validate
+
+<span class="c1"># Check for common issues</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span>check
+</pre></div>
+</div>
+</section>
+<section id="support">
+<h2>Support<a class="headerlink" href="#support" title="Link to this heading"></a></h2>
+<p>For additional help with configuration:</p>
+<ol class="arabic simple">
+<li><p>Refer to the example configuration files in the repository</p></li>
+<li><p>Check the online documentation</p></li>
+<li><p>Join our community forum</p></li>
+<li><p>Contact support at <a class="reference external" href="mailto:support&#37;&#52;&#48;provchain-org&#46;com">support<span>&#64;</span>provchain-org<span>&#46;</span>com</a></p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Proper configuration is crucial for the security, performance, and reliability of your ProvChainOrg deployment. Always test configuration changes in a staging environment before applying them to production.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, ProvChainOrg Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

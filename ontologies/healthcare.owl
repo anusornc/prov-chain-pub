@@ -1,0 +1,48 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix healthcare: <http://provchain.org/healthcare#> .
+@prefix trace: <http://provchain.org/trace#> .
+
+healthcare:HealthcareOntology a owl:Ontology ;
+    rdfs:label "Healthcare Traceability Ontology" ;
+    rdfs:comment "Extension of PROV-O for healthcare traceability" .
+
+# Healthcare-specific entity classes
+healthcare:PatientRecord a owl:Class ;
+    rdfs:subClassOf trace:TraceableEntity ;
+    rdfs:label "Patient Record" .
+
+healthcare:MedicalDevice a owl:Class ;
+    rdfs:subClassOf trace:TraceableEntity ;
+    rdfs:label "Medical Device" .
+
+healthcare:Prescription a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Prescription" .
+
+healthcare:MedicalProcedure a owl:Class ;
+    rdfs:subClassOf trace:Process ;
+    rdfs:label "Medical Procedure" .
+
+# Healthcare-specific properties
+healthcare:patientID a owl:DatatypeProperty ;
+    rdfs:domain healthcare:PatientRecord ;
+    rdfs:range xsd:string ;
+    rdfs:label "patient ID" .
+
+healthcare:procedureCode a owl:DatatypeProperty ;
+    rdfs:domain healthcare:MedicalProcedure ;
+    rdfs:range xsd:string ;
+    rdfs:label "procedure code" .
+
+healthcare:deviceSerialNumber a owl:DatatypeProperty ;
+    rdfs:domain healthcare:MedicalDevice ;
+    rdfs:range xsd:string ;
+    rdfs:label "device serial number" .
+
+healthcare:prescriptionDate a owl:DatatypeProperty ;
+    rdfs:domain healthcare:Prescription ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "prescription date" .

@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPARQL Basics &mdash; ProvChainOrg 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=3afbad45" />
+      <link rel="stylesheet" type="text/css" href="../_static/interactive.css?v=267755d7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=01f34227"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=f281be69"></script>
+        <script src="../_static/interactive.js?v=fc12431e"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ProvChainOrg
+          </a>
+              <div class="version">
+                0.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction to ProvChainOrg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first-steps.html">First Steps with ProvChainOrg</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/rest-api.html">REST API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/sparql-api.html">SPARQL API Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/websocket-api.html">WebSocket API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/authentication.html">Authentication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/client-libraries.html">Client Libraries</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Research Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../research/index.html">Research Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../research/rdf-canonicalization-algorithm.html">RDF Canonicalization Algorithm for Semantic Blockchains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../research/technical-specifications.html">Technical Specifications</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-provchainorg.html">Introduction to ProvChainOrg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-rdf-blockchain.html">Introduction to RDF Blockchain</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-supply-chain-traceability.html">Introduction to Supply Chain Traceability</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../stack/intro-to-stack.html">Introduction to the ProvChainOrg Stack</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/first-supply-chain.html">Your First Supply Chain Application</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ProvChainOrg</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">SPARQL Basics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/user-guide/sparql-basics.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sparql-basics">
+<h1>SPARQL Basics<a class="headerlink" href="#sparql-basics" title="Link to this heading"></a></h1>
+<p>Introduction to querying supply chain data using SPARQL.</p>
+<div class="hero-section">
+  <div class="hero-content">
+    <h1>SPARQL Basics</h1>
+    <p class="hero-subtitle">Introduction to querying supply chain data with SPARQL</p>
+    <div class="hero-badges">
+      <span class="badge badge-sparql">SPARQL</span>
+      <span class="badge badge-query">Query</span>
+      <span class="badge badge-beginner">Beginner</span>
+    </div>
+  </div>
+</div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This guide introduces SPARQL (SPARQL Protocol and RDF Query Language), the standard query language for RDF data used in ProvChainOrg. Learn how to query supply chain information effectively.</p>
+</div>
+<section id="what-is-sparql">
+<h2>What is SPARQL?<a class="headerlink" href="#what-is-sparql" title="Link to this heading"></a></h2>
+<p>SPARQL is a powerful query language for RDF (Resource Description Framework) data. It allows you to:</p>
+<ol class="arabic simple">
+<li><p><strong>Query</strong> data stored in RDF format</p></li>
+<li><p><strong>Update</strong> RDF data</p></li>
+<li><p><strong>Manage</strong> RDF graphs</p></li>
+<li><p><strong>Federate</strong> queries across multiple data sources</p></li>
+</ol>
+<p>In ProvChainOrg, SPARQL is the primary way to query supply chain data stored in the semantic blockchain.</p>
+</section>
+<section id="basic-sparql-concepts">
+<h2>Basic SPARQL Concepts<a class="headerlink" href="#basic-sparql-concepts" title="Link to this heading"></a></h2>
+<p>### RDF Data Model</p>
+<p>Before diving into SPARQL, understand the RDF data model:</p>
+<ol class="arabic simple">
+<li><p><strong>Triples</strong>: RDF data consists of subject-predicate-object triples</p></li>
+<li><p><strong>URIs</strong>: Unique identifiers for resources</p></li>
+<li><p><strong>Literals</strong>: Data values like strings, numbers, dates</p></li>
+<li><p><strong>Blank Nodes</strong>: Anonymous nodes in the graph</p></li>
+<li><p><strong>Named Graphs</strong>: Collections of triples with a name</p></li>
+</ol>
+<p>### Example RDF Data</p>
+<div class="highlight-turtle notranslate"><div class="highlight"><pre><span></span><span class="k">@prefix</span><span class="w"> </span><span class="nn">:</span><span class="w"> </span><span class="nv">&lt;http://example.org/supply-chain#&gt;</span><span class="w"> </span><span class="p">.</span>
+<span class="k">@prefix</span><span class="w"> </span><span class="nn">xsd:</span><span class="w"> </span><span class="nv">&lt;http://www.w3.org/2001/XMLSchema#&gt;</span><span class="w"> </span><span class="p">.</span>
+
+<span class="p">:</span><span class="nt">Batch001</span> <span class="kt">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">product</span> <span class="s">&quot;Organic Tomatoes&quot;</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">originFarm</span> <span class="p">:</span><span class="nt">GreenValleyFarm</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">harvestDate</span> <span class="s">&quot;2025-01-15&quot;</span><span class="p">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">date</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">quantity</span> <span class="mi">1000</span> <span class="p">;</span>
+    <span class="p">:</span><span class="nt">unit</span> <span class="s">&quot;kg&quot;</span> <span class="p">.</span>
+</pre></div>
+</div>
+<p>This creates several triples:
+- <cite>:Batch001 rdf:type :ProductBatch</cite>
+- <cite>:Batch001 :product “Organic Tomatoes”</cite>
+- <cite>:Batch001 :originFarm :GreenValleyFarm</cite>
+- etc.</p>
+</section>
+<section id="basic-sparql-queries">
+<h2>Basic SPARQL Queries<a class="headerlink" href="#basic-sparql-queries" title="Link to this heading"></a></h2>
+<p>### SELECT Queries</p>
+<p>The most common type of SPARQL query retrieves data:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?product</span> <span class="nv">?farm</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">product</span> <span class="nv">?product</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">originFarm</span> <span class="nv">?farm</span> <span class="p">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This query:
+1. Defines a prefix for shorter URIs
+2. Selects three variables: batch, product, and farm
+3. Matches triples where:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><cite>?batch</cite> is a ProductBatch</p></li>
+<li><p><cite>?batch</cite> has a product property with value <cite>?product</cite></p></li>
+<li><p><cite>?batch</cite> has an originFarm property with value <cite>?farm</cite></p></li>
+</ul>
+</div></blockquote>
+<p>### FILTER Queries</p>
+<p>Add conditions to filter results:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+<span class="k">PREFIX</span> <span class="nn">xsd</span><span class="p">:</span> <span class="nl">&lt;http://www.w3.org/2001/XMLSchema#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?product</span> <span class="nv">?harvestDate</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">product</span> <span class="nv">?product</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">harvestDate</span> <span class="nv">?harvestDate</span> <span class="p">.</span>
+    <span class="k">FILTER</span><span class="p">(</span><span class="nv">?harvestDate</span> <span class="o">&gt;=</span> <span class="s">&quot;2025-01-01&quot;</span><span class="o">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">date</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>### ORDER BY and LIMIT</p>
+<p>Sort and limit results:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?product</span> <span class="nv">?harvestDate</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">product</span> <span class="nv">?product</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">harvestDate</span> <span class="nv">?harvestDate</span> <span class="p">.</span>
+<span class="p">}</span>
+<span class="k">ORDER BY</span> <span class="k">DESC</span><span class="p">(</span><span class="nv">?harvestDate</span><span class="p">)</span>
+<span class="k">LIMIT</span> <span class="mi">10</span>
+</pre></div>
+</div>
+</section>
+<section id="provchainorg-sparql-features">
+<h2>ProvChainOrg SPARQL Features<a class="headerlink" href="#provchainorg-sparql-features" title="Link to this heading"></a></h2>
+<p>### Named Graphs</p>
+<p>Query specific blocks or time periods using named graphs:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?product</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="k">GRAPH</span> <span class="nv">?g</span> <span class="p">{</span>
+        <span class="nv">?batch</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+               <span class="p">:</span><span class="nt">product</span> <span class="nv">?product</span> <span class="p">.</span>
+    <span class="p">}</span>
+    <span class="k">FILTER</span><span class="p">(</span><span class="nf">CONTAINS</span><span class="p">(</span><span class="nf">STR</span><span class="p">(</span><span class="nv">?g</span><span class="p">),</span> <span class="s">&quot;block/123&quot;</span><span class="p">))</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>### Temporal Queries</p>
+<p>Query data based on blockchain timestamps:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+<span class="k">PREFIX</span> <span class="nn">prov</span><span class="p">:</span> <span class="nl">&lt;http://www.w3.org/ns/prov#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?timestamp</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+           <span class="nn">prov</span><span class="p">:</span><span class="nt">generatedAtTime</span> <span class="nv">?timestamp</span> <span class="p">.</span>
+    <span class="k">FILTER</span><span class="p">(</span><span class="nv">?timestamp</span> <span class="o">&gt;</span> <span class="s">&quot;2025-01-15T00:00:00Z&quot;</span><span class="o">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">dateTime</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>### Supply Chain Specific Patterns</p>
+<p>Common patterns for supply chain queries:</p>
+<p>#### Traceability Query</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+<span class="k">PREFIX</span> <span class="nn">prov</span><span class="p">:</span> <span class="nl">&lt;http://www.w3.org/ns/prov#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?location</span> <span class="nv">?timestamp</span> <span class="nv">?activity</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="p">:</span><span class="nt">hasBatchID</span> <span class="s">&quot;TOMATO-2025-001&quot;</span> <span class="p">.</span>
+    <span class="nv">?activity</span> <span class="nn">prov</span><span class="p">:</span><span class="nt">used</span> <span class="nv">?batch</span> <span class="p">;</span>
+              <span class="p">:</span><span class="nt">location</span> <span class="nv">?location</span> <span class="p">;</span>
+              <span class="nn">prov</span><span class="p">:</span><span class="nt">endedAtTime</span> <span class="nv">?timestamp</span> <span class="p">.</span>
+<span class="p">}</span>
+<span class="k">ORDER BY</span> <span class="nv">?timestamp</span>
+</pre></div>
+</div>
+<p>#### Quality Assurance Query</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?testType</span> <span class="nv">?result</span> <span class="nv">?tester</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="p">:</span><span class="nt">qualityTest</span> <span class="nv">?test</span> <span class="p">.</span>
+    <span class="nv">?test</span> <span class="p">:</span><span class="nt">testType</span> <span class="nv">?testType</span> <span class="p">;</span>
+          <span class="p">:</span><span class="nt">result</span> <span class="nv">?result</span> <span class="p">;</span>
+          <span class="p">:</span><span class="nt">testedBy</span> <span class="nv">?tester</span> <span class="p">.</span>
+    <span class="k">FILTER</span><span class="p">(</span><span class="nv">?result</span> <span class="o">=</span> <span class="s">&quot;PASS&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>#### Environmental Monitoring Query</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+<span class="k">PREFIX</span> <span class="nn">xsd</span><span class="p">:</span> <span class="nl">&lt;http://www.w3.org/2001/XMLSchema#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?temperature</span> <span class="nv">?humidity</span> <span class="nv">?timestamp</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="p">:</span><span class="nt">transportedThrough</span> <span class="nv">?transport</span> <span class="p">.</span>
+    <span class="nv">?transport</span> <span class="p">:</span><span class="nt">environmentalCondition</span> <span class="nv">?condition</span> <span class="p">.</span>
+    <span class="nv">?condition</span> <span class="p">:</span><span class="nt">temperature</span> <span class="nv">?temperature</span> <span class="p">;</span>
+               <span class="p">:</span><span class="nt">humidity</span> <span class="nv">?humidity</span> <span class="p">;</span>
+               <span class="p">:</span><span class="nt">recordedAt</span> <span class="nv">?timestamp</span> <span class="p">.</span>
+    <span class="k">FILTER</span><span class="p">(</span><span class="nv">?temperature</span> <span class="o">&gt;</span> <span class="s">&quot;8.0&quot;</span><span class="o">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">decimal</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced-sparql-features">
+<h2>Advanced SPARQL Features<a class="headerlink" href="#advanced-sparql-features" title="Link to this heading"></a></h2>
+<p>### OPTIONAL Patterns</p>
+<p>Handle missing data gracefully:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?product</span> <span class="nv">?certification</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">product</span> <span class="nv">?product</span> <span class="p">.</span>
+    <span class="k">OPTIONAL</span> <span class="p">{</span>
+        <span class="nv">?batch</span> <span class="p">:</span><span class="nt">certification</span> <span class="nv">?certification</span> <span class="p">.</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>### UNION Patterns</p>
+<p>Combine different patterns:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?item</span> <span class="nv">?type</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="p">{</span>
+        <span class="nv">?item</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+              <span class="p">:</span><span class="nt">product</span> <span class="nv">?type</span> <span class="p">.</span>
+    <span class="p">}</span> <span class="k">UNION</span> <span class="p">{</span>
+        <span class="nv">?item</span> <span class="k">a</span> <span class="p">:</span><span class="nt">IngredientLot</span> <span class="p">;</span>
+              <span class="p">:</span><span class="nt">ingredient</span> <span class="nv">?type</span> <span class="p">.</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>### Aggregation Functions</p>
+<p>Calculate summary statistics:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?farm</span> <span class="p">(</span><span class="nf">COUNT</span><span class="p">(</span><span class="nv">?batch</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">?batchCount</span><span class="p">)</span>
+       <span class="p">(</span><span class="nf">SUM</span><span class="p">(</span><span class="nv">?quantity</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">?totalQuantity</span><span class="p">)</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">originFarm</span> <span class="nv">?farm</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">quantity</span> <span class="nv">?quantity</span> <span class="p">.</span>
+<span class="p">}</span>
+<span class="k">GROUP BY</span> <span class="nv">?farm</span>
+</pre></div>
+</div>
+<p>### Subqueries</p>
+<p>Use results from one query in another:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?product</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">product</span> <span class="nv">?product</span> <span class="p">.</span>
+    <span class="p">{</span>
+        <span class="k">SELECT</span> <span class="nv">?highVolumeFarm</span> <span class="k">WHERE</span> <span class="p">{</span>
+            <span class="nv">?batch</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+                   <span class="p">:</span><span class="nt">originFarm</span> <span class="nv">?farm</span> <span class="p">;</span>
+                   <span class="p">:</span><span class="nt">quantity</span> <span class="nv">?quantity</span> <span class="p">.</span>
+            <span class="k">FILTER</span><span class="p">(</span><span class="nv">?quantity</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="using-sparql-in-provchainorg">
+<h2>Using SPARQL in ProvChainOrg<a class="headerlink" href="#using-sparql-in-provchainorg" title="Link to this heading"></a></h2>
+<p>### Command Line Interface</p>
+<p>Execute SPARQL queries using the CLI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Execute a query from a file</span>
+provchain-org<span class="w"> </span>query<span class="w"> </span>trace_query.sparql
+
+<span class="c1"># Execute a query from stdin</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;SELECT * WHERE { ?s ?p ?o } LIMIT 10&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>provchain-org<span class="w"> </span>query<span class="w"> </span>-
+
+<span class="c1"># Save results to a file</span>
+provchain-org<span class="w"> </span>query<span class="w"> </span>trace_query.sparql<span class="w"> </span>--output<span class="w"> </span>results.json
+</pre></div>
+</div>
+<p>### REST API</p>
+<p>Execute SPARQL queries using the REST API:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Query using curl</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8080/sparql&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer YOUR_API_KEY&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/sparql-query&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>--data-binary<span class="w"> </span>@trace_query.sparql
+</pre></div>
+</div>
+<p>### Web Interface</p>
+<p>Use the web-based SPARQL query interface:</p>
+<ol class="arabic simple">
+<li><p>Navigate to <cite>http://localhost:8080/query</cite></p></li>
+<li><p>Enter your SPARQL query in the editor</p></li>
+<li><p>Click “Execute” to run the query</p></li>
+<li><p>View results in table or graph format</p></li>
+</ol>
+</section>
+<section id="query-optimization">
+<h2>Query Optimization<a class="headerlink" href="#query-optimization" title="Link to this heading"></a></h2>
+<p>### Performance Tips</p>
+<ol class="arabic simple">
+<li><p><strong>Use specific patterns</strong>: More specific patterns execute faster</p></li>
+<li><p><strong>Limit result sets</strong>: Use LIMIT to avoid excessive results</p></li>
+<li><p><strong>Index frequently queried properties</strong>: Structure data for common queries</p></li>
+<li><p><strong>Avoid complex filters</strong>: Simplify WHERE clauses when possible</p></li>
+</ol>
+<p>### Indexing</p>
+<p>ProvChainOrg automatically indexes data for common query patterns:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="c"># This query benefits from indexing on :ProductBatch</span>
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?product</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="k">a</span> <span class="p">:</span><span class="nt">ProductBatch</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">product</span> <span class="nv">?product</span> <span class="p">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>### Caching</p>
+<p>Frequently executed queries are cached for better performance:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[performance]</span>
+<span class="n">query_cache_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">query_cache_size_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span>
+</pre></div>
+</div>
+</section>
+<section id="common-query-patterns">
+<h2>Common Query Patterns<a class="headerlink" href="#common-query-patterns" title="Link to this heading"></a></h2>
+<p>### Product Traceability</p>
+<p>Trace a product from origin to destination:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+<span class="k">PREFIX</span> <span class="nn">prov</span><span class="p">:</span> <span class="nl">&lt;http://www.w3.org/ns/prov#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?activity</span> <span class="nv">?location</span> <span class="nv">?timestamp</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="p">:</span><span class="nt">Batch001</span> <span class="nn">prov</span><span class="p">:</span><span class="nt">wasInfluencedBy</span><span class="o">*</span> <span class="nv">?activity</span> <span class="p">.</span>
+    <span class="nv">?activity</span> <span class="p">:</span><span class="nt">location</span> <span class="nv">?location</span> <span class="p">;</span>
+              <span class="nn">prov</span><span class="p">:</span><span class="nt">endedAtTime</span> <span class="nv">?timestamp</span> <span class="p">.</span>
+<span class="p">}</span>
+<span class="k">ORDER BY</span> <span class="nv">?timestamp</span>
+</pre></div>
+</div>
+<p>### Quality Compliance</p>
+<p>Find products meeting quality standards:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?product</span> <span class="nv">?testDate</span> <span class="nv">?tester</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="p">:</span><span class="nt">product</span> <span class="nv">?product</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">qualityTest</span> <span class="nv">?test</span> <span class="p">.</span>
+    <span class="nv">?test</span> <span class="p">:</span><span class="nt">result</span> <span class="s">&quot;PASS&quot;</span> <span class="p">;</span>
+          <span class="p">:</span><span class="nt">testDate</span> <span class="nv">?testDate</span> <span class="p">;</span>
+          <span class="p">:</span><span class="nt">testedBy</span> <span class="nv">?tester</span> <span class="p">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>### Environmental Monitoring</p>
+<p>Monitor environmental conditions during transport:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+<span class="k">PREFIX</span> <span class="nn">xsd</span><span class="p">:</span> <span class="nl">&lt;http://www.w3.org/2001/XMLSchema#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?batch</span> <span class="nv">?temperature</span> <span class="nv">?humidity</span> <span class="nv">?location</span> <span class="nv">?timestamp</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="p">:</span><span class="nt">transportedThrough</span> <span class="nv">?transport</span> <span class="p">.</span>
+    <span class="nv">?transport</span> <span class="p">:</span><span class="nt">environmentalCondition</span> <span class="nv">?condition</span> <span class="p">.</span>
+    <span class="nv">?condition</span> <span class="p">:</span><span class="nt">temperature</span> <span class="nv">?temperature</span> <span class="p">;</span>
+               <span class="p">:</span><span class="nt">humidity</span> <span class="nv">?humidity</span> <span class="p">;</span>
+               <span class="p">:</span><span class="nt">location</span> <span class="nv">?location</span> <span class="p">;</span>
+               <span class="p">:</span><span class="nt">recordedAt</span> <span class="nv">?timestamp</span> <span class="p">.</span>
+    <span class="k">FILTER</span><span class="p">(</span><span class="nv">?temperature</span> <span class="o">&gt;</span> <span class="s">&quot;2.0&quot;</span><span class="o">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">decimal</span> <span class="o">&amp;&amp;</span>
+           <span class="nv">?temperature</span> <span class="o">&lt;</span> <span class="s">&quot;8.0&quot;</span><span class="o">^^</span><span class="nn">xsd</span><span class="p">:</span><span class="nt">decimal</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>### Supply Chain Analytics</p>
+<p>Generate supply chain analytics:</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="k">PREFIX</span> <span class="p">:</span> <span class="nl">&lt;http://example.org/supply-chain#&gt;</span>
+
+<span class="k">SELECT</span> <span class="nv">?farm</span> <span class="p">(</span><span class="nf">COUNT</span><span class="p">(</span><span class="nv">?batch</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">?totalBatches</span><span class="p">)</span>
+       <span class="p">(</span><span class="nf">AVG</span><span class="p">(</span><span class="nv">?quantity</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">?avgQuantity</span><span class="p">)</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?batch</span> <span class="p">:</span><span class="nt">originFarm</span> <span class="nv">?farm</span> <span class="p">;</span>
+           <span class="p">:</span><span class="nt">quantity</span> <span class="nv">?quantity</span> <span class="p">.</span>
+<span class="p">}</span>
+<span class="k">GROUP BY</span> <span class="nv">?farm</span>
+<span class="k">ORDER BY</span> <span class="k">DESC</span><span class="p">(</span><span class="nv">?totalBatches</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>### Common SPARQL Errors</p>
+<ol class="arabic simple">
+<li><p><strong>Syntax Errors</strong>: Check query syntax and brackets</p></li>
+<li><p><strong>Undefined Prefixes</strong>: Ensure all prefixes are defined</p></li>
+<li><p><strong>Type Mismatches</strong>: Verify data types in filters</p></li>
+<li><p><strong>Resource Not Found</strong>: Confirm URIs exist in the dataset</p></li>
+</ol>
+<p>### Debugging Queries</p>
+<div class="highlight-sparql notranslate"><div class="highlight"><pre><span></span><span class="c"># Start with a simple query and build up</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">WHERE</span> <span class="p">{</span> <span class="nv">?s</span> <span class="nv">?p</span> <span class="nv">?o</span> <span class="p">}</span> <span class="k">LIMIT</span> <span class="mi">10</span>
+
+<span class="c"># Add filters gradually</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">WHERE</span> <span class="p">{</span>
+    <span class="nv">?s</span> <span class="nv">?p</span> <span class="nv">?o</span> <span class="p">.</span>
+    <span class="k">FILTER</span><span class="p">(</span><span class="nf">isIRI</span><span class="p">(</span><span class="nv">?s</span><span class="p">))</span>
+<span class="p">}</span> <span class="k">LIMIT</span> <span class="mi">10</span>
+</pre></div>
+</div>
+<p>### Query Validation</p>
+<p>Validate queries before execution:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Validate a SPARQL query</span>
+provchain-org<span class="w"> </span>query<span class="w"> </span>validate<span class="w"> </span>query.sparql
+</pre></div>
+</div>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<p>### Query Design</p>
+<ol class="arabic simple">
+<li><p><strong>Start simple</strong>: Begin with basic patterns and add complexity</p></li>
+<li><p><strong>Use meaningful variable names</strong>: Make queries self-documenting</p></li>
+<li><p><strong>Comment complex queries</strong>: Explain business logic in comments</p></li>
+<li><p><strong>Test with LIMIT</strong>: Verify queries with small result sets first</p></li>
+</ol>
+<p>### Performance Optimization</p>
+<ol class="arabic simple">
+<li><p><strong>Index frequently queried properties</strong>: Structure data for common access patterns</p></li>
+<li><p><strong>Use FILTER strategically</strong>: Apply filters early in the query</p></li>
+<li><p><strong>Limit result sets</strong>: Avoid returning excessive data</p></li>
+<li><p><strong>Cache frequent queries</strong>: Store results of common queries</p></li>
+</ol>
+<p>### Security Considerations</p>
+<ol class="arabic simple">
+<li><p><strong>Validate user input</strong>: Sanitize parameters in dynamic queries</p></li>
+<li><p><strong>Limit query complexity</strong>: Prevent denial-of-service through complex queries</p></li>
+<li><p><strong>Use parameterized queries</strong>: Avoid injection attacks</p></li>
+<li><p><strong>Implement rate limiting</strong>: Control query frequency per user</p></li>
+</ol>
+<p>### Documentation</p>
+<ol class="arabic simple">
+<li><p><strong>Document complex queries</strong>: Include business context and assumptions</p></li>
+<li><p><strong>Version query files</strong>: Track changes to important queries</p></li>
+<li><p><strong>Share query patterns</strong>: Create a library of common patterns</p></li>
+<li><p><strong>Profile query performance</strong>: Monitor and optimize slow queries</p></li>
+</ol>
+</section>
+<section id="learning-resources">
+<h2>Learning Resources<a class="headerlink" href="#learning-resources" title="Link to this heading"></a></h2>
+<p>### Official Documentation</p>
+<ol class="arabic simple">
+<li><p><strong>SPARQL 1.1 Query Language</strong>: W3C Recommendation</p></li>
+<li><p><strong>SPARQL 1.1 Update</strong>: W3C Recommendation</p></li>
+<li><p><strong>SPARQL 1.1 Federated Query</strong>: W3C Recommendation</p></li>
+</ol>
+<p>### Tutorials and Guides</p>
+<ol class="arabic simple">
+<li><p><strong>SPARQL by Example</strong>: Interactive tutorial</p></li>
+<li><p><strong>Learning SPARQL</strong>: Book by Bob DuCharme</p></li>
+<li><p><strong>SPARQL Tutorial</strong>: Online courses and videos</p></li>
+</ol>
+<p>### Tools</p>
+<ol class="arabic simple">
+<li><p><strong>Protégé</strong>: Ontology editor with SPARQL support</p></li>
+<li><p><strong>YASGUI</strong>: Web-based SPARQL editor</p></li>
+<li><p><strong>SPARQL Query Builder</strong>: Visual query construction tools</p></li>
+</ol>
+</section>
+<section id="support">
+<h2>Support<a class="headerlink" href="#support" title="Link to this heading"></a></h2>
+<p>For additional help with SPARQL queries:</p>
+<ol class="arabic simple">
+<li><p>Use the web interface query builder</p></li>
+<li><p>Check the online documentation</p></li>
+<li><p>Join our community forum</p></li>
+<li><p>Contact support at <a class="reference external" href="mailto:support&#37;&#52;&#48;provchain-org&#46;com">support<span>&#64;</span>provchain-org<span>&#46;</span>com</a></p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>SPARQL is a powerful tool for querying supply chain data in ProvChainOrg. Start with simple queries and gradually build up to more complex patterns. The web interface provides a helpful query builder for beginners.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, ProvChainOrg Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

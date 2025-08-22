@@ -1,40 +1,64 @@
-# Gemini Summary: UHT Traceability Blockchain (PoC)
+# Gemini Summary: ProvChainOrg
 
-This document provides a summary of the project based on the information found in `README.md` and `Plan.md`.
+This document provides a summary of the ProvChainOrg project based on the information found in `README.md`, `Cargo.toml`, and `docs/Plan.md`.
 
 ## Project Goal
 
-The goal of this project is to implement a minimal blockchain backed by RDF to store traceability triples. It provides SPARQL access to query provenance and traceability information. The project is a proof-of-concept for a UHT manufacturing traceability system, but it is general enough for other supply chains.
+The goal of this project is to implement a distributed blockchain system for supply chain traceability. It uses RDF (Resource Description Framework) to store data and provides SPARQL for querying. The project is a production-ready implementation of the "GraphChain" concept.
 
 ## Technology Stack
 
 *   **Language:** Rust
-*   **RDF Store:** Oxigraph (in-memory)
+*   **RDF Store:** Oxigraph
 *   **Hashing:** sha2 + hex
 *   **Timestamps:** chrono
+*   **Networking:** tokio, tokio-tungstenite
+*   **Cryptography:** ed25519-dalek
+*   **Configuration:** config, toml
+*   **Web Framework:** axum
 
-## Implementation Steps
+## Building and Running
 
-1.  Create a Rust project skeleton.
-2.  Implement `Block` and `Blockchain` data structures.
-3.  Insert triples as named graphs.
-4.  Compute the block hash from a deterministic serialization of graph quads.
-5.  Store block metadata as RDF.
-6.  Add CLI commands for `add-block`, `validate`, `dump`, and `query`.
-7.  Provide an example dataset and SPARQL queries.
+### Prerequisites
+- Rust 1.70+
+- Cargo
 
-## Key Features
+### Single Node Demo
+```bash
+# Run the ontology-integrated demo
+cargo run demo
+```
 
-*   The blockchain uses an in-memory RDF store (Oxigraph) as its dataset.
-*   Each block in the blockchain corresponds to a named graph with a URI like `http://example.org/block/{index}`.
-*   Block metadata is stored as RDF in the `http://example.org/blockchain` graph.
-*   The project uses a simple SHA-256-based block hashing mechanism.
+### CLI Usage
+```bash
+# Add RDF file as new block
+cargo run -- add-file test_data/simple_supply_chain_test.ttl
 
-## Limitations
+# Run SPARQL query
+cargo run -- query queries/trace_by_batch_ontology.sparql
 
-*   **RDF Canonicalization:** The current implementation is missing RDF canonicalization (e.g., URDNA2015). For a production environment, canonicalization should be added before hashing.
-*   **Single-Writer Chain:** The blockchain is currently a single-writer chain and does not yet include consensus mechanisms or digital signatures.
+# Validate blockchain integrity
+cargo run -- validate
 
-## Operational Guidelines
+# Dump blockchain as JSON
+cargo run -- dump
+```
 
-*   **Repetitive Tool Calls:** To prevent infinite loops or excessive resource consumption, the agent will stop executing a sequence of identical tool calls if the count of such consecutive calls reaches 2 or more. This rule applies to any tool call that is repeated with the exact same arguments.
+### Web Server
+```bash
+# Start web server
+cargo run -- web-server --port 8080
+```
+
+### Testing
+```bash
+# Run all tests
+cargo test
+```
+
+## Development Conventions
+
+*   The project follows a phased development approach, with each phase focusing on a specific set of features.
+*   The project has a comprehensive test suite, including unit, integration, and end-to-end tests.
+*   The project uses a custom RDF canonicalization algorithm for consistent hashing.
+*   The project has a well-defined project structure, with separate directories for source code, documentation, tests, and data.

@@ -1,0 +1,53 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix digital: <http://provchain.org/digital#> .
+@prefix trace: <http://provchain.org/trace#> .
+
+digital:DigitalAssetsOntology a owl:Ontology ;
+    rdfs:label "Digital Assets Traceability Ontology" ;
+    rdfs:comment "Extension of PROV-O for digital assets traceability" .
+
+# Digital assets-specific entity classes
+digital:DigitalAsset a owl:Class ;
+    rdfs:subClassOf trace:DigitalAsset ;
+    rdfs:label "Digital Asset" .
+
+digital:NFT a owl:Class ;
+    rdfs:subClassOf digital:DigitalAsset ;
+    rdfs:label "Non-Fungible Token" .
+
+digital:SoftwareComponent a owl:Class ;
+    rdfs:subClassOf trace:Component ;
+    rdfs:label "Software Component" .
+
+digital:License a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "License" .
+
+# Digital assets-specific properties
+digital:hash a owl:DatatypeProperty ;
+    rdfs:domain digital:DigitalAsset ;
+    rdfs:range xsd:string ;
+    rdfs:label "Digital Hash" .
+
+digital:creator a owl:DatatypeProperty ;
+    rdfs:domain digital:DigitalAsset ;
+    rdfs:range xsd:string ;
+    rdfs:label "Creator" .
+
+digital:creationDate a owl:DatatypeProperty ;
+    rdfs:domain digital:DigitalAsset ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "Creation Date" .
+
+digital:licenseType a owl:DatatypeProperty ;
+    rdfs:domain digital:License ;
+    rdfs:range xsd:string ;
+    rdfs:label "License Type" .
+
+digital:smartContractAddress a owl:DatatypeProperty ;
+    rdfs:domain digital:NFT ;
+    rdfs:range xsd:string ;
+    rdfs:label "Smart Contract Address" .

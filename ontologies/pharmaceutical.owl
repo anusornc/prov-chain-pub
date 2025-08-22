@@ -1,0 +1,53 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix pharma: <http://provchain.org/pharma#> .
+@prefix trace: <http://provchain.org/trace#> .
+
+pharma:PharmaceuticalOntology a owl:Ontology ;
+    rdfs:label "Pharmaceutical Traceability Ontology" ;
+    rdfs:comment "Extension of PROV-O for pharmaceutical traceability" .
+
+# Pharmaceutical-specific entity classes
+pharma:DrugBatch a owl:Class ;
+    rdfs:subClassOf trace:TraceableEntity ;
+    rdfs:label "Drug Batch" .
+
+pharma:ManufacturingProcess a owl:Class ;
+    rdfs:subClassOf trace:Process ;
+    rdfs:label "Manufacturing Process" .
+
+pharma:QualityControlTest a owl:Class ;
+    rdfs:subClassOf trace:Event ;
+    rdfs:label "Quality Control Test" .
+
+pharma:RegulatoryApproval a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Regulatory Approval" .
+
+# Pharmaceutical-specific properties
+pharma:lotNumber a owl:DatatypeProperty ;
+    rdfs:domain pharma:DrugBatch ;
+    rdfs:range xsd:string ;
+    rdfs:label "lot number" .
+
+pharma:expirationDate a owl:DatatypeProperty ;
+    rdfs:domain pharma:DrugBatch ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "expiration date" .
+
+pharma:manufacturingDate a owl:DatatypeProperty ;
+    rdfs:domain pharma:DrugBatch ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "manufacturing date" .
+
+pharma:testResult a owl:DatatypeProperty ;
+    rdfs:domain pharma:QualityControlTest ;
+    rdfs:range xsd:string ;
+    rdfs:label "test result" .
+
+pharma:approvalNumber a owl:DatatypeProperty ;
+    rdfs:domain pharma:RegulatoryApproval ;
+    rdfs:range xsd:string ;
+    rdfs:label "approval number" .

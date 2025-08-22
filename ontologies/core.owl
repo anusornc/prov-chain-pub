@@ -1,0 +1,164 @@
+@prefix : <http://provchain.org/trace#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+#################################################################
+# Traceability ontology (PROV-O extension)                          
+# Purpose: minimal, general-purpose traceability vocabulary for   
+# supply chains (UHT manufacturing example).                      
+# Author: PoC generated                                            
+#################################################################
+
+:TraceEntity a owl:Class ;
+  rdfs:label "TraceEntity" ;
+  rdfs:subClassOf prov:Entity ;
+  rdfs:comment "Physical or information object being traced (e.g., milk batch, ingredient lot)." .
+
+:ProductBatch a owl:Class ;
+  rdfs:label "ProductBatch" ;
+  rdfs:subClassOf :TraceEntity ;
+  rdfs:comment "A batch or lot of product (e.g., a milk batch)." .
+
+:IngredientLot a owl:Class ;
+  rdfs:label "IngredientLot" ;
+  rdfs:subClassOf :TraceEntity ;
+  rdfs:comment "A lot of raw material or ingredient." .
+
+:TraceActivity a owl:Class ;
+  rdfs:label "TraceActivity" ;
+  rdfs:subClassOf prov:Activity ;
+  rdfs:comment "An action or process (e.g., harvest, UHT processing, transport, QC)." .
+
+:ProcessingActivity a owl:Class ;
+  rdfs:label "ProcessingActivity" ;
+  rdfs:subClassOf :TraceActivity ;
+  rdfs:comment "Manufacturing or processing step (e.g., UHT)." .
+
+:TransportActivity a owl:Class ;
+  rdfs:label "TransportActivity" ;
+  rdfs:subClassOf :TraceActivity ;
+  rdfs:comment "Logistics/transport event." .
+
+:QualityCheck a owl:Class ;
+  rdfs:label "QualityCheck" ;
+  rdfs:subClassOf :TraceActivity ;
+  rdfs:comment "Quality control or inspection activity." .
+
+:TraceAgent a owl:Class ;
+  rdfs:label "TraceAgent" ;
+  rdfs:subClassOf prov:Agent ;
+  rdfs:comment "Actor in the supply chain (farmer, manufacturer, carrier, retailer, customer)." .
+
+:Farmer a owl:Class ;
+  rdfs:label "Farmer" ;
+  rdfs:subClassOf :TraceAgent .
+
+:Manufacturer a owl:Class ;
+  rdfs:label "Manufacturer" ;
+  rdfs:subClassOf :TraceAgent .
+
+:LogisticsProvider a owl:Class ;
+  rdfs:label "LogisticsProvider" ;
+  rdfs:subClassOf :TraceAgent .
+
+:Retailer a owl:Class ;
+  rdfs:label "Retailer" ;
+  rdfs:subClassOf :TraceAgent .
+
+:Customer a owl:Class ;
+  rdfs:label "Customer" ;
+  rdfs:subClassOf :TraceAgent .
+
+#################################################################
+# Properties
+#################################################################
+
+:hasBatchID a owl:DatatypeProperty ;
+  rdfs:label "hasBatchID" ;
+  rdfs:domain :TraceEntity ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Identifier for the batch/lot." .
+
+:originLocation a owl:ObjectProperty ;
+  rdfs:label "originLocation" ;
+  rdfs:domain :TraceEntity ;
+  rdfs:range geo:Point ;
+  rdfs:comment "Geolocation of origin (use Geo vocab)." .
+
+:producedAt a owl:DatatypeProperty ;
+  rdfs:label "producedAt" ;
+  rdfs:domain :TraceEntity ;
+  rdfs:range xsd:dateTime ;
+  rdfs:comment "Production timestamp." .
+
+:recordedAt a owl:DatatypeProperty ;
+  rdfs:label "recordedAt" ;
+  rdfs:domain :TraceActivity ;
+  rdfs:range xsd:dateTime ;
+  rdfs:comment "Timestamp when the activity was recorded." .
+
+:hasCondition a owl:ObjectProperty ;
+  rdfs:label "hasCondition" ;
+  rdfs:domain :TraceActivity ;
+  rdfs:range :EnvironmentalCondition ;
+  rdfs:comment "Link from an activity to environmental reading(s)." .
+
+:hasTemperature a owl:DatatypeProperty ;
+  rdfs:label "hasTemperature" ;
+  rdfs:domain :EnvironmentalCondition ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "Temperature in Celsius." .
+
+:hasHumidity a owl:DatatypeProperty ;
+  rdfs:label "hasHumidity" ;
+  rdfs:domain :EnvironmentalCondition ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "Relative humidity in percent." .
+
+:hasConditionTimestamp a owl:DatatypeProperty ;
+  rdfs:label "hasConditionTimestamp" ;
+  rdfs:domain :EnvironmentalCondition ;
+  rdfs:range xsd:dateTime ;
+  rdfs:comment "Time when condition was measured." .
+
+:environmentalSensor a owl:ObjectProperty ;
+  rdfs:label "environmentalSensor" ;
+  rdfs:domain :EnvironmentalCondition ;
+  rdfs:range :TraceAgent ;
+  rdfs:comment "Agent or device that recorded the condition." .
+
+:hasCertificate a owl:ObjectProperty ;
+  rdfs:label "hasCertificate" ;
+  rdfs:domain :TraceAgent ;
+  rdfs:range :Certificate ;
+  rdfs:comment "Certification or quality document linked to an agent." .
+
+:lotDerivedFrom a owl:ObjectProperty ;
+  rdfs:label "lotDerivedFrom" ;
+  rdfs:domain :ProductBatch ;
+  rdfs:range :IngredientLot ;
+  rdfs:comment "Link from product batch to ingredient lot(s)." .
+
+#################################################################
+# Auxiliary classes
+#################################################################
+
+:EnvironmentalCondition a owl:Class ;
+  rdfs:label "EnvironmentalCondition" .
+
+:Certificate a owl:Class ;
+  rdfs:label "Certificate" ;
+  rdfs:comment "An external document such as test report, organic certification, etc." .
+
+#################################################################
+# Reuse PROV relations (examples):
+# prov:wasGeneratedBy, prov:wasAttributedTo, prov:used, prov:wasDerivedFrom
+#################################################################
+
+# Example notes for implementers:
+# - Use prov:wasGeneratedBy to connect a ProductBatch to the ProcessingActivity that created it.
+# - Use prov:wasAssociatedWith to link an Activity to the Agent responsible.
+# - Use :hasCondition for temperature/humidity readings attached to TransportActivity or ProcessingActivity.

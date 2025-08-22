@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command Line Interface (CLI) &mdash; ProvChainOrg 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=3afbad45" />
+      <link rel="stylesheet" type="text/css" href="../_static/interactive.css?v=267755d7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=01f34227"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=f281be69"></script>
+        <script src="../_static/interactive.js?v=fc12431e"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ProvChainOrg
+          </a>
+              <div class="version">
+                0.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction to ProvChainOrg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first-steps.html">First Steps with ProvChainOrg</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/rest-api.html">REST API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/sparql-api.html">SPARQL API Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/websocket-api.html">WebSocket API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/authentication.html">Authentication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/client-libraries.html">Client Libraries</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Research Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../research/index.html">Research Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../research/rdf-canonicalization-algorithm.html">RDF Canonicalization Algorithm for Semantic Blockchains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../research/technical-specifications.html">Technical Specifications</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-provchainorg.html">Introduction to ProvChainOrg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-rdf-blockchain.html">Introduction to RDF Blockchain</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundational/intro-to-supply-chain-traceability.html">Introduction to Supply Chain Traceability</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../stack/intro-to-stack.html">Introduction to the ProvChainOrg Stack</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/first-supply-chain.html">Your First Supply Chain Application</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ProvChainOrg</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Command Line Interface (CLI)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/user-guide/cli-overview.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="command-line-interface-cli">
+<h1>Command Line Interface (CLI)<a class="headerlink" href="#command-line-interface-cli" title="Link to this heading"></a></h1>
+<p>Complete reference for the ProvChainOrg command line interface.</p>
+<div class="hero-section">
+  <div class="hero-content">
+    <h1>Command Line Interface</h1>
+    <p class="hero-subtitle">Complete reference for the ProvChainOrg CLI</p>
+    <div class="hero-badges">
+      <span class="badge badge-cli">CLI</span>
+      <span class="badge badge-reference">Reference</span>
+      <span class="badge badge-advanced">Advanced</span>
+    </div>
+  </div>
+</div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The ProvChainOrg CLI provides a powerful interface for managing the blockchain, querying data, and performing administrative tasks. This guide covers all available commands and their usage.</p>
+</div>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>
+<p>The ProvChainOrg CLI is accessible through the <cite>provchain-org</cite> command (or <cite>cargo run –</cite> when running from source).</p>
+</section>
+<section id="basic-usage">
+<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Show help</span>
+provchain-org<span class="w"> </span>--help
+
+<span class="c1"># Show version</span>
+provchain-org<span class="w"> </span>--version
+
+<span class="c1"># Run a specific command</span>
+provchain-org<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="core-commands">
+<h2>Core Commands<a class="headerlink" href="#core-commands" title="Link to this heading"></a></h2>
+<p>### Initialization and Setup</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize a new blockchain</span>
+provchain-org<span class="w"> </span>init
+
+<span class="c1"># Initialize with custom configuration</span>
+provchain-org<span class="w"> </span>init<span class="w"> </span>--config<span class="w"> </span>/path/to/config.toml
+
+<span class="c1"># Reset the blockchain (WARNING: This will delete all data)</span>
+provchain-org<span class="w"> </span>reset
+</pre></div>
+</div>
+<p>### Running the Server</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start the server</span>
+provchain-org<span class="w"> </span>server<span class="w"> </span>start
+
+<span class="c1"># Start with custom host and port</span>
+provchain-org<span class="w"> </span>server<span class="w"> </span>start<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
+
+<span class="c1"># Start in background</span>
+provchain-org<span class="w"> </span>server<span class="w"> </span>start<span class="w"> </span>--daemon
+
+<span class="c1"># Stop the server</span>
+provchain-org<span class="w"> </span>server<span class="w"> </span>stop
+</pre></div>
+</div>
+<p>### Demo Mode</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run the interactive demo</span>
+provchain-org<span class="w"> </span>demo
+
+<span class="c1"># Run a specific demo scenario</span>
+provchain-org<span class="w"> </span>demo<span class="w"> </span>--scenario<span class="w"> </span>supply-chain
+</pre></div>
+</div>
+</section>
+<section id="data-management-commands">
+<h2>Data Management Commands<a class="headerlink" href="#data-management-commands" title="Link to this heading"></a></h2>
+<p>### Adding Data</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add RDF data from a file</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>/path/to/data.ttl
+
+<span class="c1"># Add RDF data from stdin</span>
+cat<span class="w"> </span>data.ttl<span class="w"> </span><span class="p">|</span><span class="w"> </span>provchain-org<span class="w"> </span>add-file<span class="w"> </span>-
+
+<span class="c1"># Add data with a specific format</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>data.rdf<span class="w"> </span>--format<span class="w"> </span>rdfxml
+</pre></div>
+</div>
+<p>### Querying Data</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Execute a SPARQL query from a file</span>
+provchain-org<span class="w"> </span>query<span class="w"> </span>/path/to/query.sparql
+
+<span class="c1"># Execute a SPARQL query from stdin</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;SELECT * WHERE { ?s ?p ?o } LIMIT 10&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>provchain-org<span class="w"> </span>query<span class="w"> </span>-
+
+<span class="c1"># Execute a query with JSON output</span>
+provchain-org<span class="w"> </span>query<span class="w"> </span>query.sparql<span class="w"> </span>--format<span class="w"> </span>json
+</pre></div>
+</div>
+<p>### Exporting Data</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Export all blockchain data</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--output<span class="w"> </span>blockchain-data.ttl
+
+<span class="c1"># Export data in a specific format</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--output<span class="w"> </span>data.rdf<span class="w"> </span>--format<span class="w"> </span>rdfxml
+
+<span class="c1"># Export data from a specific block range</span>
+provchain-org<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--start<span class="w"> </span><span class="m">100</span><span class="w"> </span>--end<span class="w"> </span><span class="m">200</span><span class="w"> </span>--output<span class="w"> </span>range.ttl
+</pre></div>
+</div>
+</section>
+<section id="blockchain-commands">
+<h2>Blockchain Commands<a class="headerlink" href="#blockchain-commands" title="Link to this heading"></a></h2>
+<p>### Block Operations</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get blockchain status</span>
+provchain-org<span class="w"> </span>blockchain<span class="w"> </span>status
+
+<span class="c1"># Get information about a specific block</span>
+provchain-org<span class="w"> </span>blockchain<span class="w"> </span>block<span class="w"> </span><span class="m">12345</span>
+
+<span class="c1"># Get blocks in a range</span>
+provchain-org<span class="w"> </span>blockchain<span class="w"> </span>blocks<span class="w"> </span>--start<span class="w"> </span><span class="m">1000</span><span class="w"> </span>--end<span class="w"> </span><span class="m">1100</span>
+
+<span class="c1"># Validate blockchain integrity</span>
+provchain-org<span class="w"> </span>blockchain<span class="w"> </span>validate
+</pre></div>
+</div>
+<p>### Transaction Operations</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Submit a transaction</span>
+provchain-org<span class="w"> </span>transaction<span class="w"> </span>submit<span class="w"> </span>--data<span class="w"> </span>transaction-data.ttl
+
+<span class="c1"># Get transaction status</span>
+provchain-org<span class="w"> </span>transaction<span class="w"> </span>status<span class="w"> </span>tx_1234567890
+
+<span class="c1"># List transactions</span>
+provchain-org<span class="w"> </span>transaction<span class="w"> </span>list<span class="w"> </span>--limit<span class="w"> </span><span class="m">50</span>
+</pre></div>
+</div>
+</section>
+<section id="network-commands">
+<h2>Network Commands<a class="headerlink" href="#network-commands" title="Link to this heading"></a></h2>
+<p>### Peer Management</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Join a network</span>
+provchain-org<span class="w"> </span>network<span class="w"> </span>join<span class="w"> </span>--peer<span class="w"> </span>http://peer.example.com:8080
+
+<span class="c1"># List connected peers</span>
+provchain-org<span class="w"> </span>network<span class="w"> </span>peers
+
+<span class="c1"># Add a peer manually</span>
+provchain-org<span class="w"> </span>network<span class="w"> </span>add-peer<span class="w"> </span>--address<span class="w"> </span>http://peer2.example.com:8080
+
+<span class="c1"># Remove a peer</span>
+provchain-org<span class="w"> </span>network<span class="w"> </span>remove-peer<span class="w"> </span>--address<span class="w"> </span>http://peer2.example.com:8080
+</pre></div>
+</div>
+<p>### Synchronization</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sync with the network</span>
+provchain-org<span class="w"> </span>network<span class="w"> </span>sync
+
+<span class="c1"># Force synchronization</span>
+provchain-org<span class="w"> </span>network<span class="w"> </span>sync<span class="w"> </span>--force
+
+<span class="c1"># Check sync status</span>
+provchain-org<span class="w"> </span>network<span class="w"> </span>sync-status
+</pre></div>
+</div>
+</section>
+<section id="user-management-commands">
+<h2>User Management Commands<a class="headerlink" href="#user-management-commands" title="Link to this heading"></a></h2>
+<p>### User Operations</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a new user</span>
+provchain-org<span class="w"> </span>user<span class="w"> </span>create<span class="w"> </span>--username<span class="w"> </span>john<span class="w"> </span>--password<span class="w"> </span>securepassword
+
+<span class="c1"># List users</span>
+provchain-org<span class="w"> </span>user<span class="w"> </span>list
+
+<span class="c1"># Delete a user</span>
+provchain-org<span class="w"> </span>user<span class="w"> </span>delete<span class="w"> </span>--username<span class="w"> </span>john
+
+<span class="c1"># Change user password</span>
+provchain-org<span class="w"> </span>user<span class="w"> </span>change-password<span class="w"> </span>--username<span class="w"> </span>john
+</pre></div>
+</div>
+<p>### Authentication</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate an API key</span>
+provchain-org<span class="w"> </span>auth<span class="w"> </span>generate-api-key<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;my-application&quot;</span>
+
+<span class="c1"># List API keys</span>
+provchain-org<span class="w"> </span>auth<span class="w"> </span>list-keys
+
+<span class="c1"># Revoke an API key</span>
+provchain-org<span class="w"> </span>auth<span class="w"> </span>revoke-key<span class="w"> </span>--key<span class="w"> </span>pk_1234567890abcdef
+</pre></div>
+</div>
+</section>
+<section id="utility-commands">
+<h2>Utility Commands<a class="headerlink" href="#utility-commands" title="Link to this heading"></a></h2>
+<p>### System Information</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check system status</span>
+provchain-org<span class="w"> </span>status
+
+<span class="c1"># Get system information</span>
+provchain-org<span class="w"> </span>info
+
+<span class="c1"># Check disk usage</span>
+provchain-org<span class="w"> </span>disk-usage
+</pre></div>
+</div>
+<p>### Backup and Recovery</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a backup</span>
+provchain-org<span class="w"> </span>backup<span class="w"> </span>create<span class="w"> </span>--output<span class="w"> </span>backup-2025-01-15.tar.gz
+
+<span class="c1"># List backups</span>
+provchain-org<span class="w"> </span>backup<span class="w"> </span>list
+
+<span class="c1"># Restore from backup</span>
+provchain-org<span class="w"> </span>backup<span class="w"> </span>restore<span class="w"> </span>--input<span class="w"> </span>backup-2025-01-15.tar.gz
+</pre></div>
+</div>
+<p>### Logging</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># View logs</span>
+provchain-org<span class="w"> </span>logs<span class="w"> </span>--tail<span class="w"> </span><span class="m">100</span>
+
+<span class="c1"># Follow logs in real-time</span>
+provchain-org<span class="w"> </span>logs<span class="w"> </span>--follow
+
+<span class="c1"># Filter logs by level</span>
+provchain-org<span class="w"> </span>logs<span class="w"> </span>--level<span class="w"> </span>error
+</pre></div>
+</div>
+<p>### Performance Monitoring</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get performance metrics</span>
+provchain-org<span class="w"> </span>metrics
+
+<span class="c1"># Monitor in real-time</span>
+provchain-org<span class="w"> </span>metrics<span class="w"> </span>--watch
+
+<span class="c1"># Export metrics</span>
+provchain-org<span class="w"> </span>metrics<span class="w"> </span>--export<span class="w"> </span>metrics.json
+</pre></div>
+</div>
+</section>
+<section id="advanced-usage">
+<h2>Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading"></a></h2>
+<p>### Batch Operations</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Submit multiple transactions in a batch</span>
+provchain-org<span class="w"> </span>batch<span class="w"> </span>submit<span class="w"> </span>--file<span class="w"> </span>transactions.json
+
+<span class="c1"># Process a batch of SPARQL queries</span>
+provchain-org<span class="w"> </span>batch<span class="w"> </span>query<span class="w"> </span>--file<span class="w"> </span>queries.json
+</pre></div>
+</div>
+<p>### Scripting</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run a script file</span>
+provchain-org<span class="w"> </span>script<span class="w"> </span>run<span class="w"> </span>--file<span class="w"> </span>setup.sh
+
+<span class="c1"># Execute a script with variables</span>
+provchain-org<span class="w"> </span>script<span class="w"> </span>run<span class="w"> </span>--file<span class="w"> </span>config.sh<span class="w"> </span>--var<span class="w"> </span><span class="nv">ENV</span><span class="o">=</span>production
+</pre></div>
+</div>
+<p>### Configuration Management</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># View current configuration</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span>show
+
+<span class="c1"># Set a configuration value</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>server.port<span class="w"> </span><span class="m">8080</span>
+
+<span class="c1"># Reset configuration to defaults</span>
+provchain-org<span class="w"> </span>config<span class="w"> </span>reset
+</pre></div>
+</div>
+</section>
+<section id="command-reference">
+<h2>Command Reference<a class="headerlink" href="#command-reference" title="Link to this heading"></a></h2>
+<p>### Global Options</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set log level</span>
+provchain-org<span class="w"> </span>--log-level<span class="w"> </span>debug
+
+<span class="c1"># Set configuration file</span>
+provchain-org<span class="w"> </span>--config<span class="w"> </span>/path/to/config.toml
+
+<span class="c1"># Enable verbose output</span>
+provchain-org<span class="w"> </span>--verbose
+
+<span class="c1"># Output in JSON format</span>
+provchain-org<span class="w"> </span>--json
+</pre></div>
+</div>
+<p>### Environment Variables</p>
+<p>ProvChainOrg CLI can be configured using environment variables:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the configuration file path</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_CONFIG_FILE</span><span class="o">=</span><span class="s2">&quot;/path/to/config.toml&quot;</span>
+
+<span class="c1"># Set log level</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_LOG_LEVEL</span><span class="o">=</span><span class="s2">&quot;debug&quot;</span>
+
+<span class="c1"># Set server host and port</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_SERVER_HOST</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PROVCHAIN_SERVER_PORT</span><span class="o">=</span><span class="s2">&quot;8080&quot;</span>
+</pre></div>
+</div>
+<p>### Exit Codes</p>
+<p>The CLI returns the following exit codes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">0</span></code>: Success</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">1</span></code>: General error</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2</span></code>: Invalid arguments</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">3</span></code>: Configuration error</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">4</span></code>: Network error</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">5</span></code>: Data validation error</p></li>
+</ul>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<p>### Basic Workflow</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize the blockchain</span>
+provchain-org<span class="w"> </span>init
+
+<span class="c1"># Add some supply chain data</span>
+provchain-org<span class="w"> </span>add-file<span class="w"> </span>supply-chain-data.ttl
+
+<span class="c1"># Query the data</span>
+provchain-org<span class="w"> </span>query<span class="w"> </span>trace-query.sparql
+
+<span class="c1"># Check the blockchain status</span>
+provchain-org<span class="w"> </span>blockchain<span class="w"> </span>status
+</pre></div>
+</div>
+<p>### Administrative Tasks</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a backup</span>
+provchain-org<span class="w"> </span>backup<span class="w"> </span>create<span class="w"> </span>--output<span class="w"> </span>daily-backup.tar.gz
+
+<span class="c1"># Create an API key for an application</span>
+provchain-org<span class="w"> </span>auth<span class="w"> </span>generate-api-key<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;web-app&quot;</span>
+
+<span class="c1"># Monitor system performance</span>
+provchain-org<span class="w"> </span>metrics<span class="w"> </span>--watch
+</pre></div>
+</div>
+<p>### Automation Script</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+
+<span class="c1"># Daily maintenance script</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Starting daily maintenance...&quot;</span>
+
+<span class="c1"># Backup the blockchain</span>
+provchain-org<span class="w"> </span>backup<span class="w"> </span>create<span class="w"> </span>--output<span class="w"> </span>backup-<span class="k">$(</span>date<span class="w"> </span>+%Y-%m-%d<span class="k">)</span>.tar.gz
+
+<span class="c1"># Validate blockchain integrity</span>
+provchain-org<span class="w"> </span>blockchain<span class="w"> </span>validate
+
+<span class="c1"># Clean up old logs</span>
+provchain-org<span class="w"> </span>logs<span class="w"> </span>--clean<span class="w"> </span>--days<span class="w"> </span><span class="m">30</span>
+
+<span class="c1"># Report disk usage</span>
+provchain-org<span class="w"> </span>disk-usage
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Daily maintenance completed.&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<p>### Common Issues</p>
+<p><strong>Problem</strong>: Command not found
+<strong>Solution</strong>: Ensure ProvChainOrg is installed and in your PATH</p>
+<p><strong>Problem</strong>: Permission denied
+<strong>Solution</strong>: Check file permissions and run with appropriate privileges</p>
+<p><strong>Problem</strong>: Network connection failed
+<strong>Solution</strong>: Check network connectivity and firewall settings</p>
+<p>### Debugging</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable debug logging</span>
+provchain-org<span class="w"> </span>--log-level<span class="w"> </span>debug<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span>
+
+<span class="c1"># Get verbose output</span>
+provchain-org<span class="w"> </span>--verbose<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span>
+
+<span class="c1"># Show detailed error information</span>
+provchain-org<span class="w"> </span>--debug<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="support">
+<h2>Support<a class="headerlink" href="#support" title="Link to this heading"></a></h2>
+<p>For additional help with the CLI:</p>
+<ol class="arabic simple">
+<li><p>Use <cite>provchain-org –help</cite> for general help</p></li>
+<li><p>Use <cite>provchain-org [COMMAND] –help</cite> for command-specific help</p></li>
+<li><p>Check the online documentation</p></li>
+<li><p>Join our community forum</p></li>
+<li><p>Contact support at <a class="reference external" href="mailto:support&#37;&#52;&#48;provchain-org&#46;com">support<span>&#64;</span>provchain-org<span>&#46;</span>com</a></p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The CLI is the most direct way to interact with ProvChainOrg. For production environments, consider using the REST API for programmatic access.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, ProvChainOrg Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

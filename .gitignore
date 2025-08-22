@@ -53,3 +53,5 @@ Thumbs.db
 *.fls
 *.fdb_latexmk
 *.gz
+demo_*/wallets/
+demo_*/*/

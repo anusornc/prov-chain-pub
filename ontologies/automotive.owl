@@ -1,0 +1,53 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix auto: <http://provchain.org/automotive#> .
+@prefix trace: <http://provchain.org/trace#> .
+
+auto:AutomotiveOntology a owl:Ontology ;
+    rdfs:label "Automotive Traceability Ontology" ;
+    rdfs:comment "Extension of PROV-O for automotive traceability" .
+
+# Automotive-specific entity classes
+auto:Vehicle a owl:Class ;
+    rdfs:subClassOf trace:TraceableEntity ;
+    rdfs:label "Vehicle" .
+
+auto:Component a owl:Class ;
+    rdfs:subClassOf trace:Component ;
+    rdfs:label "Automotive Component" .
+
+auto:ManufacturingPlant a owl:Class ;
+    rdfs:subClassOf trace:Organization ;
+    rdfs:label "Manufacturing Plant" .
+
+auto:QualityCertification a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Quality Certification" .
+
+# Automotive-specific properties
+auto:vin a owl:DatatypeProperty ;
+    rdfs:domain auto:Vehicle ;
+    rdfs:range xsd:string ;
+    rdfs:label "Vehicle Identification Number" .
+
+auto:partNumber a owl:DatatypeProperty ;
+    rdfs:domain auto:Component ;
+    rdfs:range xsd:string ;
+    rdfs:label "Part Number" .
+
+auto:manufacturingDate a owl:DatatypeProperty ;
+    rdfs:domain [ owl:unionOf (auto:Vehicle auto:Component) ] ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "Manufacturing Date" .
+
+auto:plantLocation a owl:DatatypeProperty ;
+    rdfs:domain auto:ManufacturingPlant ;
+    rdfs:range xsd:string ;
+    rdfs:label "Plant Location" .
+
+auto:certificationStandard a owl:DatatypeProperty ;
+    rdfs:domain auto:QualityCertification ;
+    rdfs:range xsd:string ;
+    rdfs:label "Certification Standard" .
