@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use provchain_org::{core::blockchain::Blockchain, demo, web::server::create_web_server, demo_runner::run_demo_with_args};
+use provchain_org::{core::blockchain::Blockchain, demo, web::server::create_web_server, demo_runner::run_demo_with_args, semantic::simple_owl2_test::simple_owl2_integration_test};
 use std::fs;
 use tracing::info;
 
@@ -41,6 +41,9 @@ enum Commands {
         #[arg(short, long, default_value = "8080")]
         port: u16,
     },
+
+    /// Test OWL2 integration with owl2_rs library
+    TestOwl2,
 }
 
 #[tokio::main]
@@ -130,6 +133,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             info!("Press Ctrl+C to stop the server");
             
             web_server.start().await?;
+        }
+        Commands::TestOwl2 => {
+            info!("Testing OWL2 integration with owl2_rs library...");
+            if let Err(e) = simple_owl2_integration_test() {
+                eprintln!("OWL2 integration test failed: {}", e);
+                std::process::exit(1);
+            } else {
+                println!("✅ OWL2 integration test passed!");
+            }
         }
     }
 
