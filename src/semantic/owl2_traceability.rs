@@ -6,7 +6,7 @@
 use crate::core::blockchain::Blockchain;
 use crate::core::entity::{TraceableEntity, EntityType, PropertyValue};
 use crate::trace_optimization::{EnhancedTraceabilitySystem, EnhancedTraceResult, TraceEvent};
-use owl2_rs::model::{Ontology, Class, ClassExpression, Individual, Axiom, DataProperty};
+use owl2_rs::model::{Ontology, Class, ClassExpression, Individual, Axiom, ObjectProperty, DataProperty, PropertyExpression};
 use std::collections::{HashMap, HashSet};
 use anyhow::Result;
 use chrono::Utc;
@@ -68,43 +68,52 @@ impl Owl2EnhancedTraceability {
             let class_expr = ClassExpression::Class(class_map[class_name].clone());
             
             // Add class assertion
-            let class_assertion = Axiom::ClassAssertion(owl2_rs::model::axiom::ClassAssertionAxiom {
-                class: class_expr,
-                individual: individual.clone(),
-                annotations: vec![],
-            });
+            let class_assertion = Axiom::class_assertion(class_expr, individual.clone());
             ontology.add_axiom(class_assertion);
             
             // Add properties from the entity
             for (prop_name, prop_value) in &entity.properties {
                 match prop_value {
                     PropertyValue::String(value) => {
+                        // For string properties, we'll create data properties
                         let data_prop = DataProperty::new(format!("trace:{}", prop_name));
+                        let data_prop_expr = PropertyExpression::DataProperty(data_prop);
                         // In a full implementation, we would add data property assertions
                     },
                     PropertyValue::Integer(value) => {
+                        // For integer properties
                         let data_prop = DataProperty::new(format!("trace:{}", prop_name));
+                        let data_prop_expr = PropertyExpression::DataProperty(data_prop);
                         // In a full implementation, we would add data property assertions
                     },
                     PropertyValue::Float(value) => {
+                        // For float properties
                         let data_prop = DataProperty::new(format!("trace:{}", prop_name));
+                        let data_prop_expr = PropertyExpression::DataProperty(data_prop);
                         // In a full implementation, we would add data property assertions
                     },
                     PropertyValue::Boolean(value) => {
+                        // For boolean properties
                         let data_prop = DataProperty::new(format!("trace:{}", prop_name));
+                        let data_prop_expr = PropertyExpression::DataProperty(data_prop);
                         // In a full implementation, we would add data property assertions
                     },
-                    // Handle other property types
-                    PropertyValue::DateTime(_) => {
+                    PropertyValue::DateTime(value) => {
+                        // For datetime properties
                         let data_prop = DataProperty::new(format!("trace:{}", prop_name));
+                        let data_prop_expr = PropertyExpression::DataProperty(data_prop);
                         // In a full implementation, we would add data property assertions
                     },
-                    PropertyValue::Uri(_) => {
+                    PropertyValue::Uri(value) => {
+                        // For URI properties
                         let data_prop = DataProperty::new(format!("trace:{}", prop_name));
+                        let data_prop_expr = PropertyExpression::DataProperty(data_prop);
                         // In a full implementation, we would add data property assertions
                     },
-                    PropertyValue::DomainSpecific(_, _) => {
+                    PropertyValue::DomainSpecific(domain, value) => {
+                        // For domain-specific properties
                         let data_prop = DataProperty::new(format!("trace:{}", prop_name));
+                        let data_prop_expr = PropertyExpression::DataProperty(data_prop);
                         // In a full implementation, we would add data property assertions
                     },
                 }
@@ -112,6 +121,7 @@ impl Owl2EnhancedTraceability {
         }
         
         println!("Converted {} entities to OWL2 ontology", entities.len());
+        println!("OWL2 ontology has {} axioms", ontology.axiom_count());
         
         Ok(ontology)
     }
