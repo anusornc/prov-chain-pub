@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use provchain_org::{core::blockchain::Blockchain, demo, web::server::create_web_server, demo_runner::run_demo_with_args, semantic::simple_owl2_test::simple_owl2_integration_test};
+use provchain_org::{core::blockchain::Blockchain, demo, web::server::create_web_server, demo_runner::run_demo_with_args, semantic::simple_owl2_test::simple_owl2_integration_test, semantic::owl2_traceability::Owl2EnhancedTraceability};
 use std::fs;
 use tracing::info;
 
@@ -44,6 +44,16 @@ enum Commands {
 
     /// Test OWL2 integration with owl2_rs library
     TestOwl2,
+
+    /// Run enhanced traceability using OWL2 reasoning
+    EnhancedTrace {
+        /// Batch ID to trace
+        batch_id: String,
+        
+        /// Optimization level (0-2)
+        #[arg(short, long, default_value = "1")]
+        optimization: u8,
+    },
 }
 
 #[tokio::main]
@@ -142,6 +152,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 println!("✅ OWL2 integration test passed!");
             }
+        }
+        Commands::EnhancedTrace { batch_id, optimization } => {
+            info!("Running enhanced traceability with OWL2 reasoning...");
+            
+            // Create the enhanced traceability system
+            let owl2_enhancer = Owl2EnhancedTraceability::new(blockchain);
+            
+            // Run the enhanced trace
+            let result = owl2_enhancer.enhanced_trace(&batch_id, optimization);
+            
+            // Print results
+            println!("=== Enhanced Trace Results ===");
+            println!("Optimized: {}", result.optimized);
+            println!("Entities explored: {}", result.entities_explored);
+            println!("Execution time: {} ms", result.execution_time_ms);
+            
+            if let Some(improvement) = result.performance_improvement {
+                println!("Performance improvement: {:.2}x", improvement);
+            }
+            
+            println!("Trace path:");
+            for (i, event) in result.path.iter().enumerate() {
+                println!("  {}. {}: {} -> {}", i+1, event.entity, event.relationship, 
+                         event.source.as_ref().unwrap_or(&"unknown".to_string()));
+            }
+            
+            println!("✅ Enhanced trace completed successfully!");
         }
     }
 
