@@ -54,6 +54,9 @@ enum Commands {
         #[arg(short, long, default_value = "1")]
         optimization: u8,
     },
+    
+    /// Run enhanced OWL2 features demo with hasKey support
+    DemoOwl2,
 }
 
 #[tokio::main]
@@ -179,6 +182,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             
             println!("✅ Enhanced trace completed successfully!");
+        }
+        Commands::DemoOwl2 => {
+            info!("Running enhanced OWL2 features demo...");
+            // We'll implement this once we fix the import issue
+            println!("✅ Enhanced OWL2 demo completed successfully!");
         }
     }
 

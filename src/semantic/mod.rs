@@ -8,6 +8,7 @@
 //! - `owl2_enhanced_reasoner`: Enhanced OWL reasoner with full OWL2 feature support
 //! - `owl2_integration`: Basic integration with owl2_rs library
 //! - `owl2_traceability`: Enhanced traceability using owl2_rs for OWL2 reasoning
+//! - `enhanced_owl2_demo`: Demo of enhanced OWL2 features with hasKey support
 //! - `simple_owl2_test`: Simple test of owl2_rs integration
 //! - `shacl_validator`: SHACL validation for data conformance
 //!
@@ -20,6 +21,7 @@ pub mod owl_reasoner;
 pub mod owl2_enhanced_reasoner;
 pub mod owl2_integration;
 pub mod owl2_traceability;
+pub mod enhanced_owl2_demo;
 pub mod simple_owl2_test;
 pub mod shacl_validator;
 
@@ -28,5 +30,6 @@ pub use owl_reasoner::{OwlReasoner, OwlReasonerConfig, ValidationResult};
 pub use owl2_enhanced_reasoner::{Owl2EnhancedReasoner, QualifiedCardinalityRestriction, InferredGraph};
 pub use owl2_integration::test_owl2_integration;
 pub use owl2_traceability::Owl2EnhancedTraceability;
+// pub use enhanced_owl2_demo::run_enhanced_owl2_demo;
 pub use simple_owl2_test::simple_owl2_integration_test;
 pub use shacl_validator::ShaclValidator;
