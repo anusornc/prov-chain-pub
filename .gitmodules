@@ -1,0 +1,3 @@
+[submodule "owl2_rs"]
+	path = owl2_rs
+	url = ./owl2_rs
