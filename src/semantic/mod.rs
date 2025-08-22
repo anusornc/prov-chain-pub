@@ -6,8 +6,8 @@
 //! ## Key Components
 //! - `owl_reasoner`: Basic OWL reasoner with foundational OWL features
 //! - `owl2_enhanced_reasoner`: Enhanced OWL reasoner with full OWL2 feature support
-//! - `owl2_integration`: Integration with owl2_rs library for advanced OWL2 features
-//! - `owl2_demo`: Demonstration of owl2_rs integration
+//! - `owl2_integration`: Basic integration with owl2_rs library
+//! - `simple_owl2_test`: Simple test of owl2_rs integration
 //! - `shacl_validator`: SHACL validation for data conformance
 //!
 //! ## Implementation Status
@@ -18,11 +18,12 @@
 pub mod owl_reasoner;
 pub mod owl2_enhanced_reasoner;
 pub mod owl2_integration;
-pub mod owl2_demo;
+pub mod simple_owl2_test;
 pub mod shacl_validator;
 
 // Re-exports for convenience
 pub use owl_reasoner::{OwlReasoner, OwlReasonerConfig, ValidationResult};
 pub use owl2_enhanced_reasoner::{Owl2EnhancedReasoner, QualifiedCardinalityRestriction, InferredGraph};
 pub use owl2_integration::test_owl2_integration;
+pub use simple_owl2_test::simple_owl2_integration_test;
 pub use shacl_validator::ShaclValidator;
