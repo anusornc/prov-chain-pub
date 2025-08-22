@@ -1,3 +1,99 @@
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "245bc268cc307fd4306424af7410805a59eafb2326bc5822a55911a870b68b43" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "645d4f9e5e52915b95efab3e449a069671a1675a7cce6e20e06008de82f5c054" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T13:18:28.887679Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#29445b0f-6787-4944-a555-39446b0b1bd9> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#29445b0f-6787-4944-a555-39446b0b1bd9> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#29445b0f-6787-4944-a555-39446b0b1bd9> <http://provchain.org/tx#hasTimestamp> "2025-08-22T13:18:28.879899Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#29445b0f-6787-4944-a555-39446b0b1bd9> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#29445b0f-6787-4944-a555-39446b0b1bd9> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T13:18:28.87989Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_6eccfc21-6953-4667-822b-4e99764f5c53> <http://provchain.org/block/1> .
+<http://example.org/participant_6eccfc21-6953-4667-822b-4e99764f5c53> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_6eccfc21-6953-4667-822b-4e99764f5c53> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Farmer" <http://provchain.org/block/1> .
+<http://provchain.org/tx#5a1b6bb7-ec26-4719-abc6-1d97c1c63dbd> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#5a1b6bb7-ec26-4719-abc6-1d97c1c63dbd> <http://provchain.org/tx#hasType> "Quality" <http://provchain.org/block/1> .
+<http://provchain.org/tx#5a1b6bb7-ec26-4719-abc6-1d97c1c63dbd> <http://provchain.org/tx#hasTimestamp> "2025-08-22T13:18:28.880942Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#5a1b6bb7-ec26-4719-abc6-1d97c1c63dbd> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#5a1b6bb7-ec26-4719-abc6-1d97c1c63dbd> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_f5dd923f-9f6d-43bc-8640-88ddf9c83be0> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T13:18:28.880937Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/participant_f5dd923f-9f6d-43bc-8640-88ddf9c83be0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#QualityLab> <http://provchain.org/block/1> .
+<http://example.org/participant_f5dd923f-9f6d-43bc-8640-88ddf9c83be0> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Lab" <http://provchain.org/block/1> .
+<http://provchain.org/tx#529fa372-3b3c-44ea-90f5-cd37e0618168> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#529fa372-3b3c-44ea-90f5-cd37e0618168> <http://provchain.org/tx#hasType> "Processing" <http://provchain.org/block/1> .
+<http://provchain.org/tx#529fa372-3b3c-44ea-90f5-cd37e0618168> <http://provchain.org/tx#hasTimestamp> "2025-08-22T13:18:28.881893Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#529fa372-3b3c-44ea-90f5-cd37e0618168> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#529fa372-3b3c-44ea-90f5-cd37e0618168> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T13:18:28.881888Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_f8b7d6bd-0008-43cd-884b-c97310702587> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T13:18:28.881889Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_f8b7d6bd-0008-43cd-884b-c97310702587> <http://provchain.org/block/1> .
+<http://example.org/participant_f8b7d6bd-0008-43cd-884b-c97310702587> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Manufacturer> <http://provchain.org/block/1> .
+<http://example.org/participant_f8b7d6bd-0008-43cd-884b-c97310702587> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Processor" <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "f1d400fd166a6ef2ad3ebc761d09ee02d9fe623d2f3d92a622301f59c7874210" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "e5e3289d0a665fa3a2ae33ec4e038be4c00f91d48ec421973eaed9c01e4fc494" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T11:15:14.583142Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#d269f350-60f3-413d-8c50-df3dec010308> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#d269f350-60f3-413d-8c50-df3dec010308> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#d269f350-60f3-413d-8c50-df3dec010308> <http://provchain.org/tx#hasTimestamp> "2025-08-22T11:15:14.576164Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#d269f350-60f3-413d-8c50-df3dec010308> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#d269f350-60f3-413d-8c50-df3dec010308> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T11:15:14.576155Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_9b03070f-e0fe-49a9-a401-dfc432483caa> <http://provchain.org/block/1> .
+<http://example.org/participant_9b03070f-e0fe-49a9-a401-dfc432483caa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_9b03070f-e0fe-49a9-a401-dfc432483caa> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Farmer" <http://provchain.org/block/1> .
+<http://provchain.org/tx#3365927d-226e-466d-9dbc-bed304d44f4e> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3365927d-226e-466d-9dbc-bed304d44f4e> <http://provchain.org/tx#hasType> "Quality" <http://provchain.org/block/1> .
+<http://provchain.org/tx#3365927d-226e-466d-9dbc-bed304d44f4e> <http://provchain.org/tx#hasTimestamp> "2025-08-22T11:15:14.577168Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3365927d-226e-466d-9dbc-bed304d44f4e> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3365927d-226e-466d-9dbc-bed304d44f4e> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_53c24f31-852a-4e60-80f2-7ab2f0b9dd4f> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T11:15:14.577163Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/participant_53c24f31-852a-4e60-80f2-7ab2f0b9dd4f> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#QualityLab> <http://provchain.org/block/1> .
+<http://example.org/participant_53c24f31-852a-4e60-80f2-7ab2f0b9dd4f> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Lab" <http://provchain.org/block/1> .
+<http://provchain.org/tx#99d5614a-aa1c-4189-a626-c8d4ecf38427> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#99d5614a-aa1c-4189-a626-c8d4ecf38427> <http://provchain.org/tx#hasType> "Processing" <http://provchain.org/block/1> .
+<http://provchain.org/tx#99d5614a-aa1c-4189-a626-c8d4ecf38427> <http://provchain.org/tx#hasTimestamp> "2025-08-22T11:15:14.578102Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#99d5614a-aa1c-4189-a626-c8d4ecf38427> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#99d5614a-aa1c-4189-a626-c8d4ecf38427> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T11:15:14.578097Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_5d83a90d-722c-4b07-81e1-5696ec880f88> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T11:15:14.578098Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_5d83a90d-722c-4b07-81e1-5696ec880f88> <http://provchain.org/block/1> .
+<http://example.org/participant_5d83a90d-722c-4b07-81e1-5696ec880f88> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Manufacturer> <http://provchain.org/block/1> .
+<http://example.org/participant_5d83a90d-722c-4b07-81e1-5696ec880f88> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Processor" <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "f7e69a1ccdf12fac24570238eaa66aa81d70903da1209a17552dc0c8f5ad8b5c" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "c598aa65e9a7f74e67188ca717df7f55fc0f83d1e69818082c198d025756943a" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T08:56:31.908527Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#df87b1ba-873e-48db-9526-0c792b6f7bc1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#df87b1ba-873e-48db-9526-0c792b6f7bc1> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#df87b1ba-873e-48db-9526-0c792b6f7bc1> <http://provchain.org/tx#hasTimestamp> "2025-08-22T08:56:31.901986Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#df87b1ba-873e-48db-9526-0c792b6f7bc1> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#df87b1ba-873e-48db-9526-0c792b6f7bc1> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T08:56:31.90198Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_52aed840-6997-48a9-8303-ba88786c43e2> <http://provchain.org/block/1> .
+<http://example.org/participant_52aed840-6997-48a9-8303-ba88786c43e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_52aed840-6997-48a9-8303-ba88786c43e2> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Farmer" <http://provchain.org/block/1> .
+<http://provchain.org/tx#41ef4775-e228-4b2c-be1a-2490712454ce> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#41ef4775-e228-4b2c-be1a-2490712454ce> <http://provchain.org/tx#hasType> "Quality" <http://provchain.org/block/1> .
+<http://provchain.org/tx#41ef4775-e228-4b2c-be1a-2490712454ce> <http://provchain.org/tx#hasTimestamp> "2025-08-22T08:56:31.902965Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#41ef4775-e228-4b2c-be1a-2490712454ce> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#41ef4775-e228-4b2c-be1a-2490712454ce> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_fa84dc3d-2810-4f5d-870b-bdd910c4bb4a> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T08:56:31.902958Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/participant_fa84dc3d-2810-4f5d-870b-bdd910c4bb4a> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#QualityLab> <http://provchain.org/block/1> .
+<http://example.org/participant_fa84dc3d-2810-4f5d-870b-bdd910c4bb4a> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Lab" <http://provchain.org/block/1> .
+<http://provchain.org/tx#d61f2f85-8467-4011-a900-f6c16769d378> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#d61f2f85-8467-4011-a900-f6c16769d378> <http://provchain.org/tx#hasType> "Processing" <http://provchain.org/block/1> .
+<http://provchain.org/tx#d61f2f85-8467-4011-a900-f6c16769d378> <http://provchain.org/tx#hasTimestamp> "2025-08-22T08:56:31.903926Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#d61f2f85-8467-4011-a900-f6c16769d378> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#d61f2f85-8467-4011-a900-f6c16769d378> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T08:56:31.903921Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_b6fa066d-54b4-484d-ade2-fb7e01c6a7e3> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T08:56:31.903922Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_b6fa066d-54b4-484d-ade2-fb7e01c6a7e3> <http://provchain.org/block/1> .
+<http://example.org/participant_b6fa066d-54b4-484d-ade2-fb7e01c6a7e3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Manufacturer> <http://provchain.org/block/1> .
+<http://example.org/participant_b6fa066d-54b4-484d-ade2-fb7e01c6a7e3> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Processor" <http://provchain.org/block/1> .
 <http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "bc8976251992f4bb201ca8596b33a1d962c4e9ce3dcd133b804c720f66631ba6" <http://provchain.org/blockchain> .
 <http://provchain.org/block/1> <http://provchain.org/hasHash> "a683b051028c25e35d6614fc7c69ad06d7a434bbdf6c7175e60c65094b8b1364" <http://provchain.org/blockchain> .
 <http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T13:05:21.324931Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
@@ -289,3 +385,99 @@
 <http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:25:56.123408Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
 <http://provchain.org/block/1> <http://provchain.org/hasHash> "bc8976251992f4bb201ca8596b33a1d962c4e9ce3dcd133b804c720f66631ba6" <http://provchain.org/blockchain> .
 <http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "67e64450458d49bb0f41e21e6773421304ba7bd10186463090cefb6d27f48690" <http://provchain.org/blockchain> .
+<http://example.org/participant_d12f9166-e8cc-4531-8544-5361eb9d4a95> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Processor" <http://provchain.org/block/1> .
+<http://example.org/participant_d12f9166-e8cc-4531-8544-5361eb9d4a95> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Manufacturer> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_d12f9166-e8cc-4531-8544-5361eb9d4a95> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T05:49:19.320279Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_d12f9166-e8cc-4531-8544-5361eb9d4a95> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T05:49:19.320278Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#a120c608-875a-43e0-9113-fee7d08fa560> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#a120c608-875a-43e0-9113-fee7d08fa560> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#a120c608-875a-43e0-9113-fee7d08fa560> <http://provchain.org/tx#hasTimestamp> "2025-08-22T05:49:19.320284Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#a120c608-875a-43e0-9113-fee7d08fa560> <http://provchain.org/tx#hasType> "Processing" <http://provchain.org/block/1> .
+<http://provchain.org/tx#a120c608-875a-43e0-9113-fee7d08fa560> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://example.org/participant_a5ec1100-e245-4770-8ec3-e9c93d973a1e> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Lab" <http://provchain.org/block/1> .
+<http://example.org/participant_a5ec1100-e245-4770-8ec3-e9c93d973a1e> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#QualityLab> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T05:49:19.319273Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_a5ec1100-e245-4770-8ec3-e9c93d973a1e> <http://provchain.org/block/1> .
+<http://provchain.org/tx#2d4ba145-de34-44f0-85bb-51b1b46491eb> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#2d4ba145-de34-44f0-85bb-51b1b46491eb> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#2d4ba145-de34-44f0-85bb-51b1b46491eb> <http://provchain.org/tx#hasTimestamp> "2025-08-22T05:49:19.319277Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#2d4ba145-de34-44f0-85bb-51b1b46491eb> <http://provchain.org/tx#hasType> "Quality" <http://provchain.org/block/1> .
+<http://provchain.org/tx#2d4ba145-de34-44f0-85bb-51b1b46491eb> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://example.org/participant_80ad4ee1-62f9-4c4c-91cc-7c29ad596608> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Farmer" <http://provchain.org/block/1> .
+<http://example.org/participant_80ad4ee1-62f9-4c4c-91cc-7c29ad596608> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_80ad4ee1-62f9-4c4c-91cc-7c29ad596608> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T05:49:19.318201Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#43cd0215-ffb4-49b3-933e-300ea34dd470> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#43cd0215-ffb4-49b3-933e-300ea34dd470> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#43cd0215-ffb4-49b3-933e-300ea34dd470> <http://provchain.org/tx#hasTimestamp> "2025-08-22T05:49:19.31821Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#43cd0215-ffb4-49b3-933e-300ea34dd470> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#43cd0215-ffb4-49b3-933e-300ea34dd470> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T05:49:19.324438Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "f7e69a1ccdf12fac24570238eaa66aa81d70903da1209a17552dc0c8f5ad8b5c" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "a683b051028c25e35d6614fc7c69ad06d7a434bbdf6c7175e60c65094b8b1364" <http://provchain.org/blockchain> .
+<http://example.org/participant_38a6ed9a-64ee-4db1-ad5e-d54f18b77a3e> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Processor" <http://provchain.org/block/1> .
+<http://example.org/participant_38a6ed9a-64ee-4db1-ad5e-d54f18b77a3e> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Manufacturer> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_38a6ed9a-64ee-4db1-ad5e-d54f18b77a3e> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T09:33:32.880786Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_38a6ed9a-64ee-4db1-ad5e-d54f18b77a3e> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T09:33:32.880786Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#616ff7d3-2651-4e88-a17b-31f89b32826e> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#616ff7d3-2651-4e88-a17b-31f89b32826e> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#616ff7d3-2651-4e88-a17b-31f89b32826e> <http://provchain.org/tx#hasTimestamp> "2025-08-22T09:33:32.880793Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#616ff7d3-2651-4e88-a17b-31f89b32826e> <http://provchain.org/tx#hasType> "Processing" <http://provchain.org/block/1> .
+<http://provchain.org/tx#616ff7d3-2651-4e88-a17b-31f89b32826e> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://example.org/participant_1c4e8222-b831-4c51-81ee-e900a7875056> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Lab" <http://provchain.org/block/1> .
+<http://example.org/participant_1c4e8222-b831-4c51-81ee-e900a7875056> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#QualityLab> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T09:33:32.879845Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_1c4e8222-b831-4c51-81ee-e900a7875056> <http://provchain.org/block/1> .
+<http://provchain.org/tx#2aba1c33-f96a-4719-888c-17f257840a92> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#2aba1c33-f96a-4719-888c-17f257840a92> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#2aba1c33-f96a-4719-888c-17f257840a92> <http://provchain.org/tx#hasTimestamp> "2025-08-22T09:33:32.87985Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#2aba1c33-f96a-4719-888c-17f257840a92> <http://provchain.org/tx#hasType> "Quality" <http://provchain.org/block/1> .
+<http://provchain.org/tx#2aba1c33-f96a-4719-888c-17f257840a92> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://example.org/participant_8ea15289-ed4d-4ec4-b601-339ea865be49> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Farmer" <http://provchain.org/block/1> .
+<http://example.org/participant_8ea15289-ed4d-4ec4-b601-339ea865be49> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_8ea15289-ed4d-4ec4-b601-339ea865be49> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T09:33:32.878801Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f4c2617b-b2c5-4726-8b94-c72815b103c9> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f4c2617b-b2c5-4726-8b94-c72815b103c9> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f4c2617b-b2c5-4726-8b94-c72815b103c9> <http://provchain.org/tx#hasTimestamp> "2025-08-22T09:33:32.878809Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f4c2617b-b2c5-4726-8b94-c72815b103c9> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#f4c2617b-b2c5-4726-8b94-c72815b103c9> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T09:33:32.885491Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "f1d400fd166a6ef2ad3ebc761d09ee02d9fe623d2f3d92a622301f59c7874210" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "c598aa65e9a7f74e67188ca717df7f55fc0f83d1e69818082c198d025756943a" <http://provchain.org/blockchain> .
+<http://example.org/participant_10a94268-2c6b-49b6-9def-deb1883aec64> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Processor" <http://provchain.org/block/1> .
+<http://example.org/participant_10a94268-2c6b-49b6-9def-deb1883aec64> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Manufacturer> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_10a94268-2c6b-49b6-9def-deb1883aec64> <http://provchain.org/block/1> .
+<http://example.org/process_PROCESSED-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T11:31:50.403036Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_10a94268-2c6b-49b6-9def-deb1883aec64> <http://provchain.org/block/1> .
+<http://example.org/PROCESSED-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T11:31:50.403036Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#8f722806-7589-46a7-9fe7-99e750a5b6dc> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#8f722806-7589-46a7-9fe7-99e750a5b6dc> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#8f722806-7589-46a7-9fe7-99e750a5b6dc> <http://provchain.org/tx#hasTimestamp> "2025-08-22T11:31:50.40304Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#8f722806-7589-46a7-9fe7-99e750a5b6dc> <http://provchain.org/tx#hasType> "Processing" <http://provchain.org/block/1> .
+<http://provchain.org/tx#8f722806-7589-46a7-9fe7-99e750a5b6dc> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://example.org/participant_454eb75a-1ca3-46f4-b158-e5cc5eede986> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Lab" <http://provchain.org/block/1> .
+<http://example.org/participant_454eb75a-1ca3-46f4-b158-e5cc5eede986> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#QualityLab> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://provchain.org/trace#recordedAt> "2025-08-22T11:31:50.402101Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/quality_test_MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAssociatedWith> <http://example.org/participant_454eb75a-1ca3-46f4-b158-e5cc5eede986> <http://provchain.org/block/1> .
+<http://provchain.org/tx#314c6673-9575-4dea-a570-8c8afcf81906> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#314c6673-9575-4dea-a570-8c8afcf81906> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#314c6673-9575-4dea-a570-8c8afcf81906> <http://provchain.org/tx#hasTimestamp> "2025-08-22T11:31:50.402105Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#314c6673-9575-4dea-a570-8c8afcf81906> <http://provchain.org/tx#hasType> "Quality" <http://provchain.org/block/1> .
+<http://provchain.org/tx#314c6673-9575-4dea-a570-8c8afcf81906> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://example.org/participant_7c0f549a-1b64-430f-a230-ad3fba8c2dc7> <http://www.w3.org/2000/01/rdf-schema#label> "Multi-Demo Farmer" <http://provchain.org/block/1> .
+<http://example.org/participant_7c0f549a-1b64-430f-a230-ad3fba8c2dc7> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_7c0f549a-1b64-430f-a230-ad3fba8c2dc7> <http://provchain.org/block/1> .
+<http://example.org/MULTI-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T11:31:50.401083Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#0ad25d04-ff24-4ea4-bfd3-6ab6d03afd7c> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#0ad25d04-ff24-4ea4-bfd3-6ab6d03afd7c> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#0ad25d04-ff24-4ea4-bfd3-6ab6d03afd7c> <http://provchain.org/tx#hasTimestamp> "2025-08-22T11:31:50.401092Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#0ad25d04-ff24-4ea4-bfd3-6ab6d03afd7c> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#0ad25d04-ff24-4ea4-bfd3-6ab6d03afd7c> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T11:31:50.40851Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "245bc268cc307fd4306424af7410805a59eafb2326bc5822a55911a870b68b43" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "e5e3289d0a665fa3a2ae33ec4e038be4c00f91d48ec421973eaed9c01e4fc494" <http://provchain.org/blockchain> .
