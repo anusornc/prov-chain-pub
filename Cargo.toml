@@ -7,6 +7,14 @@ edition = "2021"
 name = "provchain_org"
 path = "src/lib.rs"
 
+[[bin]]
+name = "provchain-org"
+path = "src/main.rs"
+
+[[bin]]
+name = "owl2-integration-test"
+path = "src/bin/owl2_integration_test.rs"
+
 [dependencies]
 oxigraph = { version = "0.4", default-features = false }
 sha2 = "0.10"
@@ -16,8 +24,6 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 anyhow = "1.0"
 clap = { version = "4.5", features = ["derive"] }
-# OWL2 library for enhanced ontology support
-owl2_rs = { path = "./owl2_rs" }
 
 # Networking dependencies for distributed GraphChain
 tokio = { version = "1.0", features = ["full"] }
@@ -84,6 +90,9 @@ serde_yaml = "0.9"        # YAML configuration support
 dirs = "5.0"              # Standard directories
 thiserror = "1.0"         # Error handling
 async-trait = "0.1"       # Async traits
+
+# OWL2 library for enhanced ontology support
+owl2_rs = { path = "./owl2_rs" }
 
 [dev-dependencies]
 tempfile = "3.8"
