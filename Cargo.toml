@@ -116,6 +116,10 @@ harness = false
 name = "trace_optimization_benchmarks"
 harness = false
 
+[[bench]]
+name = "owl2_benchmarks"
+harness = false
+
 [[test]]
 name = "enhanced_traceability_demo"
 path = "tests/enhanced_traceability_demo.rs"
