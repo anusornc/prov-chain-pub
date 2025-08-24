@@ -1,0 +1,73 @@
+@prefix : <http://provchain.org/uht#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix core: <http://provchain.org/core#> .
+
+#################################################################
+# UHT Manufacturing Traceability Ontology
+# Purpose: Extension of generic core for UHT milk manufacturing
+#################################################################
+
+# Import the generic core ontology
+owl:imports <http://provchain.org/core> .
+
+#################################################################
+# UHT-Specific Entity Classes
+#################################################################
+
+:ProductBatch a owl:Class ;
+  rdfs:label "Product Batch" ;
+  rdfs:subClassOf core:Batch ;
+  rdfs:comment "A batch or lot of UHT milk product" .
+
+:IngredientLot a owl:Class ;
+  rdfs:label "Ingredient Lot" ;
+  rdfs:subClassOf core:RawMaterial ;
+  rdfs:comment "A lot of raw material or ingredient for UHT milk production" .
+
+#################################################################
+# UHT-Specific Agent Classes
+#################################################################
+
+:Farmer a owl:Class ;
+  rdfs:label "Farmer" ;
+  rdfs:subClassOf core:Supplier ;
+  rdfs:comment "A farmer who supplies milk" .
+
+:UHTManufacturer a owl:Class ;
+  rdfs:label "UHT Manufacturer" ;
+  rdfs:subClassOf core:Manufacturer ;
+  rdfs:comment "A manufacturer specializing in UHT milk processing" .
+
+#################################################################
+# UHT-Specific Process Classes
+#################################################################
+
+:UHTProcessing a owl:Class ;
+  rdfs:label "UHT Processing" ;
+  rdfs:subClassOf core:ManufacturingProcess ;
+  rdfs:comment "Ultra-High Temperature milk processing" .
+
+:Transport a owl:Class ;
+  rdfs:label "Transport" ;
+  rdfs:subClassOf core:TransportProcess ;
+  rdfs:comment "Transport of milk products" .
+
+:QualityCheck a owl:Class ;
+  rdfs:label "Quality Check" ;
+  rdfs:subClassOf core:QualityControlProcess ;
+  rdfs:comment "Quality control check for UHT milk" .
+
+#################################################################
+# UHT-Specific Properties (if needed beyond core properties)
+#################################################################
+
+:lotDerivedFrom a owl:ObjectProperty ;
+  rdfs:label "lot derived from" ;
+  rdfs:domain :ProductBatch ;
+  rdfs:range :IngredientLot ;
+  rdfs:comment "Link from product batch to ingredient lot(s)" ;
+  rdfs:subPropertyOf core:derivedFrom .

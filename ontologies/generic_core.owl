@@ -1,0 +1,195 @@
+@prefix : <http://provchain.org/core#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+#################################################################
+# Generic Traceability Core Ontology
+# Purpose: Truly generic, reusable traceability vocabulary for any
+# supply chain domain. Other domain ontologies should extend this.
+#################################################################
+
+#################################################################
+# Core Entity Classes
+#################################################################
+
+:TraceableEntity a owl:Class ;
+  rdfs:label "Traceable Entity" ;
+  rdfs:subClassOf prov:Entity ;
+  rdfs:comment "Any physical or digital entity that can be traced through a supply chain" .
+
+:Batch a owl:Class ;
+  rdfs:label "Batch" ;
+  rdfs:subClassOf :TraceableEntity ;
+  rdfs:comment "A batch or lot of items that share common properties" .
+
+:Component a owl:Class ;
+  rdfs:label "Component" ;
+  rdfs:subClassOf :TraceableEntity ;
+  rdfs:comment "A component or part of a larger entity" .
+
+:Product a owl:Class ;
+  rdfs:label "Product" ;
+  rdfs:subClassOf :TraceableEntity ;
+  rdfs:comment "A finished product ready for distribution or sale" .
+
+:RawMaterial a owl:Class ;
+  rdfs:label "Raw Material" ;
+  rdfs:subClassOf :TraceableEntity ;
+  rdfs:comment "Raw materials used in manufacturing processes" .
+
+:DigitalAsset a owl:Class ;
+  rdfs:label "Digital Asset" ;
+  rdfs:subClassOf :TraceableEntity ;
+  rdfs:comment "A digital entity that can be traced" .
+
+#################################################################
+# Core Activity Classes
+#################################################################
+
+:Process a owl:Class ;
+  rdfs:label "Process" ;
+  rdfs:subClassOf prov:Activity ;
+  rdfs:comment "Any process or activity in a supply chain" .
+
+:ManufacturingProcess a owl:Class ;
+  rdfs:label "Manufacturing Process" ;
+  rdfs:subClassOf :Process ;
+  rdfs:comment "A manufacturing or production process" .
+
+:TransportProcess a owl:Class ;
+  rdfs:label "Transport Process" ;
+  rdfs:subClassOf :Process ;
+  rdfs:comment "A logistics or transportation process" .
+
+:QualityControlProcess a owl:Class ;
+  rdfs:label "Quality Control Process" ;
+  rdfs:subClassOf :Process ;
+  rdfs:comment "A quality control or inspection process" .
+
+:Event a owl:Class ;
+  rdfs:label "Event" ;
+  rdfs:subClassOf prov:Activity ;
+  rdfs:comment "A point-in-time occurrence in a supply chain" .
+
+#################################################################
+# Core Agent Classes
+#################################################################
+
+:Organization a owl:Class ;
+  rdfs:label "Organization" ;
+  rdfs:subClassOf prov:Agent ;
+  rdfs:comment "An organization involved in the supply chain" .
+
+:Supplier a owl:Class ;
+  rdfs:label "Supplier" ;
+  rdfs:subClassOf :Organization ;
+  rdfs:comment "An organization that supplies materials or products" .
+
+:Manufacturer a owl:Class ;
+  rdfs:label "Manufacturer" ;
+  rdfs:subClassOf :Organization ;
+  rdfs:comment "An organization that manufactures products" .
+
+:LogisticsProvider a owl:Class ;
+  rdfs:label "Logistics Provider" ;
+  rdfs:subClassOf :Organization ;
+  rdfs:comment "An organization that provides logistics services" .
+
+:Retailer a owl:Class ;
+  rdfs:label "Retailer" ;
+  rdfs:subClassOf :Organization ;
+  rdfs:comment "An organization that sells products to end customers" .
+
+:Consumer a owl:Class ;
+  rdfs:label "Consumer" ;
+  rdfs:subClassOf prov:Agent ;
+  rdfs:comment "An end consumer of products" .
+
+#################################################################
+# Core Properties
+#################################################################
+
+:hasIdentifier a owl:DatatypeProperty ;
+  rdfs:label "has identifier" ;
+  rdfs:domain :TraceableEntity ;
+  rdfs:range xsd:string ;
+  rdfs:comment "A unique identifier for the entity" .
+
+:originLocation a owl:ObjectProperty ;
+  rdfs:label "origin location" ;
+  rdfs:domain :TraceableEntity ;
+  rdfs:range geo:Point ;
+  rdfs:comment "Geolocation of origin (use Geo vocab)" .
+
+:producedAt a owl:DatatypeProperty ;
+  rdfs:label "produced at" ;
+  rdfs:domain :TraceableEntity ;
+  rdfs:range xsd:dateTime ;
+  rdfs:comment "Production timestamp" .
+
+:recordedAt a owl:DatatypeProperty ;
+  rdfs:label "recorded at" ;
+  rdfs:domain :Process ;
+  rdfs:range xsd:dateTime ;
+  rdfs:comment "Timestamp when the process was recorded" .
+
+:hasCondition a owl:ObjectProperty ;
+  rdfs:label "has condition" ;
+  rdfs:domain :Process ;
+  rdfs:range :EnvironmentalCondition ;
+  rdfs:comment "Link from a process to environmental reading(s)" .
+
+:hasTemperature a owl:DatatypeProperty ;
+  rdfs:label "has temperature" ;
+  rdfs:domain :EnvironmentalCondition ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "Temperature in Celsius" .
+
+:hasHumidity a owl:DatatypeProperty ;
+  rdfs:label "has humidity" ;
+  rdfs:domain :EnvironmentalCondition ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "Relative humidity in percent" .
+
+:hasConditionTimestamp a owl:DatatypeProperty ;
+  rdfs:label "has condition timestamp" ;
+  rdfs:domain :EnvironmentalCondition ;
+  rdfs:range xsd:dateTime ;
+  rdfs:comment "Time when condition was measured" .
+
+:environmentalSensor a owl:ObjectProperty ;
+  rdfs:label "environmental sensor" ;
+  rdfs:domain :EnvironmentalCondition ;
+  rdfs:range prov:Agent ;
+  rdfs:comment "Agent or device that recorded the condition" .
+
+:hasCertificate a owl:ObjectProperty ;
+  rdfs:label "has certificate" ;
+  rdfs:domain :Organization ;
+  rdfs:range :Certificate ;
+  rdfs:comment "Certification or quality document linked to an organization" .
+
+:derivedFrom a owl:ObjectProperty ;
+  rdfs:label "derived from" ;
+  rdfs:domain :TraceableEntity ;
+  rdfs:range :TraceableEntity ;
+  rdfs:comment "Link from entity to its source entity/entities" .
+
+#################################################################
+# Auxiliary Classes
+#################################################################
+
+:EnvironmentalCondition a owl:Class ;
+  rdfs:label "Environmental Condition" .
+
+:Certificate a owl:Class ;
+  rdfs:label "Certificate" ;
+  rdfs:comment "An external document such as test report, certification, etc." .
+
+#################################################################
+# Reuse PROV relations (examples):
+# prov:wasGeneratedBy, prov:wasAttributedTo, prov:used, prov:wasDerivedFrom
+#################################################################

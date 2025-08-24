@@ -1,0 +1,41 @@
+@prefix pc: <http://provchain.org/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix uht: <http://provchain.org/uht#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Simple supply chain test data without blank nodes
+# This demonstrates a basic milk supply chain trace using the UHT manufacturing ontology
+
+# Farmer and milk batch
+uht:milkBatch001 a uht:IngredientLot ;
+    uht:hasBatchID "MB-2025-001" ;
+    uht:producedAt "2025-08-09T06:00:00Z"^^xsd:dateTime ;
+    prov:wasAttributedTo uht:FarmerSmith .
+
+uht:FarmerSmith a uht:Farmer ;
+    prov:label "Smith Dairy Farm" .
+
+# Processing activity
+uht:uhtProcessing001 a uht:UHTProcessing ;
+    prov:used uht:milkBatch001 ;
+    prov:wasAssociatedWith uht:UHTManufacturer ;
+    uht:recordedAt "2025-08-09T10:30:00Z"^^xsd:dateTime .
+
+uht:UHTManufacturer a uht:UHTManufacturer ;
+    prov:label "Premium UHT Processing Co." .
+
+# Final product
+uht:uhtMilkProduct001 a uht:ProductBatch ;
+    uht:hasBatchID "UHT-2025-001" ;
+    prov:wasGeneratedBy uht:uhtProcessing001 ;
+    uht:lotDerivedFrom uht:milkBatch001 ;
+    uht:producedAt "2025-08-09T11:00:00Z"^^xsd:dateTime .
+
+# Quality check
+uht:qualityCheck001 a uht:QualityCheck ;
+    prov:used uht:uhtMilkProduct001 ;
+    prov:wasAssociatedWith uht:QCInspector ;
+    uht:recordedAt "2025-08-09T11:15:00Z"^^xsd:dateTime .
+
+uht:QCInspector a uht:Organization ;
+    prov:label "Quality Control Inspector" .

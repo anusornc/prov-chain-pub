@@ -1,0 +1,75 @@
+@prefix pc: <http://provchain.org/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix uht: <http://provchain.org/uht#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+# Example traceability data using the UHT manufacturing ontology
+# This demonstrates a complete milk supply chain trace
+
+# Farmer and milk batch
+uht:milkBatch001 a uht:IngredientLot ;
+    uht:hasBatchID "MB-2025-001" ;
+    uht:producedAt "2025-08-09T06:00:00Z"^^xsd:dateTime ;
+    prov:wasAttributedTo uht:FarmerSmith ;
+    uht:originLocation [
+        a geo:Point ;
+        geo:lat "13.7563" ;
+        geo:long "100.5018"
+    ] .
+
+uht:FarmerSmith a uht:Farmer ;
+    prov:label "Smith Dairy Farm" ;
+    uht:hasCertificate uht:OrganicCert001 .
+
+# Processing activity
+uht:uhtProcessing001 a uht:UHTProcessing ;
+    prov:used uht:milkBatch001 ;
+    prov:wasAssociatedWith uht:UHTManufacturer ;
+    uht:recordedAt "2025-08-09T10:30:00Z"^^xsd:dateTime ;
+    uht:hasCondition uht:TempCondition001 .
+
+uht:UHTManufacturer a uht:UHTManufacturer ;
+    prov:label "Premium UHT Processing Co." .
+
+# Environmental conditions during processing
+uht:TempCondition001 a uht:EnvironmentalCondition ;
+    uht:hasTemperature "138.0"^^xsd:decimal ;
+    uht:hasHumidity "45.0"^^xsd:decimal ;
+    uht:hasConditionTimestamp "2025-08-09T10:30:00Z"^^xsd:dateTime ;
+    uht:environmentalSensor uht:TempSensor001 .
+
+# Final product
+uht:uhtMilkProduct001 a uht:ProductBatch ;
+    uht:hasBatchID "UHT-2025-001" ;
+    prov:wasGeneratedBy uht:uhtProcessing001 ;
+    uht:lotDerivedFrom uht:milkBatch001 ;
+    uht:producedAt "2025-08-09T11:00:00Z"^^xsd:dateTime .
+
+# Quality check
+uht:qualityCheck001 a uht:QualityCheck ;
+    prov:used uht:uhtMilkProduct001 ;
+    prov:wasAssociatedWith uht:QCInspector ;
+    uht:recordedAt "2025-08-09T11:15:00Z"^^xsd:dateTime .
+
+uht:QCInspector a uht:Organization ;
+    prov:label "Quality Control Inspector" .
+
+# Transport activity
+uht:transport001 a uht:Transport ;
+    prov:used uht:uhtMilkProduct001 ;
+    prov:wasAssociatedWith uht:LogisticsProvider ;
+    uht:recordedAt "2025-08-09T14:00:00Z"^^xsd:dateTime ;
+    uht:hasCondition uht:TransportCondition001 .
+
+uht:LogisticsProvider a uht:LogisticsProvider ;
+    prov:label "Cold Chain Logistics Ltd." .
+
+uht:TransportCondition001 a uht:EnvironmentalCondition ;
+    uht:hasTemperature "4.0"^^xsd:decimal ;
+    uht:hasHumidity "60.0"^^xsd:decimal ;
+    uht:hasConditionTimestamp "2025-08-09T14:00:00Z"^^xsd:dateTime .
+
+# Certificates
+uht:OrganicCert001 a uht:Certificate ;
+    prov:label "Organic Certification 2025" .
