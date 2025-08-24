@@ -106,8 +106,75 @@ The project is organized into multiple modules:
 5.  Production deployment features
 6.  Universal demonstration framework
 
+## Codebase Analysis (as of August 24, 2025)
+
+### High-Level Structure
+
+The codebase is organized as a standard Rust library crate (`provchain-org`) with multiple binary targets. The main library (`src/lib.rs`) exports numerous modules covering different aspects of the system. Key directories under `src/` include:
+
+*   **`core/`**: Fundamental blockchain structures (`Block`, `Blockchain`) and atomic operations.
+*   **`storage/`**: Implementation of the `RDFStore` using Oxigraph, including persistence with RocksDB, RDF canonicalization logic, and SPARQL query execution.
+*   **`transaction/`**: Extensions to the core blockchain to support transactions, transaction pools, UTXO sets, and wallet integration.
+*   **`web/`**: REST API server built with Axum, including authentication, routing, and handlers for various blockchain operations.
+*   **`network/`**: Foundational P2P networking components (messages, peers, discovery, consensus basics).
+*   **`semantic/`**: Ontology integration, OWL2 support, SHACL validation, and reasoning components.
+*   **`wallet/`**: Wallet management, key generation/signing (Ed25519), and participant definitions.
+*   **`analytics/`**: Modules for supply chain, sustainability, and predictive analytics.
+*   **`knowledge_graph/`**: Builders and entity linking for knowledge graph processing.
+*   **`performance/`**: Optimizations including canonicalization caching, concurrent operations, database tuning, and metrics.
+*   **`production/`**: Features for production deployment like monitoring, compliance, security, and containerization.
+*   **`demo/`, `uht_demo/`, `universal_demo/`**: Example applications and demonstrations of the system's capabilities.
+*   **`utils/`**: Configuration and other utility functions.
+*   **`domain/`, `ontology/`**: Domain-specific adapters and ontology management.
+
+### Core Components
+
+1.  **Blockchain (`src/core/blockchain.rs`)**:
+    *   Defines the `Block` struct with fields for index, timestamp, RDF data (as Turtle string), previous hash, and block hash.
+    *   Implements block creation and hashing logic. The block hash is calculated by combining block metadata with a canonical hash of the RDF data stored in the associated named graph.
+    *   Defines the `Blockchain` struct holding the chain vector and an `RDFStore` instance.
+    *   Manages the genesis block and provides methods to add new blocks. It ensures the RDF data is stored in the `RDFStore` and metadata is recorded.
+
+2.  **RDF Store (`src/storage/rdf_store.rs`)**:
+    *   A central component wrapping Oxigraph's `Store`.
+    *   Handles adding RDF data to named graphs (`http://provchain.org/block/{index}`).
+    *   Implements SPARQL querying capabilities.
+    *   Contains the core logic for RDF canonicalization (RDFC-1.0 compliant), essential for deterministic block hashing.
+    *   Manages persistent storage using RocksDB, including configuration, backup/restore, and integrity checks.
+    *   Includes performance optimizations like caching and metrics collection.
+
+3.  **Transaction Blockchain (`src/transaction/blockchain.rs`)**:
+    *   Extends the core `Blockchain` to support transaction-based operations.
+    *   Includes a `TransactionPool` for managing unconfirmed transactions.
+    *   Integrates with `WalletManager` for participant authentication and permission checking.
+    *   Maintains a transaction index and UTXO set for efficient transaction processing.
+    *   Provides methods to submit transactions, validate them, and create blocks from pending transactions.
+
+4.  **Web Server (`src/web/server.rs`)**:
+    *   Built using the Axum framework.
+    *   Provides a REST API with endpoints for blockchain status, block retrieval, SPARQL queries, product tracing, transaction submission, and wallet management.
+    *   Implements JWT-based authentication for protected routes.
+    *   Configures CORS policies for security.
+
+5.  **Demos (`src/demo.rs`, `src/uht_demo.rs`)**:
+    *   Contain example code demonstrating the system.
+    *   Typically create a blockchain instance, add blocks with sample RDF data (often using the custom traceability ontology), and run SPARQL queries.
+    *   Showcase the core functionality, including ontology usage and traceability features.
+
+### Build System (Cargo.toml)
+
+*   Defines the main library and several binary targets (main CLI, demos, tests).
+*   Utilizes a wide range of dependencies:
+    *   Core Rust ecosystem crates (`serde`, `chrono`, `anyhow`, `clap`).
+    *   Networking (`tokio`, `tokio-tungstenite`).
+    *   Cryptography (`ed25519-dalek`, `rand`).
+    *   Web framework (`axum`).
+    *   RDF processing (`oxigraph`).
+    *   Utilities (`config`, `tracing`, `lz4`).
+    *   Advanced features (`petgraph`, `ndarray`, `geo`, `plotters` for analytics).
+*   Features are used to enable/disable certain functionalities, particularly end-to-end tests.
+
 ## Acknowledged Limitations
 
-*   **Blank Node Complexity:** While RDF canonicalization is implemented, complex blank node structures can still impact performance.
 *   **Network Consensus:** While networking is implemented, advanced consensus mechanisms beyond basic P2P are still being developed.
 *   **Scalability Testing:** Large-scale performance testing is ongoing for production deployment scenarios.
