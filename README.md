@@ -182,6 +182,108 @@ SELECT ?batch ?temp ?humidity WHERE {
 }
 ```
 
+## Detailed Codebase Analysis
+
+### 1. Core Architecture
+
+The project follows a modular architecture with several key components:
+
+#### Core Module (`src/core/`)
+- `blockchain.rs`: Implements the fundamental blockchain structure with blocks that store RDF data
+- `entity.rs`: Defines a generic `TraceableEntity` model that can represent various types of entities across different domains
+- `atomic_operations.rs`: Handles atomic operations for consistency
+
+#### Storage Module (`src/storage/`)
+- `rdf_store.rs`: The central component that wraps Oxigraph for RDF storage, SPARQL querying, and canonicalization
+
+#### Transaction Module (`src/transaction/`)
+- `transaction.rs`: Implements a full transaction system with inputs/outputs, signing, and validation
+- `blockchain.rs`: Extends the core blockchain with transaction processing capabilities
+
+#### Web Module (`src/web/`)
+- Provides a REST API using Axum with endpoints for blockchain interaction, SPARQL queries, and traceability
+
+#### Semantic Module (`src/semantic/`)
+- Contains OWL reasoners and SHACL validators for semantic processing
+- Integrates with the `owl2_rs` library for advanced OWL2 features
+
+### 2. Key Features and Capabilities
+
+#### Blockchain with RDF Integration
+- Each block contains RDF data stored in named graphs
+- Uses RDF canonicalization (RDFC-1.0) for consistent hashing
+- Implements a transaction system with digital signatures (Ed25519)
+
+#### Advanced Semantic Features
+- Integration with a custom OWL2 library (`owl2_rs`) for ontology processing
+- Support for `owl:hasKey` axioms for entity uniqueness constraints
+- Property chain inference for transitive relationship discovery
+- SHACL validation for data conformance
+
+#### Multi-Domain Support
+- Generic entity model that can be adapted to different domains
+- Domain-specific adapters for supply chain, healthcare, and pharmaceutical industries
+- Plugin interface for extending functionality
+
+#### Trace Optimization
+- Implements frontier reduction and pivot selection concepts from SSSP algorithms
+- Optimized traceability queries for supply chain data
+
+#### Wallet and Identity Management
+- Multi-participant wallet system with role-based permissions
+- Secure key storage and management
+- Certificate management for participants
+
+### 3. Technical Implementation Details
+
+#### RDF Handling
+- Uses Oxigraph as the RDF store with support for named graphs
+- Implements both in-memory and persistent storage
+- Supports RDF canonicalization for deterministic hashing
+- Provides SPARQL query capabilities
+
+#### Consensus and Validation
+- Transaction validation with business logic checks
+- Multi-signature support for critical operations
+- Signature verification using Ed25519
+
+#### Web API
+- REST API built with Axum
+- JWT-based authentication
+- Endpoints for blockchain status, SPARQL queries, and traceability
+- Input validation and sanitization
+
+#### Performance Optimizations
+- Frontier reduction in traceability queries
+- Memory caching for RDF data
+- Adaptive canonicalization algorithm selection
+
+### 4. Domain-Specific Functionality
+
+#### Supply Chain
+- Models for products, batches, processes, and transport activities
+- Environmental monitoring data integration
+- Quality control and compliance tracking
+
+#### Healthcare/Pharmaceutical
+- Domain adapters for healthcare-specific entities and relationships
+- Regulatory compliance features
+
+### 5. Advanced Features
+
+#### OWL2 Reasoning
+- Enhanced reasoner with support for `owl:hasKey`, property chains, and qualified cardinality restrictions
+- Integration with the custom `owl2_rs` library
+
+#### Knowledge Graph
+- Modules for knowledge graph construction and entity linking
+- Analytics capabilities for supply chain insights
+
+#### Production Features
+- Monitoring and metrics collection
+- Compliance checking
+- Containerization support
+
 ## Project Structure
 
 ```
