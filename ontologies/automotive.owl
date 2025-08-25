@@ -3,7 +3,9 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix auto: <http://provchain.org/automotive#> .
-@prefix trace: <http://provchain.org/trace#> .
+@prefix core: <http://provchain.org/core#> .
+
+owl:imports <http://provchain.org/core> .
 
 auto:AutomotiveOntology a owl:Ontology ;
     rdfs:label "Automotive Traceability Ontology" ;
@@ -11,15 +13,15 @@ auto:AutomotiveOntology a owl:Ontology ;
 
 # Automotive-specific entity classes
 auto:Vehicle a owl:Class ;
-    rdfs:subClassOf trace:TraceableEntity ;
+    rdfs:subClassOf core:TraceableEntity ;
     rdfs:label "Vehicle" .
 
 auto:Component a owl:Class ;
-    rdfs:subClassOf trace:Component ;
+    rdfs:subClassOf core:Component ;
     rdfs:label "Automotive Component" .
 
 auto:ManufacturingPlant a owl:Class ;
-    rdfs:subClassOf trace:Organization ;
+    rdfs:subClassOf core:Organization ;
     rdfs:label "Manufacturing Plant" .
 
 auto:QualityCertification a owl:Class ;

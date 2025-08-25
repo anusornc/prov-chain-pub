@@ -444,12 +444,12 @@ impl Blockchain {
     }
 
     fn load_ontology(&mut self) {
-        if let Ok(ontology_data) = std::fs::read_to_string("ontology/traceability.owl.ttl") {
+        if let Ok(ontology_data) = std::fs::read_to_string("ontologies/generic_core.owl") {
             let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
             self.rdf_store.load_ontology(&ontology_data, &ontology_graph);
-            println!("Loaded traceability ontology from ontology/traceability.owl.ttl");
+            println!("Loaded traceability ontology from ontologies/generic_core.owl");
         } else {
-            eprintln!("Warning: Could not load ontology file ontology/traceability.owl.ttl");
+            eprintln!("Warning: Could not load ontology file ontologies/generic_core.owl");
         }
     }
 

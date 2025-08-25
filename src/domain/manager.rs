@@ -268,7 +268,7 @@ impl GenericDomainAdapter {
             domain_id: domain_id.to_string(),
             name: format!("Generic {} Domain", domain_id),
             description: format!("Generic domain adapter for {}", domain_id),
-            core_ontology_path: "ontologies/core.owl".to_string(),
+            core_ontology_path: "ontologies/generic_core.owl".to_string(),
             domain_ontology_path: format!("ontologies/{}.owl", domain_id),
             ontology_path: format!("ontologies/{}.owl", domain_id),
             shacl_shapes_path: None,

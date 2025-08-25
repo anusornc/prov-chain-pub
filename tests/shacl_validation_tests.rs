@@ -17,7 +17,7 @@ fn test_shacl_validation_with_valid_data() {
     let graph_name = NamedNode::new("http://example.org/test").unwrap();
     
     // Load ontology data first
-    let ontology_data = std::fs::read_to_string("ontology/traceability.owl.ttl")
+    let ontology_data = std::fs::read_to_string("ontologies/generic_core.owl")
         .expect("Failed to read ontology file");
     // For testing purposes, we'll load the ontology data into the same graph as the test data
     // This is a simplification for testing - in production, the ontology would be in a separate graph
@@ -26,17 +26,17 @@ fn test_shacl_validation_with_valid_data() {
     // Valid data that conforms to SHACL shapes
     let valid_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-        ex:batch1 a trace:ProductBatch ;
-            trace:hasBatchID "BATCH001" ;
-            trace:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
+        ex:batch1 a core:Batch ;
+            core:hasIdentifier "BATCH001" ;
+            core:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
             prov:wasAttributedTo ex:farmer1 .
 
-        ex:farmer1 a trace:Farmer ;
+        ex:farmer1 a core:Supplier ;
             rdfs:label "Green Valley Farm" .
     "#;
     
@@ -74,24 +74,24 @@ fn test_shacl_validation_with_missing_required_property() {
     let graph_name = NamedNode::new("http://example.org/test").unwrap();
     
     // Load ontology data first
-    let ontology_data = std::fs::read_to_string("ontology/traceability.owl.ttl")
+    let ontology_data = std::fs::read_to_string("ontologies/generic_core.owl")
         .expect("Failed to read ontology file");
     let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
     rdf_store.add_rdf_to_graph(&ontology_data, &ontology_graph);
     
-    // Invalid data: ProductBatch missing required hasBatchID
+    // Invalid data: Batch missing required hasIdentifier
     let invalid_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-        ex:batch1 a trace:ProductBatch ;
-            trace:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
+        ex:batch1 a core:Batch ;
+            core:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
             prov:wasAttributedTo ex:farmer1 .
 
-        ex:farmer1 a trace:Farmer ;
+        ex:farmer1 a core:Supplier ;
             rdfs:label "Green Valley Farm" .
     "#;
     
@@ -130,25 +130,25 @@ fn test_shacl_validation_with_incorrect_datatype() {
     let graph_name = NamedNode::new("http://example.org/test").unwrap();
     
     // Load ontology data first
-    let ontology_data = std::fs::read_to_string("ontology/traceability.owl.ttl")
+    let ontology_data = std::fs::read_to_string("ontologies/generic_core.owl")
         .expect("Failed to read ontology file");
     let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
     rdf_store.add_rdf_to_graph(&ontology_data, &ontology_graph);
     
-    // Invalid data: incorrect datatype for hasBatchID (should be string, not integer)
+    // Invalid data: incorrect datatype for hasIdentifier (should be string, not integer)
     let invalid_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-        ex:batch1 a trace:ProductBatch ;
-            trace:hasBatchID 123 ;
-            trace:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
+        ex:batch1 a core:Batch ;
+            core:hasIdentifier 123 ;
+            core:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
             prov:wasAttributedTo ex:farmer1 .
 
-        ex:farmer1 a trace:Farmer ;
+        ex:farmer1 a core:Supplier ;
             rdfs:label "Green Valley Farm" .
     "#;
     
@@ -187,24 +187,24 @@ fn test_shacl_validation_disabled() {
     let graph_name = NamedNode::new("http://example.org/test").unwrap();
     
     // Load ontology data first
-    let ontology_data = std::fs::read_to_string("ontology/traceability.owl.ttl")
+    let ontology_data = std::fs::read_to_string("ontologies/generic_core.owl")
         .expect("Failed to read ontology file");
     let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
     rdf_store.add_rdf_to_graph(&ontology_data, &ontology_graph);
     
     // Invalid data that would fail validation if enabled
-    let invalid_data = r#"
+        let invalid_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-        ex:batch1 a trace:ProductBatch ;
-            trace:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
+        ex:batch1 a core:Batch ;
+            core:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
             prov:wasAttributedTo ex:farmer1 .
 
-        ex:farmer1 a trace:Farmer ;
+        ex:farmer1 a core:Supplier ;
             rdfs:label "Green Valley Farm" .
     "#;
     

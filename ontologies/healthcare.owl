@@ -3,7 +3,9 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix healthcare: <http://provchain.org/healthcare#> .
-@prefix trace: <http://provchain.org/trace#> .
+@prefix core: <http://provchain.org/core#> .
+
+owl:imports <http://provchain.org/core> .
 
 healthcare:HealthcareOntology a owl:Ontology ;
     rdfs:label "Healthcare Traceability Ontology" ;
@@ -11,11 +13,11 @@ healthcare:HealthcareOntology a owl:Ontology ;
 
 # Healthcare-specific entity classes
 healthcare:PatientRecord a owl:Class ;
-    rdfs:subClassOf trace:TraceableEntity ;
+    rdfs:subClassOf core:TraceableEntity ;
     rdfs:label "Patient Record" .
 
 healthcare:MedicalDevice a owl:Class ;
-    rdfs:subClassOf trace:TraceableEntity ;
+    rdfs:subClassOf core:TraceableEntity ;
     rdfs:label "Medical Device" .
 
 healthcare:Prescription a owl:Class ;
@@ -23,7 +25,7 @@ healthcare:Prescription a owl:Class ;
     rdfs:label "Prescription" .
 
 healthcare:MedicalProcedure a owl:Class ;
-    rdfs:subClassOf trace:Process ;
+    rdfs:subClassOf core:Process ;
     rdfs:label "Medical Procedure" .
 
 # Healthcare-specific properties

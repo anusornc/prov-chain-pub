@@ -1,41 +1,41 @@
 @prefix pc: <http://provchain.org/> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
-@prefix trace: <http://example.org/trace#> .
+@prefix core: <http://provchain.org/core#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # Simple supply chain test data without blank nodes
 # This demonstrates a basic milk supply chain trace
 
 # Farmer and milk batch
-trace:milkBatch001 a trace:ProductBatch ;
-    trace:hasBatchID "MB-2025-001" ;
-    trace:producedAt "2025-08-09T06:00:00Z"^^xsd:dateTime ;
-    prov:wasAttributedTo trace:FarmerSmith .
+core:milkBatch001 a core:Batch ;
+    core:hasIdentifier "MB-2025-001" ;
+    core:producedAt "2025-08-09T06:00:00Z"^^xsd:dateTime ;
+    prov:wasAttributedTo core:FarmerSmith .
 
-trace:FarmerSmith a trace:Farmer ;
+core:FarmerSmith a core:Supplier ;
     prov:label "Smith Dairy Farm" .
 
 # Processing activity
-trace:uhtProcessing001 a trace:ProcessingActivity ;
-    prov:used trace:milkBatch001 ;
-    prov:wasAssociatedWith trace:UHTFactory ;
-    trace:recordedAt "2025-08-09T10:30:00Z"^^xsd:dateTime .
+core:uhtProcessing001 a core:ManufacturingProcess ;
+    prov:used core:milkBatch001 ;
+    prov:wasAssociatedWith core:UHTFactory ;
+    core:recordedAt "2025-08-09T10:30:00Z"^^xsd:dateTime .
 
-trace:UHTFactory a trace:Manufacturer ;
+core:UHTFactory a core:Manufacturer ;
     prov:label "Premium UHT Processing Co." .
 
 # Final product
-trace:uhtMilkProduct001 a trace:ProductBatch ;
-    trace:hasBatchID "UHT-2025-001" ;
-    prov:wasGeneratedBy trace:uhtProcessing001 ;
-    trace:lotDerivedFrom trace:milkBatch001 ;
-    trace:producedAt "2025-08-09T11:00:00Z"^^xsd:dateTime .
+core:uhtMilkProduct001 a core:Batch ;
+    core:hasIdentifier "UHT-2025-001" ;
+    prov:wasGeneratedBy core:uhtProcessing001 ;
+    core:derivedFrom core:milkBatch001 ;
+    core:producedAt "2025-08-09T11:00:00Z"^^xsd:dateTime .
 
 # Quality check
-trace:qualityCheck001 a trace:QualityCheck ;
-    prov:used trace:uhtMilkProduct001 ;
-    prov:wasAssociatedWith trace:QCInspector ;
-    trace:recordedAt "2025-08-09T11:15:00Z"^^xsd:dateTime .
+core:qualityCheck001 a core:QualityControlProcess ;
+    prov:used core:uhtMilkProduct001 ;
+    prov:wasAssociatedWith core:QCInspector ;
+    core:recordedAt "2025-08-09T11:15:00Z"^^xsd:dateTime .
 
-trace:QCInspector a trace:TraceAgent ;
+core:QCInspector a core:Organization ;
     prov:label "Quality Control Inspector" .

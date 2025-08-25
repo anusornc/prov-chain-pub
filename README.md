@@ -107,7 +107,7 @@ persistent = true
 store_type = "oxigraph"
 
 [ontology]
-path = "ontology/traceability.owl.ttl"
+path = "ontologies/generic_core.owl"
 graph_name = "http://provchain.org/ontology"
 auto_load = true
 validate_data = false
@@ -139,45 +139,45 @@ The system automatically loads `ontology/traceability.owl.ttl` which extends PRO
 
 ### Example RDF Data (Ontology-Based)
 ```turtle
-@prefix trace: <http://provchain.org/trace#> .
+@prefix core: <http://provchain.org/core#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-ex:milkBatch1 a trace:ProductBatch ;
-    trace:hasBatchID "MB001" ;
-    trace:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
+ex:milkBatch1 a core:Batch ;
+    core:hasIdentifier "MB001" ;
+    core:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
     prov:wasAttributedTo ex:FarmerJohn .
 
-ex:FarmerJohn a trace:Farmer ;
+ex:FarmerJohn a core:Supplier ;
     rdfs:label "John's Dairy Farm" .
 
-ex:transport1 a trace:TransportActivity ;
-    trace:recordedAt "2025-08-08T14:00:00Z"^^xsd:dateTime ;
+ex:transport1 a core:TransportProcess ;
+    core:recordedAt "2025-08-08T14:00:00Z"^^xsd:dateTime ;
     prov:used ex:milkBatch1 ;
-    trace:hasCondition ex:condition1 .
+    core:hasCondition ex:condition1 .
 
-ex:condition1 a trace:EnvironmentalCondition ;
-    trace:hasTemperature "4.2"^^xsd:decimal ;
-    trace:hasHumidity "65.0"^^xsd:decimal .
+ex:condition1 a core:EnvironmentalCondition ;
+    core:hasTemperature "4.2"^^xsd:decimal ;
+    core:hasHumidity "65.0"^^xsd:decimal .
 ```
 
 ### SPARQL Queries
 ```sparql
 # Ontology-aware batch tracing
 SELECT ?batch ?activity ?agent ?timestamp WHERE {
-    ?batch a trace:ProductBatch ;
-           trace:hasBatchID "MB001" .
+    ?batch a core:Batch ;
+           core:hasIdentifier "MB001" .
     ?activity prov:used ?batch ;
               prov:wasAssociatedWith ?agent ;
-              trace:recordedAt ?timestamp .
+              core:recordedAt ?timestamp .
 } ORDER BY ?timestamp
 
 # Environmental conditions monitoring
 SELECT ?batch ?temp ?humidity WHERE {
     ?activity prov:used ?batch ;
-              trace:hasCondition ?condition .
-    ?condition trace:hasTemperature ?temp ;
-               trace:hasHumidity ?humidity .
+              core:hasCondition ?condition .
+    ?condition core:hasTemperature ?temp ;
+               core:hasHumidity ?humidity .
     FILTER(?temp > 5.0)
 }
 ```
@@ -299,8 +299,14 @@ src/
 │   └── discovery.rs  # Peer discovery protocol
 └── lib.rs           # Library exports
 
-ontology/            # Traceability ontology
-├── traceability.owl.ttl  # Main ontology file
+ontologies/          # Traceability ontologies
+├── generic_core.owl      # Generic core ontology
+├── uht_manufacturing.owl # UHT manufacturing domain ontology
+├── healthcare.owl        # Healthcare domain ontology
+├── pharmaceutical.owl    # Pharmaceutical domain ontology
+├── automotive.owl        # Automotive domain ontology
+├── digital_assets.owl    # Digital assets domain ontology
+└── advanced_owl2_reasoning.owl # OWL2 advanced features ontology
 
 test_data/           # Sample RDF data files
 ├── minimal_test_data.ttl

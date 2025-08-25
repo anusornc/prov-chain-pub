@@ -7,17 +7,17 @@ pub fn run_demo() {
     // Farmer RDF using ontology classes
     let farmer_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-        ex:milkBatch1 a trace:ProductBatch ;
-            trace:hasBatchID "MB001" ;
-            trace:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
+        ex:milkBatch1 a core:Batch ;
+            core:hasIdentifier "MB001" ;
+            core:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
             prov:wasAttributedTo ex:FarmerJohn .
 
-        ex:FarmerJohn a trace:Farmer ;
+        ex:FarmerJohn a core:Supplier ;
             rdfs:label "John's Dairy Farm" .
     "#;
     let _ = bc.add_block(farmer_data.into());
@@ -25,23 +25,23 @@ pub fn run_demo() {
     // Manufacturer RDF using ontology classes
     let manufacturer_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-        ex:uhtProcess1 a trace:ProcessingActivity ;
-            trace:recordedAt "2025-08-08T12:00:00Z"^^xsd:dateTime ;
+        ex:uhtProcess1 a core:ManufacturingProcess ;
+            core:recordedAt "2025-08-08T12:00:00Z"^^xsd:dateTime ;
             prov:used ex:milkBatch1 ;
             prov:wasAssociatedWith ex:UHTFactory .
 
-        ex:uhtMilk1 a trace:ProductBatch ;
-            trace:hasBatchID "UHT001" ;
-            trace:producedAt "2025-08-08T12:30:00Z"^^xsd:dateTime ;
+        ex:uhtMilk1 a core:Batch ;
+            core:hasIdentifier "UHT001" ;
+            core:producedAt "2025-08-08T12:30:00Z"^^xsd:dateTime ;
             prov:wasGeneratedBy ex:uhtProcess1 ;
-            trace:lotDerivedFrom ex:milkBatch1 .
+            core:derivedFrom ex:milkBatch1 .
 
-        ex:UHTFactory a trace:Manufacturer ;
+        ex:UHTFactory a core:Manufacturer ;
             rdfs:label "UHT Processing Factory A" .
     "#;
     let _ = bc.add_block(manufacturer_data.into());
@@ -49,23 +49,23 @@ pub fn run_demo() {
     // Transport RDF with environmental conditions
     let transport_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-        ex:transport1 a trace:TransportActivity ;
-            trace:recordedAt "2025-08-08T14:00:00Z"^^xsd:dateTime ;
+        ex:transport1 a core:TransportProcess ;
+            core:recordedAt "2025-08-08T14:00:00Z"^^xsd:dateTime ;
             prov:used ex:uhtMilk1 ;
             prov:wasAssociatedWith ex:LogisticsCorp ;
-            trace:hasCondition ex:condition1 .
+            core:hasCondition ex:condition1 .
 
-        ex:condition1 a trace:EnvironmentalCondition ;
-            trace:hasTemperature "4.2"^^xsd:decimal ;
-            trace:hasHumidity "65.0"^^xsd:decimal ;
-            trace:hasConditionTimestamp "2025-08-08T14:00:00Z"^^xsd:dateTime .
+        ex:condition1 a core:EnvironmentalCondition ;
+            core:hasTemperature "4.2"^^xsd:decimal ;
+            core:hasHumidity "65.0"^^xsd:decimal ;
+            core:hasConditionTimestamp "2025-08-08T14:00:00Z"^^xsd:dateTime .
 
-        ex:LogisticsCorp a trace:LogisticsProvider ;
+        ex:LogisticsCorp a core:LogisticsProvider ;
             rdfs:label "Cold Chain Logistics Corp" .
     "#;
     let _ = bc.add_block(transport_data.into());

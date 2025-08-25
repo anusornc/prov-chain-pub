@@ -1,15 +1,15 @@
 # Ontology-aware query to trace a product batch through the supply chain
 # This query uses the traceability ontology classes to find the complete trace
 
-PREFIX trace: <http://provchain.org/trace#>
+PREFIX core: <http://provchain.org/core#>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 SELECT ?batch ?batchId ?activity ?activityType ?agent ?agentType ?timestamp ?conditions WHERE {
     # Find the target batch
-    ?batch a trace:ProductBatch ;
-           trace:hasBatchID ?batchId .
+    ?batch a core:Batch ;
+           core:hasIdentifier ?batchId .
     
     # Find activities that used or generated this batch
     {
@@ -20,29 +20,29 @@ SELECT ?batch ?batchId ?activity ?activityType ?agent ?agentType ?timestamp ?con
     
     # Get activity details
     ?activity a ?activityType ;
-              trace:recordedAt ?timestamp .
+              core:recordedAt ?timestamp .
     
     # Filter for ontology activity types
-    FILTER(?activityType = trace:ProcessingActivity || 
-           ?activityType = trace:TransportActivity || 
-           ?activityType = trace:QualityCheck)
+    FILTER(?activityType = core:ManufacturingProcess || 
+           ?activityType = core:TransportProcess || 
+           ?activityType = core:QualityControlProcess)
     
     # Find associated agents
     OPTIONAL {
         ?activity prov:wasAssociatedWith ?agent .
         ?agent a ?agentType .
-        FILTER(?agentType = trace:Farmer || 
-               ?agentType = trace:Manufacturer || 
-               ?agentType = trace:LogisticsProvider || 
-               ?agentType = trace:Retailer)
+        FILTER(?agentType = core:Supplier || 
+               ?agentType = core:Manufacturer || 
+               ?agentType = core:LogisticsProvider || 
+               ?agentType = core:Retailer)
     }
     
     # Find environmental conditions if present
     OPTIONAL {
-        ?activity trace:hasCondition ?condition .
-        ?condition trace:hasTemperature ?temp ;
-                   trace:hasHumidity ?humidity ;
-                   trace:hasConditionTimestamp ?condTime .
+        ?activity core:hasCondition ?condition .
+        ?condition core:hasTemperature ?temp ;
+                   core:hasHumidity ?humidity ;
+                   core:hasConditionTimestamp ?condTime .
         BIND(CONCAT("Temp: ", STR(?temp), "°C, Humidity: ", STR(?humidity), "%") AS ?conditions)
     }
     

@@ -17,7 +17,7 @@ pub fn run_universal_traceability_demo() -> Result<()> {
     println!("   Created ontology manager");
     
     // Load core ontology
-    let core_result = ontology_manager.load_core_ontology("ontologies/core.owl");
+    let core_result = ontology_manager.load_core_ontology("ontologies/generic_core.owl");
     println!("   Attempted to load core ontology: {:?}", core_result.is_ok());
     
     // Load domain ontologies
@@ -43,7 +43,7 @@ pub fn run_universal_traceability_demo() -> Result<()> {
         domain_id: "healthcare".to_string(),
         name: "Healthcare Traceability".to_string(),
         description: "Healthcare and medical traceability".to_string(),
-        core_ontology_path: "ontologies/core.owl".to_string(),
+        core_ontology_path: "ontologies/generic_core.owl".to_string(),
         domain_ontology_path: "ontologies/healthcare.owl".to_string(),
         ontology_path: "ontologies/healthcare.owl".to_string(),
         shacl_shapes_path: None,
@@ -62,7 +62,7 @@ pub fn run_universal_traceability_demo() -> Result<()> {
         domain_id: "pharmaceutical".to_string(),
         name: "Pharmaceutical Traceability".to_string(),
         description: "Pharmaceutical and drug traceability".to_string(),
-        core_ontology_path: "ontologies/core.owl".to_string(),
+        core_ontology_path: "ontologies/generic_core.owl".to_string(),
         domain_ontology_path: "ontologies/pharmaceutical.owl".to_string(),
         ontology_path: "ontologies/pharmaceutical.owl".to_string(),
         shacl_shapes_path: None,

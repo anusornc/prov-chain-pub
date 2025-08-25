@@ -23,7 +23,7 @@ impl PharmaceuticalAdapter {
             domain_id: "pharmaceutical".to_string(),
             name: "Pharmaceutical Traceability".to_string(),
             description: "Pharmaceutical and drug traceability".to_string(),
-            core_ontology_path: "ontologies/core.owl".to_string(),
+            core_ontology_path: "ontologies/generic_core.owl".to_string(),
             domain_ontology_path: "ontologies/pharmaceutical.owl".to_string(),
             ontology_path: "ontologies/pharmaceutical.owl".to_string(),
             shacl_shapes_path: None,

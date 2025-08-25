@@ -8,7 +8,7 @@ mod tests {
     #[test]
     fn test_ontology_files_exist() {
         // Check that our ontology files were created
-        assert!(fs::metadata("ontologies/core.owl").is_ok());
+        assert!(fs::metadata("ontologies/generic_core.owl").is_ok());
         assert!(fs::metadata("ontologies/healthcare.owl").is_ok());
         assert!(fs::metadata("ontologies/pharmaceutical.owl").is_ok());
         assert!(fs::metadata("ontologies/automotive.owl").is_ok());

@@ -12,9 +12,9 @@ fn test_ontology_loading() {
     
     // Should contain our main ontology classes
     let class_strings = classes.join(" ");
-    assert!(class_strings.contains("ProductBatch"));
-    assert!(class_strings.contains("ProcessingActivity"));
-    assert!(class_strings.contains("Farmer"));
+    assert!(class_strings.contains("Batch"));
+    assert!(class_strings.contains("ManufacturingProcess"));
+    assert!(class_strings.contains("Supplier"));
     assert!(class_strings.contains("Manufacturer"));
 }
 
@@ -25,20 +25,20 @@ fn test_ontology_validation() {
     // Add valid ontology-based data
     let valid_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-        ex:testBatch a trace:ProductBatch ;
-            trace:hasBatchID "TEST001" ;
-            trace:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime .
+        ex:testBatch a core:Batch ;
+            core:hasIdentifier "TEST001" ;
+            core:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime .
 
-        ex:testActivity a trace:ProcessingActivity ;
-            trace:recordedAt "2025-08-08T12:00:00Z"^^xsd:dateTime ;
+        ex:testActivity a core:ManufacturingProcess ;
+            core:recordedAt "2025-08-08T12:00:00Z"^^xsd:dateTime ;
             prov:wasAssociatedWith ex:testAgent .
 
-        ex:testAgent a trace:Manufacturer ;
+        ex:testAgent a core:Manufacturer ;
             rdfs:label "Test Manufacturer" .
     "#;
     
@@ -62,22 +62,22 @@ fn test_ontology_validation_failures() {
     let mut rdf_store = RDFStore::new();
     
     // Load ontology first
-    if let Ok(ontology_data) = std::fs::read_to_string("ontology/traceability.owl.ttl") {
+    if let Ok(ontology_data) = std::fs::read_to_string("ontologies/generic_core.owl") {
         let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
         rdf_store.load_ontology(&ontology_data, &ontology_graph);
     }
     
-    // Add invalid data (ProductBatch without required hasBatchID)
+    // Add invalid data (Batch without required hasIdentifier)
     let invalid_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-        ex:invalidBatch a trace:ProductBatch ;
-            trace:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime .
+        ex:invalidBatch a core:Batch ;
+            core:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime .
 
-        ex:invalidActivity a trace:ProcessingActivity ;
+        ex:invalidActivity a core:ManufacturingProcess ;
             prov:wasAssociatedWith ex:testAgent .
     "#;
     
@@ -88,9 +88,9 @@ fn test_ontology_validation_failures() {
     let validation_errors = rdf_store.validate_required_properties(&graph_name);
     assert!(!validation_errors.is_empty(), "Invalid data should have validation errors");
     
-    // Should find missing hasBatchID and recordedAt
+    // Should find missing hasIdentifier and recordedAt
     let error_text = validation_errors.join(" ");
-    assert!(error_text.contains("hasBatchID"), "Should detect missing hasBatchID");
+    assert!(error_text.contains("hasIdentifier"), "Should detect missing hasIdentifier");
     assert!(error_text.contains("recordedAt"), "Should detect missing recordedAt");
 }
 
@@ -101,32 +101,32 @@ fn test_environmental_conditions_integration() {
     // Add data with environmental conditions
     let env_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-        ex:coldTransport a trace:TransportActivity ;
-            trace:recordedAt "2025-08-08T14:00:00Z"^^xsd:dateTime ;
-            trace:hasCondition ex:coldCondition .
+        ex:coldTransport a core:TransportProcess ;
+            core:recordedAt "2025-08-08T14:00:00Z"^^xsd:dateTime ;
+            core:hasCondition ex:coldCondition .
 
-        ex:coldCondition a trace:EnvironmentalCondition ;
-            trace:hasTemperature "2.5"^^xsd:decimal ;
-            trace:hasHumidity "70.0"^^xsd:decimal ;
-            trace:hasConditionTimestamp "2025-08-08T14:00:00Z"^^xsd:dateTime .
+        ex:coldCondition a core:EnvironmentalCondition ;
+            core:hasTemperature "2.5"^^xsd:decimal ;
+            core:hasHumidity "70.0"^^xsd:decimal ;
+            core:hasConditionTimestamp "2025-08-08T14:00:00Z"^^xsd:dateTime .
     "#;
     
     let _ = bc.add_block(env_data.into());
     
     // Query for environmental conditions across all graphs
     let env_query = r#"
-        PREFIX trace: <http://provchain.org/trace#>
+        PREFIX core: <http://provchain.org/core#>
         
         SELECT ?activity ?temp ?humidity ?graph WHERE {
             GRAPH ?graph {
-                ?activity a trace:TransportActivity ;
-                          trace:hasCondition ?condition .
-                ?condition trace:hasTemperature ?temp ;
-                           trace:hasHumidity ?humidity .
+                ?activity a core:TransportProcess ;
+                          core:hasCondition ?condition .
+                ?condition core:hasTemperature ?temp ;
+                           core:hasHumidity ?humidity .
             }
         }
     "#;
@@ -145,7 +145,7 @@ fn test_environmental_conditions_integration() {
     } else {
         // Fallback: check if the data was stored at all
         let simple_query = r#"
-            PREFIX trace: <http://provchain.org/trace#>
+            PREFIX core: <http://provchain.org/core#>
             
             SELECT ?s ?p ?o WHERE {
                 GRAPH ?g {
@@ -174,57 +174,57 @@ fn test_supply_chain_traceability() {
     // Add complete supply chain data using ontology
     let farmer_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-        ex:rawMilk a trace:ProductBatch ;
-            trace:hasBatchID "RAW001" ;
-            trace:producedAt "2025-08-08T08:00:00Z"^^xsd:dateTime ;
+        ex:rawMilk a core:Batch ;
+            core:hasIdentifier "RAW001" ;
+            core:producedAt "2025-08-08T08:00:00Z"^^xsd:dateTime ;
             prov:wasAttributedTo ex:dairyFarm .
 
-        ex:dairyFarm a trace:Farmer ;
+        ex:dairyFarm a core:Supplier ;
             rdfs:label "Green Valley Dairy Farm" .
     "#;
     let _ = bc.add_block(farmer_data.into());
     
     let processing_data = r#"
         @prefix ex: <http://example.org/> .
-        @prefix trace: <http://provchain.org/trace#> .
+        @prefix core: <http://provchain.org/core#> .
         @prefix prov: <http://www.w3.org/ns/prov#> .
         @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-        ex:uhtProcess a trace:ProcessingActivity ;
-            trace:recordedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
+        ex:uhtProcess a core:ManufacturingProcess ;
+            core:recordedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
             prov:used ex:rawMilk ;
             prov:wasAssociatedWith ex:processor .
 
-        ex:processedMilk a trace:ProductBatch ;
-            trace:hasBatchID "UHT001" ;
-            trace:producedAt "2025-08-08T10:30:00Z"^^xsd:dateTime ;
+        ex:processedMilk a core:Batch ;
+            core:hasIdentifier "UHT001" ;
+            core:producedAt "2025-08-08T10:30:00Z"^^xsd:dateTime ;
             prov:wasGeneratedBy ex:uhtProcess ;
-            trace:lotDerivedFrom ex:rawMilk .
+            core:derivedFrom ex:rawMilk .
 
-        ex:processor a trace:Manufacturer ;
+        ex:processor a core:Manufacturer ;
             rdfs:label "UHT Processing Co." .
     "#;
     let _ = bc.add_block(processing_data.into());
     
     // Query for complete traceability chain across all graphs
     let trace_query = r#"
-        PREFIX trace: <http://provchain.org/trace#>
+        PREFIX core: <http://provchain.org/core#>
         PREFIX prov: <http://www.w3.org/ns/prov#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         
         SELECT ?batch ?batchId ?derivedFrom ?agent ?agentLabel ?graph WHERE {
             GRAPH ?graph {
-                ?batch a trace:ProductBatch ;
-                       trace:hasBatchID ?batchId .
+                ?batch a core:Batch ;
+                       core:hasIdentifier ?batchId .
                 
                 OPTIONAL {
-                    ?batch trace:lotDerivedFrom ?derivedFrom .
+                    ?batch core:derivedFrom ?derivedFrom .
                 }
                 
                 OPTIONAL {
@@ -248,14 +248,14 @@ fn test_supply_chain_traceability() {
         }
         assert!(batch_count >= 2, "Should find at least 2 batches in the supply chain");
     } else {
-        // Fallback: check if any ProductBatch data exists
+        // Fallback: check if any Batch data exists
         let simple_query = r#"
-            PREFIX trace: <http://provchain.org/trace#>
+            PREFIX core: <http://provchain.org/core#>
             
             SELECT ?batch ?batchId WHERE {
                 GRAPH ?g {
-                    ?batch a trace:ProductBatch ;
-                           trace:hasBatchID ?batchId .
+                    ?batch a core:Batch ;
+                           core:hasIdentifier ?batchId .
                 }
             }
         "#;

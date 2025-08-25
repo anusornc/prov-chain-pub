@@ -3,7 +3,9 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix digital: <http://provchain.org/digital#> .
-@prefix trace: <http://provchain.org/trace#> .
+@prefix core: <http://provchain.org/core#> .
+
+owl:imports <http://provchain.org/core> .
 
 digital:DigitalAssetsOntology a owl:Ontology ;
     rdfs:label "Digital Assets Traceability Ontology" ;
@@ -11,7 +13,7 @@ digital:DigitalAssetsOntology a owl:Ontology ;
 
 # Digital assets-specific entity classes
 digital:DigitalAsset a owl:Class ;
-    rdfs:subClassOf trace:DigitalAsset ;
+    rdfs:subClassOf core:DigitalAsset ;
     rdfs:label "Digital Asset" .
 
 digital:NFT a owl:Class ;
@@ -19,7 +21,7 @@ digital:NFT a owl:Class ;
     rdfs:label "Non-Fungible Token" .
 
 digital:SoftwareComponent a owl:Class ;
-    rdfs:subClassOf trace:Component ;
+    rdfs:subClassOf core:Component ;
     rdfs:label "Software Component" .
 
 digital:License a owl:Class ;

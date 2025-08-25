@@ -64,7 +64,7 @@ impl Default for DomainConfig {
             domain_id: "generic".to_string(),
             name: "Generic Traceability".to_string(),
             description: "Generic traceability domain".to_string(),
-            core_ontology_path: "ontologies/core.owl".to_string(),
+            core_ontology_path: "ontologies/generic_core.owl".to_string(),
             domain_ontology_path: "ontologies/generic.owl".to_string(),
             ontology_path: "ontologies/core.owl".to_string(),
             shacl_shapes_path: None,

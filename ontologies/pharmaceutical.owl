@@ -3,7 +3,9 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix pharma: <http://provchain.org/pharma#> .
-@prefix trace: <http://provchain.org/trace#> .
+@prefix core: <http://provchain.org/core#> .
+
+owl:imports <http://provchain.org/core> .
 
 pharma:PharmaceuticalOntology a owl:Ontology ;
     rdfs:label "Pharmaceutical Traceability Ontology" ;
@@ -11,15 +13,15 @@ pharma:PharmaceuticalOntology a owl:Ontology ;
 
 # Pharmaceutical-specific entity classes
 pharma:DrugBatch a owl:Class ;
-    rdfs:subClassOf trace:TraceableEntity ;
+    rdfs:subClassOf core:TraceableEntity ;
     rdfs:label "Drug Batch" .
 
 pharma:ManufacturingProcess a owl:Class ;
-    rdfs:subClassOf trace:Process ;
+    rdfs:subClassOf core:Process ;
     rdfs:label "Manufacturing Process" .
 
 pharma:QualityControlTest a owl:Class ;
-    rdfs:subClassOf trace:Event ;
+    rdfs:subClassOf core:Event ;
     rdfs:label "Quality Control Test" .
 
 pharma:RegulatoryApproval a owl:Class ;

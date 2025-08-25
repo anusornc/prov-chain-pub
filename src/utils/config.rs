@@ -186,7 +186,7 @@ impl Default for LoggingConfig {
 impl Default for OntologyConfig {
     fn default() -> Self {
         Self {
-            path: "ontology/traceability.owl.ttl".to_string(),
+            path: "ontologies/generic_core.owl".to_string(),
             graph_name: "http://provchain.org/ontology".to_string(),
             auto_load: true,
             validate_data: false,

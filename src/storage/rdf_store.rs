@@ -1184,7 +1184,7 @@ impl RDFStore {
     pub fn validate_against_ontology(&self, data_graph: &NamedNode) -> bool {
         // Query to check if all entities have proper types from the ontology
         let validation_query = r#"
-            PREFIX trace: <http://provchain.org/trace#>
+            PREFIX core: <http://provchain.org/core#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             
@@ -1192,18 +1192,18 @@ impl RDFStore {
                 GRAPH ?dataGraph {
                     ?entity rdf:type ?type .
                     FILTER(
-                        ?type = trace:ProductBatch || 
-                        ?type = trace:IngredientLot || 
-                        ?type = trace:ProcessingActivity || 
-                        ?type = trace:TransportActivity ||
-                        ?type = trace:QualityCheck ||
-                        ?type = trace:Farmer ||
-                        ?type = trace:Manufacturer ||
-                        ?type = trace:LogisticsProvider ||
-                        ?type = trace:Retailer ||
-                        ?type = trace:Customer ||
-                        ?type = trace:EnvironmentalCondition ||
-                        ?type = trace:Certificate
+                        ?type = core:Batch || 
+                        ?type = core:RawMaterial || 
+                        ?type = core:ManufacturingProcess || 
+                        ?type = core:TransportProcess ||
+                        ?type = core:QualityControlProcess ||
+                        ?type = core:Supplier ||
+                        ?type = core:Manufacturer ||
+                        ?type = core:LogisticsProvider ||
+                        ?type = core:Retailer ||
+                        ?type = core:Consumer ||
+                        ?type = core:EnvironmentalCondition ||
+                        ?type = core:Certificate
                     )
                 }
             }
@@ -1223,15 +1223,15 @@ impl RDFStore {
     pub fn validate_required_properties(&self, data_graph: &NamedNode) -> Vec<String> {
         let mut validation_errors = Vec::new();
 
-        // Check ProductBatch has required properties
+        // Check Batch has required properties
         let batch_query = format!(r#"
-            PREFIX trace: <http://provchain.org/trace#>
+            PREFIX core: <http://provchain.org/core#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             
             SELECT ?batch WHERE {{
                 GRAPH <{}> {{
-                    ?batch rdf:type trace:ProductBatch .
-                    FILTER NOT EXISTS {{ ?batch trace:hasBatchID ?id }}
+                    ?batch rdf:type core:Batch .
+                    FILTER NOT EXISTS {{ ?batch core:hasIdentifier ?id }}
                 }}
             }}
         "#, data_graph.as_str());
@@ -1240,7 +1240,7 @@ impl RDFStore {
             for solution in solutions {
                 if let Ok(sol) = solution {
                     if let Some(batch) = sol.get("batch") {
-                        validation_errors.push(format!("ProductBatch {batch} missing required hasBatchID property"));
+                        validation_errors.push(format!("Batch {batch} missing required hasIdentifier property"));
                     }
                 }
             }
@@ -1248,14 +1248,14 @@ impl RDFStore {
 
         // Check Activities have required timestamps
         let activity_query = format!(r#"
-            PREFIX trace: <http://provchain.org/trace#>
+            PREFIX core: <http://provchain.org/core#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             
             SELECT ?activity WHERE {{
                 GRAPH <{}> {{
                     ?activity rdf:type ?type .
-                    FILTER(?type = trace:ProcessingActivity || ?type = trace:TransportActivity || ?type = trace:QualityCheck)
-                    FILTER NOT EXISTS {{ ?activity trace:recordedAt ?timestamp }}
+                    FILTER(?type = core:ManufacturingProcess || ?type = core:TransportProcess || ?type = core:QualityControlProcess)
+                    FILTER NOT EXISTS {{ ?activity core:recordedAt ?timestamp }}
                 }}
             }}
         "#, data_graph.as_str());
@@ -1311,14 +1311,14 @@ impl RDFStore {
     #[allow(dead_code)]
     pub fn get_ontology_classes(&self) -> Vec<String> {
         let query = r#"
-            PREFIX trace: <http://provchain.org/trace#>
+            PREFIX core: <http://provchain.org/core#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
             
             SELECT DISTINCT ?class ?label WHERE {
                 ?class a owl:Class .
                 OPTIONAL { ?class rdfs:label ?label }
-                FILTER(STRSTARTS(STR(?class), "http://provchain.org/trace#"))
+                FILTER(STRSTARTS(STR(?class), "http://provchain.org/core#"))
             }
             ORDER BY ?class
         "#;
