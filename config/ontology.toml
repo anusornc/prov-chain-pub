@@ -1,0 +1,56 @@
+# Ontology Configuration
+# This file defines which ontologies to load and how to load them
+
+[main_ontology]
+# Path to the main ontology file
+path = "ontologies/generic_core.owl"
+
+# Graph IRI for the main ontology
+graph_iri = "http://provchain.org/ontology/core"
+
+# Whether to automatically load this ontology on startup
+auto_load = true
+
+# Whether to validate RDF data against this ontology
+validate_data = false
+
+[resolution]
+# Strategy for resolving ontologies
+# Options: "FileSystem", "Http", "Embedded", "Auto"
+strategy = "FileSystem"
+
+[namespaces]
+# Default namespace mappings
+core = "http://provchain.org/core#"
+prov = "http://www.w3.org/ns/prov#"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+rdfs = "http://www.w3.org/2000/01/rdf-schema#"
+owl = "http://www.w3.org/2002/07/owl#"
+
+[domain_ontologies.supply_chain]
+# Supply chain domain ontology
+path = "ontologies/supply-chain.owl"
+graph_iri = "http://provchain.org/ontology/supply-chain"
+enabled = true
+priority = 100
+
+[domain_ontologies.healthcare]
+# Healthcare domain ontology
+path = "ontologies/healthcare.owl"
+graph_iri = "http://provchain.org/ontology/healthcare"
+enabled = true
+priority = 90
+
+[domain_ontologies.pharmaceutical]
+# Pharmaceutical domain ontology
+path = "ontologies/pharmaceutical.owl"
+graph_iri = "http://provchain.org/ontology/pharmaceutical"
+enabled = true
+priority = 80
+
+[domain_ontologies.uht_manufacturing]
+# UHT manufacturing specific ontology
+path = "ontologies/uht_manufacturing.owl"
+graph_iri = "http://provchain.org/ontology/uht-manufacturing"
+enabled = false
+priority = 50

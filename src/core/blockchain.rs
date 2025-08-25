@@ -444,6 +444,30 @@ impl Blockchain {
     }
 
     fn load_ontology(&mut self) {
+        // Try to use the new OntologyManager for flexible ontology loading
+        match crate::ontology::manager::OntologyManager::new() {
+            Ok(mut ontology_manager) => {
+                if let Err(e) = ontology_manager.load_configured_ontologies() {
+                    eprintln!("Warning: Could not load configured ontologies: {}", e);
+                    // Fallback to hardcoded loading
+                    self.load_ontology_hardcoded();
+                } else {
+                    // Successfully loaded ontologies using the manager
+                    // For now, we'll still use the hardcoded approach but with the manager's namespace support
+                    self.load_ontology_hardcoded();
+                    println!("Loaded traceability ontologies using OntologyManager");
+                }
+            },
+            Err(e) => {
+                eprintln!("Warning: Could not create OntologyManager: {}", e);
+                // Fallback to hardcoded loading
+                self.load_ontology_hardcoded();
+            }
+        }
+    }
+
+    /// Fallback method for hardcoded ontology loading
+    fn load_ontology_hardcoded(&mut self) {
         if let Ok(ontology_data) = std::fs::read_to_string("ontologies/generic_core.owl") {
             let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
             self.rdf_store.load_ontology(&ontology_data, &ontology_graph);

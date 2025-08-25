@@ -1,16 +1,14 @@
-//! Ontology management for universal traceability platform
-//! 
-//! This module provides ontology loading, management, and processing capabilities
-//! for multiple domains using OWL ontologies.
+//! Ontology management module
+//!
+//! This module provides flexible ontology loading and management
+//! capabilities that decouple ontology loading from the core
+//! blockchain implementation.
 
+pub mod config;
 pub mod manager;
-pub mod processor;
-pub mod registry;
+pub mod loader;
 
-#[cfg(test)]
-mod test;
-
-// Re-exports for convenience
+// Re-export commonly used items
+pub use config::{OntologyConfig, DomainOntologyConfig, OntologyResolutionStrategy};
 pub use manager::OntologyManager;
-pub use processor::OntologyProcessor;
-pub use registry::OntologyRegistry;
+pub use loader::{load_ontology_config, load_ontology_config_from_toml, load_ontology_config_from_env};

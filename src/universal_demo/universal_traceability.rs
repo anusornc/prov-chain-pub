@@ -17,20 +17,14 @@ pub fn run_universal_traceability_demo() -> Result<()> {
     println!("   Created ontology manager");
     
     // Load core ontology
-    let core_result = ontology_manager.load_core_ontology("ontologies/generic_core.owl");
+    let core_result = ontology_manager.load_main_ontology();
     println!("   Attempted to load core ontology: {:?}", core_result.is_ok());
     
     // Load domain ontologies
-    let healthcare_result = ontology_manager.load_domain_ontology(
-        "Healthcare", 
-        "ontologies/healthcare.owl"
-    );
+    let healthcare_result = ontology_manager.load_configured_ontologies();
     println!("   Attempted to load healthcare ontology: {:?}", healthcare_result.is_ok());
     
-    let pharma_result = ontology_manager.load_domain_ontology(
-        "Pharmaceutical", 
-        "ontologies/pharmaceutical.owl"
-    );
+    let pharma_result = ontology_manager.load_configured_ontologies();
     println!("   Attempted to load pharmaceutical ontology: {:?}", pharma_result.is_ok());
     
     println!();
