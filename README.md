@@ -11,6 +11,7 @@ ProvChainOrg is a production-ready implementation of the GraphChain concept from
 - **RDF-Native Blockchain**: Blocks reference RDF graphs directly with cryptographic integrity
 - **Semantic Data Access**: Full SPARQL query support across all blockchain data
 - **Ontology Integration**: Automatic loading and validation using traceability ontology
+- **Flexible Ontology Management**: Runtime ontology configuration and switching
 - **RDF Canonicalization**: Advanced canonicalization algorithm for semantic equivalence
 - **Distributed P2P Network**: WebSocket-based peer communication and discovery (foundation)
 - **Supply Chain Traceability**: Track products from origin to consumer with environmental monitoring
@@ -21,7 +22,8 @@ ProvChainOrg is a production-ready implementation of the GraphChain concept from
 ### Core Components
 - **Blockchain Engine**: Hash-linked blocks with RDF graph references
 - **RDF Store**: Oxigraph triplestore with named graphs and SPARQL endpoint
-- **Ontology System**: Automatic loading and validation of traceability ontology
+- **Ontology System**: Flexible loading and validation of traceability ontology
+- **Ontology Manager**: Runtime configuration and management of ontologies
 - **Canonicalization**: Deterministic RDF graph hashing with blank node handling
 - **Network Layer**: P2P messaging protocol and peer discovery (foundation)
 - **Configuration**: Comprehensive node configuration management
@@ -61,6 +63,18 @@ cargo run demo
 cargo test
 ```
 
+### Custom Ontology Configuration
+```bash
+# Create custom ontology configuration
+cp config/ontology.toml.example config/ontology.toml
+
+# Edit the configuration to use different ontologies
+nano config/ontology.toml
+
+# Run with custom configuration
+cargo run -- --config config/ontology.toml demo
+```
+
 ### CLI Usage
 ```bash
 # Add RDF file as new block
@@ -74,6 +88,12 @@ cargo run -- validate
 
 # Dump blockchain as JSON
 cargo run -- dump
+
+# Run with custom ontology configuration
+cargo run -- --ontology-config config/my_ontology.toml demo
+
+# List loaded ontologies
+cargo run -- list-ontologies
 ```
 
 ### Distributed Network (Foundation)
@@ -113,21 +133,54 @@ auto_load = true
 validate_data = false
 ```
 
-## Ontology Integration
+## Ontology Management System
 
-### Traceability Ontology
-The system automatically loads `ontology/traceability.owl.ttl` which extends PROV-O with supply chain concepts:
+### Flexible Ontology Loading
+The system now supports flexible ontology loading through a configuration-based approach:
 
-- **Entities**: `ProductBatch`, `IngredientLot`
-- **Activities**: `ProcessingActivity`, `TransportActivity`, `QualityCheck`
-- **Agents**: `Farmer`, `Manufacturer`, `LogisticsProvider`, `Retailer`
-- **Environmental**: `EnvironmentalCondition` with temperature/humidity
+```toml
+# config/ontology.toml
+[main_ontology]
+path = "ontologies/generic_core.owl"
+graph_iri = "http://provchain.org/ontology/core"
+auto_load = true
+validate_data = false
 
-### Validation Features
-- Automatic ontology class validation
-- Required property checking (`hasBatchID`, `recordedAt`)
-- Environmental condition integration
-- Supply chain provenance validation
+[resolution]
+strategy = "FileSystem"
+
+[namespaces]
+core = "http://provchain.org/core#"
+prov = "http://www.w3.org/ns/prov#"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+rdfs = "http://www.w3.org/2000/01/rdf-schema#"
+owl = "http://www.w3.org/2002/07/owl#"
+
+[domain_ontologies.supply_chain]
+path = "ontologies/supply-chain.owl"
+graph_iri = "http://provchain.org/ontology/supply-chain"
+enabled = true
+priority = 100
+```
+
+### Runtime Ontology Switching
+- Change ontologies without recompilation
+- Support for domain-specific ontologies
+- Multiple loading strategies (File System, HTTP, Embedded, Auto-detection)
+- Dynamic namespace management
+
+### Configuration Methods
+1. **TOML Configuration Files** - `config/ontology.toml`
+2. **Environment Variables** - `ONTOLGY_MAIN_PATH`, `ONTOLGY_AUTO_LOAD`
+3. **Programmatic Configuration** - API-based setup
+4. **Command-Line Arguments** - Future enhancement
+
+### Domain-Specific Ontologies
+- Supply Chain (`ontologies/supply-chain.owl`)
+- Healthcare (`ontologies/healthcare.owl`)
+- Pharmaceutical (`ontologies/pharmaceutical.owl`)
+- Automotive (`ontologies/automotive.owl`)
+- Digital Assets (`ontologies/digital_assets.owl`)
 
 ## Use Case: Supply Chain Traceability
 
@@ -297,16 +350,28 @@ src/
 │   ├── messages.rs   # P2P message protocol
 │   ├── peer.rs       # Peer connection management
 │   └── discovery.rs  # Peer discovery protocol
+├── ontology/         # Flexible ontology management system
+│   ├── mod.rs        # Ontology module exports
+│   ├── config.rs     # Ontology configuration management
+│   ├── manager.rs    # Ontology loading and management
+│   ├── loader.rs     # Configuration file loading
+│   └── processor.rs  # Ontology processing and validation
 └── lib.rs           # Library exports
 
-ontologies/          # Traceability ontologies
-├── generic_core.owl      # Generic core ontology
-├── uht_manufacturing.owl # UHT manufacturing domain ontology
+ontologies/          # Flexible ontology management system
+├── generic_core.owl      # Generic core ontology (primary)
+├── supply-chain.owl      # Supply chain domain ontology
 ├── healthcare.owl        # Healthcare domain ontology
 ├── pharmaceutical.owl    # Pharmaceutical domain ontology
 ├── automotive.owl        # Automotive domain ontology
 ├── digital_assets.owl    # Digital assets domain ontology
-└── advanced_owl2_reasoning.owl # OWL2 advanced features ontology
+├── advanced_owl2_reasoning.owl # OWL2 advanced features ontology
+└── test-owl2.owl        # Test OWL2 features ontology
+
+config/              # Configuration files
+├── config.toml           # Main configuration
+├── ontology.toml         # Ontology configuration
+└── network.toml          # Network configuration
 
 test_data/           # Sample RDF data files
 ├── minimal_test_data.ttl
@@ -327,7 +392,10 @@ tests/               # Comprehensive test suite
 ├── ontology_integration_tests.rs
 ├── blockchain_with_test_data.rs
 ├── test_data_validation.rs
-└── demo_tests.rs
+├── demo_tests.rs
+├── ontology_management_tests.rs
+├── enhanced_performance_benchmarks.rs
+└── domain_tests.rs
 ```
 
 ## Technology Stack
@@ -366,8 +434,10 @@ cargo test --lib
 - **RDF Operations**: Graph storage, SPARQL queries, metadata
 - **Canonicalization**: Blank node handling, semantic equivalence
 - **Ontology Integration**: Loading, validation, environmental conditions
+- **Ontology Management**: Flexible loading, configuration, domain ontologies
 - **Network Foundation**: P2P messages, peer discovery, configuration
 - **Data Validation**: Test data integrity, supply chain scenarios
+- **Performance**: Enhanced traceability, OWL2 reasoning, property chains
 
 ## Key Innovations
 
@@ -379,9 +449,12 @@ cargo test --lib
 
 ### 2. Ontology-Driven Validation
 - Automatic ontology loading on blockchain initialization
+- Flexible ontology configuration and loading
+- Runtime ontology switching without recompilation
 - Class-based validation for supply chain entities
 - Required property enforcement
 - Environmental condition integration
+- Domain-specific ontology support
 
 ### 3. Semantic Blockchain Architecture
 - Named graphs for block organization
@@ -409,6 +482,7 @@ This implementation is based on the GraphChain concept from:
 - Core blockchain with RDF graphs
 - RDF canonicalization algorithm
 - Ontology integration and validation
+- Flexible ontology management system
 - Comprehensive test suite (27 tests passing)
 - SPARQL query capabilities
 - Supply chain traceability demo
