@@ -55,3 +55,4 @@ Thumbs.db
 *.gz
 demo_*/wallets/
 demo_*/*/
+backup_ontology/
