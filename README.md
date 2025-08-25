@@ -470,12 +470,6 @@ cargo test --lib
 - [GraphChain Comparison](GRAPHCHAIN_COMPARISON.md) - Research paper comparison
 - [Run Instructions](Run.md) - Detailed usage instructions
 
-## Research Background
-
-This implementation is based on the GraphChain concept from:
-
-> Sopek, M., Grądzki, P., Kosowski, W., Kuziński, D., Trójczak, R., & Trypuz, R. (2018). GraphChain – A Distributed Database with Explicit Semantics and Chained RDF Graphs. In Proceedings of The 2018 Web Conference Companion (WWW'18 Companion).
-
 ## Current Status
 
 ### ✅ Implemented Features
