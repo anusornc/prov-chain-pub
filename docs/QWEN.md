@@ -6,6 +6,8 @@ This document provides context for Qwen Code about the 'UHT Traceability Blockch
 
 This is a comprehensive Rust implementation for a blockchain where each block stores RDF triples in a named graph using an in-memory Oxigraph store. The ontology is based on PROV-O, extended for traceability, with a focus on UHT manufacturing but designed to be applicable to other supply chains.
 
+The system is designed as a **permissioned blockchain for traceability** that supports multiple domains through **domain-flexible ontology integration**. Users configure which ontology to use at deployment time, and the system operates as a dedicated traceability infrastructure for that domain. Unlike systems that require runtime ontology switching, ProvChainOrg uses deployment-time configuration to ensure data consistency and system reliability while providing flexibility across different traceability domains.
+
 ### Key Features
 
 *   **RDF Storage:** Utilizes Oxigraph as an RDF dataset with support for both in-memory and persistent storage using RocksDB.
@@ -117,7 +119,7 @@ The codebase is organized as a standard Rust library crate (`provchain-org`) wit
 *   **`transaction/`**: Extensions to the core blockchain to support transactions, transaction pools, UTXO sets, and wallet integration.
 *   **`web/`**: REST API server built with Axum, including authentication, routing, and handlers for various blockchain operations.
 *   **`network/`**: Foundational P2P networking components (messages, peers, discovery, consensus basics).
-*   **`semantic/`**: Ontology integration, OWL2 support, SHACL validation, and reasoning components.
+*   **`semantic/`**: Ontology integration, OWL2 support, SHACL validation, and reasoning components for **domain-flexible traceability**.
 *   **`wallet/`**: Wallet management, key generation/signing (Ed25519), and participant definitions.
 *   **`analytics/`**: Modules for supply chain, sustainability, and predictive analytics.
 *   **`knowledge_graph/`**: Builders and entity linking for knowledge graph processing.
@@ -125,7 +127,7 @@ The codebase is organized as a standard Rust library crate (`provchain-org`) wit
 *   **`production/`**: Features for production deployment like monitoring, compliance, security, and containerization.
 *   **`demo/`, `uht_demo/`, `universal_demo/`**: Example applications and demonstrations of the system's capabilities.
 *   **`utils/`**: Configuration and other utility functions.
-*   **`domain/`, `ontology/`**: Domain-specific adapters and ontology management.
+*   **`domain/`, `ontology/`**: Domain-specific adapters and **flexible ontology management** for deployment-time configuration.
 
 ### Core Components
 
@@ -158,8 +160,8 @@ The codebase is organized as a standard Rust library crate (`provchain-org`) wit
 
 5.  **Demos (`src/demo.rs`, `src/uht_demo.rs`)**:
     *   Contain example code demonstrating the system.
-    *   Typically create a blockchain instance, add blocks with sample RDF data (often using the custom traceability ontology), and run SPARQL queries.
-    *   Showcase the core functionality, including ontology usage and traceability features.
+    *   Typically create a blockchain instance, add blocks with sample RDF data (often using the **configured traceability ontology**), and run SPARQL queries.
+    *   Showcase the core functionality, including **domain-flexible ontology usage** and traceability features.
 
 ### Build System (Cargo.toml)
 

@@ -1,17 +1,21 @@
 # ProvChainOrg
 
-A distributed blockchain system implementing the GraphChain concept for supply chain traceability using RDF graphs and SPARQL queries. This project demonstrates semantic blockchain technology with provenance tracking capabilities and ontology integration.
+A distributed blockchain system implementing the GraphChain concept for supply chain traceability using RDF graphs and SPARQL queries. This project demonstrates semantic blockchain technology with provenance tracking capabilities and **domain-flexible ontology integration**.
+
+ProvChainOrg is designed as a **permissioned blockchain for traceability** that supports multiple domains through pre-configured ontologies. Unlike systems that require runtime ontology switching, ProvChainOrg uses deployment-time configuration to ensure data consistency and system reliability while providing flexibility across different traceability domains.
 
 ## Overview
 
-ProvChainOrg is a production-ready implementation of the GraphChain concept from the research paper "GraphChain – A Distributed Database with Explicit Semantics and Chained RDF Graphs" by Sopek et al. (2018). It combines blockchain security with semantic web technologies to create a distributed ledger for supply chain traceability with formal ontology support.
+ProvChainOrg is a production-ready implementation of the GraphChain concept from the research paper "GraphChain – A Distributed Database with Explicit Semantics and Chained RDF Graphs" by Sopek et al. (2018). It combines blockchain security with semantic web technologies to create a **distributed ledger for supply chain traceability** with **formal ontology support**.
+
+The system is designed as a **permissioned blockchain** that can be configured for different traceability domains using domain-specific ontologies. Users select and configure the appropriate ontology at deployment time, and the system operates as a dedicated traceability infrastructure for that domain.
 
 ## Key Features
 
 - **RDF-Native Blockchain**: Blocks reference RDF graphs directly with cryptographic integrity
 - **Semantic Data Access**: Full SPARQL query support across all blockchain data
-- **Ontology Integration**: Automatic loading and validation using traceability ontology
-- **Flexible Ontology Management**: Runtime ontology configuration and switching
+- **Ontology Integration**: Automatic loading and validation using configurable traceability ontology
+- **Domain-Flexible Design**: Pre-configured ontologies for supply chain, healthcare, pharmaceutical, and other domains
 - **RDF Canonicalization**: Advanced canonicalization algorithm for semantic equivalence
 - **Distributed P2P Network**: WebSocket-based peer communication and discovery (foundation)
 - **Supply Chain Traceability**: Track products from origin to consumer with environmental monitoring
@@ -135,8 +139,14 @@ validate_data = false
 
 ## Ontology Management System
 
-### Flexible Ontology Loading
-The system now supports flexible ontology loading through a configuration-based approach:
+### Purpose and Design Philosophy
+
+ProvChainOrg is designed as a **permissioned blockchain for traceability** that supports multiple domains through flexible ontology integration. The system allows users to configure which ontology to use at deployment time, enabling adaptation to various traceability domains such as supply chain, healthcare, pharmaceutical, automotive, and digital assets.
+
+Unlike public blockchains that might need runtime flexibility, ProvChainOrg is intended to be configured once for a specific domain and then deployed as a dedicated traceability system. The ontology configuration is set at initialization and remains consistent throughout the blockchain's lifetime to ensure data integrity and consistency.
+
+### Flexible Ontology Configuration
+The system supports flexible ontology configuration through multiple methods:
 
 ```toml
 # config/ontology.toml
@@ -163,12 +173,6 @@ enabled = true
 priority = 100
 ```
 
-### Runtime Ontology Switching
-- Change ontologies without recompilation
-- Support for domain-specific ontologies
-- Multiple loading strategies (File System, HTTP, Embedded, Auto-detection)
-- Dynamic namespace management
-
 ### Configuration Methods
 1. **TOML Configuration Files** - `config/ontology.toml`
 2. **Environment Variables** - `ONTOLGY_MAIN_PATH`, `ONTOLGY_AUTO_LOAD`
@@ -176,11 +180,23 @@ priority = 100
 4. **Command-Line Arguments** - Future enhancement
 
 ### Domain-Specific Ontologies
+The system includes example ontologies for various domains to demonstrate its flexibility:
 - Supply Chain (`ontologies/supply-chain.owl`)
 - Healthcare (`ontologies/healthcare.owl`)
 - Pharmaceutical (`ontologies/pharmaceutical.owl`)
 - Automotive (`ontologies/automotive.owl`)
 - Digital Assets (`ontologies/digital_assets.owl`)
+
+Each domain ontology extends the generic core ontology and adds domain-specific classes and properties while maintaining compatibility with the core traceability model.
+
+### Deployment-Time Configuration
+Ontology configuration is performed at deployment time to ensure:
+- Data consistency throughout the blockchain's lifetime
+- Performance optimization for the specific domain
+- Security through known and validated ontologies
+- Predictable behavior for traceability queries
+
+This approach aligns with the permissioned blockchain model where the system is configured for a specific use case and then operated as a dedicated traceability infrastructure.
 
 ## Use Case: Supply Chain Traceability
 
