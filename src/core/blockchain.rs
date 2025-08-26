@@ -4,9 +4,9 @@ use sha2::{Sha256, Digest};
 use crate::storage::rdf_store::{RDFStore, StorageConfig};
 use crate::trace_optimization::{EnhancedTraceabilitySystem, EnhancedTraceResult};
 use crate::core::atomic_operations::AtomicOperationContext;
+use crate::error::{ProvChainError, Result, BlockchainError};
 use oxigraph::model::NamedNode;
 use std::path::Path;
-use anyhow::Result;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
@@ -40,8 +40,15 @@ impl Block {
     pub fn calculate_hash_with_store(&self, rdf_store: Option<&RDFStore>) -> String {
         let rdf_hash = if let Some(store) = rdf_store {
             // Use RDF canonicalization for the data
-            let graph_name = NamedNode::new(format!("http://provchain.org/block/{}", self.index)).unwrap();
-            store.canonicalize_graph(&graph_name)
+            match NamedNode::new(format!("http://provchain.org/block/{}", self.index)) {
+                Ok(graph_name) => store.canonicalize_graph(&graph_name),
+                Err(_) => {
+                    // Fallback to simple hash if graph name creation fails
+                    let mut hasher = Sha256::new();
+                    hasher.update(self.data.as_bytes());
+                    format!("{:x}", hasher.finalize())
+                }
+            }
         } else {
             // Fallback to simple hash if no store provided (for genesis block)
             let mut hasher = Sha256::new();
@@ -89,9 +96,12 @@ impl Blockchain {
         let genesis_block = bc.create_genesis_block();
         
         // Add genesis block data to RDF store
-        let graph_name = NamedNode::new("http://provchain.org/block/0").unwrap();
-        bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
-        bc.rdf_store.add_block_metadata(&genesis_block);
+        if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
+            bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
+            bc.rdf_store.add_block_metadata(&genesis_block);
+        } else {
+            eprintln!("Warning: Could not create graph name for genesis block");
+        }
         
         bc.chain.push(genesis_block);
         bc
@@ -116,15 +126,18 @@ impl Blockchain {
             let genesis_block = bc.create_genesis_block();
             
             // Add genesis block data to RDF store
-            let graph_name = NamedNode::new("http://provchain.org/block/0").unwrap();
-            bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
-            bc.rdf_store.add_block_metadata(&genesis_block);
+            if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
+                bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
+                bc.rdf_store.add_block_metadata(&genesis_block);
+            } else {
+                eprintln!("Warning: Could not create graph name for genesis block in persistent store");
+            }
             
             bc.chain.push(genesis_block);
             
             // Save to disk
             if let Err(e) = bc.rdf_store.save_to_disk() {
-                eprintln!("Warning: Could not save to disk: {}", e);
+                eprintln!("Warning: Could not save to disk: {e}");
             }
         } else {
             // Load existing blockchain from persistent storage
@@ -136,9 +149,12 @@ impl Blockchain {
                 eprintln!("Warning: Store has data but no blocks loaded, creating genesis block");
                 let genesis_block = bc.create_genesis_block();
                 
-                let graph_name = NamedNode::new("http://provchain.org/block/0").unwrap();
-                bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
-                bc.rdf_store.add_block_metadata(&genesis_block);
+                if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
+                    bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
+                    bc.rdf_store.add_block_metadata(&genesis_block);
+                } else {
+                    eprintln!("Warning: Could not create graph name for fallback genesis block");
+                }
                 
                 bc.chain.push(genesis_block);
             }
@@ -165,9 +181,12 @@ impl Blockchain {
             let genesis_block = bc.create_genesis_block();
             
             // Add genesis block data to RDF store
-            let graph_name = NamedNode::new("http://provchain.org/block/0").unwrap();
-            bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
-            bc.rdf_store.add_block_metadata(&genesis_block);
+            if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
+                bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
+                bc.rdf_store.add_block_metadata(&genesis_block);
+            } else {
+                eprintln!("Warning: Could not create graph name for genesis block in config store");
+            }
             
             bc.chain.push(genesis_block);
         } else {
@@ -199,48 +218,46 @@ impl Blockchain {
         "#;
         
         if let QueryResults::Solutions(solutions) = self.rdf_store.query(query) {
-            for solution in solutions {
-                if let Ok(sol) = solution {
-                    if let (Some(index_term), Some(timestamp_term), Some(hash_term), Some(prev_hash_term), Some(data_graph_term)) = (
-                        sol.get("index"),
-                        sol.get("timestamp"), 
-                        sol.get("hash"),
-                        sol.get("prevHash"),
-                        sol.get("dataGraph")
-                    ) {
-                        // Parse block data
-                        let index: u64 = index_term.to_string().parse().unwrap_or(0);
-                        let timestamp = timestamp_term.to_string().trim_matches('"').to_string();
-                        let hash = hash_term.to_string().trim_matches('"').to_string();
-                        let previous_hash = prev_hash_term.to_string().trim_matches('"').to_string();
-                        
-                        // Extract RDF data from the block's graph
-                        let data_graph_string = data_graph_term.to_string();
-                        println!("Raw data graph string: '{}'", data_graph_string);
-                        // Handle typed literals - extract the URI part before the type annotation
-                        let data_graph_uri = if let Some(uri_part) = data_graph_string.split("^^").next() {
-                            uri_part.trim_matches('"').trim_matches('<').trim_matches('>')
-                        } else {
-                            data_graph_string.trim_matches('"').trim_matches('<').trim_matches('>')
-                        };
-                        println!("Processed data graph URI: '{}'", data_graph_uri);
-                        let data = self.extract_rdf_data_from_graph(data_graph_uri)?;
-                        
-                        // For existing blocks, we'll use a placeholder state_root
-                        // In a real implementation, this would be loaded from the blockchain metadata
-                        let state_root = "0000000000000000000000000000000000000000000000000000000000000000".to_string();
-                        
-                        let block = Block {
-                            index,
-                            timestamp,
-                            data,
-                            previous_hash,
-                            hash,
-                            state_root,
-                        };
-                        
-                        self.chain.push(block);
-                    }
+            for sol in solutions.flatten() {
+                if let (Some(index_term), Some(timestamp_term), Some(hash_term), Some(prev_hash_term), Some(data_graph_term)) = (
+                    sol.get("index"),
+                    sol.get("timestamp"), 
+                    sol.get("hash"),
+                    sol.get("prevHash"),
+                    sol.get("dataGraph")
+                ) {
+                    // Parse block data
+                    let index: u64 = index_term.to_string().parse().unwrap_or(0);
+                    let timestamp = timestamp_term.to_string().trim_matches('"').to_string();
+                    let hash = hash_term.to_string().trim_matches('"').to_string();
+                    let previous_hash = prev_hash_term.to_string().trim_matches('"').to_string();
+                    
+                    // Extract RDF data from the block's graph
+                    let data_graph_string = data_graph_term.to_string();
+                    println!("Raw data graph string: '{}'", data_graph_string);
+                    // Handle typed literals - extract the URI part before the type annotation
+                    let data_graph_uri = if let Some(uri_part) = data_graph_string.split("^^").next() {
+                        uri_part.trim_matches('"').trim_matches('<').trim_matches('>')
+                    } else {
+                        data_graph_string.trim_matches('"').trim_matches('<').trim_matches('>')
+                    };
+                    println!("Processed data graph URI: '{}'", data_graph_uri);
+                    let data = self.extract_rdf_data_from_graph(data_graph_uri)?;
+                    
+                    // For existing blocks, we'll use a placeholder state_root
+                    // In a real implementation, this would be loaded from the blockchain metadata
+                    let state_root = "0000000000000000000000000000000000000000000000000000000000000000".to_string();
+                    
+                    let block = Block {
+                        index,
+                        timestamp,
+                        data,
+                        previous_hash,
+                        hash,
+                        state_root,
+                    };
+                    
+                    self.chain.push(block);
                 }
             }
         }
@@ -316,22 +333,22 @@ impl Blockchain {
 
     /// Get storage statistics
     pub fn get_storage_stats(&self) -> Result<crate::storage::rdf_store::StorageStats> {
-        self.rdf_store.get_storage_stats()
+        self.rdf_store.get_storage_stats().map_err(|e| e.into())
     }
 
     /// Create a backup of the blockchain
     pub fn create_backup(&self) -> Result<crate::storage::rdf_store::BackupInfo> {
-        self.rdf_store.create_backup()
+        self.rdf_store.create_backup().map_err(|e| e.into())
     }
 
     /// List available backups
     pub fn list_backups(&self) -> Result<Vec<crate::storage::rdf_store::BackupInfo>> {
-        self.rdf_store.list_backups()
+        self.rdf_store.list_backups().map_err(|e| e.into())
     }
 
     /// Restore blockchain from backup
     pub fn restore_from_backup<P: AsRef<Path>>(backup_path: P, target_dir: P) -> Result<Self> {
-        let rdf_store = RDFStore::restore_from_backup(backup_path, target_dir)?;
+        let rdf_store = RDFStore::restore_from_backup(backup_path, target_dir).map_err(|e| ProvChainError::Anyhow(e))?;
         
         let mut bc = Blockchain {
             chain: Vec::new(),
@@ -346,17 +363,17 @@ impl Blockchain {
 
     /// Flush any pending writes to disk
     pub fn flush(&self) -> Result<()> {
-        self.rdf_store.flush()
+        self.rdf_store.flush().map_err(|e| e.into())
     }
 
     /// Optimize the underlying database
     pub fn optimize(&self) -> Result<()> {
-        self.rdf_store.optimize()
+        self.rdf_store.optimize().map_err(|e| e.into())
     }
 
     /// Check database integrity
     pub fn check_integrity(&self) -> Result<crate::storage::rdf_store::IntegrityReport> {
-        self.rdf_store.check_integrity()
+        self.rdf_store.check_integrity().map_err(|e| e.into())
     }
 
     fn create_genesis_block(&self) -> Block {
@@ -374,13 +391,22 @@ impl Blockchain {
         // Ensure we have at least a genesis block
         if self.chain.is_empty() {
             let genesis_block = self.create_genesis_block();
-            let graph_name = NamedNode::new("http://provchain.org/block/0").unwrap();
-            self.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
-            self.rdf_store.add_block_metadata(&genesis_block);
+            if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
+                self.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
+                self.rdf_store.add_block_metadata(&genesis_block);
+            } else {
+                return Err(ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(
+                    "Could not create graph name for genesis block".to_string()
+                )));
+            }
             self.chain.push(genesis_block);
         }
 
-        let prev_block = self.chain.last().unwrap();
+        let prev_block = self.chain.last()
+            .ok_or_else(|| ProvChainError::Blockchain(BlockchainError::InvalidChainState(
+                "Chain is empty after genesis block creation".to_string()
+            )))?;
+        
         // Calculate the state root before creating the new block
         let state_root = self.rdf_store.calculate_state_root();
         let mut new_block = Block::new(prev_block.index + 1, data.clone(), prev_block.hash.clone(), state_root);
@@ -428,7 +454,13 @@ impl Blockchain {
         let mut temp_rdf_store = crate::storage::RDFStore::new();
         
         // Use the same graph name structure as the main store for proper comparison
-        let graph_name = NamedNode::new(format!("http://provchain.org/block/{}", block.index)).unwrap();
+        let graph_name = match NamedNode::new(format!("http://provchain.org/block/{}", block.index)) {
+            Ok(name) => name,
+            Err(_) => {
+                eprintln!("Warning: Could not create graph name for block validation");
+                return false;
+            }
+        };
         
         // Add the block's data to the temporary store using the same graph name
         temp_rdf_store.add_rdf_to_graph(&block.data, &graph_name);
@@ -469,9 +501,12 @@ impl Blockchain {
     /// Fallback method for hardcoded ontology loading
     fn load_ontology_hardcoded(&mut self) {
         if let Ok(ontology_data) = std::fs::read_to_string("ontologies/generic_core.owl") {
-            let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
-            self.rdf_store.load_ontology(&ontology_data, &ontology_graph);
-            println!("Loaded traceability ontology from ontologies/generic_core.owl");
+            if let Ok(ontology_graph) = NamedNode::new("http://provchain.org/ontology") {
+                self.rdf_store.load_ontology(&ontology_data, &ontology_graph);
+                println!("Loaded traceability ontology from ontologies/generic_core.owl");
+            } else {
+                eprintln!("Warning: Could not create ontology graph name");
+            }
         } else {
             eprintln!("Warning: Could not load ontology file ontologies/generic_core.owl");
         }
@@ -483,7 +518,8 @@ impl Blockchain {
         trace_system.enhanced_trace(batch_id, optimization_level)
     }
 
-    pub fn dump(&self) -> String {
-        serde_json::to_string_pretty(&self.chain).unwrap()
+    pub fn dump(&self) -> Result<String> {
+        serde_json::to_string_pretty(&self.chain)
+            .map_err(|e| ProvChainError::Json(e))
     }
 }

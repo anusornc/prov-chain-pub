@@ -1,3 +1,5 @@
+pub mod error;
+pub mod validation;
 pub mod core;
 pub mod transaction;
 pub mod storage;
@@ -20,3 +22,6 @@ pub mod universal_demo;
 
 pub mod domain;
 pub mod ontology;
+
+// Re-export common error types
+pub use error::{ProvChainError, Result};

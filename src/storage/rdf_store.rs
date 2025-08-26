@@ -207,12 +207,26 @@ impl Default for RDFStore {
 impl Clone for RDFStore {
     fn clone(&self) -> Self {
         // Create a new store
-        let new_store = Store::new().unwrap();
+        let new_store = match Store::new() {
+            Ok(store) => store,
+            Err(e) => {
+                eprintln!("Warning: Failed to create new store for cloning: {}", e);
+                // Return a minimal store as fallback
+                return RDFStore {
+                    store: Store::new().unwrap_or_else(|_| panic!("Critical: Cannot create store")),
+                    config: self.config.clone(),
+                    is_persistent: false,
+                    memory_cache: None,
+                };
+            }
+        };
         
         // Copy all quads from the original store to the new store
         for quad_result in self.store.iter() {
             if let Ok(quad) = quad_result {
-                let _ = new_store.insert(&quad);
+                if let Err(e) = new_store.insert(&quad) {
+                    eprintln!("Warning: Failed to insert quad during cloning: {}", e);
+                }
             }
         }
         
@@ -234,8 +248,13 @@ impl RDFStore {
     pub fn new() -> Self {
         info!("Creating new in-memory RDF store");
         let config = StorageConfig::default();
+        let store = Store::new().unwrap_or_else(|e| {
+            eprintln!("Critical error: Cannot create in-memory store: {}", e);
+            panic!("Failed to create RDF store");
+        });
+        
         RDFStore {
-            store: Store::new().unwrap(),
+            store,
             config: config.clone(),
             is_persistent: false,
             memory_cache: if config.cache_size > 0 {
@@ -882,7 +901,13 @@ pub struct IntegrityReport {
 impl RDFStore {
     pub fn add_rdf_to_graph(&mut self, rdf_data: &str, graph_name: &NamedNode) {
         // Try to parse as RDF using a temporary store, if it fails, treat as plain text and create a simple triple
-        let temp_store = Store::new().unwrap();
+        let temp_store = match Store::new() {
+            Ok(store) => store,
+            Err(e) => {
+                eprintln!("Warning: Failed to create temporary store: {}", e);
+                return;
+            }
+        };
         let reader = Cursor::new(rdf_data.as_bytes());
         
         match temp_store.load_from_reader(RdfFormat::Turtle, reader) {
@@ -904,7 +929,9 @@ impl RDFStore {
                 
                 // Insert all quads into the main store
                 for quad in &quads_to_insert {
-                    self.store.insert(quad).unwrap();
+                    if let Err(e) = self.store.insert(quad) {
+                        eprintln!("Warning: Failed to insert quad: {}", e);
+                    }
                 }
                 
                 // Update cache if it exists
@@ -921,11 +948,25 @@ impl RDFStore {
             }
             Err(_) => {
                 // If parsing fails, create a simple triple with the data as a literal
-                let subject = NamedNode::new(format!("http://provchain.org/data/{}", graph_name.as_str().replace("http://provchain.org/block/", ""))).unwrap();
-                let predicate = NamedNode::new("http://provchain.org/hasData").unwrap();
+                let subject = match NamedNode::new(format!("http://provchain.org/data/{}", graph_name.as_str().replace("http://provchain.org/block/", ""))) {
+                    Ok(node) => node,
+                    Err(e) => {
+                        eprintln!("Warning: Failed to create subject node: {}", e);
+                        return;
+                    }
+                };
+                let predicate = match NamedNode::new("http://provchain.org/hasData") {
+                    Ok(node) => node,
+                    Err(e) => {
+                        eprintln!("Warning: Failed to create predicate node: {}", e);
+                        return;
+                    }
+                };
                 let object = Literal::new_simple_literal(rdf_data);
                 let quad = Quad::new(subject, predicate, object, graph_name.clone());
-                self.store.insert(&quad).unwrap();
+                if let Err(e) = self.store.insert(&quad) {
+                    eprintln!("Warning: Failed to insert fallback quad: {}", e);
+                }
                 
                 // Update cache if it exists
                 if let Some(ref mut cache) = self.memory_cache {

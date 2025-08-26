@@ -72,7 +72,10 @@ pub fn run_demo() {
 
     println!("Blockchain valid? {}", bc.is_valid());
     println!("\n--- Blockchain Dump ---");
-    println!("{}", bc.dump());
+    match bc.dump() {
+        Ok(dump_data) => println!("{}", dump_data),
+        Err(e) => eprintln!("Error dumping blockchain: {}", e),
+    }
     println!("\n--- Running Queries ---");
 
 
@@ -91,7 +94,10 @@ pub fn run_demo() {
             println!("\n=== Running query: {qfile} ===");
             if let oxigraph::sparql::QueryResults::Solutions(solutions) = bc.rdf_store.query(&qtext) {
                 for solution in solutions {
-                    println!("{:?}", solution.unwrap());
+                    match solution {
+                        Ok(sol) => println!("{:?}", sol),
+                        Err(e) => eprintln!("Error in query solution: {}", e),
+                    }
                 }
             }
         }

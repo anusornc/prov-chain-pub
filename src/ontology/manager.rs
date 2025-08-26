@@ -253,14 +253,13 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
     use std::fs;
-    use std::io::Write;
 
     #[test]
     fn test_ontology_manager_creation() {
         let manager = OntologyManager::new();
         assert!(manager.is_ok());
         
-        let manager = manager.unwrap();
+        let _manager = manager.unwrap();
         // Note: This might not have loaded ontologies if files don't exist
     }
 

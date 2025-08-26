@@ -330,7 +330,7 @@ mod tests {
     #[test]
     fn test_owl2_enhanced_traceability_creation() {
         let blockchain = Blockchain::new();
-        let enhancer = Owl2EnhancedTraceability::new(blockchain);
+        let _enhancer = Owl2EnhancedTraceability::new(blockchain);
         
         // This should compile and create the enhancer
         assert!(true);

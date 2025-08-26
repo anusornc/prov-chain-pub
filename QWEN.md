@@ -1,6 +1,6 @@
 # Qwen Code Context
 
-This document provides context for Qwen Code about the 'UHT Traceability Blockchain (PoC)' project.
+This document provides context for Qwen Code about the 'Semantic Traceability Blockchain' project.
 
 ## Project Summary
 

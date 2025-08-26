@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use provchain_org::semantic::{OwlReasonerConfig, OwlReasoner, Owl2EnhancedReasoner, ValidationResult};
+    use provchain_org::semantic::{OwlReasonerConfig, OwlReasoner, ValidationResult};
     
     #[test]
     fn test_enhanced_owl2_feature_processing() -> Result<()> {

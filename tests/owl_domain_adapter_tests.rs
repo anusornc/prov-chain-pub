@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use provchain_org::domain::{DomainManager, DomainPlugin};
+    use provchain_org::domain::DomainManager;
     // use provchain_org::domain::adapters::OwlDomainAdapter;
     use anyhow::Result;
-    use serde_yaml::Value;
+    
     
     #[test]
     fn test_domain_manager_basic_functionality() -> Result<()> {
-        let mut manager = DomainManager::new();
+        let manager = DomainManager::new();
         
         // Verify basic properties
         assert_eq!(manager.plugins.len(), 0);

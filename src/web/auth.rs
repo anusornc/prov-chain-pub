@@ -16,21 +16,25 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 /// JWT secret key (loaded from environment or generated securely)
-fn get_jwt_secret() -> Vec<u8> {
+fn get_jwt_secret() -> Result<Vec<u8>, crate::error::WebError> {
     match std::env::var("JWT_SECRET") {
         Ok(secret) => {
             if secret.len() < 32 {
-                panic!("JWT_SECRET must be at least 32 characters long for security");
+                return Err(crate::error::WebError::ServerError(
+                    "JWT_SECRET must be at least 32 characters long for security".to_string()
+                ));
             }
-            secret.into_bytes()
+            Ok(secret.into_bytes())
         }
         Err(_) => {
             if cfg!(debug_assertions) {
                 // Only allow default in debug mode
                 eprintln!("WARNING: Using default JWT secret in debug mode. Set JWT_SECRET environment variable for production!");
-                "debug-jwt-secret-change-in-production-32chars".to_string().into_bytes()
+                Ok("debug-jwt-secret-change-in-production-32chars".to_string().into_bytes())
             } else {
-                panic!("JWT_SECRET environment variable must be set in production mode");
+                Err(crate::error::WebError::AuthenticationFailed(
+                    "JWT_SECRET environment variable must be set in production mode".to_string()
+                ))
             }
         }
     }
@@ -42,7 +46,7 @@ type UserDatabase = Arc<RwLock<HashMap<String, UserInfo>>>;
 #[derive(Debug, Clone)]
 pub struct UserInfo {
     pub username: String,
-    pub password_hash: String, // In production, use proper password hashing
+    pub password_hash: String,
     pub role: ActorRole,
 }
 
@@ -62,9 +66,13 @@ impl AuthState {
         let mut users = HashMap::new();
         
         // Add default users for demo purposes with proper bcrypt hashing
-        let admin_hash = hash("admin123", DEFAULT_COST).unwrap();
-        let farmer_hash = hash("farmer123", DEFAULT_COST).unwrap();
-        let processor_hash = hash("processor123", DEFAULT_COST).unwrap();
+        // Use fallback hashes if bcrypt fails (should not happen in normal operation)
+        let admin_hash = hash("admin123", DEFAULT_COST)
+            .unwrap_or_else(|_| "fallback_admin_hash".to_string());
+        let farmer_hash = hash("farmer123", DEFAULT_COST)
+            .unwrap_or_else(|_| "fallback_farmer_hash".to_string());
+        let processor_hash = hash("processor123", DEFAULT_COST)
+            .unwrap_or_else(|_| "fallback_processor_hash".to_string());
         
         users.insert("admin".to_string(), UserInfo {
             username: "admin".to_string(),
@@ -88,13 +96,60 @@ impl AuthState {
             users: Arc::new(RwLock::new(users)),
         }
     }
+
+    /// Create a new user with secure password hashing
+    pub async fn create_user(&self, username: String, password: String, role: ActorRole) -> Result<(), crate::error::WebError> {
+        let password_hash = hash(&password, DEFAULT_COST)
+            .map_err(|e| crate::error::WebError::ServerError(
+                format!("Password hashing failed: {}", e)
+            ))?;
+
+        let mut users = self.users.write().await;
+        
+        if users.contains_key(&username) {
+            return Err(crate::error::WebError::InvalidRequest(
+                format!("User '{}' already exists", username)
+            ));
+        }
+
+        users.insert(username.clone(), UserInfo {
+            username,
+            password_hash,
+            role,
+        });
+
+        Ok(())
+    }
+
+    /// Update user password with secure hashing
+    pub async fn update_password(&self, username: &str, new_password: String) -> Result<(), crate::error::WebError> {
+        let password_hash = hash(&new_password, DEFAULT_COST)
+            .map_err(|e| crate::error::WebError::ServerError(
+                format!("Password hashing failed: {}", e)
+            ))?;
+
+        let mut users = self.users.write().await;
+        
+        if let Some(user_info) = users.get_mut(username) {
+            user_info.password_hash = password_hash;
+            Ok(())
+        } else {
+            Err(crate::error::WebError::ResourceNotFound(
+                format!("User '{}' not found", username)
+            ))
+        }
+    }
 }
 
 /// Generate JWT token for authenticated user
-pub fn generate_token(username: &str, role: &ActorRole) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_token(username: &str, role: &ActorRole) -> Result<String, crate::error::WebError> {
+    let jwt_secret = get_jwt_secret()?;
+    
     let expiration = Utc::now()
         .checked_add_signed(Duration::hours(24))
-        .expect("valid timestamp")
+        .ok_or_else(|| crate::error::WebError::ServerError(
+            "Failed to calculate token expiration time".to_string()
+        ))?
         .timestamp() as usize;
 
     let claims = UserClaims {
@@ -106,18 +161,26 @@ pub fn generate_token(username: &str, role: &ActorRole) -> Result<String, jsonwe
     encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(&get_jwt_secret()),
+        &EncodingKey::from_secret(&jwt_secret),
     )
+    .map_err(|e| crate::error::WebError::AuthenticationFailed(
+        format!("Token generation failed: {}", e)
+    ))
 }
 
 /// Validate JWT token and extract claims
-pub fn validate_token(token: &str) -> Result<UserClaims, jsonwebtoken::errors::Error> {
+pub fn validate_token(token: &str) -> Result<UserClaims, crate::error::WebError> {
+    let jwt_secret = get_jwt_secret()?;
+    
     decode::<UserClaims>(
         token,
-        &DecodingKey::from_secret(&get_jwt_secret()),
+        &DecodingKey::from_secret(&jwt_secret),
         &Validation::default(),
     )
     .map(|data| data.claims)
+    .map_err(|e| crate::error::WebError::AuthenticationFailed(
+        format!("Token validation failed: {}", e)
+    ))
 }
 
 /// Authentication handler

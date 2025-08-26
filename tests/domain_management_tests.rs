@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use provchain_org::domain::{DomainManager, DomainPlugin, DomainConfig, ValidationResult, ProcessedEntity, EntityData};
+    use provchain_org::domain::{DomainManager, ValidationResult, EntityData};
     // use provchain_org::domain::adapters::{SupplyChainAdapter, HealthcareAdapter, PharmaceuticalAdapter};
     use anyhow::Result;
     use std::collections::HashMap;

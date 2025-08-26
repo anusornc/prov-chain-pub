@@ -13,6 +13,7 @@ use sha2::{Sha256, Digest};
 use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
 use uuid::Uuid;
 use anyhow::{Result, anyhow};
+use crate::error::{TransactionError };
 
 /// Transaction types for supply chain operations
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -200,7 +201,7 @@ impl Transaction {
     }
 
     /// Calculate transaction hash for signing using RDF canonicalization
-    pub fn calculate_hash(&self) -> String {
+    pub fn calculate_hash(&self) -> Result<String, TransactionError> {
         // Create a temporary RDF store to canonicalize the RDF data
         let temp_store = crate::storage::RDFStore::new();
         
@@ -210,8 +211,17 @@ impl Transaction {
             use std::io::Cursor;
             use oxigraph::io::RdfFormat;
             
-            let graph_name = NamedNode::new(format!("http://provchain.org/tx/{}", self.id))
-                .unwrap_or_else(|_| NamedNode::new("http://provchain.org/tx/temp").unwrap());
+            let graph_name = match NamedNode::new(format!("http://provchain.org/tx/{}", self.id)) {
+                Ok(name) => name,
+                Err(_) => {
+                    match NamedNode::new("http://provchain.org/tx/temp") {
+                        Ok(temp_name) => temp_name,
+                        Err(e) => return Err(TransactionError::InvalidTransaction(
+                            format!("Failed to create graph name: {}", e)
+                        )),
+                    }
+                }
+            };
             
             let reader = Cursor::new(self.rdf_data.as_bytes());
             if temp_store.store.load_from_reader(RdfFormat::Turtle, reader).is_ok() {
@@ -221,19 +231,33 @@ impl Transaction {
                 // Include the canonicalized RDF hash in our transaction hash
                 let mut hasher = Sha256::new();
                 hasher.update(self.id.as_bytes());
-                hasher.update(serde_json::to_string(&self.tx_type).unwrap().as_bytes());
-                hasher.update(serde_json::to_string(&self.inputs).unwrap().as_bytes());
-                hasher.update(serde_json::to_string(&self.outputs).unwrap().as_bytes());
+                
+                let tx_type_json = serde_json::to_string(&self.tx_type)
+                    .map_err(|e| TransactionError::InvalidTransaction(format!("Failed to serialize tx_type: {}", e)))?;
+                hasher.update(tx_type_json.as_bytes());
+                
+                let inputs_json = serde_json::to_string(&self.inputs)
+                    .map_err(|e| TransactionError::InvalidTransaction(format!("Failed to serialize inputs: {}", e)))?;
+                hasher.update(inputs_json.as_bytes());
+                
+                let outputs_json = serde_json::to_string(&self.outputs)
+                    .map_err(|e| TransactionError::InvalidTransaction(format!("Failed to serialize outputs: {}", e)))?;
+                hasher.update(outputs_json.as_bytes());
+                
                 hasher.update(canonical_hash.as_bytes()); // Use canonicalized RDF hash
                 hasher.update(self.timestamp.to_rfc3339().as_bytes());
-                hasher.update(serde_json::to_string(&self.metadata).unwrap().as_bytes());
+                
+                let metadata_json = serde_json::to_string(&self.metadata)
+                    .map_err(|e| TransactionError::InvalidTransaction(format!("Failed to serialize metadata: {}", e)))?;
+                hasher.update(metadata_json.as_bytes());
+                
                 hasher.update(&self.nonce.to_le_bytes());
                 
                 if let Some(fee) = self.fee {
                     hasher.update(&fee.to_le_bytes());
                 }
                 
-                return format!("{:x}", hasher.finalize());
+                return Ok(format!("{:x}", hasher.finalize()));
             }
         }
         
@@ -242,24 +266,38 @@ impl Transaction {
         
         // Include all transaction data except signatures
         hasher.update(self.id.as_bytes());
-        hasher.update(serde_json::to_string(&self.tx_type).unwrap().as_bytes());
-        hasher.update(serde_json::to_string(&self.inputs).unwrap().as_bytes());
-        hasher.update(serde_json::to_string(&self.outputs).unwrap().as_bytes());
+        
+        let tx_type_json = serde_json::to_string(&self.tx_type)
+            .map_err(|e| TransactionError::InvalidTransaction(format!("Failed to serialize tx_type: {}", e)))?;
+        hasher.update(tx_type_json.as_bytes());
+        
+        let inputs_json = serde_json::to_string(&self.inputs)
+            .map_err(|e| TransactionError::InvalidTransaction(format!("Failed to serialize inputs: {}", e)))?;
+        hasher.update(inputs_json.as_bytes());
+        
+        let outputs_json = serde_json::to_string(&self.outputs)
+            .map_err(|e| TransactionError::InvalidTransaction(format!("Failed to serialize outputs: {}", e)))?;
+        hasher.update(outputs_json.as_bytes());
+        
         hasher.update(self.rdf_data.as_bytes());
         hasher.update(self.timestamp.to_rfc3339().as_bytes());
-        hasher.update(serde_json::to_string(&self.metadata).unwrap().as_bytes());
+        
+        let metadata_json = serde_json::to_string(&self.metadata)
+            .map_err(|e| TransactionError::InvalidTransaction(format!("Failed to serialize metadata: {}", e)))?;
+        hasher.update(metadata_json.as_bytes());
+        
         hasher.update(&self.nonce.to_le_bytes());
         
         if let Some(fee) = self.fee {
             hasher.update(&fee.to_le_bytes());
         }
         
-        format!("{:x}", hasher.finalize())
+        Ok(format!("{:x}", hasher.finalize()))
     }
 
     /// Sign the transaction with a private key
-    pub fn sign(&mut self, signing_key: &SigningKey, signer_id: Uuid) -> Result<()> {
-        let hash = self.calculate_hash();
+    pub fn sign(&mut self, signing_key: &SigningKey, signer_id: Uuid) -> Result<(), TransactionError> {
+        let hash = self.calculate_hash()?;
         let signature = signing_key.sign(hash.as_bytes());
         
         let tx_signature = TransactionSignature {
@@ -274,12 +312,12 @@ impl Transaction {
     }
 
     /// Verify all signatures on the transaction
-    pub fn verify_signatures(&self) -> Result<bool> {
+    pub fn verify_signatures(&self) -> Result<bool, TransactionError> {
         if self.signatures.is_empty() {
             return Ok(false);
         }
 
-        let hash = self.calculate_hash();
+        let hash = self.calculate_hash()?;
         
         for sig in &self.signatures {
             if sig.public_key.verify(hash.as_bytes(), &sig.signature).is_err() {
@@ -577,7 +615,7 @@ mod tests {
 
         assert!(tx.sign(&signing_key, signer_id).is_ok());
         assert_eq!(tx.signatures.len(), 1);
-        assert!(tx.verify_signatures().unwrap());
+        assert!(tx.verify_signatures().expect("Signature verification should succeed"));
         assert!(tx.payload.is_some());
     }
 
@@ -611,7 +649,7 @@ mod tests {
             TransactionPayload::RdfData(String::new()),
         );
 
-        tx.sign(&signing_key, signer_id).unwrap();
+        tx.sign(&signing_key, signer_id).expect("Transaction signing should succeed");
         
         assert!(pool.add_transaction(tx).is_ok());
         assert_eq!(pool.pending.len(), 1);

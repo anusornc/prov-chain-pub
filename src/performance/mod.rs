@@ -13,6 +13,7 @@ pub mod concurrent_operations;
 pub mod scaling;
 pub mod storage_optimization;
 pub mod metrics;
+pub mod memory_optimization;
 
 use std::time::Duration;
 use std::collections::HashMap;

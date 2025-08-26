@@ -25,7 +25,7 @@ fn test_blockchain_detect_tampering() {
 fn test_blockchain_dump() {
     let mut bc = Blockchain::new();
     let _ = bc.add_block("data for dump".into());
-    let dump_output = bc.dump();
+    let dump_output = bc.dump().expect("Dump should succeed");
 
     // Basic check to see if the output is valid JSON and contains the data
     assert!(dump_output.starts_with("["));

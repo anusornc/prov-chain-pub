@@ -98,8 +98,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         Commands::Dump => {
-            let json = blockchain.dump();
-            println!("{json}");
+            match blockchain.dump() {
+                Ok(json) => println!("{json}"),
+                Err(e) => {
+                    eprintln!("Error dumping blockchain: {e}");
+                    std::process::exit(1);
+                }
+            }
         }
         Commands::Demo => {
             info!("Running built-in demo...");

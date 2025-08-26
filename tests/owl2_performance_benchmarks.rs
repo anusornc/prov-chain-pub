@@ -16,7 +16,7 @@ use anyhow::Result;
 fn test_owl2_haskey_validation_performance() -> Result<()> {
     println!("=== OWL2 HasKey Validation Performance Benchmark ===");
     
-    let mut blockchain = Blockchain::new();
+    let blockchain = Blockchain::new();
     let owl2_enhancer = Owl2EnhancedTraceability::new(blockchain);
     
     // Create a large number of entities for performance testing
@@ -103,7 +103,7 @@ fn test_owl2_haskey_validation_performance() -> Result<()> {
 fn test_owl2_reasoning_performance() -> Result<()> {
     println!("=== OWL2 Reasoning Performance Benchmark ===");
     
-    let mut blockchain = Blockchain::new();
+    let blockchain = Blockchain::new();
     let owl2_enhancer = Owl2EnhancedTraceability::new(blockchain);
     
     // Create complex entities with various properties for reasoning
@@ -204,7 +204,7 @@ fn test_owl2_reasoning_performance() -> Result<()> {
 fn test_owl2_stress_performance() -> Result<()> {
     println!("=== OWL2 Stress Performance Test ===");
     
-    let mut blockchain = Blockchain::new();
+    let blockchain = Blockchain::new();
     let owl2_enhancer = Owl2EnhancedTraceability::new(blockchain);
     
     // Create a very large number of entities for stress testing
@@ -273,7 +273,7 @@ fn test_owl2_stress_performance() -> Result<()> {
 fn test_owl2_memory_usage() -> Result<()> {
     println!("=== OWL2 Memory Usage Test ===");
     
-    let mut blockchain = Blockchain::new();
+    let blockchain = Blockchain::new();
     let owl2_enhancer = Owl2EnhancedTraceability::new(blockchain);
     
     // Create entities of varying sizes to test memory usage
