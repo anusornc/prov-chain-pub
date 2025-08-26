@@ -1,0 +1,160 @@
+.ontology-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.ontology-section {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.class-list,
+.property-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ontology-item {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.ontology-item:hover {
+  border-color: #cbd5e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.item-id {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #667eea;
+  background: #eef2ff;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.item-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f7fafc;
+}
+
+.btn-icon.btn-danger:hover {
+  background: #fed7d7;
+}
+
+.item-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.item-description {
+  font-size: 14px;
+  color: #718096;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.item-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.property-signature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 14px;
+  margin: 8px 0;
+  padding: 8px;
+  background: #f7fafc;
+  border-radius: 4px;
+}
+
+.domain,
+.range {
+  background: #eef2ff;
+  color: #667eea;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.arrow {
+  color: #a0aec0;
+  font-weight: bold;
+}
+
+@media (max-width: 1024px) {
+  .ontology-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .ontology-section {
+    padding: 16px;
+  }
+  
+  .item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .item-actions {
+    align-self: flex-end;
+  }
+  
+  .property-signature {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .arrow {
+    transform: rotate(90deg);
+  }
+}

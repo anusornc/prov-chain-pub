@@ -1,0 +1,185 @@
+.rdf-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.search-controls {
+  flex: 1;
+  max-width: 500px;
+}
+
+.search-group {
+  display: flex;
+  gap: 12px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.filter-select,
+.export-select {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  min-width: 120px;
+}
+
+.stats {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.stat-item {
+  font-size: 14px;
+  color: #718096;
+}
+
+.stat-item strong {
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.triples-table-container {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.triples-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.triples-table th {
+  background: #f7fafc;
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #4a5568;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.triples-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f7fafc;
+  vertical-align: top;
+}
+
+.triples-table tr:hover {
+  background: #f9fafb;
+}
+
+.resource-subject {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 13px;
+  color: #667eea;
+  background: #eef2ff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-predicate {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 13px;
+  color: #38a169;
+  background: #f0fff4;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-object {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 13px;
+  color: #d69e2e;
+  background: #fffbeb;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.triple-form {
+  display: grid;
+  gap: 16px;
+}
+
+.triple-preview {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 13px;
+  margin-top: 16px;
+}
+
+.triple-preview-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #718096;
+  margin-bottom: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+@media (max-width: 768px) {
+  .rdf-controls {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .search-group {
+    flex-direction: column;
+  }
+  
+  .stats {
+    justify-content: space-around;
+  }
+  
+  .triples-table-container {
+    overflow-x: auto;
+  }
+  
+  .triples-table {
+    min-width: 600px;
+  }
+  
+  .resource-subject,
+  .resource-predicate,
+  .resource-object {
+    max-width: 120px;
+  }
+}

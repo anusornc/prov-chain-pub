@@ -1,0 +1,398 @@
+.provenance-content {
+  display: flex;
+  gap: 20px;
+  height: 600px;
+}
+
+.view-selector {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  min-width: 140px;
+}
+
+.timeline-container {
+  flex: 1;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 40px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #667eea, #764ba2);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 24px;
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timeline-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -48px;
+  top: 20px;
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: 3px solid #667eea;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.timeline-icon {
+  font-size: 16px;
+}
+
+.timeline-item.entity .timeline-marker {
+  border-color: #4299e1;
+}
+
+.timeline-item.activity .timeline-marker {
+  border-color: #48bb78;
+}
+
+.timeline-item.agent .timeline-marker {
+  border-color: #ed8936;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.timeline-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0;
+}
+
+.timeline-time {
+  font-size: 12px;
+  color: #718096;
+  background: #f7fafc;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.timeline-type {
+  display: inline-block;
+  background: #edf2f7;
+  color: #4a5568;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.timeline-attributes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.attribute-tag {
+  background: #e6fffa;
+  color: #234e52;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.table-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.table-section {
+  margin-bottom: 32px;
+}
+
+.table-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 16px;
+}
+
+.prov-table {
+  width: 100%;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.prov-table th {
+  background: #f7fafc;
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #4a5568;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.prov-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f7fafc;
+  vertical-align: top;
+}
+
+.prov-table tr:hover {
+  background: #f9fafb;
+}
+
+.entity-id {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+  background: #eef2ff;
+  color: #667eea;
+  padding: 4px 6px;
+  border-radius: 3px;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.type-badge.entity {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.type-badge.activity {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.type-badge.agent {
+  background: #fed7aa;
+  color: #9a3412;
+}
+
+.entity-ref {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+  background: #f0f9ff;
+  color: #0c4a6e;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.relation-type {
+  font-style: italic;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.entity-details-panel {
+  width: 350px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  height: fit-content;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.entity-info {
+  padding: 20px;
+}
+
+.info-item {
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.info-item strong {
+  color: #4a5568;
+  margin-right: 8px;
+}
+
+.attributes-section,
+.relations-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f7fafc;
+}
+
+.attributes-section strong,
+.relations-section strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #4a5568;
+  font-size: 14px;
+}
+
+.attributes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attribute-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.attr-key {
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.attr-value {
+  color: #718096;
+}
+
+.related-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.relation-item {
+  background: #f0f9ff;
+  color: #0c4a6e;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  border-left: 3px solid #0ea5e9;
+}
+
+.attribute-input {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.attribute-input input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.attribute-input button {
+  padding: 8px 12px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.attributes-list .attribute-item button {
+  background: #f56565;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .provenance-content {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .entity-details-panel {
+    width: 100%;
+    margin-top: 20px;
+  }
+  
+  .timeline-container {
+    height: 500px;
+  }
+}
+
+@media (max-width: 768px) {
+  .timeline {
+    padding-left: 20px;
+  }
+  
+  .timeline::before {
+    left: 10px;
+  }
+  
+  .timeline-marker {
+    left: -28px;
+    width: 28px;
+    height: 28px;
+  }
+  
+  .timeline-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .prov-table {
+    font-size: 13px;
+  }
+  
+  .prov-table th,
+  .prov-table td {
+    padding: 8px 10px;
+  }
+}
