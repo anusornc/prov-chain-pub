@@ -2,6 +2,45 @@
 
 ## Core Technology Stack
 
+### Frontend Technology Stack
+
+#### React Framework
+**React (v18+) with TypeScript**
+- **Component-Based Architecture**: Reusable, modular UI components
+- **Type Safety**: TypeScript for compile-time error checking
+- **State Management**: React Context API and Hooks
+- **Performance**: Virtual DOM and efficient rendering
+- **Developer Experience**: Hot reloading, debugging tools
+
+#### Build Tools
+**Vite (v7+)**
+- **Fast Development Server**: Instant server start and hot module replacement
+- **Optimized Production Build**: Tree-shaking and code splitting
+- **TypeScript Support**: Built-in TypeScript compilation
+- **Plugin Ecosystem**: Rich ecosystem of plugins and integrations
+
+#### UI Components and Styling
+**Custom Design System**
+- **Component Library**: Button, Card, Badge, Alert, LoadingSpinner, Input, TextArea
+- **Styling**: CSS Modules with utility-first approach
+- **Responsive Design**: Mobile-first responsive components
+- **Accessibility**: WCAG 2.1 AA compliant components
+- **Theming**: Dark/light mode support with context provider
+
+#### Data Visualization
+**Cytoscape.js**
+- **Graph Visualization**: Interactive network and relationship diagrams
+- **Layout Algorithms**: Multiple layout options for different use cases
+- **Styling**: Custom node and edge styling
+- **Interaction**: Click, hover, and selection events
+
+#### HTTP Client
+**Axios**
+- **Promise-Based**: Modern promise-based HTTP client
+- **Interceptors**: Request/response interceptors for authentication
+- **Error Handling**: Comprehensive error handling capabilities
+- **TypeScript Support**: Type definitions for better developer experience
+
 ### Programming Language
 **Rust (Edition 2021)**
 - **Why Rust**: Memory safety, performance, concurrency, strong type system

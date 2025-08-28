@@ -157,6 +157,23 @@ Create a **semantic blockchain platform** that enables comprehensive, queryable,
 - **Intuitive Queries**: Natural language to SPARQL query translation
 - **Real-Time Visibility**: Live dashboard showing product status and location
 - **Automated Compliance**: Automatic generation of regulatory reports
+- **Modern Web Interface**: Responsive, accessible UI with dark/light mode support
+
+### For Consumers
+- **Product Transparency**: QR codes linking to complete product history
+- **Sustainability Information**: Verified environmental and social impact data
+- **Quality Assurance**: Access to quality test results and certifications
+- **Recall Information**: Immediate notification of any quality issues
+
+### For Regulators
+- **Standardized Reporting**: Consistent data formats across all participants
+- **Audit Trails**: Complete, immutable history of all supply chain activities
+- **Investigation Tools**: Sophisticated query capabilities for incident investigation
+- **Compliance Monitoring**: Real-time monitoring of regulatory compliance
+- **Seamless Integration**: Easy integration with existing ERP and supply chain systems
+- **Intuitive Queries**: Natural language to SPARQL query translation
+- **Real-Time Visibility**: Live dashboard showing product status and location
+- **Automated Compliance**: Automatic generation of regulatory reports
 
 ### For Consumers
 - **Product Transparency**: QR codes linking to complete product history

@@ -585,3 +585,8 @@ This project is developed as part of PhD research. Please refer to the repositor
 ---
 
 **🔗 ProvChain-Org represents a significant advancement in blockchain-based supply chain traceability, combining cutting-edge semantic web technologies with robust blockchain infrastructure to create a production-ready, secure, and scalable solution.**
+[byterover-mcp]
+
+# important 
+always use byterover-retrieve-knowledge tool to get the related context before any tasks 
+always use byterover-store-knowledge to store all the critical informations after sucessful tasks
