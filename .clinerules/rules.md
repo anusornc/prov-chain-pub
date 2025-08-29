@@ -5,3 +5,6 @@
 - Please don't violoate DRY Principle
 - Keep in mind of SOLID Principle
 - Do not generate unused variable or function
+- Before and after any tool use, give me a confidence level (0-10) on how the tool use will help the project.
+- FILENAME has grown too big. Analyze how this file works and suggest ways to fragment it safely.
+- don't forget to update codebase documentation with changes
