@@ -5,6 +5,7 @@ pub mod transaction;
 pub mod storage;
 pub mod semantic;
 pub mod utils;
+pub mod integrity;
 
 pub mod trace_optimization;
 pub mod governance;

@@ -1,418 +1,430 @@
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "a090fc11793f9f079e4f612c417e38740d844add8ef97f2512dbe85742764660" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "37503ccbf9aa34251a37d56872848b4b052c5aa0586be4838a18d6a3992b6c2a" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-26T13:01:09.009289Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/tx#3058ced1-2824-4126-8f4b-869624a6225d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/tx#3058ced1-2824-4126-8f4b-869624a6225d> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#3058ced1-2824-4126-8f4b-869624a6225d> <http://provchain.org/tx#hasTimestamp> "2025-08-26T13:01:09.00201Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#3058ced1-2824-4126-8f4b-869624a6225d> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#3058ced1-2824-4126-8f4b-869624a6225d> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-26T13:01:09.002002Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_888a7e1a-805f-47f1-9966-eeeeb000e568> <http://provchain.org/block/1> .
-<http://example.org/participant_888a7e1a-805f-47f1-9966-eeeeb000e568> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/participant_888a7e1a-805f-47f1-9966-eeeeb000e568> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://provchain.org/core#Certificate> <http://www.w3.org/2000/01/rdf-schema#comment> "An external document such as test report, certification, etc." .
-<http://provchain.org/core#Certificate> <http://www.w3.org/2000/01/rdf-schema#label> "Certificate" .
-<http://provchain.org/core#Certificate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#EnvironmentalCondition> <http://www.w3.org/2000/01/rdf-schema#label> "Environmental Condition" .
-<http://provchain.org/core#EnvironmentalCondition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#derivedFrom> <http://www.w3.org/2000/01/rdf-schema#comment> "Link from entity to its source entity/entities" .
-<http://provchain.org/core#derivedFrom> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/core#TraceableEntity> .
-<http://provchain.org/core#derivedFrom> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#TraceableEntity> .
-<http://provchain.org/core#derivedFrom> <http://www.w3.org/2000/01/rdf-schema#label> "derived from" .
-<http://provchain.org/core#derivedFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
-<http://provchain.org/core#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#comment> "Certification or quality document linked to an organization" .
-<http://provchain.org/core#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/core#Certificate> .
-<http://provchain.org/core#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#Organization> .
-<http://provchain.org/core#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#label> "has certificate" .
-<http://provchain.org/core#hasCertificate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
-<http://provchain.org/core#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#comment> "Agent or device that recorded the condition" .
-<http://provchain.org/core#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/ns/prov#Agent> .
-<http://provchain.org/core#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#EnvironmentalCondition> .
-<http://provchain.org/core#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#label> "environmental sensor" .
-<http://provchain.org/core#environmentalSensor> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
-<http://provchain.org/core#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#comment> "Time when condition was measured" .
-<http://provchain.org/core#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://provchain.org/core#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#EnvironmentalCondition> .
-<http://provchain.org/core#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#label> "has condition timestamp" .
-<http://provchain.org/core#hasConditionTimestamp> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/core#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#comment> "Relative humidity in percent" .
-<http://provchain.org/core#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#decimal> .
-<http://provchain.org/core#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#EnvironmentalCondition> .
-<http://provchain.org/core#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#label> "has humidity" .
-<http://provchain.org/core#hasHumidity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/core#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#comment> "Temperature in Celsius" .
-<http://provchain.org/core#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#decimal> .
-<http://provchain.org/core#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#EnvironmentalCondition> .
-<http://provchain.org/core#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#label> "has temperature" .
-<http://provchain.org/core#hasTemperature> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/core#hasCondition> <http://www.w3.org/2000/01/rdf-schema#comment> "Link from a process to environmental reading(s)" .
-<http://provchain.org/core#hasCondition> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/core#EnvironmentalCondition> .
-<http://provchain.org/core#hasCondition> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#Process> .
-<http://provchain.org/core#hasCondition> <http://www.w3.org/2000/01/rdf-schema#label> "has condition" .
-<http://provchain.org/core#hasCondition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
-<http://provchain.org/core#recordedAt> <http://www.w3.org/2000/01/rdf-schema#comment> "Timestamp when the process was recorded" .
-<http://provchain.org/core#recordedAt> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://provchain.org/core#recordedAt> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#Process> .
-<http://provchain.org/core#recordedAt> <http://www.w3.org/2000/01/rdf-schema#label> "recorded at" .
-<http://provchain.org/core#recordedAt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/core#producedAt> <http://www.w3.org/2000/01/rdf-schema#comment> "Production timestamp" .
-<http://provchain.org/core#producedAt> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://provchain.org/core#producedAt> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#TraceableEntity> .
-<http://provchain.org/core#producedAt> <http://www.w3.org/2000/01/rdf-schema#label> "produced at" .
-<http://provchain.org/core#producedAt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/core#originLocation> <http://www.w3.org/2000/01/rdf-schema#comment> "Geolocation of origin (use Geo vocab)" .
-<http://provchain.org/core#originLocation> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2003/01/geo/wgs84_pos#Point> .
-<http://provchain.org/core#originLocation> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#TraceableEntity> .
-<http://provchain.org/core#originLocation> <http://www.w3.org/2000/01/rdf-schema#label> "origin location" .
-<http://provchain.org/core#originLocation> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
-<http://provchain.org/core#hasIdentifier> <http://www.w3.org/2000/01/rdf-schema#comment> "A unique identifier for the entity" .
-<http://provchain.org/core#hasIdentifier> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#string> .
-<http://provchain.org/core#hasIdentifier> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#TraceableEntity> .
-<http://provchain.org/core#hasIdentifier> <http://www.w3.org/2000/01/rdf-schema#label> "has identifier" .
-<http://provchain.org/core#hasIdentifier> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/core#Consumer> <http://www.w3.org/2000/01/rdf-schema#comment> "An end consumer of products" .
-<http://provchain.org/core#Consumer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Agent> .
-<http://provchain.org/core#Consumer> <http://www.w3.org/2000/01/rdf-schema#label> "Consumer" .
-<http://provchain.org/core#Consumer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#Retailer> <http://www.w3.org/2000/01/rdf-schema#comment> "An organization that sells products to end customers" .
-<http://provchain.org/core#Retailer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Organization> .
-<http://provchain.org/core#Retailer> <http://www.w3.org/2000/01/rdf-schema#label> "Retailer" .
-<http://provchain.org/core#Retailer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#LogisticsProvider> <http://www.w3.org/2000/01/rdf-schema#comment> "An organization that provides logistics services" .
-<http://provchain.org/core#LogisticsProvider> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Organization> .
-<http://provchain.org/core#LogisticsProvider> <http://www.w3.org/2000/01/rdf-schema#label> "Logistics Provider" .
-<http://provchain.org/core#LogisticsProvider> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#Manufacturer> <http://www.w3.org/2000/01/rdf-schema#comment> "An organization that manufactures products" .
-<http://provchain.org/core#Manufacturer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Organization> .
-<http://provchain.org/core#Manufacturer> <http://www.w3.org/2000/01/rdf-schema#label> "Manufacturer" .
-<http://provchain.org/core#Manufacturer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#Supplier> <http://www.w3.org/2000/01/rdf-schema#comment> "An organization that supplies materials or products" .
-<http://provchain.org/core#Supplier> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Organization> .
-<http://provchain.org/core#Supplier> <http://www.w3.org/2000/01/rdf-schema#label> "Supplier" .
-<http://provchain.org/core#Supplier> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#Organization> <http://www.w3.org/2000/01/rdf-schema#comment> "An organization involved in the supply chain" .
-<http://provchain.org/core#Organization> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Agent> .
-<http://provchain.org/core#Organization> <http://www.w3.org/2000/01/rdf-schema#label> "Organization" .
-<http://provchain.org/core#Organization> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#Event> <http://www.w3.org/2000/01/rdf-schema#comment> "A point-in-time occurrence in a supply chain" .
-<http://provchain.org/core#Event> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Activity> .
-<http://provchain.org/core#Event> <http://www.w3.org/2000/01/rdf-schema#label> "Event" .
-<http://provchain.org/core#Event> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#QualityControlProcess> <http://www.w3.org/2000/01/rdf-schema#comment> "A quality control or inspection process" .
-<http://provchain.org/core#QualityControlProcess> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Process> .
-<http://provchain.org/core#QualityControlProcess> <http://www.w3.org/2000/01/rdf-schema#label> "Quality Control Process" .
-<http://provchain.org/core#QualityControlProcess> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#TransportProcess> <http://www.w3.org/2000/01/rdf-schema#comment> "A logistics or transportation process" .
-<http://provchain.org/core#TransportProcess> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Process> .
-<http://provchain.org/core#TransportProcess> <http://www.w3.org/2000/01/rdf-schema#label> "Transport Process" .
-<http://provchain.org/core#TransportProcess> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#ManufacturingProcess> <http://www.w3.org/2000/01/rdf-schema#comment> "A manufacturing or production process" .
-<http://provchain.org/core#ManufacturingProcess> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Process> .
-<http://provchain.org/core#ManufacturingProcess> <http://www.w3.org/2000/01/rdf-schema#label> "Manufacturing Process" .
-<http://provchain.org/core#ManufacturingProcess> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#Process> <http://www.w3.org/2000/01/rdf-schema#comment> "Any process or activity in a supply chain" .
-<http://provchain.org/core#Process> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Activity> .
-<http://provchain.org/core#Process> <http://www.w3.org/2000/01/rdf-schema#label> "Process" .
-<http://provchain.org/core#Process> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#DigitalAsset> <http://www.w3.org/2000/01/rdf-schema#comment> "A digital entity that can be traced" .
-<http://provchain.org/core#DigitalAsset> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#TraceableEntity> .
-<http://provchain.org/core#DigitalAsset> <http://www.w3.org/2000/01/rdf-schema#label> "Digital Asset" .
-<http://provchain.org/core#DigitalAsset> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#RawMaterial> <http://www.w3.org/2000/01/rdf-schema#comment> "Raw materials used in manufacturing processes" .
-<http://provchain.org/core#RawMaterial> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#TraceableEntity> .
-<http://provchain.org/core#RawMaterial> <http://www.w3.org/2000/01/rdf-schema#label> "Raw Material" .
-<http://provchain.org/core#RawMaterial> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#Product> <http://www.w3.org/2000/01/rdf-schema#comment> "A finished product ready for distribution or sale" .
-<http://provchain.org/core#Product> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#TraceableEntity> .
-<http://provchain.org/core#Product> <http://www.w3.org/2000/01/rdf-schema#label> "Product" .
-<http://provchain.org/core#Product> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#Component> <http://www.w3.org/2000/01/rdf-schema#comment> "A component or part of a larger entity" .
-<http://provchain.org/core#Component> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#TraceableEntity> .
-<http://provchain.org/core#Component> <http://www.w3.org/2000/01/rdf-schema#label> "Component" .
-<http://provchain.org/core#Component> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#Batch> <http://www.w3.org/2000/01/rdf-schema#comment> "A batch or lot of items that share common properties" .
-<http://provchain.org/core#Batch> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#TraceableEntity> .
-<http://provchain.org/core#Batch> <http://www.w3.org/2000/01/rdf-schema#label> "Batch" .
-<http://provchain.org/core#Batch> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/core#TraceableEntity> <http://www.w3.org/2000/01/rdf-schema#comment> "Any physical or digital entity that can be traced through a supply chain" .
-<http://provchain.org/core#TraceableEntity> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Entity> .
-<http://provchain.org/core#TraceableEntity> <http://www.w3.org/2000/01/rdf-schema#label> "Traceable Entity" .
-<http://provchain.org/core#TraceableEntity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "5739a5833378c1e5ef0b98d14b9b95bfdfefa568251d3b56444307ad20a70a72" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "89ecdcfbe45462bf433a8c944fda76d01149807e9f8e8390c71fb062a9c99c19" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T11:31:50.216084Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/tx#6c675e9f-be71-4206-a8a8-c820c943cafd> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/tx#6c675e9f-be71-4206-a8a8-c820c943cafd> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#6c675e9f-be71-4206-a8a8-c820c943cafd> <http://provchain.org/tx#hasTimestamp> "2025-08-22T11:31:50.212404Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#6c675e9f-be71-4206-a8a8-c820c943cafd> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#6c675e9f-be71-4206-a8a8-c820c943cafd> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T11:31:50.212395Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_2ef7386c-6531-4be9-9d43-c3f6f94a4d2d> <http://provchain.org/block/1> .
-<http://example.org/participant_2ef7386c-6531-4be9-9d43-c3f6f94a4d2d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/participant_2ef7386c-6531-4be9-9d43-c3f6f94a4d2d> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "c238537053327f18a8336ab9a4a816710096a0bf08bc9b94a32dd76608a54a5d" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "a7817b1a5b98dde85f08eb53c2e0ceeb8947f57145bdce3385c43068d841366f" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T09:33:32.850417Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/tx#f96173ae-4b90-417f-9a0b-d6e48f38cc87> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/tx#f96173ae-4b90-417f-9a0b-d6e48f38cc87> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#f96173ae-4b90-417f-9a0b-d6e48f38cc87> <http://provchain.org/tx#hasTimestamp> "2025-08-22T09:33:32.847042Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#f96173ae-4b90-417f-9a0b-d6e48f38cc87> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#f96173ae-4b90-417f-9a0b-d6e48f38cc87> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T09:33:32.847035Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_ddecee3d-7dda-409c-95bd-4065a0e9b2dd> <http://provchain.org/block/1> .
-<http://example.org/participant_ddecee3d-7dda-409c-95bd-4065a0e9b2dd> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/participant_ddecee3d-7dda-409c-95bd-4065a0e9b2dd> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "ae1c022ddb12e041a541685953f87aaefbf538f6558249998c13192aa0b14013" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "9745d36fef6af773ebf4120b670edcb0eb6594204d07ccaec9a365606fbc8d94" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T05:49:19.33545Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/tx#3d0f768c-77e2-402a-9f21-617fadd4194d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/tx#3d0f768c-77e2-402a-9f21-617fadd4194d> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#3d0f768c-77e2-402a-9f21-617fadd4194d> <http://provchain.org/tx#hasTimestamp> "2025-08-22T05:49:19.332392Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#3d0f768c-77e2-402a-9f21-617fadd4194d> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#3d0f768c-77e2-402a-9f21-617fadd4194d> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T05:49:19.332387Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_c9480729-0250-4d01-b705-50c19f66071b> <http://provchain.org/block/1> .
-<http://example.org/participant_c9480729-0250-4d01-b705-50c19f66071b> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/participant_c9480729-0250-4d01-b705-50c19f66071b> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "c800bf7495a46483f69ad427ef9489d15c0b5a592a7c8a86632111c2519de1a1" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "46d90c8e1aa7d55c67b26326f281a59d3919cb43ad060a5d3226ed97fb22f6cb" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:25:56.14441Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/tx#43beb47a-af76-4052-b6cf-0f3a15cbfe2d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/tx#43beb47a-af76-4052-b6cf-0f3a15cbfe2d> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#43beb47a-af76-4052-b6cf-0f3a15cbfe2d> <http://provchain.org/tx#hasTimestamp> "2025-08-16T10:25:56.141431Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#43beb47a-af76-4052-b6cf-0f3a15cbfe2d> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#43beb47a-af76-4052-b6cf-0f3a15cbfe2d> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T10:25:56.141421Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_371e02a5-4f76-4394-8035-d2c80d638454> <http://provchain.org/block/1> .
-<http://example.org/participant_371e02a5-4f76-4394-8035-d2c80d638454> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/participant_371e02a5-4f76-4394-8035-d2c80d638454> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "0417f399942f06d66d37ada5e6739a923ddc6cfce0b5ecf5edf354350c8e1785" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "c43238e8e8ef5fa1d2e1b6ffa98c1e8c0fcff528b30285f21bab70018c870451" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:20:23.826013Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/tx#98b75dde-2b82-4e4a-8051-261847d405fd> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/tx#98b75dde-2b82-4e4a-8051-261847d405fd> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#98b75dde-2b82-4e4a-8051-261847d405fd> <http://provchain.org/tx#hasTimestamp> "2025-08-16T10:20:23.8217Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#98b75dde-2b82-4e4a-8051-261847d405fd> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#98b75dde-2b82-4e4a-8051-261847d405fd> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T10:20:23.821675Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_cb8c11a3-fd6d-4ee7-b874-1d7712377793> <http://provchain.org/block/1> .
-<http://example.org/participant_cb8c11a3-fd6d-4ee7-b874-1d7712377793> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/participant_cb8c11a3-fd6d-4ee7-b874-1d7712377793> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "42dde5ceca21e9e6f65204176db6a984d0704efade961e1a6f02c11e16228cb1" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "6f7cd3ceee629277dcb447cf541ec7ece2890335e6c73020320e3cfeee1f2a7d" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:18:23.327387Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/tx#f8ad52f1-af5c-477b-92fc-02b57fe59397> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/tx#f8ad52f1-af5c-477b-92fc-02b57fe59397> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#f8ad52f1-af5c-477b-92fc-02b57fe59397> <http://provchain.org/tx#hasTimestamp> "2025-08-16T10:18:23.323208Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#f8ad52f1-af5c-477b-92fc-02b57fe59397> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#f8ad52f1-af5c-477b-92fc-02b57fe59397> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T10:18:23.323201Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_db9a650f-8b79-41ce-be52-77d34040ab28> <http://provchain.org/block/1> .
-<http://example.org/participant_db9a650f-8b79-41ce-be52-77d34040ab28> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/participant_db9a650f-8b79-41ce-be52-77d34040ab28> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://provchain.org/trace#TraceEntity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#TraceEntity> <http://www.w3.org/2000/01/rdf-schema#label> "TraceEntity" .
-<http://provchain.org/trace#TraceEntity> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Entity> .
-<http://provchain.org/trace#TraceEntity> <http://www.w3.org/2000/01/rdf-schema#comment> "Physical or information object being traced (e.g., milk batch, ingredient lot)." .
-<http://provchain.org/trace#ProductBatch> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#ProductBatch> <http://www.w3.org/2000/01/rdf-schema#label> "ProductBatch" .
-<http://provchain.org/trace#ProductBatch> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceEntity> .
-<http://provchain.org/trace#ProductBatch> <http://www.w3.org/2000/01/rdf-schema#comment> "A batch or lot of product (e.g., a milk batch)." .
-<http://provchain.org/trace#IngredientLot> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#IngredientLot> <http://www.w3.org/2000/01/rdf-schema#label> "IngredientLot" .
-<http://provchain.org/trace#IngredientLot> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceEntity> .
-<http://provchain.org/trace#IngredientLot> <http://www.w3.org/2000/01/rdf-schema#comment> "A lot of raw material or ingredient." .
-<http://provchain.org/trace#TraceActivity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#TraceActivity> <http://www.w3.org/2000/01/rdf-schema#label> "TraceActivity" .
-<http://provchain.org/trace#TraceActivity> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Activity> .
-<http://provchain.org/trace#TraceActivity> <http://www.w3.org/2000/01/rdf-schema#comment> "An action or process (e.g., harvest, UHT processing, transport, QC)." .
-<http://provchain.org/trace#ProcessingActivity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#ProcessingActivity> <http://www.w3.org/2000/01/rdf-schema#label> "ProcessingActivity" .
-<http://provchain.org/trace#ProcessingActivity> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceActivity> .
-<http://provchain.org/trace#ProcessingActivity> <http://www.w3.org/2000/01/rdf-schema#comment> "Manufacturing or processing step (e.g., UHT)." .
-<http://provchain.org/trace#TransportActivity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#TransportActivity> <http://www.w3.org/2000/01/rdf-schema#label> "TransportActivity" .
-<http://provchain.org/trace#TransportActivity> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceActivity> .
-<http://provchain.org/trace#TransportActivity> <http://www.w3.org/2000/01/rdf-schema#comment> "Logistics/transport event." .
-<http://provchain.org/trace#QualityCheck> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#QualityCheck> <http://www.w3.org/2000/01/rdf-schema#label> "QualityCheck" .
-<http://provchain.org/trace#QualityCheck> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceActivity> .
-<http://provchain.org/trace#QualityCheck> <http://www.w3.org/2000/01/rdf-schema#comment> "Quality control or inspection activity." .
-<http://provchain.org/trace#TraceAgent> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#TraceAgent> <http://www.w3.org/2000/01/rdf-schema#label> "TraceAgent" .
-<http://provchain.org/trace#TraceAgent> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Agent> .
-<http://provchain.org/trace#TraceAgent> <http://www.w3.org/2000/01/rdf-schema#comment> "Actor in the supply chain (farmer, manufacturer, carrier, retailer, customer)." .
-<http://provchain.org/trace#Farmer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#Farmer> <http://www.w3.org/2000/01/rdf-schema#label> "Farmer" .
-<http://provchain.org/trace#Farmer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceAgent> .
-<http://provchain.org/trace#Manufacturer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#Manufacturer> <http://www.w3.org/2000/01/rdf-schema#label> "Manufacturer" .
-<http://provchain.org/trace#Manufacturer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceAgent> .
-<http://provchain.org/trace#LogisticsProvider> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#LogisticsProvider> <http://www.w3.org/2000/01/rdf-schema#label> "LogisticsProvider" .
-<http://provchain.org/trace#LogisticsProvider> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceAgent> .
-<http://provchain.org/trace#Retailer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#Retailer> <http://www.w3.org/2000/01/rdf-schema#label> "Retailer" .
-<http://provchain.org/trace#Retailer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceAgent> .
-<http://provchain.org/trace#Customer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#Customer> <http://www.w3.org/2000/01/rdf-schema#label> "Customer" .
-<http://provchain.org/trace#Customer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceAgent> .
-<http://provchain.org/trace#hasBatchID> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/trace#hasBatchID> <http://www.w3.org/2000/01/rdf-schema#label> "hasBatchID" .
-<http://provchain.org/trace#hasBatchID> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceEntity> .
-<http://provchain.org/trace#hasBatchID> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#string> .
-<http://provchain.org/trace#hasBatchID> <http://www.w3.org/2000/01/rdf-schema#comment> "Identifier for the batch/lot." .
-<http://provchain.org/trace#originLocation> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
-<http://provchain.org/trace#originLocation> <http://www.w3.org/2000/01/rdf-schema#label> "originLocation" .
-<http://provchain.org/trace#originLocation> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceEntity> .
-<http://provchain.org/trace#originLocation> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2003/01/geo/wgs84_pos#Point> .
-<http://provchain.org/trace#originLocation> <http://www.w3.org/2000/01/rdf-schema#comment> "Geolocation of origin (use Geo vocab)." .
-<http://provchain.org/trace#producedAt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/trace#producedAt> <http://www.w3.org/2000/01/rdf-schema#label> "producedAt" .
-<http://provchain.org/trace#producedAt> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceEntity> .
-<http://provchain.org/trace#producedAt> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://provchain.org/trace#producedAt> <http://www.w3.org/2000/01/rdf-schema#comment> "Production timestamp." .
-<http://provchain.org/trace#recordedAt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/trace#recordedAt> <http://www.w3.org/2000/01/rdf-schema#label> "recordedAt" .
-<http://provchain.org/trace#recordedAt> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceActivity> .
-<http://provchain.org/trace#recordedAt> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://provchain.org/trace#recordedAt> <http://www.w3.org/2000/01/rdf-schema#comment> "Timestamp when the activity was recorded." .
-<http://provchain.org/trace#hasCondition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
-<http://provchain.org/trace#hasCondition> <http://www.w3.org/2000/01/rdf-schema#label> "hasCondition" .
-<http://provchain.org/trace#hasCondition> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceActivity> .
-<http://provchain.org/trace#hasCondition> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/trace#EnvironmentalCondition> .
-<http://provchain.org/trace#hasCondition> <http://www.w3.org/2000/01/rdf-schema#comment> "Link from an activity to environmental reading(s)." .
-<http://provchain.org/trace#hasTemperature> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/trace#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#label> "hasTemperature" .
-<http://provchain.org/trace#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#EnvironmentalCondition> .
-<http://provchain.org/trace#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#decimal> .
-<http://provchain.org/trace#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#comment> "Temperature in Celsius." .
-<http://provchain.org/trace#hasHumidity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/trace#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#label> "hasHumidity" .
-<http://provchain.org/trace#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#EnvironmentalCondition> .
-<http://provchain.org/trace#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#decimal> .
-<http://provchain.org/trace#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#comment> "Relative humidity in percent." .
-<http://provchain.org/trace#hasConditionTimestamp> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
-<http://provchain.org/trace#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#label> "hasConditionTimestamp" .
-<http://provchain.org/trace#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#EnvironmentalCondition> .
-<http://provchain.org/trace#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://provchain.org/trace#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#comment> "Time when condition was measured." .
-<http://provchain.org/trace#environmentalSensor> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
-<http://provchain.org/trace#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#label> "environmentalSensor" .
-<http://provchain.org/trace#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#EnvironmentalCondition> .
-<http://provchain.org/trace#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/trace#TraceAgent> .
-<http://provchain.org/trace#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#comment> "Agent or device that recorded the condition." .
-<http://provchain.org/trace#hasCertificate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
-<http://provchain.org/trace#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#label> "hasCertificate" .
-<http://provchain.org/trace#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceAgent> .
-<http://provchain.org/trace#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/trace#Certificate> .
-<http://provchain.org/trace#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#comment> "Certification or quality document linked to an agent." .
-<http://provchain.org/trace#lotDerivedFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
-<http://provchain.org/trace#lotDerivedFrom> <http://www.w3.org/2000/01/rdf-schema#label> "lotDerivedFrom" .
-<http://provchain.org/trace#lotDerivedFrom> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#ProductBatch> .
-<http://provchain.org/trace#lotDerivedFrom> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/trace#IngredientLot> .
-<http://provchain.org/trace#lotDerivedFrom> <http://www.w3.org/2000/01/rdf-schema#comment> "Link from product batch to ingredient lot(s)." .
-<http://provchain.org/trace#EnvironmentalCondition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#EnvironmentalCondition> <http://www.w3.org/2000/01/rdf-schema#label> "EnvironmentalCondition" .
-<http://provchain.org/trace#Certificate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
-<http://provchain.org/trace#Certificate> <http://www.w3.org/2000/01/rdf-schema#label> "Certificate" .
-<http://provchain.org/trace#Certificate> <http://www.w3.org/2000/01/rdf-schema#comment> "An external document such as test report, organic certification, etc." .
-<http://example.org/genesis> <http://example.org/type> "Genesis Block" <http://provchain.org/block/0> .
-<http://provchain.org/block/0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/GenesisBlock> <http://provchain.org/blockchain> .
-<http://provchain.org/block/0> <http://provchain.org/hasIndex> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/blockchain> .
-<http://provchain.org/block/0> <http://provchain.org/hasTimestamp> "2025-08-16T07:42:13.056724Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/block/0> <http://provchain.org/hasHash> "fb6582857dfd7130a3e3e07306569efc0b783be5c19ba7088c31572022c8bda2" <http://provchain.org/blockchain> .
-<http://provchain.org/block/0> <http://provchain.org/hasPreviousHash> "0" <http://provchain.org/blockchain> .
-<http://provchain.org/block/0> <http://provchain.org/hasDataGraphIRI> "http://provchain.org/block/0"^^<http://www.w3.org/2001/XMLSchema#anyURI> <http://provchain.org/blockchain> .
-<http://example.org/participant_18256b4a-a53f-4445-bfda-c2e837f1a322> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://example.org/participant_18256b4a-a53f-4445-bfda-c2e837f1a322> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#hasLocation> "Demo Farm" <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#hasQuantity> "100"^^<http://www.w3.org/2001/XMLSchema#decimal> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_18256b4a-a53f-4445-bfda-c2e837f1a322> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T07:42:13.059124Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#hasBatchID> "DEMO-BATCH-001" <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#ProductBatch> <http://provchain.org/block/1> .
-<http://provchain.org/tx#dc617d85-ab6d-4cf0-9ad6-1d2562bd4010> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#dc617d85-ab6d-4cf0-9ad6-1d2562bd4010> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#dc617d85-ab6d-4cf0-9ad6-1d2562bd4010> <http://provchain.org/tx#hasTimestamp> "2025-08-16T07:42:13.059153Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#dc617d85-ab6d-4cf0-9ad6-1d2562bd4010> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#dc617d85-ab6d-4cf0-9ad6-1d2562bd4010> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/Block> <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasIndex> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T07:42:13.060288Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "42dde5ceca21e9e6f65204176db6a984d0704efade961e1a6f02c11e16228cb1" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "fb6582857dfd7130a3e3e07306569efc0b783be5c19ba7088c31572022c8bda2" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasDataGraphIRI> "http://provchain.org/block/1"^^<http://www.w3.org/2001/XMLSchema#anyURI> <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://www.w3.org/ns/prov#wasPrecededBy> <http://provchain.org/block/0> <http://provchain.org/blockchain> .
-<http://example.org/participant_6423326a-ed04-4c90-b4cb-95586051ba26> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://example.org/participant_6423326a-ed04-4c90-b4cb-95586051ba26> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_6423326a-ed04-4c90-b4cb-95586051ba26> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T10:19:22.123323Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#b0f0155b-247d-4a5a-b420-76ecf2e9205f> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#b0f0155b-247d-4a5a-b420-76ecf2e9205f> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#b0f0155b-247d-4a5a-b420-76ecf2e9205f> <http://provchain.org/tx#hasTimestamp> "2025-08-16T10:19:22.123593Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#b0f0155b-247d-4a5a-b420-76ecf2e9205f> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#b0f0155b-247d-4a5a-b420-76ecf2e9205f> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:19:22.131588Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "0417f399942f06d66d37ada5e6739a923ddc6cfce0b5ecf5edf354350c8e1785" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "6f7cd3ceee629277dcb447cf541ec7ece2890335e6c73020320e3cfeee1f2a7d" <http://provchain.org/blockchain> .
-<http://example.org/participant_89a10f41-78b3-4afe-b224-c4fb4d694517> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://example.org/participant_89a10f41-78b3-4afe-b224-c4fb4d694517> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_89a10f41-78b3-4afe-b224-c4fb4d694517> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T10:22:57.802927Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#18bf77ed-303a-49f7-9c05-49425be80f4d> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#18bf77ed-303a-49f7-9c05-49425be80f4d> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#18bf77ed-303a-49f7-9c05-49425be80f4d> <http://provchain.org/tx#hasTimestamp> "2025-08-16T10:22:57.802968Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#18bf77ed-303a-49f7-9c05-49425be80f4d> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#18bf77ed-303a-49f7-9c05-49425be80f4d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:22:57.806131Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "c800bf7495a46483f69ad427ef9489d15c0b5a592a7c8a86632111c2519de1a1" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "c43238e8e8ef5fa1d2e1b6ffa98c1e8c0fcff528b30285f21bab70018c870451" <http://provchain.org/blockchain> .
-<http://example.org/participant_9e941221-08e2-4e86-ab6d-53cb3c3f71f9> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://example.org/participant_9e941221-08e2-4e86-ab6d-53cb3c3f71f9> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_9e941221-08e2-4e86-ab6d-53cb3c3f71f9> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T13:05:21.437281Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#9bd59217-1941-41ad-a014-62365a21c2da> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#9bd59217-1941-41ad-a014-62365a21c2da> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#9bd59217-1941-41ad-a014-62365a21c2da> <http://provchain.org/tx#hasTimestamp> "2025-08-16T13:05:21.437289Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#9bd59217-1941-41ad-a014-62365a21c2da> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#9bd59217-1941-41ad-a014-62365a21c2da> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T13:05:21.44188Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "ae1c022ddb12e041a541685953f87aaefbf538f6558249998c13192aa0b14013" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "46d90c8e1aa7d55c67b26326f281a59d3919cb43ad060a5d3226ed97fb22f6cb" <http://provchain.org/blockchain> .
-<http://example.org/participant_0882288f-601d-4bb0-b794-983f83217aab> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://example.org/participant_0882288f-601d-4bb0-b794-983f83217aab> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_0882288f-601d-4bb0-b794-983f83217aab> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T08:56:31.900352Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#1b63b168-645e-48d8-867a-3e94e56d225c> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#1b63b168-645e-48d8-867a-3e94e56d225c> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#1b63b168-645e-48d8-867a-3e94e56d225c> <http://provchain.org/tx#hasTimestamp> "2025-08-22T08:56:31.90036Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#1b63b168-645e-48d8-867a-3e94e56d225c> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#1b63b168-645e-48d8-867a-3e94e56d225c> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T08:56:31.903593Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "c238537053327f18a8336ab9a4a816710096a0bf08bc9b94a32dd76608a54a5d" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "9745d36fef6af773ebf4120b670edcb0eb6594204d07ccaec9a365606fbc8d94" <http://provchain.org/blockchain> .
-<http://example.org/participant_3adc878d-f472-4f8e-ace4-b0da9c7be2d3> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://example.org/participant_3adc878d-f472-4f8e-ace4-b0da9c7be2d3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_3adc878d-f472-4f8e-ace4-b0da9c7be2d3> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T11:15:14.492121Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#480ef49d-696b-4334-a2b9-d786f13360b7> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#480ef49d-696b-4334-a2b9-d786f13360b7> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#480ef49d-696b-4334-a2b9-d786f13360b7> <http://provchain.org/tx#hasTimestamp> "2025-08-22T11:15:14.492129Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#480ef49d-696b-4334-a2b9-d786f13360b7> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#480ef49d-696b-4334-a2b9-d786f13360b7> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T11:15:14.495693Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "5739a5833378c1e5ef0b98d14b9b95bfdfefa568251d3b56444307ad20a70a72" <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "a7817b1a5b98dde85f08eb53c2e0ceeb8947f57145bdce3385c43068d841366f" <http://provchain.org/blockchain> .
-<http://example.org/participant_8097b4d4-2c51-418d-94d0-0ff15c265504> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
-<http://example.org/participant_8097b4d4-2c51-418d-94d0-0ff15c265504> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_8097b4d4-2c51-418d-94d0-0ff15c265504> <http://provchain.org/block/1> .
-<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T13:18:28.574418Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#18e80308-f249-4758-9d5a-b978719fdb44> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#18e80308-f249-4758-9d5a-b978719fdb44> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
-<http://provchain.org/tx#18e80308-f249-4758-9d5a-b978719fdb44> <http://provchain.org/tx#hasTimestamp> "2025-08-22T13:18:28.574431Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
-<http://provchain.org/tx#18e80308-f249-4758-9d5a-b978719fdb44> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
-<http://provchain.org/tx#18e80308-f249-4758-9d5a-b978719fdb44> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
-<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T13:18:28.578244Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
-<http://provchain.org/block/1> <http://provchain.org/hasHash> "a090fc11793f9f079e4f612c417e38740d844add8ef97f2512dbe85742764660" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "37503ccbf9aa34251a37d56872848b4b052c5aa0586be4838a18d6a3992b6c2a" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "fc7084bbec45402d1a47cf6617c142e0fc8ab7ec06b62140279770eb2c4d8ae3" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-30T10:39:55.435311Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#16464b56-39ea-478e-b3a0-cf661c7f0aac> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#16464b56-39ea-478e-b3a0-cf661c7f0aac> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#16464b56-39ea-478e-b3a0-cf661c7f0aac> <http://provchain.org/tx#hasTimestamp> "2025-08-30T10:39:55.429944Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#16464b56-39ea-478e-b3a0-cf661c7f0aac> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#16464b56-39ea-478e-b3a0-cf661c7f0aac> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-30T10:39:55.429934Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_8d29368a-e114-4e87-a689-07eef1ad4601> <http://provchain.org/block/1> .
+<http://example.org/participant_8d29368a-e114-4e87-a689-07eef1ad4601> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_8d29368a-e114-4e87-a689-07eef1ad4601> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
 <http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "89ecdcfbe45462bf433a8c944fda76d01149807e9f8e8390c71fb062a9c99c19" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "a090fc11793f9f079e4f612c417e38740d844add8ef97f2512dbe85742764660" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T13:18:28.578244Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#18e80308-f249-4758-9d5a-b978719fdb44> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#18e80308-f249-4758-9d5a-b978719fdb44> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#18e80308-f249-4758-9d5a-b978719fdb44> <http://provchain.org/tx#hasTimestamp> "2025-08-22T13:18:28.574431Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#18e80308-f249-4758-9d5a-b978719fdb44> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#18e80308-f249-4758-9d5a-b978719fdb44> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T13:18:28.574418Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_8097b4d4-2c51-418d-94d0-0ff15c265504> <http://provchain.org/block/1> .
+<http://example.org/participant_8097b4d4-2c51-418d-94d0-0ff15c265504> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_8097b4d4-2c51-418d-94d0-0ff15c265504> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "a7817b1a5b98dde85f08eb53c2e0ceeb8947f57145bdce3385c43068d841366f" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "5739a5833378c1e5ef0b98d14b9b95bfdfefa568251d3b56444307ad20a70a72" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T11:15:14.495693Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#480ef49d-696b-4334-a2b9-d786f13360b7> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#480ef49d-696b-4334-a2b9-d786f13360b7> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#480ef49d-696b-4334-a2b9-d786f13360b7> <http://provchain.org/tx#hasTimestamp> "2025-08-22T11:15:14.492129Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#480ef49d-696b-4334-a2b9-d786f13360b7> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#480ef49d-696b-4334-a2b9-d786f13360b7> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T11:15:14.492121Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_3adc878d-f472-4f8e-ace4-b0da9c7be2d3> <http://provchain.org/block/1> .
+<http://example.org/participant_3adc878d-f472-4f8e-ace4-b0da9c7be2d3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_3adc878d-f472-4f8e-ace4-b0da9c7be2d3> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "9745d36fef6af773ebf4120b670edcb0eb6594204d07ccaec9a365606fbc8d94" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "c238537053327f18a8336ab9a4a816710096a0bf08bc9b94a32dd76608a54a5d" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T08:56:31.903593Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#1b63b168-645e-48d8-867a-3e94e56d225c> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#1b63b168-645e-48d8-867a-3e94e56d225c> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#1b63b168-645e-48d8-867a-3e94e56d225c> <http://provchain.org/tx#hasTimestamp> "2025-08-22T08:56:31.90036Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#1b63b168-645e-48d8-867a-3e94e56d225c> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#1b63b168-645e-48d8-867a-3e94e56d225c> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T08:56:31.900352Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_0882288f-601d-4bb0-b794-983f83217aab> <http://provchain.org/block/1> .
+<http://example.org/participant_0882288f-601d-4bb0-b794-983f83217aab> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_0882288f-601d-4bb0-b794-983f83217aab> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "46d90c8e1aa7d55c67b26326f281a59d3919cb43ad060a5d3226ed97fb22f6cb" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "ae1c022ddb12e041a541685953f87aaefbf538f6558249998c13192aa0b14013" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T13:05:21.44188Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#9bd59217-1941-41ad-a014-62365a21c2da> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#9bd59217-1941-41ad-a014-62365a21c2da> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#9bd59217-1941-41ad-a014-62365a21c2da> <http://provchain.org/tx#hasTimestamp> "2025-08-16T13:05:21.437289Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#9bd59217-1941-41ad-a014-62365a21c2da> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#9bd59217-1941-41ad-a014-62365a21c2da> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T13:05:21.437281Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_9e941221-08e2-4e86-ab6d-53cb3c3f71f9> <http://provchain.org/block/1> .
+<http://example.org/participant_9e941221-08e2-4e86-ab6d-53cb3c3f71f9> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_9e941221-08e2-4e86-ab6d-53cb3c3f71f9> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "c43238e8e8ef5fa1d2e1b6ffa98c1e8c0fcff528b30285f21bab70018c870451" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "c800bf7495a46483f69ad427ef9489d15c0b5a592a7c8a86632111c2519de1a1" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:22:57.806131Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#18bf77ed-303a-49f7-9c05-49425be80f4d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#18bf77ed-303a-49f7-9c05-49425be80f4d> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#18bf77ed-303a-49f7-9c05-49425be80f4d> <http://provchain.org/tx#hasTimestamp> "2025-08-16T10:22:57.802968Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#18bf77ed-303a-49f7-9c05-49425be80f4d> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#18bf77ed-303a-49f7-9c05-49425be80f4d> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T10:22:57.802927Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_89a10f41-78b3-4afe-b224-c4fb4d694517> <http://provchain.org/block/1> .
+<http://example.org/participant_89a10f41-78b3-4afe-b224-c4fb4d694517> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_89a10f41-78b3-4afe-b224-c4fb4d694517> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "6f7cd3ceee629277dcb447cf541ec7ece2890335e6c73020320e3cfeee1f2a7d" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "0417f399942f06d66d37ada5e6739a923ddc6cfce0b5ecf5edf354350c8e1785" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:19:22.131588Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#b0f0155b-247d-4a5a-b420-76ecf2e9205f> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#b0f0155b-247d-4a5a-b420-76ecf2e9205f> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#b0f0155b-247d-4a5a-b420-76ecf2e9205f> <http://provchain.org/tx#hasTimestamp> "2025-08-16T10:19:22.123593Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#b0f0155b-247d-4a5a-b420-76ecf2e9205f> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#b0f0155b-247d-4a5a-b420-76ecf2e9205f> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T10:19:22.123323Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_6423326a-ed04-4c90-b4cb-95586051ba26> <http://provchain.org/block/1> .
+<http://example.org/participant_6423326a-ed04-4c90-b4cb-95586051ba26> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_6423326a-ed04-4c90-b4cb-95586051ba26> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://www.w3.org/ns/prov#wasPrecededBy> <http://provchain.org/block/0> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasDataGraphIRI> "http://provchain.org/block/1"^^<http://www.w3.org/2001/XMLSchema#anyURI> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "fb6582857dfd7130a3e3e07306569efc0b783be5c19ba7088c31572022c8bda2" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "42dde5ceca21e9e6f65204176db6a984d0704efade961e1a6f02c11e16228cb1" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T07:42:13.060288Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasIndex> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/Block> <http://provchain.org/blockchain> .
+<http://provchain.org/tx#dc617d85-ab6d-4cf0-9ad6-1d2562bd4010> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/tx#dc617d85-ab6d-4cf0-9ad6-1d2562bd4010> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#dc617d85-ab6d-4cf0-9ad6-1d2562bd4010> <http://provchain.org/tx#hasTimestamp> "2025-08-16T07:42:13.059153Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#dc617d85-ab6d-4cf0-9ad6-1d2562bd4010> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#dc617d85-ab6d-4cf0-9ad6-1d2562bd4010> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#ProductBatch> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#hasBatchID> "DEMO-BATCH-001" <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T07:42:13.059124Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_18256b4a-a53f-4445-bfda-c2e837f1a322> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#hasQuantity> "100"^^<http://www.w3.org/2001/XMLSchema#decimal> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#hasLocation> "Demo Farm" <http://provchain.org/block/1> .
+<http://example.org/participant_18256b4a-a53f-4445-bfda-c2e837f1a322> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/participant_18256b4a-a53f-4445-bfda-c2e837f1a322> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://provchain.org/block/0> <http://provchain.org/hasDataGraphIRI> "http://provchain.org/block/0"^^<http://www.w3.org/2001/XMLSchema#anyURI> <http://provchain.org/blockchain> .
+<http://provchain.org/block/0> <http://provchain.org/hasPreviousHash> "0" <http://provchain.org/blockchain> .
+<http://provchain.org/block/0> <http://provchain.org/hasHash> "fb6582857dfd7130a3e3e07306569efc0b783be5c19ba7088c31572022c8bda2" <http://provchain.org/blockchain> .
+<http://provchain.org/block/0> <http://provchain.org/hasTimestamp> "2025-08-16T07:42:13.056724Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/0> <http://provchain.org/hasIndex> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/blockchain> .
+<http://provchain.org/block/0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/GenesisBlock> <http://provchain.org/blockchain> .
+<http://example.org/genesis> <http://example.org/type> "Genesis Block" <http://provchain.org/block/0> .
+<http://provchain.org/trace#Certificate> <http://www.w3.org/2000/01/rdf-schema#comment> "An external document such as test report, organic certification, etc." .
+<http://provchain.org/trace#Certificate> <http://www.w3.org/2000/01/rdf-schema#label> "Certificate" .
+<http://provchain.org/trace#Certificate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#EnvironmentalCondition> <http://www.w3.org/2000/01/rdf-schema#label> "EnvironmentalCondition" .
+<http://provchain.org/trace#EnvironmentalCondition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#lotDerivedFrom> <http://www.w3.org/2000/01/rdf-schema#comment> "Link from product batch to ingredient lot(s)." .
+<http://provchain.org/trace#lotDerivedFrom> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/trace#IngredientLot> .
+<http://provchain.org/trace#lotDerivedFrom> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#ProductBatch> .
+<http://provchain.org/trace#lotDerivedFrom> <http://www.w3.org/2000/01/rdf-schema#label> "lotDerivedFrom" .
+<http://provchain.org/trace#lotDerivedFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://provchain.org/trace#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#comment> "Certification or quality document linked to an agent." .
+<http://provchain.org/trace#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/trace#Certificate> .
+<http://provchain.org/trace#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceAgent> .
+<http://provchain.org/trace#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#label> "hasCertificate" .
+<http://provchain.org/trace#hasCertificate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://provchain.org/trace#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#comment> "Agent or device that recorded the condition." .
+<http://provchain.org/trace#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/trace#TraceAgent> .
+<http://provchain.org/trace#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#EnvironmentalCondition> .
+<http://provchain.org/trace#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#label> "environmentalSensor" .
+<http://provchain.org/trace#environmentalSensor> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://provchain.org/trace#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#comment> "Time when condition was measured." .
+<http://provchain.org/trace#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/trace#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#EnvironmentalCondition> .
+<http://provchain.org/trace#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#label> "hasConditionTimestamp" .
+<http://provchain.org/trace#hasConditionTimestamp> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/trace#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#comment> "Relative humidity in percent." .
+<http://provchain.org/trace#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#decimal> .
+<http://provchain.org/trace#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#EnvironmentalCondition> .
+<http://provchain.org/trace#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#label> "hasHumidity" .
+<http://provchain.org/trace#hasHumidity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/trace#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#comment> "Temperature in Celsius." .
+<http://provchain.org/trace#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#decimal> .
+<http://provchain.org/trace#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#EnvironmentalCondition> .
+<http://provchain.org/trace#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#label> "hasTemperature" .
+<http://provchain.org/trace#hasTemperature> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/trace#hasCondition> <http://www.w3.org/2000/01/rdf-schema#comment> "Link from an activity to environmental reading(s)." .
+<http://provchain.org/trace#hasCondition> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/trace#EnvironmentalCondition> .
+<http://provchain.org/trace#hasCondition> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceActivity> .
+<http://provchain.org/trace#hasCondition> <http://www.w3.org/2000/01/rdf-schema#label> "hasCondition" .
+<http://provchain.org/trace#hasCondition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://provchain.org/trace#recordedAt> <http://www.w3.org/2000/01/rdf-schema#comment> "Timestamp when the activity was recorded." .
+<http://provchain.org/trace#recordedAt> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/trace#recordedAt> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceActivity> .
+<http://provchain.org/trace#recordedAt> <http://www.w3.org/2000/01/rdf-schema#label> "recordedAt" .
+<http://provchain.org/trace#recordedAt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/trace#producedAt> <http://www.w3.org/2000/01/rdf-schema#comment> "Production timestamp." .
+<http://provchain.org/trace#producedAt> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/trace#producedAt> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceEntity> .
+<http://provchain.org/trace#producedAt> <http://www.w3.org/2000/01/rdf-schema#label> "producedAt" .
+<http://provchain.org/trace#producedAt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/trace#originLocation> <http://www.w3.org/2000/01/rdf-schema#comment> "Geolocation of origin (use Geo vocab)." .
+<http://provchain.org/trace#originLocation> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2003/01/geo/wgs84_pos#Point> .
+<http://provchain.org/trace#originLocation> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceEntity> .
+<http://provchain.org/trace#originLocation> <http://www.w3.org/2000/01/rdf-schema#label> "originLocation" .
+<http://provchain.org/trace#originLocation> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://provchain.org/trace#hasBatchID> <http://www.w3.org/2000/01/rdf-schema#comment> "Identifier for the batch/lot." .
+<http://provchain.org/trace#hasBatchID> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#string> .
+<http://provchain.org/trace#hasBatchID> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/trace#TraceEntity> .
+<http://provchain.org/trace#hasBatchID> <http://www.w3.org/2000/01/rdf-schema#label> "hasBatchID" .
+<http://provchain.org/trace#hasBatchID> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/trace#Customer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceAgent> .
+<http://provchain.org/trace#Customer> <http://www.w3.org/2000/01/rdf-schema#label> "Customer" .
+<http://provchain.org/trace#Customer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#Retailer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceAgent> .
+<http://provchain.org/trace#Retailer> <http://www.w3.org/2000/01/rdf-schema#label> "Retailer" .
+<http://provchain.org/trace#Retailer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#LogisticsProvider> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceAgent> .
+<http://provchain.org/trace#LogisticsProvider> <http://www.w3.org/2000/01/rdf-schema#label> "LogisticsProvider" .
+<http://provchain.org/trace#LogisticsProvider> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#Manufacturer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceAgent> .
+<http://provchain.org/trace#Manufacturer> <http://www.w3.org/2000/01/rdf-schema#label> "Manufacturer" .
+<http://provchain.org/trace#Manufacturer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#Farmer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceAgent> .
+<http://provchain.org/trace#Farmer> <http://www.w3.org/2000/01/rdf-schema#label> "Farmer" .
+<http://provchain.org/trace#Farmer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#TraceAgent> <http://www.w3.org/2000/01/rdf-schema#comment> "Actor in the supply chain (farmer, manufacturer, carrier, retailer, customer)." .
+<http://provchain.org/trace#TraceAgent> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Agent> .
+<http://provchain.org/trace#TraceAgent> <http://www.w3.org/2000/01/rdf-schema#label> "TraceAgent" .
+<http://provchain.org/trace#TraceAgent> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#QualityCheck> <http://www.w3.org/2000/01/rdf-schema#comment> "Quality control or inspection activity." .
+<http://provchain.org/trace#QualityCheck> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceActivity> .
+<http://provchain.org/trace#QualityCheck> <http://www.w3.org/2000/01/rdf-schema#label> "QualityCheck" .
+<http://provchain.org/trace#QualityCheck> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#TransportActivity> <http://www.w3.org/2000/01/rdf-schema#comment> "Logistics/transport event." .
+<http://provchain.org/trace#TransportActivity> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceActivity> .
+<http://provchain.org/trace#TransportActivity> <http://www.w3.org/2000/01/rdf-schema#label> "TransportActivity" .
+<http://provchain.org/trace#TransportActivity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#ProcessingActivity> <http://www.w3.org/2000/01/rdf-schema#comment> "Manufacturing or processing step (e.g., UHT)." .
+<http://provchain.org/trace#ProcessingActivity> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceActivity> .
+<http://provchain.org/trace#ProcessingActivity> <http://www.w3.org/2000/01/rdf-schema#label> "ProcessingActivity" .
+<http://provchain.org/trace#ProcessingActivity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#TraceActivity> <http://www.w3.org/2000/01/rdf-schema#comment> "An action or process (e.g., harvest, UHT processing, transport, QC)." .
+<http://provchain.org/trace#TraceActivity> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Activity> .
+<http://provchain.org/trace#TraceActivity> <http://www.w3.org/2000/01/rdf-schema#label> "TraceActivity" .
+<http://provchain.org/trace#TraceActivity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#IngredientLot> <http://www.w3.org/2000/01/rdf-schema#comment> "A lot of raw material or ingredient." .
+<http://provchain.org/trace#IngredientLot> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceEntity> .
+<http://provchain.org/trace#IngredientLot> <http://www.w3.org/2000/01/rdf-schema#label> "IngredientLot" .
+<http://provchain.org/trace#IngredientLot> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#ProductBatch> <http://www.w3.org/2000/01/rdf-schema#comment> "A batch or lot of product (e.g., a milk batch)." .
+<http://provchain.org/trace#ProductBatch> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/trace#TraceEntity> .
+<http://provchain.org/trace#ProductBatch> <http://www.w3.org/2000/01/rdf-schema#label> "ProductBatch" .
+<http://provchain.org/trace#ProductBatch> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/trace#TraceEntity> <http://www.w3.org/2000/01/rdf-schema#comment> "Physical or information object being traced (e.g., milk batch, ingredient lot)." .
+<http://provchain.org/trace#TraceEntity> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Entity> .
+<http://provchain.org/trace#TraceEntity> <http://www.w3.org/2000/01/rdf-schema#label> "TraceEntity" .
+<http://provchain.org/trace#TraceEntity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://example.org/participant_db9a650f-8b79-41ce-be52-77d34040ab28> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://example.org/participant_db9a650f-8b79-41ce-be52-77d34040ab28> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_db9a650f-8b79-41ce-be52-77d34040ab28> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T10:18:23.323201Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f8ad52f1-af5c-477b-92fc-02b57fe59397> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f8ad52f1-af5c-477b-92fc-02b57fe59397> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f8ad52f1-af5c-477b-92fc-02b57fe59397> <http://provchain.org/tx#hasTimestamp> "2025-08-16T10:18:23.323208Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f8ad52f1-af5c-477b-92fc-02b57fe59397> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#f8ad52f1-af5c-477b-92fc-02b57fe59397> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:18:23.327387Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "6f7cd3ceee629277dcb447cf541ec7ece2890335e6c73020320e3cfeee1f2a7d" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "42dde5ceca21e9e6f65204176db6a984d0704efade961e1a6f02c11e16228cb1" <http://provchain.org/blockchain> .
+<http://example.org/participant_cb8c11a3-fd6d-4ee7-b874-1d7712377793> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://example.org/participant_cb8c11a3-fd6d-4ee7-b874-1d7712377793> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_cb8c11a3-fd6d-4ee7-b874-1d7712377793> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T10:20:23.821675Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#98b75dde-2b82-4e4a-8051-261847d405fd> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#98b75dde-2b82-4e4a-8051-261847d405fd> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#98b75dde-2b82-4e4a-8051-261847d405fd> <http://provchain.org/tx#hasTimestamp> "2025-08-16T10:20:23.8217Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#98b75dde-2b82-4e4a-8051-261847d405fd> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#98b75dde-2b82-4e4a-8051-261847d405fd> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:20:23.826013Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "c43238e8e8ef5fa1d2e1b6ffa98c1e8c0fcff528b30285f21bab70018c870451" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "0417f399942f06d66d37ada5e6739a923ddc6cfce0b5ecf5edf354350c8e1785" <http://provchain.org/blockchain> .
+<http://example.org/participant_371e02a5-4f76-4394-8035-d2c80d638454> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://example.org/participant_371e02a5-4f76-4394-8035-d2c80d638454> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_371e02a5-4f76-4394-8035-d2c80d638454> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-16T10:25:56.141421Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#43beb47a-af76-4052-b6cf-0f3a15cbfe2d> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#43beb47a-af76-4052-b6cf-0f3a15cbfe2d> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#43beb47a-af76-4052-b6cf-0f3a15cbfe2d> <http://provchain.org/tx#hasTimestamp> "2025-08-16T10:25:56.141431Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#43beb47a-af76-4052-b6cf-0f3a15cbfe2d> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#43beb47a-af76-4052-b6cf-0f3a15cbfe2d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-16T10:25:56.14441Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "46d90c8e1aa7d55c67b26326f281a59d3919cb43ad060a5d3226ed97fb22f6cb" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "c800bf7495a46483f69ad427ef9489d15c0b5a592a7c8a86632111c2519de1a1" <http://provchain.org/blockchain> .
+<http://example.org/participant_c9480729-0250-4d01-b705-50c19f66071b> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://example.org/participant_c9480729-0250-4d01-b705-50c19f66071b> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_c9480729-0250-4d01-b705-50c19f66071b> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T05:49:19.332387Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3d0f768c-77e2-402a-9f21-617fadd4194d> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3d0f768c-77e2-402a-9f21-617fadd4194d> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3d0f768c-77e2-402a-9f21-617fadd4194d> <http://provchain.org/tx#hasTimestamp> "2025-08-22T05:49:19.332392Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3d0f768c-77e2-402a-9f21-617fadd4194d> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#3d0f768c-77e2-402a-9f21-617fadd4194d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T05:49:19.33545Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "9745d36fef6af773ebf4120b670edcb0eb6594204d07ccaec9a365606fbc8d94" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "ae1c022ddb12e041a541685953f87aaefbf538f6558249998c13192aa0b14013" <http://provchain.org/blockchain> .
+<http://example.org/participant_ddecee3d-7dda-409c-95bd-4065a0e9b2dd> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://example.org/participant_ddecee3d-7dda-409c-95bd-4065a0e9b2dd> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_ddecee3d-7dda-409c-95bd-4065a0e9b2dd> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T09:33:32.847035Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f96173ae-4b90-417f-9a0b-d6e48f38cc87> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f96173ae-4b90-417f-9a0b-d6e48f38cc87> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f96173ae-4b90-417f-9a0b-d6e48f38cc87> <http://provchain.org/tx#hasTimestamp> "2025-08-22T09:33:32.847042Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#f96173ae-4b90-417f-9a0b-d6e48f38cc87> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#f96173ae-4b90-417f-9a0b-d6e48f38cc87> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T09:33:32.850417Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "a7817b1a5b98dde85f08eb53c2e0ceeb8947f57145bdce3385c43068d841366f" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "c238537053327f18a8336ab9a4a816710096a0bf08bc9b94a32dd76608a54a5d" <http://provchain.org/blockchain> .
+<http://example.org/participant_2ef7386c-6531-4be9-9d43-c3f6f94a4d2d> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://example.org/participant_2ef7386c-6531-4be9-9d43-c3f6f94a4d2d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_2ef7386c-6531-4be9-9d43-c3f6f94a4d2d> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-22T11:31:50.212395Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#6c675e9f-be71-4206-a8a8-c820c943cafd> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#6c675e9f-be71-4206-a8a8-c820c943cafd> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#6c675e9f-be71-4206-a8a8-c820c943cafd> <http://provchain.org/tx#hasTimestamp> "2025-08-22T11:31:50.212404Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#6c675e9f-be71-4206-a8a8-c820c943cafd> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#6c675e9f-be71-4206-a8a8-c820c943cafd> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-22T11:31:50.216084Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "89ecdcfbe45462bf433a8c944fda76d01149807e9f8e8390c71fb062a9c99c19" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "5739a5833378c1e5ef0b98d14b9b95bfdfefa568251d3b56444307ad20a70a72" <http://provchain.org/blockchain> .
+<http://provchain.org/core#TraceableEntity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#TraceableEntity> <http://www.w3.org/2000/01/rdf-schema#label> "Traceable Entity" .
+<http://provchain.org/core#TraceableEntity> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Entity> .
+<http://provchain.org/core#TraceableEntity> <http://www.w3.org/2000/01/rdf-schema#comment> "Any physical or digital entity that can be traced through a supply chain" .
+<http://provchain.org/core#Batch> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Batch> <http://www.w3.org/2000/01/rdf-schema#label> "Batch" .
+<http://provchain.org/core#Batch> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#TraceableEntity> .
+<http://provchain.org/core#Batch> <http://www.w3.org/2000/01/rdf-schema#comment> "A batch or lot of items that share common properties" .
+<http://provchain.org/core#Component> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Component> <http://www.w3.org/2000/01/rdf-schema#label> "Component" .
+<http://provchain.org/core#Component> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#TraceableEntity> .
+<http://provchain.org/core#Component> <http://www.w3.org/2000/01/rdf-schema#comment> "A component or part of a larger entity" .
+<http://provchain.org/core#Product> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Product> <http://www.w3.org/2000/01/rdf-schema#label> "Product" .
+<http://provchain.org/core#Product> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#TraceableEntity> .
+<http://provchain.org/core#Product> <http://www.w3.org/2000/01/rdf-schema#comment> "A finished product ready for distribution or sale" .
+<http://provchain.org/core#RawMaterial> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#RawMaterial> <http://www.w3.org/2000/01/rdf-schema#label> "Raw Material" .
+<http://provchain.org/core#RawMaterial> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#TraceableEntity> .
+<http://provchain.org/core#RawMaterial> <http://www.w3.org/2000/01/rdf-schema#comment> "Raw materials used in manufacturing processes" .
+<http://provchain.org/core#DigitalAsset> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#DigitalAsset> <http://www.w3.org/2000/01/rdf-schema#label> "Digital Asset" .
+<http://provchain.org/core#DigitalAsset> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#TraceableEntity> .
+<http://provchain.org/core#DigitalAsset> <http://www.w3.org/2000/01/rdf-schema#comment> "A digital entity that can be traced" .
+<http://provchain.org/core#Process> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Process> <http://www.w3.org/2000/01/rdf-schema#label> "Process" .
+<http://provchain.org/core#Process> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Activity> .
+<http://provchain.org/core#Process> <http://www.w3.org/2000/01/rdf-schema#comment> "Any process or activity in a supply chain" .
+<http://provchain.org/core#ManufacturingProcess> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#ManufacturingProcess> <http://www.w3.org/2000/01/rdf-schema#label> "Manufacturing Process" .
+<http://provchain.org/core#ManufacturingProcess> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Process> .
+<http://provchain.org/core#ManufacturingProcess> <http://www.w3.org/2000/01/rdf-schema#comment> "A manufacturing or production process" .
+<http://provchain.org/core#TransportProcess> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#TransportProcess> <http://www.w3.org/2000/01/rdf-schema#label> "Transport Process" .
+<http://provchain.org/core#TransportProcess> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Process> .
+<http://provchain.org/core#TransportProcess> <http://www.w3.org/2000/01/rdf-schema#comment> "A logistics or transportation process" .
+<http://provchain.org/core#QualityControlProcess> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#QualityControlProcess> <http://www.w3.org/2000/01/rdf-schema#label> "Quality Control Process" .
+<http://provchain.org/core#QualityControlProcess> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Process> .
+<http://provchain.org/core#QualityControlProcess> <http://www.w3.org/2000/01/rdf-schema#comment> "A quality control or inspection process" .
+<http://provchain.org/core#Event> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Event> <http://www.w3.org/2000/01/rdf-schema#label> "Event" .
+<http://provchain.org/core#Event> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Activity> .
+<http://provchain.org/core#Event> <http://www.w3.org/2000/01/rdf-schema#comment> "A point-in-time occurrence in a supply chain" .
+<http://provchain.org/core#Organization> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Organization> <http://www.w3.org/2000/01/rdf-schema#label> "Organization" .
+<http://provchain.org/core#Organization> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Agent> .
+<http://provchain.org/core#Organization> <http://www.w3.org/2000/01/rdf-schema#comment> "An organization involved in the supply chain" .
+<http://provchain.org/core#Supplier> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Supplier> <http://www.w3.org/2000/01/rdf-schema#label> "Supplier" .
+<http://provchain.org/core#Supplier> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Organization> .
+<http://provchain.org/core#Supplier> <http://www.w3.org/2000/01/rdf-schema#comment> "An organization that supplies materials or products" .
+<http://provchain.org/core#Manufacturer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Manufacturer> <http://www.w3.org/2000/01/rdf-schema#label> "Manufacturer" .
+<http://provchain.org/core#Manufacturer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Organization> .
+<http://provchain.org/core#Manufacturer> <http://www.w3.org/2000/01/rdf-schema#comment> "An organization that manufactures products" .
+<http://provchain.org/core#LogisticsProvider> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#LogisticsProvider> <http://www.w3.org/2000/01/rdf-schema#label> "Logistics Provider" .
+<http://provchain.org/core#LogisticsProvider> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Organization> .
+<http://provchain.org/core#LogisticsProvider> <http://www.w3.org/2000/01/rdf-schema#comment> "An organization that provides logistics services" .
+<http://provchain.org/core#Retailer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Retailer> <http://www.w3.org/2000/01/rdf-schema#label> "Retailer" .
+<http://provchain.org/core#Retailer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://provchain.org/core#Organization> .
+<http://provchain.org/core#Retailer> <http://www.w3.org/2000/01/rdf-schema#comment> "An organization that sells products to end customers" .
+<http://provchain.org/core#Consumer> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Consumer> <http://www.w3.org/2000/01/rdf-schema#label> "Consumer" .
+<http://provchain.org/core#Consumer> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.w3.org/ns/prov#Agent> .
+<http://provchain.org/core#Consumer> <http://www.w3.org/2000/01/rdf-schema#comment> "An end consumer of products" .
+<http://provchain.org/core#hasIdentifier> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/core#hasIdentifier> <http://www.w3.org/2000/01/rdf-schema#label> "has identifier" .
+<http://provchain.org/core#hasIdentifier> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#TraceableEntity> .
+<http://provchain.org/core#hasIdentifier> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#string> .
+<http://provchain.org/core#hasIdentifier> <http://www.w3.org/2000/01/rdf-schema#comment> "A unique identifier for the entity" .
+<http://provchain.org/core#originLocation> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://provchain.org/core#originLocation> <http://www.w3.org/2000/01/rdf-schema#label> "origin location" .
+<http://provchain.org/core#originLocation> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#TraceableEntity> .
+<http://provchain.org/core#originLocation> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2003/01/geo/wgs84_pos#Point> .
+<http://provchain.org/core#originLocation> <http://www.w3.org/2000/01/rdf-schema#comment> "Geolocation of origin (use Geo vocab)" .
+<http://provchain.org/core#producedAt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/core#producedAt> <http://www.w3.org/2000/01/rdf-schema#label> "produced at" .
+<http://provchain.org/core#producedAt> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#TraceableEntity> .
+<http://provchain.org/core#producedAt> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/core#producedAt> <http://www.w3.org/2000/01/rdf-schema#comment> "Production timestamp" .
+<http://provchain.org/core#recordedAt> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/core#recordedAt> <http://www.w3.org/2000/01/rdf-schema#label> "recorded at" .
+<http://provchain.org/core#recordedAt> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#Process> .
+<http://provchain.org/core#recordedAt> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/core#recordedAt> <http://www.w3.org/2000/01/rdf-schema#comment> "Timestamp when the process was recorded" .
+<http://provchain.org/core#hasCondition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://provchain.org/core#hasCondition> <http://www.w3.org/2000/01/rdf-schema#label> "has condition" .
+<http://provchain.org/core#hasCondition> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#Process> .
+<http://provchain.org/core#hasCondition> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/core#EnvironmentalCondition> .
+<http://provchain.org/core#hasCondition> <http://www.w3.org/2000/01/rdf-schema#comment> "Link from a process to environmental reading(s)" .
+<http://provchain.org/core#hasTemperature> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/core#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#label> "has temperature" .
+<http://provchain.org/core#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#EnvironmentalCondition> .
+<http://provchain.org/core#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#decimal> .
+<http://provchain.org/core#hasTemperature> <http://www.w3.org/2000/01/rdf-schema#comment> "Temperature in Celsius" .
+<http://provchain.org/core#hasHumidity> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/core#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#label> "has humidity" .
+<http://provchain.org/core#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#EnvironmentalCondition> .
+<http://provchain.org/core#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#decimal> .
+<http://provchain.org/core#hasHumidity> <http://www.w3.org/2000/01/rdf-schema#comment> "Relative humidity in percent" .
+<http://provchain.org/core#hasConditionTimestamp> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#DatatypeProperty> .
+<http://provchain.org/core#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#label> "has condition timestamp" .
+<http://provchain.org/core#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#EnvironmentalCondition> .
+<http://provchain.org/core#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/core#hasConditionTimestamp> <http://www.w3.org/2000/01/rdf-schema#comment> "Time when condition was measured" .
+<http://provchain.org/core#environmentalSensor> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://provchain.org/core#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#label> "environmental sensor" .
+<http://provchain.org/core#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#EnvironmentalCondition> .
+<http://provchain.org/core#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#range> <http://www.w3.org/ns/prov#Agent> .
+<http://provchain.org/core#environmentalSensor> <http://www.w3.org/2000/01/rdf-schema#comment> "Agent or device that recorded the condition" .
+<http://provchain.org/core#hasCertificate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://provchain.org/core#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#label> "has certificate" .
+<http://provchain.org/core#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#Organization> .
+<http://provchain.org/core#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/core#Certificate> .
+<http://provchain.org/core#hasCertificate> <http://www.w3.org/2000/01/rdf-schema#comment> "Certification or quality document linked to an organization" .
+<http://provchain.org/core#derivedFrom> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://provchain.org/core#derivedFrom> <http://www.w3.org/2000/01/rdf-schema#label> "derived from" .
+<http://provchain.org/core#derivedFrom> <http://www.w3.org/2000/01/rdf-schema#domain> <http://provchain.org/core#TraceableEntity> .
+<http://provchain.org/core#derivedFrom> <http://www.w3.org/2000/01/rdf-schema#range> <http://provchain.org/core#TraceableEntity> .
+<http://provchain.org/core#derivedFrom> <http://www.w3.org/2000/01/rdf-schema#comment> "Link from entity to its source entity/entities" .
+<http://provchain.org/core#EnvironmentalCondition> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#EnvironmentalCondition> <http://www.w3.org/2000/01/rdf-schema#label> "Environmental Condition" .
+<http://provchain.org/core#Certificate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://provchain.org/core#Certificate> <http://www.w3.org/2000/01/rdf-schema#label> "Certificate" .
+<http://provchain.org/core#Certificate> <http://www.w3.org/2000/01/rdf-schema#comment> "An external document such as test report, certification, etc." .
+<http://example.org/participant_888a7e1a-805f-47f1-9966-eeeeb000e568> <http://www.w3.org/2000/01/rdf-schema#label> "Demo Farmer" <http://provchain.org/block/1> .
+<http://example.org/participant_888a7e1a-805f-47f1-9966-eeeeb000e568> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/trace#Farmer> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://www.w3.org/ns/prov#wasAttributedTo> <http://example.org/participant_888a7e1a-805f-47f1-9966-eeeeb000e568> <http://provchain.org/block/1> .
+<http://example.org/DEMO-BATCH-001> <http://provchain.org/trace#producedAt> "2025-08-26T13:01:09.002002Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3058ced1-2824-4126-8f4b-869624a6225d> <http://provchain.org/tx#hasSignatureCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3058ced1-2824-4126-8f4b-869624a6225d> <http://provchain.org/tx#hasNonce> "0"^^<http://www.w3.org/2001/XMLSchema#integer> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3058ced1-2824-4126-8f4b-869624a6225d> <http://provchain.org/tx#hasTimestamp> "2025-08-26T13:01:09.00201Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/block/1> .
+<http://provchain.org/tx#3058ced1-2824-4126-8f4b-869624a6225d> <http://provchain.org/tx#hasType> "Production" <http://provchain.org/block/1> .
+<http://provchain.org/tx#3058ced1-2824-4126-8f4b-869624a6225d> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/tx#Transaction> <http://provchain.org/block/1> .
+<http://provchain.org/block/1> <http://provchain.org/hasTimestamp> "2025-08-26T13:01:09.009289Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasHash> "37503ccbf9aa34251a37d56872848b4b052c5aa0586be4838a18d6a3992b6c2a" <http://provchain.org/blockchain> .
+<http://provchain.org/block/1> <http://provchain.org/hasPreviousHash> "a090fc11793f9f079e4f612c417e38740d844add8ef97f2512dbe85742764660" <http://provchain.org/blockchain> .

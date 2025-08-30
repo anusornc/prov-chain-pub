@@ -14,7 +14,7 @@ use crate::core::blockchain::Block;
 // use crate::shacl_validator::{ShaclValidator, ShaclConfig, ShaclValidationResult};
 
 /// Graph complexity classification for adaptive canonicalization
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum GraphComplexity {
     Simple,
     Moderate,

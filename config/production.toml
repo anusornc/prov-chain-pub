@@ -1,0 +1,215 @@
+# ProvChainOrg Production Deployment Configuration
+# Phase 8: Performance Optimization and Production Deployment
+
+[integrity]
+# Integrity validation configuration for production
+
+[integrity.performance]
+# Performance optimization settings
+validation_level = "Standard"  # Options: Minimal, Standard, Comprehensive, Full
+enable_parallel_validation = true
+max_validation_time = 300  # seconds (5 minutes)
+enable_caching = true
+cache_ttl_seconds = 300  # 5 minutes
+enable_incremental_validation = true
+batch_size = 1000
+enable_profiling = false
+
+[integrity.background_monitoring]
+# Background monitoring configuration
+enabled = true
+interval_seconds = 300  # 5 minutes
+validation_level = "Standard"
+enable_auto_repair = false  # Disable auto-repair in production for safety
+
+[integrity.resource_limits]
+# Resource limits for production deployment
+max_memory_mb = 2048  # 2GB for production
+max_cpu_percent = 70.0  # Conservative CPU usage
+max_validation_time_seconds = 600  # 10 minutes max
+max_concurrent_validations = 3  # Conservative concurrency
+
+[integrity.alerting]
+# Alerting configuration
+enable_email = true
+enable_webhook = true
+enable_slack = false
+critical_threshold = 3  # Alert after 3 critical issues
+warning_threshold = 5   # Alert after 5 warnings
+
+[integrity.alerting.email]
+# Email notification settings
+smtp_server = "smtp.company.com"
+smtp_port = 587
+username = "provchain-alerts@company.com"
+# password should be set via environment variable: PROVCHAIN_EMAIL_PASSWORD
+recipients = ["admin@company.com", "devops@company.com"]
+
+[integrity.alerting.webhook]
+# Webhook notification settings
+url = "https://monitoring.company.com/webhooks/provchain"
+timeout_seconds = 30
+headers = { "Authorization" = "Bearer ${WEBHOOK_TOKEN}", "Content-Type" = "application/json" }
+
+[integrity.alerting.slack]
+# Slack notification settings (disabled by default)
+webhook_url = "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+channel = "#provchain-alerts"
+username = "ProvChain Monitor"
+
+[blockchain]
+# Blockchain configuration for production
+
+[blockchain.storage]
+# Storage configuration
+data_directory = "/var/lib/provchain/data"
+enable_compression = true
+compression_level = 6
+enable_encryption = false  # Set to true for sensitive data
+backup_directory = "/var/lib/provchain/backups"
+max_backup_count = 10
+
+[blockchain.performance]
+# Blockchain performance settings
+cache_size_mb = 512  # 512MB cache
+enable_write_ahead_log = true
+sync_mode = "Normal"  # Options: Fast, Normal, Full
+checkpoint_interval_seconds = 3600  # 1 hour
+
+[blockchain.validation]
+# Blockchain validation settings
+enable_strict_validation = true
+validate_on_startup = true
+validate_on_block_add = true
+enable_hash_verification = true
+
+[network]
+# Network configuration for production
+
+[network.p2p]
+# P2P networking settings
+enabled = false  # Disable P2P for single-node production deployment
+listen_port = 8333
+max_peers = 50
+connection_timeout_seconds = 30
+
+[network.api]
+# API server configuration
+host = "0.0.0.0"
+port = 8080
+enable_cors = true
+cors_origins = ["https://provchain.company.com"]
+max_request_size_mb = 10
+request_timeout_seconds = 30
+
+[network.tls]
+# TLS configuration for production
+enabled = true
+cert_file = "/etc/ssl/certs/provchain.crt"
+key_file = "/etc/ssl/private/provchain.key"
+min_tls_version = "1.2"
+
+[security]
+# Security configuration
+
+[security.authentication]
+# Authentication settings
+jwt_secret_key = "${JWT_SECRET_KEY}"  # Set via environment variable
+jwt_expiration_hours = 24
+enable_refresh_tokens = true
+max_login_attempts = 5
+lockout_duration_minutes = 15
+
+[security.authorization]
+# Authorization settings
+enable_rbac = true
+default_role = "viewer"
+admin_users = ["admin@company.com"]
+
+[security.audit]
+# Audit logging
+enable_audit_log = true
+audit_log_file = "/var/log/provchain/audit.log"
+log_all_queries = false  # Only log sensitive operations
+log_failed_attempts = true
+
+[monitoring]
+# Monitoring and observability
+
+[monitoring.metrics]
+# Metrics collection
+enabled = true
+export_port = 9090  # Prometheus metrics port
+export_interval_seconds = 60
+include_detailed_metrics = true
+
+[monitoring.logging]
+# Logging configuration
+level = "info"  # Options: trace, debug, info, warn, error
+format = "json"  # Options: json, text
+log_file = "/var/log/provchain/app.log"
+max_log_size_mb = 100
+max_log_files = 10
+
+[monitoring.health_checks]
+# Health check configuration
+enabled = true
+check_interval_seconds = 30
+endpoint_path = "/health"
+include_detailed_status = false  # Don't expose internal details
+
+[deployment]
+# Deployment-specific settings
+
+[deployment.environment]
+# Environment configuration
+name = "production"
+region = "us-east-1"
+datacenter = "primary"
+instance_id = "${INSTANCE_ID}"
+
+[deployment.scaling]
+# Scaling configuration
+enable_auto_scaling = false  # Manual scaling for production control
+min_instances = 1
+max_instances = 3
+cpu_threshold_percent = 80
+memory_threshold_percent = 85
+
+[deployment.maintenance]
+# Maintenance windows
+enable_maintenance_mode = false
+maintenance_start_hour = 2  # 2 AM UTC
+maintenance_duration_hours = 2
+notify_before_maintenance_hours = 24
+
+[backup]
+# Backup configuration
+
+[backup.schedule]
+# Backup scheduling
+enabled = true
+interval_hours = 6  # Every 6 hours
+retention_days = 30
+compress_backups = true
+
+[backup.storage]
+# Backup storage configuration
+local_directory = "/var/lib/provchain/backups"
+enable_remote_backup = true
+remote_type = "s3"  # Options: s3, gcs, azure
+remote_bucket = "provchain-backups-prod"
+remote_region = "us-east-1"
+
+[backup.verification]
+# Backup verification
+verify_after_backup = true
+test_restore_monthly = true
+alert_on_backup_failure = true
+
+# Environment variable documentation:
+# - JWT_SECRET_KEY: JWT signing secret (required)
+# - PROVCHAIN_EMAIL_PASSWORD: Email SMTP password (if email alerts enabled)
+# - WEBHOOK_TOKEN: Webhook authentication token (if webhook alerts enabled)
+# - INSTANCE_ID: Unique instance identifier for deployment tracking
+# - AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY: For S3 backup (if remote backup enabled)

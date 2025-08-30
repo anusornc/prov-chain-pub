@@ -337,7 +337,7 @@ impl Blockchain {
     }
 
     /// Create a backup of the blockchain
-    pub fn create_backup(&self) -> Result<crate::storage::rdf_store::BackupInfo> {
+    pub fn create_backup(&self, _backup_id: String) -> Result<crate::storage::rdf_store::BackupInfo> {
         self.rdf_store.create_backup().map_err(|e| e.into())
     }
 

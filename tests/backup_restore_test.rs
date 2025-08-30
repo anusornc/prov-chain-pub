@@ -41,7 +41,7 @@ fn test_backup_restore_functionality() {
     let _ = blockchain.add_block(test_data2);
     
     // Create a backup
-    let backup_info = blockchain.create_backup().unwrap();
+    let backup_info = blockchain.create_backup("test_backup_001".to_string()).unwrap();
     assert!(backup_info.path.exists());
     
     // Create a new temporary directory for restore
