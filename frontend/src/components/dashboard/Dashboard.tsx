@@ -235,32 +235,32 @@ const Dashboard: React.FC = () => {
           <MetricCard
             title="Total Blocks"
             value={metrics?.total_blocks.toLocaleString() || '0'}
-            change={isConnected ? "+12 today" : "Real-time updates paused"}
-            changeType={isConnected ? "positive" : "neutral"}
+            change={error ? "Network Error" : (isConnected ? "Live Data" : "Offline")}
+            changeType={error ? "negative" : (isConnected ? "positive" : "neutral")}
             icon={<Box className="w-6 h-6 text-primary-600 dark:text-primary-400" />}
             loading={loading}
           />
           <MetricCard
             title="Total Transactions"
             value={metrics?.total_transactions.toLocaleString() || '0'}
-            change={isConnected ? "+234 today" : "Real-time updates paused"}
-            changeType={isConnected ? "positive" : "neutral"}
+            change={error ? "Network Error" : (isConnected ? "Live Data" : "Offline")}
+            changeType={error ? "negative" : (isConnected ? "positive" : "neutral")}
             icon={<Activity className="w-6 h-6 text-primary-600 dark:text-primary-400" />}
             loading={loading}
           />
           <MetricCard
             title="Traced Items"
             value={metrics?.total_items.toLocaleString() || '0'}
-            change={isConnected ? "+45 today" : "Real-time updates paused"}
-            changeType={isConnected ? "positive" : "neutral"}
+            change={error ? "Network Error" : (isConnected ? "Live Data" : "Offline")}
+            changeType={error ? "negative" : (isConnected ? "positive" : "neutral")}
             icon={<Database className="w-6 h-6 text-primary-600 dark:text-primary-400" />}
             loading={loading}
           />
           <MetricCard
             title="Active Participants"
             value={metrics?.active_participants || '0'}
-            change={isConnected ? "+3 this week" : "Real-time updates paused"}
-            changeType={isConnected ? "positive" : "neutral"}
+            change={error ? "Network Error" : (isConnected ? "Live Data" : "Offline")}
+            changeType={error ? "negative" : (isConnected ? "positive" : "neutral")}
             icon={<Users className="w-6 h-6 text-primary-600 dark:text-primary-400" />}
             loading={loading}
           />
@@ -271,24 +271,24 @@ const Dashboard: React.FC = () => {
           <MetricCard
             title="Avg Block Time"
             value={`${metrics?.avg_block_time || '0'}s`}
-            change="↓ 0.5s from yesterday"
-            changeType="positive"
+            change={error ? "Network Error" : (isConnected ? "Live Data" : "Offline")}
+            changeType={error ? "negative" : (isConnected ? "positive" : "neutral")}
             icon={<Clock className="w-6 h-6 text-primary-600 dark:text-primary-400" />}
             loading={loading}
           />
           <MetricCard
             title="TPS"
             value={metrics?.transactions_per_second || '0'}
-            change="↑ 12% from yesterday"
-            changeType="positive"
+            change={error ? "Network Error" : (isConnected ? "Live Data" : "Offline")}
+            changeType={error ? "negative" : (isConnected ? "positive" : "neutral")}
             icon={<Zap className="w-6 h-6 text-primary-600 dark:text-primary-400" />}
             loading={loading}
           />
           <MetricCard
             title="Network Hash Rate"
             value={`${((metrics?.network_hash_rate || 0) / 1000000).toFixed(1)}M`}
-            change="↑ 5% from yesterday"
-            changeType="positive"
+            change={error ? "Network Error" : (isConnected ? "Live Data" : "Offline")}
+            changeType={error ? "negative" : (isConnected ? "positive" : "neutral")}
             icon={<TrendingUp className="w-6 h-6 text-primary-600 dark:text-primary-400" />}
             loading={loading}
           />

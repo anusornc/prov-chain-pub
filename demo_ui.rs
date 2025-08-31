@@ -4,6 +4,7 @@
 use provchain_org::{
     core::blockchain::Blockchain,
     web::server::create_web_server,
+    config::Config,
 };
 use tokio;
 use tracing::{info, Level};
@@ -24,8 +25,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Add some sample data for demonstration
     add_sample_data(&mut blockchain);
 
+    // Create config with port 8080
+    let mut config = Config::load_or_default("config.toml");
+    config.web.port = 8080;
+    
     // Create and start the web server
-    let server = create_web_server(blockchain, Some(8080)).await?;
+    let server = create_web_server(blockchain, Some(config)).await?;
     
     info!("Demo data added to blockchain");
     info!("Open your browser and navigate to: http://localhost:8080");

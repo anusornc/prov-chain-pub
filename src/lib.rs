@@ -1,5 +1,6 @@
 pub mod error;
 pub mod validation;
+pub mod config;
 pub mod core;
 pub mod transaction;
 pub mod storage;

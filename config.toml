@@ -66,6 +66,25 @@ format = "pretty"
 # Log file path (optional, logs to stdout if not specified)
 # file = "graphchain.log"
 
+[web]
+# Web server configuration
+host = "0.0.0.0"
+port = 8080
+jwt_secret = "your-secret-key-change-in-production"
+
+[web.cors]
+# CORS (Cross-Origin Resource Sharing) configuration
+enabled = true
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:5174", 
+    "http://localhost:5175"
+]
+allowed_methods = ["GET", "POST", "OPTIONS"]
+allowed_headers = ["Authorization", "Content-Type", "Accept"]
+allow_credentials = true
+max_age = 3600
+
 # Example configurations for different node types:
 
 # Authority Node Example:

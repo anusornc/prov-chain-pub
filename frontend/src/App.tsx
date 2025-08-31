@@ -18,6 +18,13 @@ import TraceabilityQueries from './features/queries/TraceabilityQueries';
 // Import new Phase 3 traceability components
 import TraceabilityExplorer from './components/traceability/TraceabilityExplorer';
 import SPARQLQueryBuilder from './components/traceability/SPARQLQueryBuilder';
+import TransactionExplorer from './components/explorer/TransactionExplorer';
+
+// Import Phase 2 enhancement components
+import AdvancedSearch from './components/search/AdvancedSearch';
+import Timeline from './components/timeline/Timeline';
+import ParticipantsManager from './components/participants/ParticipantsManager';
+import AnalyticsDashboard from './components/analytics/AnalyticsDashboard';
 
 export type TabType = 
   | 'dashboard'
@@ -130,30 +137,10 @@ function App() {
         return <BlockExplorer onBlockSelect={handleBlockSelect} />;
       
       case 'transactions':
-        return (
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">📊</div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Transaction Explorer</h2>
-                <p className="text-gray-600 dark:text-gray-300">Advanced transaction analysis coming soon</p>
-              </div>
-            </div>
-          </div>
-        );
+        return <TransactionExplorer onTransactionSelect={handleTransactionSelect} />;
       
       case 'search':
-        return (
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🔍</div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Advanced Search</h2>
-                <p className="text-gray-600 dark:text-gray-300">Powerful search capabilities coming soon</p>
-              </div>
-            </div>
-          </div>
-        );
+        return <AdvancedSearch />;
       
       // Traceability tabs
       case 'traceability':
@@ -164,44 +151,14 @@ function App() {
         return <KnowledgeGraph />;
       
       case 'timeline':
-        return (
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">⏱️</div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Traceability Timeline</h2>
-                <p className="text-gray-600 dark:text-gray-300">Interactive timeline visualization coming soon</p>
-              </div>
-            </div>
-          </div>
-        );
+        return <Timeline />;
       
       // Other tabs
       case 'participants':
-        return (
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">👥</div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Participants</h2>
-                <p className="text-gray-600 dark:text-gray-300">Participant management coming soon</p>
-              </div>
-            </div>
-          </div>
-        );
+        return <ParticipantsManager />;
       
       case 'analytics':
-        return (
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-            <div className="max-w-7xl mx-auto">
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">📈</div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Analytics</h2>
-                <p className="text-gray-600 dark:text-gray-300">Advanced analytics dashboard coming soon</p>
-              </div>
-            </div>
-          </div>
-        );
+        return <AnalyticsDashboard />;
       
       // Semantic tabs
       case 'semantic':

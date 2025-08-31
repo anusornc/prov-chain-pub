@@ -1,5 +1,6 @@
 //! Web server implementation using Axum
 
+use crate::config::{Config, CorsConfig};
 use crate::core::blockchain::Blockchain;
 use crate::web::{
     auth::{AuthState, authenticate, auth_middleware},
@@ -30,17 +31,59 @@ use tracing::{info, error};
 pub struct WebServer {
     app_state: AppState,
     auth_state: AuthState,
-    port: u16,
+    config: Config,
 }
 
 impl WebServer {
     /// Create a new web server instance
-    pub fn new(blockchain: Blockchain, port: u16) -> Self {
+    pub fn new(blockchain: Blockchain, config: Config) -> Self {
         Self {
             app_state: AppState::new(blockchain),
             auth_state: AuthState::new(),
-            port,
+            config,
         }
+    }
+
+    /// Build CORS layer from configuration
+    fn build_cors_layer(&self, cors_config: &CorsConfig) -> CorsLayer {
+        if !cors_config.enabled {
+            return CorsLayer::permissive();
+        }
+
+        // Convert origins to HeaderValue vector
+        let origins: Vec<http::HeaderValue> = cors_config.allowed_origins
+            .iter()
+            .filter_map(|origin| origin.parse().ok())
+            .collect();
+
+        // Convert methods to Method vector
+        let methods: Vec<http::Method> = cors_config.allowed_methods
+            .iter()
+            .filter_map(|method| method.parse().ok())
+            .collect();
+
+        // Convert headers to HeaderName vector
+        let headers: Vec<http::HeaderName> = cors_config.allowed_headers
+            .iter()
+            .filter_map(|header| header.parse().ok())
+            .collect();
+
+        let mut cors = CorsLayer::new()
+            .allow_origin(origins)
+            .allow_methods(methods)
+            .allow_headers(headers);
+
+        // Set credentials
+        if cors_config.allow_credentials {
+            cors = cors.allow_credentials(true);
+        }
+
+        // Set max age if specified
+        if let Some(max_age) = cors_config.max_age {
+            cors = cors.max_age(std::time::Duration::from_secs(max_age));
+        }
+
+        cors
     }
 
     /// Build the router with all routes and middleware
@@ -79,46 +122,9 @@ impl WebServer {
             .layer(middleware::from_fn(auth_middleware))
             .with_state(self.app_state.clone());
 
-        // Configure CORS - secure by default
-        let cors_layer = if cfg!(debug_assertions) {
-            // Development mode - allow localhost frontend on multiple ports
-            CorsLayer::new()
-                .allow_origin("http://localhost:5173".parse::<http::HeaderValue>().unwrap())
-                .allow_origin("http://localhost:5174".parse::<http::HeaderValue>().unwrap())
-                .allow_origin("http://localhost:5175".parse::<http::HeaderValue>().unwrap())
-                .allow_credentials(true)
-                .allow_methods([
-                    http::Method::GET,
-                    http::Method::POST,
-                    http::Method::OPTIONS,
-                ])
-                .allow_headers([
-                    http::header::AUTHORIZATION,
-                    http::header::CONTENT_TYPE,
-                    http::header::ACCEPT,
-                ])
-        } else {
-            // Production mode - restrict to specific origins
-            let allowed_origins = std::env::var("ALLOWED_ORIGINS")
-                .unwrap_or_else(|_| {
-                    eprintln!("WARNING: ALLOWED_ORIGINS not set, using default");
-                    "https://yourdomain.com".to_string()
-                });
-            
-            CorsLayer::new()
-                .allow_origin(allowed_origins.parse::<http::HeaderValue>().unwrap())
-                .allow_credentials(true)
-                .allow_methods([
-                    http::Method::GET,
-                    http::Method::POST,
-                    http::Method::OPTIONS,
-                ])
-                .allow_headers([
-                    http::header::AUTHORIZATION,
-                    http::header::CONTENT_TYPE,
-                    http::header::ACCEPT,
-                ])
-        };
+        // Configure CORS using configuration
+        let cors_config = self.config.get_development_cors();
+        let cors_layer = self.build_cors_layer(&cors_config);
 
         Router::new()
             .merge(public_routes)
@@ -155,10 +161,10 @@ impl WebServer {
     /// Start the web server
     pub async fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
         let app = self.build_router();
-        let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
+        let addr = SocketAddr::from(([0, 0, 0, 0], self.config.web.port));
 
         info!("Starting ProvChain web server on {}", addr);
-        info!("Web UI available at: http://localhost:{}", self.port);
+        info!("Web UI available at: http://localhost:{}", self.config.web.port);
         info!("API endpoints available:");
         info!("  GET  /health - Health check");
         info!("  POST /auth/login - Authentication");
@@ -195,19 +201,19 @@ impl WebServer {
 
     /// Get the server port
     pub fn port(&self) -> u16 {
-        self.port
+        self.config.web.port
     }
 }
 
 /// Create and configure the web server
 pub async fn create_web_server(
     blockchain: Blockchain,
-    port: Option<u16>,
+    config: Option<Config>,
 ) -> Result<WebServer, anyhow::Error> {
-    let server_port = port.unwrap_or(8080);
-    let server = WebServer::new(blockchain, server_port);
+    let server_config = config.unwrap_or_else(|| Config::load_or_default("config.toml"));
+    let server = WebServer::new(blockchain, server_config.clone());
     
-    info!("Web server configured on port {}", server_port);
+    info!("Web server configured on port {}", server_config.web.port);
     Ok(server)
 }
 
@@ -219,7 +225,8 @@ mod tests {
     #[tokio::test]
     async fn test_server_creation() {
         let blockchain = Blockchain::new();
-        let server = WebServer::new(blockchain, 8080);
+        let config = Config::default();
+        let server = WebServer::new(blockchain, config);
         assert_eq!(server.port(), 8080);
     }
 }

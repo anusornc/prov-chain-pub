@@ -1,5 +1,13 @@
 use clap::{Parser, Subcommand};
-use provchain_org::{core::blockchain::Blockchain, demo, web::server::create_web_server, demo_runner::run_demo_with_args, semantic::simple_owl2_test::simple_owl2_integration_test, semantic::owl2_traceability::Owl2EnhancedTraceability};
+use provchain_org::{
+    core::blockchain::Blockchain, 
+    demo, 
+    web::server::create_web_server, 
+    demo_runner::run_demo_with_args, 
+    semantic::simple_owl2_test::simple_owl2_integration_test, 
+    semantic::owl2_traceability::Owl2EnhancedTraceability,
+    config::Config,
+};
 use std::fs;
 use tracing::info;
 
@@ -134,8 +142,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .map_err(|e| format!("Failed to add block: {e}"))?;
             }
             
+            // Create config with custom port
+            let mut config = Config::load_or_default("config.toml");
+            config.web.port = port;
+            
             // Create and start the web server
-            let web_server = create_web_server(blockchain, Some(port)).await?;
+            let web_server = create_web_server(blockchain, Some(config)).await?;
             
             info!("🚀 Web server starting...");
             info!("📡 API available at: http://localhost:{}", port);
