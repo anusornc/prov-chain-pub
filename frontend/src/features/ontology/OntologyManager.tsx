@@ -53,7 +53,7 @@ const OntologyManager: React.FC = () => {
       const classesResponse: any = await sparqlAPI.query(classesQuery);
       const loadedClasses: OntologyClass[] = classesResponse.data.results.results.bindings.map((binding: any) => {
         const classUri = binding.class?.value || '';
-        const classId = classUri.replace('http://provchain.org/core#', '');
+        const classId = classUri ? classUri.replace('http://provchain.org/core#', '') : 'unknown';
         return {
           id: classId,
           label: binding.label?.value || classId,
@@ -78,12 +78,16 @@ const OntologyManager: React.FC = () => {
       `;
       
       const propertiesResponse = await sparqlAPI.query(propertiesQuery);
-      const loadedProperties: OntologyProperty[] = propertiesResponse.data.results.results.bindings.map((binding: any) => ({
-        id: binding.property.value.replace('http://provchain.org/core#', ''),
-        label: binding.label?.value || binding.property.value.replace('http://provchain.org/core#', ''),
-        domain: binding.domain?.value ? binding.domain.value.replace('http://provchain.org/core#', '') : 'Unknown',
-        range: binding.range?.value ? binding.range.value.replace('http://provchain.org/core#', '') : 'Unknown'
-      }));
+      const loadedProperties: OntologyProperty[] = propertiesResponse.data.results.results.bindings.map((binding: any) => {
+        const propertyUri = binding.property?.value || '';
+        const propertyId = propertyUri ? propertyUri.replace('http://provchain.org/core#', '') : 'unknown';
+        return {
+          id: propertyId,
+          label: binding.label?.value || propertyId,
+          domain: binding.domain?.value ? binding.domain.value.replace('http://provchain.org/core#', '') : 'Unknown',
+          range: binding.range?.value ? binding.range.value.replace('http://provchain.org/core#', '') : 'Unknown'
+        };
+      });
 
       setClasses(loadedClasses);
       setProperties(loadedProperties);

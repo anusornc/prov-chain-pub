@@ -8,6 +8,8 @@ use crate::web::{
         add_triple, execute_sparql_query, get_product_trace, get_recent_transactions,
         validate_blockchain, get_enhanced_product_trace, register_wallet,
         create_transaction, sign_transaction, submit_transaction,
+        get_products, get_product_by_id, get_product_trace_path, get_product_provenance,
+        get_product_analytics, get_knowledge_graph,
     },
 };
 use axum::{
@@ -67,14 +69,23 @@ impl WebServer {
             .route("/api/transactions/create", post(create_transaction))
             .route("/api/transactions/sign", post(sign_transaction))
             .route("/api/transactions/submit", post(submit_transaction))
+            // New traceability API endpoints
+            .route("/api/products", get(get_products))
+            .route("/api/products/:id", get(get_product_by_id))
+            .route("/api/products/:id/trace", get(get_product_trace_path))
+            .route("/api/products/:id/provenance", get(get_product_provenance))
+            .route("/api/products/:id/analytics", get(get_product_analytics))
+            .route("/api/knowledge-graph", get(get_knowledge_graph))
             .layer(middleware::from_fn(auth_middleware))
             .with_state(self.app_state.clone());
 
         // Configure CORS - secure by default
         let cors_layer = if cfg!(debug_assertions) {
-            // Development mode - allow localhost
+            // Development mode - allow localhost frontend on multiple ports
             CorsLayer::new()
-                .allow_origin("http://localhost:8080".parse::<http::HeaderValue>().unwrap())
+                .allow_origin("http://localhost:5173".parse::<http::HeaderValue>().unwrap())
+                .allow_origin("http://localhost:5174".parse::<http::HeaderValue>().unwrap())
+                .allow_origin("http://localhost:5175".parse::<http::HeaderValue>().unwrap())
                 .allow_credentials(true)
                 .allow_methods([
                     http::Method::GET,

@@ -5,7 +5,7 @@ import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Alert from '../../components/ui/Alert';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { sparqlAPI } from '../../services/api';
+import { sparqlService } from '../../services/sparql';
 
 interface GraphNode {
   id: string;
@@ -57,47 +57,55 @@ const KnowledgeGraph: React.FC = () => {
         LIMIT 100
       `;
       
-      const response: any = await sparqlAPI.query(query);
-      const bindings = response.data.results.results.bindings;
+      const response = await sparqlService.executeQuery(query);
+      
+      // Handle the actual SPARQL response format from our backend
+      const bindings = response.results?.bindings || [];
       
       // Extract unique nodes and edges
       const nodeSet = new Set<string>();
       const edgeList: GraphEdge[] = [];
       const nodeList: GraphNode[] = [];
       
-      bindings.forEach((binding: any) => {
-        const subject = binding.subject.value;
-        const predicate = binding.predicate.value;
-        const object = binding.object.value;
-        const subjectLabel = binding.subjectLabel?.value || subject.split('/').pop() || subject;
-        const objectLabel = binding.objectLabel?.value || object.split('/').pop() || object;
-        
-        // Add nodes
-        if (!nodeSet.has(subject)) {
-          nodeSet.add(subject);
-          nodeList.push({
-            id: subject,
-            label: subjectLabel,
-            type: 'Resource'
+      if (Array.isArray(bindings)) {
+        bindings.forEach((binding: any) => {
+          // Handle the string format returned by our backend
+          const subject = typeof binding.subject === 'string' ? binding.subject : binding.subject?.value;
+          const predicate = typeof binding.predicate === 'string' ? binding.predicate : binding.predicate?.value;
+          const object = typeof binding.object === 'string' ? binding.object : binding.object?.value;
+          
+          if (!subject || !predicate || !object) return;
+          
+          const subjectLabel = binding.subjectLabel?.value || subject.split('/').pop() || subject;
+          const objectLabel = binding.objectLabel?.value || object.split('/').pop() || object;
+          
+          // Add nodes
+          if (!nodeSet.has(subject)) {
+            nodeSet.add(subject);
+            nodeList.push({
+              id: subject,
+              label: subjectLabel,
+              type: 'Resource'
+            });
+          }
+          
+          if (!nodeSet.has(object)) {
+            nodeSet.add(object);
+            nodeList.push({
+              id: object,
+              label: objectLabel,
+              type: 'Resource'
+            });
+          }
+          
+          // Add edge
+          edgeList.push({
+            from: subject,
+            to: object,
+            label: predicate.split('/').pop() || predicate
           });
-        }
-        
-        if (!nodeSet.has(object)) {
-          nodeSet.add(object);
-          nodeList.push({
-            id: object,
-            label: objectLabel,
-            type: 'Resource'
-          });
-        }
-        
-        // Add edge
-        edgeList.push({
-          from: subject,
-          to: object,
-          label: predicate.split('/').pop() || predicate
         });
-      });
+      }
       
       setNodes(nodeList);
       setEdges(edgeList);

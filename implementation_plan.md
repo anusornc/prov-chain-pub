@@ -1,289 +1,656 @@
 # Implementation Plan
 
 ## Overview
-Create a comprehensive Data Integrity Validation and Correction System to resolve multiple integrity issues across ProvChainOrg's blockchain, transaction counting, SPARQL queries, and validation mechanisms.
+Transform the current basic ProvChainOrg frontend into a professional-grade blockchain explorer and traceability system that rivals industry standards like Etherscan while maintaining unique semantic and RDF capabilities. The implementation will create a dual-interface system serving both technical and business users with comprehensive item traceability, blockchain exploration, and knowledge graph visualization capabilities.
 
-The ProvChainOrg system is experiencing systematic data integrity problems where block counts, transaction counts, and SPARQL query results are inconsistent between frontend and backend components. The root causes include improper blockchain reconstruction from persistent storage, oversimplified transaction counting logic, RDF canonicalization inconsistencies, and validation methods that create temporary stores with different results than the main store. This implementation will create a unified integrity monitoring and correction system that ensures data consistency across all system components.
+The scope encompasses a complete frontend redesign with modern React/TypeScript architecture, enhanced backend API endpoints, real-time WebSocket integration, and interactive knowledge graph visualization. The system will provide professional blockchain explorer functionality combined with advanced semantic traceability features, enabling users to trace items through supply chains using ontology-based relationships while maintaining full blockchain transparency and exploration capabilities.
 
 ## Types
-Define comprehensive data integrity validation and monitoring types.
+Define comprehensive type system for enhanced UI components and data structures.
 
+### Frontend Type Definitions
+```typescript
+// Core blockchain types
+interface Block {
+  index: number;
+  timestamp: string;
+  hash: string;
+  previous_hash: string;
+  rdf_data: string;
+  transaction_count: number;
+  size: number;
+  validator?: string;
+}
+
+interface Transaction {
+  id: string;
+  type: TransactionType;
+  from: string;
+  to?: string;
+  timestamp: string;
+  block_index: number;
+  signature: string;
+  data: Record<string, any>;
+  status: 'pending' | 'confirmed' | 'failed';
+}
+
+interface TraceabilityItem {
+  id: string;
+  name: string;
+  type: string;
+  current_owner: string;
+  created_at: string;
+  location?: string;
+  properties: Record<string, any>;
+  relationships: TraceabilityRelationship[];
+}
+
+interface TraceabilityRelationship {
+  type: 'produced_from' | 'processed_into' | 'transported_by' | 'quality_tested' | 'transferred_to';
+  target_item: string;
+  timestamp: string;
+  transaction_id: string;
+  metadata?: Record<string, any>;
+}
+
+interface KnowledgeGraphNode {
+  id: string;
+  label: string;
+  type: 'item' | 'participant' | 'location' | 'process';
+  properties: Record<string, any>;
+  x?: number;
+  y?: number;
+}
+
+interface KnowledgeGraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  label: string;
+  properties: Record<string, any>;
+}
+
+// UI Component types
+interface SearchFilters {
+  type?: string;
+  dateRange?: [Date, Date];
+  participant?: string;
+  location?: string;
+  status?: string;
+}
+
+interface DashboardMetrics {
+  total_blocks: number;
+  total_transactions: number;
+  total_items: number;
+  active_participants: number;
+  network_status: 'healthy' | 'warning' | 'error';
+  last_block_time: string;
+}
+```
+
+### Backend API Response Types
 ```rust
-// Core integrity validation types
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IntegrityValidationReport {
-    pub timestamp: DateTime<Utc>,
-    pub blockchain_integrity: BlockchainIntegrityStatus,
-    pub transaction_count_integrity: TransactionCountIntegrityStatus,
-    pub sparql_query_integrity: SparqlIntegrityStatus,
-    pub rdf_canonicalization_integrity: CanonicalizationIntegrityStatus,
-    pub overall_status: IntegrityStatus,
-    pub recommendations: Vec<IntegrityRecommendation>,
+// Enhanced API response structures
+#[derive(Serialize, Deserialize)]
+pub struct BlockExplorerResponse {
+    pub block: Block,
+    pub transactions: Vec<Transaction>,
+    pub rdf_summary: RdfSummary,
+    pub validation_status: ValidationStatus,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BlockchainIntegrityStatus {
-    pub chain_length: usize,
-    pub persistent_block_count: usize,
-    pub missing_blocks: Vec<u64>,
-    pub corrupted_blocks: Vec<u64>,
-    pub hash_validation_errors: Vec<String>,
-    pub reconstruction_errors: Vec<String>,
+#[derive(Serialize, Deserialize)]
+pub struct TraceabilityResponse {
+    pub item: TraceabilityItem,
+    pub trace_path: Vec<TraceStep>,
+    pub knowledge_graph: KnowledgeGraph,
+    pub related_transactions: Vec<Transaction>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TransactionCountIntegrityStatus {
-    pub reported_total_transactions: usize,
-    pub actual_rdf_triple_count: usize,
-    pub per_block_transaction_counts: HashMap<u64, TransactionCountDetails>,
-    pub counting_discrepancies: Vec<String>,
+#[derive(Serialize, Deserialize)]
+pub struct KnowledgeGraph {
+    pub nodes: Vec<KnowledgeGraphNode>,
+    pub edges: Vec<KnowledgeGraphEdge>,
+    pub metadata: GraphMetadata,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TransactionCountDetails {
-    pub block_index: u64,
-    pub reported_count: usize,
-    pub actual_triple_count: usize,
-    pub rdf_parsing_errors: Vec<String>,
+#[derive(Serialize, Deserialize)]
+pub struct WebSocketMessage {
+    pub message_type: MessageType,
+    pub data: serde_json::Value,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SparqlIntegrityStatus {
-    pub query_consistency_checks: Vec<QueryConsistencyResult>,
-    pub graph_accessibility_issues: Vec<String>,
-    pub canonicalization_query_mismatches: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct QueryConsistencyResult {
-    pub query: String,
-    pub expected_result_count: usize,
-    pub actual_result_count: usize,
-    pub missing_graphs: Vec<String>,
-    pub inaccessible_data: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CanonicalizationIntegrityStatus {
-    pub algorithm_consistency_checks: Vec<CanonicalizationConsistencyResult>,
-    pub blank_node_handling_issues: Vec<String>,
-    pub hash_validation_failures: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CanonicalizationConsistencyResult {
-    pub graph_name: String,
-    pub custom_algorithm_hash: String,
-    pub rdfc10_algorithm_hash: String,
-    pub hashes_match: bool,
-    pub complexity: GraphComplexity,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum IntegrityStatus {
-    Healthy,
-    Warning,
-    Critical,
-    Corrupted,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IntegrityRecommendation {
-    pub severity: RecommendationSeverity,
-    pub category: String,
-    pub description: String,
-    pub action_required: String,
-    pub auto_fixable: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RecommendationSeverity {
-    Info,
-    Warning,
-    Critical,
-    Emergency,
+#[derive(Serialize, Deserialize)]
+pub enum MessageType {
+    NewBlock,
+    NewTransaction,
+    ItemUpdate,
+    NetworkStatus,
+    ValidationAlert,
 }
 ```
 
 ## Files
-Implement integrity validation across multiple system components.
+Comprehensive file structure for professional blockchain explorer implementation.
 
-**New Files:**
-- `src/integrity/mod.rs` - Main integrity validation module
-- `src/integrity/validator.rs` - Core integrity validation logic
-- `src/integrity/blockchain_validator.rs` - Blockchain-specific integrity checks
-- `src/integrity/transaction_counter.rs` - Accurate transaction counting system
-- `src/integrity/sparql_validator.rs` - SPARQL query consistency validation
-- `src/integrity/canonicalization_validator.rs` - RDF canonicalization integrity checks
-- `src/integrity/repair.rs` - Automatic integrity repair mechanisms
-- `src/integrity/monitor.rs` - Real-time integrity monitoring
-- `tests/integrity_validation_tests.rs` - Comprehensive integrity validation tests
+### New Frontend Files
+```
+frontend/src/
+├── components/
+│   ├── explorer/
+│   │   ├── BlockExplorer.tsx - Main blockchain explorer interface
+│   │   ├── BlockDetails.tsx - Detailed block information view
+│   │   ├── TransactionList.tsx - Transaction listing and filtering
+│   │   ├── TransactionDetails.tsx - Individual transaction details
+│   │   ├── NetworkStatus.tsx - Real-time network monitoring
+│   │   └── SearchBar.tsx - Advanced search functionality
+│   ├── traceability/
+│   │   ├── ItemTracker.tsx - Main item traceability interface
+│   │   ├── TraceabilityGraph.tsx - Knowledge graph visualization
+│   │   ├── TraceabilityTimeline.tsx - Timeline view of item history
+│   │   ├── ItemDetails.tsx - Detailed item information
+│   │   └── RelationshipViewer.tsx - Relationship exploration
+│   ├── dashboard/
+│   │   ├── Dashboard.tsx - Main dashboard with metrics
+│   │   ├── MetricsCards.tsx - Key performance indicators
+│   │   ├── RecentActivity.tsx - Recent transactions and updates
+│   │   ├── NetworkHealth.tsx - Network status monitoring
+│   │   └── QuickActions.tsx - Common user actions
+│   ├── semantic/
+│   │   ├── SPARQLEditor.tsx - Advanced SPARQL query interface
+│   │   ├── QueryBuilder.tsx - Visual query builder for business users
+│   │   ├── OntologyViewer.tsx - Ontology exploration interface
+│   │   └── ResultsViewer.tsx - Query results visualization
+│   └── layout/
+│       ├── Navigation.tsx - Professional navigation system
+│       ├── Sidebar.tsx - Collapsible sidebar navigation
+│       ├── Breadcrumbs.tsx - Navigation breadcrumbs
+│       └── Footer.tsx - Application footer
+├── hooks/
+│   ├── useWebSocket.ts - WebSocket connection management
+│   ├── useBlockchain.ts - Blockchain data management
+│   ├── useTraceability.ts - Traceability data hooks
+│   ├── useSearch.ts - Search functionality
+│   └── useRealtime.ts - Real-time data updates
+├── services/
+│   ├── websocket.ts - WebSocket service implementation
+│   ├── blockchain.ts - Blockchain API service
+│   ├── traceability.ts - Traceability API service
+│   └── search.ts - Search API service
+├── utils/
+│   ├── graph.ts - Knowledge graph utilities
+│   ├── formatting.ts - Data formatting utilities
+│   ├── validation.ts - Input validation
+│   └── constants.ts - Application constants
+└── styles/
+    ├── explorer.css - Blockchain explorer styles
+    ├── traceability.css - Traceability interface styles
+    ├── dashboard.css - Dashboard styles
+    └── professional.css - Professional UI theme
+```
 
-**Modified Files:**
-- `src/core/blockchain.rs` - Add integrity validation hooks and improved chain reconstruction
-- `src/storage/rdf_store.rs` - Enhanced validation methods and consistency checks
-- `src/web/handlers.rs` - Add integrity validation endpoints and accurate counting
-- `src/web/models.rs` - Add integrity validation response models
-- `src/web/server.rs` - Register integrity validation routes
-- `frontend/src/services/api.ts` - Add integrity validation API calls
-- `frontend/src/components/IntegrityDashboard.tsx` - New integrity monitoring dashboard
+### Enhanced Backend Files
+```
+src/web/
+├── websocket/
+│   ├── mod.rs - WebSocket module definition
+│   ├── server.rs - WebSocket server implementation
+│   ├── handlers.rs - WebSocket message handlers
+│   └── messages.rs - WebSocket message types
+├── api/
+│   ├── explorer.rs - Blockchain explorer endpoints
+│   ├── traceability.rs - Traceability API endpoints
+│   ├── search.rs - Search functionality endpoints
+│   └── realtime.rs - Real-time data endpoints
+└── enhanced_handlers.rs - Enhanced API handlers
+```
+
+### Configuration Files
+- `frontend/package.json` - Updated with new dependencies (D3.js, Cytoscape, Socket.io)
+- `frontend/vite.config.ts` - Enhanced build configuration
+- `config/websocket.toml` - WebSocket server configuration
+- `config/ui.toml` - UI customization settings
 
 ## Functions
-Implement comprehensive integrity validation and repair functions.
+Detailed function specifications for enhanced functionality.
 
-**New Functions in `src/integrity/validator.rs`:**
-- `validate_system_integrity() -> Result<IntegrityValidationReport>` - Main system integrity validation
-- `validate_blockchain_integrity(blockchain: &Blockchain) -> Result<BlockchainIntegrityStatus>` - Blockchain integrity checks
-- `validate_transaction_counts(blockchain: &Blockchain) -> Result<TransactionCountIntegrityStatus>` - Transaction counting validation
-- `validate_sparql_consistency(rdf_store: &RDFStore) -> Result<SparqlIntegrityStatus>` - SPARQL query consistency checks
-- `validate_canonicalization_integrity(rdf_store: &RDFStore) -> Result<CanonicalizationIntegrityStatus>` - Canonicalization validation
+### Frontend Functions
+```typescript
+// Blockchain Explorer Functions
+async function fetchBlockDetails(blockIndex: number): Promise<BlockExplorerResponse>
+async function fetchTransactionDetails(txId: string): Promise<Transaction>
+async function searchBlocks(query: string, filters: SearchFilters): Promise<Block[]>
+async function getNetworkMetrics(): Promise<DashboardMetrics>
 
-**New Functions in `src/integrity/blockchain_validator.rs`:**
-- `validate_chain_reconstruction(blockchain: &Blockchain) -> Result<Vec<String>>` - Validate blockchain loading from storage
-- `validate_block_hash_integrity(blockchain: &Blockchain) -> Result<Vec<String>>` - Validate all block hashes
-- `detect_missing_blocks(blockchain: &Blockchain) -> Result<Vec<u64>>` - Detect gaps in blockchain
-- `validate_block_data_consistency(block: &Block, rdf_store: &RDFStore) -> Result<bool>` - Enhanced block data validation
+// Traceability Functions
+async function traceItem(itemId: string): Promise<TraceabilityResponse>
+async function buildKnowledgeGraph(itemId: string): Promise<KnowledgeGraph>
+async function findRelatedItems(itemId: string, depth: number): Promise<TraceabilityItem[]>
+async function getItemHistory(itemId: string): Promise<TraceStep[]>
 
-**New Functions in `src/integrity/transaction_counter.rs`:**
-- `count_actual_transactions_per_block(blockchain: &Blockchain) -> Result<HashMap<u64, TransactionCountDetails>>` - Accurate per-block transaction counting
-- `parse_rdf_content_for_transactions(rdf_data: &str) -> Result<usize>` - Parse RDF to count actual triples/transactions
-- `validate_transaction_count_consistency(blockchain: &Blockchain) -> Result<Vec<String>>` - Validate transaction counting accuracy
+// Real-time Functions
+function useWebSocketConnection(url: string): WebSocketHook
+function subscribeToBlockUpdates(callback: (block: Block) => void): () => void
+function subscribeToTransactionUpdates(callback: (tx: Transaction) => void): () => void
+function subscribeToItemUpdates(itemId: string, callback: (item: TraceabilityItem) => void): () => void
 
-**New Functions in `src/integrity/sparql_validator.rs`:**
-- `validate_query_result_consistency(rdf_store: &RDFStore, test_queries: &[String]) -> Result<Vec<QueryConsistencyResult>>` - Test query consistency
-- `validate_graph_accessibility(rdf_store: &RDFStore) -> Result<Vec<String>>` - Check all graphs are accessible
-- `cross_validate_query_results(rdf_store: &RDFStore) -> Result<Vec<String>>` - Cross-validate query results against raw storage
+// Visualization Functions
+function renderKnowledgeGraph(container: HTMLElement, graph: KnowledgeGraph): GraphRenderer
+function createTraceabilityTimeline(steps: TraceStep[]): TimelineComponent
+function generateNetworkVisualization(metrics: DashboardMetrics): NetworkChart
+```
 
-**New Functions in `src/integrity/repair.rs`:**
-- `repair_blockchain_integrity(blockchain: &mut Blockchain) -> Result<Vec<String>>` - Automatic blockchain repair
-- `repair_transaction_counts(blockchain: &mut Blockchain) -> Result<()>` - Fix transaction counting issues
-- `repair_canonicalization_inconsistencies(rdf_store: &mut RDFStore) -> Result<Vec<String>>` - Fix canonicalization issues
+### Backend Functions
+```rust
+// Enhanced API Handlers
+pub async fn get_block_explorer_data(Path(index): Path<u64>) -> Result<Json<BlockExplorerResponse>, AppError>
+pub async fn get_traceability_data(Query(params): Query<TraceabilityQuery>) -> Result<Json<TraceabilityResponse>, AppError>
+pub async fn search_blockchain(Query(params): Query<SearchQuery>) -> Result<Json<SearchResults>, AppError>
+pub async fn get_dashboard_metrics() -> Result<Json<DashboardMetrics>, AppError>
 
-**Modified Functions in `src/core/blockchain.rs`:**
-- `load_chain_from_store()` - Enhanced with integrity validation and detailed logging
-- `is_valid()` - Improved validation with detailed error reporting
-- `validate_block_data_integrity()` - Enhanced with better consistency checking
-- `add_block()` - Add integrity validation hooks
+// WebSocket Handlers
+pub async fn handle_websocket_connection(ws: WebSocketUpgrade) -> Response
+pub async fn broadcast_block_update(block: &Block, clients: &WebSocketClients)
+pub async fn broadcast_transaction_update(tx: &Transaction, clients: &WebSocketClients)
+pub async fn broadcast_item_update(item: &TraceabilityItem, clients: &WebSocketClients)
 
-**Modified Functions in `src/web/handlers.rs`:**
-- `get_blockchain_status()` - Return accurate counts with integrity validation
-- `get_blocks()` - Add integrity validation for each block
-- `execute_sparql_query()` - Add query result validation
+// Traceability Functions
+pub fn build_knowledge_graph(blockchain: &Blockchain, item_id: &str) -> Result<KnowledgeGraph, Error>
+pub fn trace_item_history(blockchain: &Blockchain, item_id: &str) -> Result<Vec<TraceStep>, Error>
+pub fn find_related_items(blockchain: &Blockchain, item_id: &str, depth: u32) -> Result<Vec<TraceabilityItem>, Error>
+
+// Search Functions
+pub fn search_blocks_advanced(blockchain: &Blockchain, query: &SearchQuery) -> Result<Vec<Block>, Error>
+pub fn search_transactions_advanced(blockchain: &Blockchain, query: &SearchQuery) -> Result<Vec<Transaction>, Error>
+pub fn search_items_semantic(blockchain: &Blockchain, query: &str) -> Result<Vec<TraceabilityItem>, Error>
+```
 
 ## Classes
-Implement integrity validation and monitoring classes.
+Enhanced component architecture for professional blockchain explorer.
 
-**New Classes:**
-- `IntegrityValidator` - Main integrity validation coordinator
-- `BlockchainIntegrityValidator` - Specialized blockchain integrity validation
-- `TransactionCountValidator` - Accurate transaction counting and validation
-- `SparqlConsistencyValidator` - SPARQL query consistency validation
-- `CanonicalizationValidator` - RDF canonicalization integrity validation
-- `IntegrityRepairEngine` - Automatic integrity repair system
-- `IntegrityMonitor` - Real-time integrity monitoring with alerts
+### Frontend Component Classes
+```typescript
+// Main Application Components
+class BlockchainExplorer extends React.Component {
+  // Professional blockchain explorer interface
+  // Methods: renderBlockList, renderTransactionDetails, handleSearch, updateRealtime
+}
 
-**Modified Classes:**
-- `Blockchain` - Enhanced with integrity validation hooks
-- `RDFStore` - Improved validation methods and consistency checks
-- `AppState` - Add integrity validation state management
+class TraceabilityDashboard extends React.Component {
+  // Item traceability and knowledge graph interface
+  // Methods: renderKnowledgeGraph, renderTimeline, handleItemSearch, updateTraceData
+}
+
+class ProfessionalNavigation extends React.Component {
+  // Etherscan-style navigation system
+  // Methods: renderMainNav, renderSidebar, handleRouting, updateActiveState
+}
+
+class KnowledgeGraphVisualization extends React.Component {
+  // Interactive D3.js/Cytoscape knowledge graph
+  // Methods: initializeGraph, updateNodes, handleInteraction, exportGraph
+}
+
+class RealTimeMonitor extends React.Component {
+  // Real-time data monitoring and updates
+  // Methods: connectWebSocket, handleUpdates, displayNotifications, manageSubscriptions
+}
+
+// Specialized UI Components
+class AdvancedSearchInterface extends React.Component {
+  // Professional search with filters and suggestions
+  // Methods: buildQuery, applyFilters, showSuggestions, handleResults
+}
+
+class TransactionViewer extends React.Component {
+  // Detailed transaction analysis interface
+  // Methods: renderTransactionDetails, showRelatedData, validateSignature, displayMetadata
+}
+
+class SemanticQueryBuilder extends React.Component {
+  // Visual SPARQL query builder for business users
+  // Methods: buildVisualQuery, generateSPARQL, executeQuery, displayResults
+}
+```
+
+### Backend Service Classes
+```rust
+// WebSocket Management
+pub struct WebSocketManager {
+    clients: Arc<Mutex<HashMap<String, WebSocketClient>>>,
+    blockchain: Arc<Mutex<Blockchain>>,
+}
+impl WebSocketManager {
+    pub fn new(blockchain: Blockchain) -> Self
+    pub async fn handle_connection(&self, socket: WebSocket) -> Result<(), Error>
+    pub async fn broadcast_update(&self, message: WebSocketMessage) -> Result<(), Error>
+    pub async fn subscribe_client(&self, client_id: String, subscription: Subscription) -> Result<(), Error>
+}
+
+// Enhanced Traceability Service
+pub struct TraceabilityService {
+    blockchain: Arc<Blockchain>,
+    graph_builder: KnowledgeGraphBuilder,
+    cache: Arc<Mutex<LruCache<String, TraceabilityResponse>>>,
+}
+impl TraceabilityService {
+    pub fn new(blockchain: Arc<Blockchain>) -> Self
+    pub fn trace_item(&self, item_id: &str) -> Result<TraceabilityResponse, Error>
+    pub fn build_knowledge_graph(&self, item_id: &str) -> Result<KnowledgeGraph, Error>
+    pub fn find_relationships(&self, item_id: &str, depth: u32) -> Result<Vec<TraceabilityRelationship>, Error>
+}
+
+// Professional Search Service
+pub struct SearchService {
+    blockchain: Arc<Blockchain>,
+    indexer: SearchIndexer,
+    semantic_engine: SemanticSearchEngine,
+}
+impl SearchService {
+    pub fn new(blockchain: Arc<Blockchain>) -> Self
+    pub fn search_advanced(&self, query: &SearchQuery) -> Result<SearchResults, Error>
+    pub fn search_semantic(&self, query: &str) -> Result<Vec<SemanticResult>, Error>
+    pub fn build_suggestions(&self, partial_query: &str) -> Result<Vec<String>, Error>
+}
+```
 
 ## Dependencies
-Add integrity validation and monitoring dependencies.
+Enhanced dependency management for professional blockchain explorer.
 
+### Frontend Dependencies
+```json
+{
+  "dependencies": {
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^6.8.0",
+    "typescript": "~5.8.3",
+    "axios": "^1.11.0",
+    "socket.io-client": "^4.7.0",
+    "d3": "^7.8.0",
+    "cytoscape": "^3.33.1",
+    "cytoscape-dagre": "^2.5.0",
+    "cytoscape-cose-bilkent": "^4.1.0",
+    "@types/d3": "^7.4.3",
+    "@types/cytoscape": "^3.21.9",
+    "recharts": "^2.8.0",
+    "react-query": "^3.39.0",
+    "zustand": "^4.4.0",
+    "react-hook-form": "^7.45.0",
+    "react-select": "^5.7.0",
+    "react-datepicker": "^4.16.0",
+    "react-virtualized": "^9.22.0",
+    "framer-motion": "^10.16.0",
+    "lucide-react": "^0.263.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "vite": "^7.1.2",
+    "eslint": "^9.33.0",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "jest": "^29.6.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/jest-dom": "^6.1.0",
+    "cypress": "^13.0.0"
+  }
+}
+```
+
+### Backend Dependencies
 ```toml
 [dependencies]
-# Existing dependencies remain...
+# Existing dependencies maintained
+# WebSocket support
+tokio-tungstenite = "0.20"
+futures-util = "0.3"
+uuid = { version = "1.0", features = ["v4", "serde"] }
 
-# Enhanced validation and monitoring
-validator = "0.16"
-thiserror = "1.0"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-metrics = "0.21"
-metrics-exporter-prometheus = "0.12"
+# Enhanced web framework
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "fs", "set-header", "compression"] }
 
-# For integrity repair algorithms
-petgraph = "0.6"
+# Real-time features
+tokio = { version = "1.0", features = ["full", "rt-multi-thread"] }
+tokio-stream = "0.1"
+broadcast = "0.1"
+
+# Enhanced serialization
+serde = { version = "1.0", features = ["derive", "rc"] }
+serde_json = "1.0"
+
+# Caching and performance
+lru = "0.12"
+dashmap = "5.5"
 rayon = "1.7"
 
-# Enhanced testing
-proptest = "1.2"
-criterion = { version = "0.5", features = ["html_reports"] }
+# Search and indexing
+tantivy = "0.21"
+regex = "1.0"
+
+# Graph algorithms (enhanced)
+petgraph = "0.6"
+ndarray = "0.15"
 ```
 
 ## Testing
-Comprehensive testing strategy for integrity validation system.
+Comprehensive testing strategy for professional blockchain explorer.
 
-**Test Categories:**
-1. **Unit Tests** - Individual integrity validation functions
-2. **Integration Tests** - End-to-end integrity validation workflows
-3. **Property Tests** - Invariant validation using proptest
-4. **Performance Tests** - Integrity validation performance benchmarks
-5. **Corruption Tests** - Intentional data corruption and recovery testing
+### Frontend Testing Framework
+```typescript
+// Component Testing
+describe('BlockchainExplorer', () => {
+  test('renders block list correctly', async () => {
+    // Test block list rendering and pagination
+  });
+  
+  test('handles real-time updates', async () => {
+    // Test WebSocket integration and live updates
+  });
+  
+  test('performs advanced search', async () => {
+    // Test search functionality with filters
+  });
+});
 
-**Key Test Files:**
-- `tests/integrity_validation_tests.rs` - Core integrity validation tests
-- `tests/blockchain_integrity_tests.rs` - Blockchain-specific integrity tests
-- `tests/transaction_counting_tests.rs` - Transaction counting accuracy tests
-- `tests/sparql_consistency_tests.rs` - SPARQL query consistency tests
-- `tests/canonicalization_integrity_tests.rs` - Canonicalization validation tests
-- `tests/integrity_repair_tests.rs` - Automatic repair mechanism tests
-- `tests/corruption_recovery_tests.rs` - Data corruption and recovery tests
+describe('TraceabilityDashboard', () => {
+  test('renders knowledge graph', async () => {
+    // Test graph visualization and interaction
+  });
+  
+  test('traces item history', async () => {
+    // Test traceability functionality
+  });
+  
+  test('handles item relationships', async () => {
+    // Test relationship exploration
+  });
+});
 
-**Test Scenarios:**
-- Blockchain reconstruction from corrupted persistent storage
-- Transaction count validation with various RDF content types
-- SPARQL query consistency across different graph configurations
-- Canonicalization algorithm consistency validation
-- Automatic repair of common integrity issues
-- Performance impact of integrity validation on normal operations
+describe('KnowledgeGraphVisualization', () => {
+  test('initializes D3 graph correctly', async () => {
+    // Test graph initialization and rendering
+  });
+  
+  test('handles node interactions', async () => {
+    // Test node selection and manipulation
+  });
+  
+  test('updates graph data dynamically', async () => {
+    // Test dynamic graph updates
+  });
+});
+```
+
+### Backend Testing Framework
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[tokio::test]
+    async fn test_websocket_connection() {
+        // Test WebSocket server and client connections
+    }
+    
+    #[tokio::test]
+    async fn test_traceability_api() {
+        // Test traceability endpoints and data accuracy
+    }
+    
+    #[tokio::test]
+    async fn test_knowledge_graph_generation() {
+        // Test knowledge graph building and accuracy
+    }
+    
+    #[tokio::test]
+    async fn test_real_time_updates() {
+        // Test real-time data broadcasting
+    }
+    
+    #[tokio::test]
+    async fn test_advanced_search() {
+        // Test search functionality and performance
+    }
+}
+```
+
+### Integration Testing
+- End-to-end testing with Cypress for complete user workflows
+- WebSocket integration testing for real-time features
+- Performance testing for large datasets and concurrent users
+- Cross-browser compatibility testing
+- Mobile responsiveness testing
+
+### Performance Testing
+- Load testing for concurrent WebSocket connections
+- Stress testing for large knowledge graphs (>10,000 nodes)
+- Memory usage testing for real-time data streams
+- API response time benchmarking
+- Frontend rendering performance optimization
 
 ## Implementation Order
-Systematic implementation approach to minimize disruption and ensure reliability.
+Structured implementation sequence for professional blockchain explorer development.
 
-1. **Phase 1: Core Integrity Types and Infrastructure**
-   - Implement integrity validation types and error handling
-   - Create basic integrity validator structure
-   - Add comprehensive logging and tracing
-   - Implement basic unit tests
+### Phase 1: Foundation and Architecture (Weeks 1-2)
+1. **Enhanced Backend API Structure**
+   - Create new API modules (explorer.rs, traceability.rs, search.rs)
+   - Implement enhanced data structures and response types
+   - Add comprehensive error handling and validation
+   - Set up WebSocket server infrastructure
 
-2. **Phase 2: Blockchain Integrity Validation**
-   - Implement blockchain reconstruction validation
-   - Add block hash integrity checking
-   - Create missing block detection
-   - Enhance blockchain loading with validation hooks
+2. **Frontend Architecture Overhaul**
+   - Install and configure new dependencies (D3.js, Cytoscape, Socket.io)
+   - Create professional component structure and routing
+   - Implement state management with Zustand
+   - Set up TypeScript types and interfaces
 
-3. **Phase 3: Transaction Counting System**
-   - Implement accurate RDF content parsing for transaction counting
-   - Create per-block transaction count validation
-   - Fix transaction counting logic in web handlers
-   - Add transaction count consistency checks
+3. **Professional UI Foundation**
+   - Create design system with Tailwind CSS
+   - Implement responsive layout components
+   - Build navigation and routing infrastructure
+   - Create loading states and error boundaries
 
-4. **Phase 4: SPARQL Query Consistency**
-   - Implement SPARQL query result validation
-   - Add graph accessibility checking
-   - Create cross-validation mechanisms
-   - Enhance query execution with consistency checks
+### Phase 2: Core Explorer Features (Weeks 3-4)
+4. **Blockchain Explorer Interface**
+   - Implement BlockExplorer component with professional styling
+   - Create BlockDetails and TransactionDetails views
+   - Add advanced search functionality with filters
+   - Implement pagination and data virtualization
 
-5. **Phase 5: Canonicalization Integrity**
-   - Implement canonicalization algorithm consistency validation
-   - Add blank node handling verification
-   - Create hash validation failure detection
-   - Enhance canonicalization with integrity checks
+5. **Real-time Integration**
+   - Implement WebSocket client connection management
+   - Create real-time update hooks and services
+   - Add live block and transaction monitoring
+   - Implement notification system for updates
 
-6. **Phase 6: Automatic Repair Mechanisms**
-   - Implement blockchain integrity repair
-   - Add transaction count correction
-   - Create canonicalization consistency repair
-   - Implement safe repair rollback mechanisms
+6. **Dashboard and Metrics**
+   - Create comprehensive dashboard with key metrics
+   - Implement network health monitoring
+   - Add recent activity feeds
+   - Create quick action interfaces
 
-7. **Phase 7: Real-time Monitoring and Web Interface**
-   - Implement real-time integrity monitoring
-   - Add integrity validation API endpoints
-   - Create frontend integrity dashboard
-   - Implement alerting and notification system
+### Phase 3: Traceability and Knowledge Graph (Weeks 5-6)
+7. **Item Traceability System**
+   - Implement TraceabilityDashboard component
+   - Create item search and selection interface
+   - Build traceability timeline visualization
+   - Add item relationship exploration
 
-8. **Phase 8: Performance Optimization and Production Deployment**
-   - Optimize integrity validation performance
-   - Add configurable validation levels
-   - Implement background integrity monitoring
-   - Create production deployment documentation
+8. **Knowledge Graph Visualization**
+   - Implement D3.js/Cytoscape graph rendering
+   - Create interactive node and edge manipulation
+   - Add graph layout algorithms and customization
+   - Implement graph export and sharing features
+
+9. **Advanced Traceability Features**
+   - Create relationship type filtering and visualization
+   - Implement multi-item comparison interface
+   - Add traceability path optimization
+   - Create supply chain analytics dashboard
+
+### Phase 4: Semantic Features and Business User Interface (Weeks 7-8)
+10. **Visual Query Builder**
+    - Create drag-and-drop query builder for business users
+    - Implement SPARQL generation from visual queries
+    - Add query templates for common use cases
+    - Create results visualization and export
+
+11. **Enhanced SPARQL Interface**
+    - Upgrade existing SPARQL editor with syntax highlighting
+    - Add query history and favorites
+    - Implement query performance optimization
+    - Create collaborative query sharing
+
+12. **Ontology Management Interface**
+    - Create visual ontology browser and editor
+    - Implement ontology validation and testing
+    - Add domain-specific ontology templates
+    - Create ontology version management
+
+### Phase 5: Advanced Features and Optimization (Weeks 9-10)
+13. **Advanced Search and Analytics**
+    - Implement semantic search with natural language processing
+    - Create advanced filtering and faceted search
+    - Add search result ranking and relevance
+    - Implement search analytics and optimization
+
+14. **Performance Optimization**
+    - Implement data caching and lazy loading
+    - Optimize knowledge graph rendering for large datasets
+    - Add progressive data loading and virtualization
+    - Implement service worker for offline capabilities
+
+15. **Professional Polish and Testing**
+    - Complete responsive design and mobile optimization
+    - Implement comprehensive error handling and recovery
+    - Add accessibility features and WCAG compliance
+    - Complete integration and performance testing
+
+### Phase 6: Production Deployment and Documentation (Weeks 11-12)
+16. **Production Configuration**
+    - Configure production build optimization
+    - Implement security headers and CSP policies
+    - Set up monitoring and analytics integration
+    - Create deployment scripts and CI/CD pipeline
+
+17. **Documentation and Training**
+    - Create comprehensive user documentation
+    - Build interactive tutorials and onboarding
+    - Create API documentation and developer guides
+    - Implement help system and contextual guidance
+
+18. **Final Testing and Launch**
+    - Complete end-to-end testing and bug fixes
+    - Perform security audit and penetration testing
+    - Conduct user acceptance testing
+    - Deploy to production and monitor performance
+
+This implementation plan transforms the current basic ProvChainOrg interface into a professional-grade blockchain explorer and traceability system that rivals industry standards while maintaining the unique semantic capabilities that differentiate the platform. The structured approach ensures systematic development with clear milestones and deliverables at each phase.
