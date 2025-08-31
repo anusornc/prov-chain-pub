@@ -5,7 +5,7 @@ use crate::trace_optimization::EnhancedTraceResult;
 use crate::transaction::transaction::{Transaction, TransactionType, TransactionMetadata, EnvironmentalConditions, QualityData, ComplianceInfo, TransactionInput, TransactionOutput, TransactionPayload};
 use crate::wallet::{Participant, ParticipantType, ContactInfo};
 use crate::web::models::{
-    BlockchainStatus, BlockInfo, TransactionInfo, AddTripleRequest, 
+    BlockInfo, AddTripleRequest, 
     SparqlQueryRequest, SparqlQueryResponse, ProductTrace,
     EnvironmentalData, ApiError, UserClaims, WalletRegistrationRequest, 
     WalletRegistrationResponse, CreateTransactionRequest, CreateTransactionResponse,
@@ -1143,6 +1143,7 @@ fn default_optimization_level() -> u8 {
 
 /// Query parameters for products listing
 #[derive(Deserialize)]
+#[allow(dead_code)]
 pub struct ProductsQueryParams {
     q: Option<String>,
     page: Option<u32>,

@@ -48,12 +48,15 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 
 # Web framework and HTTP server for Phase 2
-axum = "0.7"
+axum = { version = "0.7", features = ["ws"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "fs", "set-header"] }
 hyper = { version = "1.0", features = ["full"] }
 mime = "0.3"
 http = "1.0"
+
+# WebSocket and real-time communication
+socketioxide = "0.13"
 
 # JSON Web Tokens for authentication
 jsonwebtoken = "9.2"
@@ -133,4 +136,3 @@ path = "demo_ui.rs"
 name = "three_node_validation_test"
 path = "tests/three_node_validation_test.rs"
 harness = true
-

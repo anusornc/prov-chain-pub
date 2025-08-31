@@ -1,30 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import './App.css';
 import Navigation from './components/layout/Navigation';
-import Dashboard from './components/dashboard/Dashboard';
-import BlockExplorer from './components/explorer/BlockExplorer';
-import BlockDetails from './components/explorer/BlockDetails';
 import { ThemeProvider } from './contexts/ThemeContext';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import type { Block, Transaction } from './types';
 
-// Import existing components for backward compatibility
-import OntologyManager from './features/ontology/OntologyManager';
-import RDFTripleStore from './features/rdf/RDFTripleStore';
-import KnowledgeGraph from './features/knowledge-graph/KnowledgeGraph';
-import ProvenanceTracker from './features/provenance/ProvenanceTracker';
-import TraceabilityQueries from './features/queries/TraceabilityQueries';
+// Lazy load components for code splitting and performance optimization
+const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
+const BlockExplorer = lazy(() => import('./components/explorer/BlockExplorer'));
+const BlockDetails = lazy(() => import('./components/explorer/BlockDetails'));
 
-// Import new Phase 3 traceability components
-import TraceabilityExplorer from './components/traceability/TraceabilityExplorer';
-import SPARQLQueryBuilder from './components/traceability/SPARQLQueryBuilder';
-import TransactionExplorer from './components/explorer/TransactionExplorer';
+// Lazy load existing components for backward compatibility
+const OntologyManager = lazy(() => import('./features/ontology/OntologyManager'));
+const RDFTripleStore = lazy(() => import('./features/rdf/RDFTripleStore'));
+const KnowledgeGraph = lazy(() => import('./features/knowledge-graph/KnowledgeGraph'));
+const ProvenanceTracker = lazy(() => import('./features/provenance/ProvenanceTracker'));
+const TraceabilityQueries = lazy(() => import('./features/queries/TraceabilityQueries'));
 
-// Import Phase 2 enhancement components
-import AdvancedSearch from './components/search/AdvancedSearch';
-import Timeline from './components/timeline/Timeline';
-import ParticipantsManager from './components/participants/ParticipantsManager';
-import AnalyticsDashboard from './components/analytics/AnalyticsDashboard';
+// Lazy load new Phase 3 traceability components
+const TraceabilityExplorer = lazy(() => import('./components/traceability/TraceabilityExplorer'));
+const SPARQLQueryBuilder = lazy(() => import('./components/traceability/SPARQLQueryBuilder'));
+const TransactionExplorer = lazy(() => import('./components/explorer/TransactionExplorer'));
+
+// Lazy load Phase 2 enhancement components
+const AdvancedSearch = lazy(() => import('./components/search/AdvancedSearch'));
+const Timeline = lazy(() => import('./components/timeline/Timeline'));
+const ParticipantsManager = lazy(() => import('./components/participants/ParticipantsManager'));
+const AnalyticsDashboard = lazy(() => import('./components/analytics/AnalyticsDashboard'));
 
 export type TabType = 
   | 'dashboard'
@@ -202,7 +204,13 @@ function App() {
         {/* Main Content */}
         <main className="flex-1 lg:ml-0">
           <div className="lg:pl-64">
-            {renderActiveTab()}
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-screen">
+                <LoadingSpinner size="lg" message="Loading component..." />
+              </div>
+            }>
+              {renderActiveTab()}
+            </Suspense>
           </div>
         </main>
       </div>

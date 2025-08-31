@@ -15,28 +15,37 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-/// JWT secret key (loaded from environment or generated securely)
+/// JWT secret key (loaded from environment or configuration)
 fn get_jwt_secret() -> Result<Vec<u8>, crate::error::WebError> {
-    match std::env::var("JWT_SECRET") {
-        Ok(secret) => {
-            if secret.len() < 32 {
-                return Err(crate::error::WebError::ServerError(
-                    "JWT_SECRET must be at least 32 characters long for security".to_string()
-                ));
-            }
-            Ok(secret.into_bytes())
+    // First try environment variable
+    if let Ok(secret) = std::env::var("JWT_SECRET") {
+        if secret.len() < 32 {
+            return Err(crate::error::WebError::ServerError(
+                "JWT_SECRET must be at least 32 characters long for security".to_string()
+            ));
         }
-        Err(_) => {
-            if cfg!(debug_assertions) {
-                // Only allow default in debug mode
-                eprintln!("WARNING: Using default JWT secret in debug mode. Set JWT_SECRET environment variable for production!");
-                Ok("debug-jwt-secret-change-in-production-32chars".to_string().into_bytes())
-            } else {
-                Err(crate::error::WebError::AuthenticationFailed(
-                    "JWT_SECRET environment variable must be set in production mode".to_string()
-                ))
-            }
-        }
+        return Ok(secret.into_bytes());
+    }
+    
+    // Then try configuration file
+    let config = crate::config::Config::load_or_default("config.toml");
+    if config.web.jwt_secret != "your-secret-key" && config.web.jwt_secret.len() >= 32 {
+        return Ok(config.web.jwt_secret.into_bytes());
+    }
+    
+    // Fall back to debug mode handling
+    if cfg!(debug_assertions) {
+        // Only show warning once per session using a static flag
+        use std::sync::Once;
+        static WARN_ONCE: Once = Once::new();
+        WARN_ONCE.call_once(|| {
+            eprintln!("INFO: Using development JWT secret. For production, set JWT_SECRET environment variable or configure jwt_secret in config.toml");
+        });
+        Ok("debug-jwt-secret-change-in-production-32chars".to_string().into_bytes())
+    } else {
+        Err(crate::error::WebError::AuthenticationFailed(
+            "JWT_SECRET environment variable or jwt_secret in config.toml must be set in production mode".to_string()
+        ))
     }
 }
 

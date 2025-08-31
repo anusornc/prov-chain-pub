@@ -70,7 +70,7 @@ impl Block {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Blockchain {
     pub chain: Vec<Block>,
     pub rdf_store: RDFStore,
@@ -521,5 +521,25 @@ impl Blockchain {
     pub fn dump(&self) -> Result<String> {
         serde_json::to_string_pretty(&self.chain)
             .map_err(|e| ProvChainError::Json(e))
+    }
+
+    /// Get the latest block index (for WebSocket integration)
+    pub fn get_latest_block_index(&self) -> u64 {
+        self.chain.last().map(|block| block.index).unwrap_or(0)
+    }
+
+    /// Get the total number of transactions (placeholder implementation)
+    pub fn get_transaction_count(&self) -> usize {
+        // This is a simplified implementation
+        // In a real system, this would count actual transactions across all blocks
+        self.chain.len().saturating_sub(1) // Subtract genesis block
+    }
+
+    /// Get the number of active participants (placeholder implementation)
+    pub fn get_participant_count(&self) -> usize {
+        // This is a simplified implementation
+        // In a real system, this would query the RDF store for unique participants
+        // For now, return a reasonable default
+        5
     }
 }

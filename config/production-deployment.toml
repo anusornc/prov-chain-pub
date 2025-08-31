@@ -1,0 +1,175 @@
+# ProvChainOrg Production Deployment Configuration
+# This configuration is optimized for production environments with security, performance, and monitoring
+
+[server]
+# Production server configuration
+host = "0.0.0.0"  # Bind to all interfaces for container deployment
+port = 8080
+workers = 4  # Adjust based on CPU cores (recommended: num_cores)
+max_connections = 1000
+request_timeout_seconds = 30
+keep_alive_timeout_seconds = 75
+
+[web]
+# JWT configuration for production
+# IMPORTANT: Set JWT_SECRET environment variable in production
+jwt_secret = "MUST_BE_SET_VIA_ENVIRONMENT_VARIABLE"
+jwt_expiration_hours = 24
+cors_origins = ["https://your-domain.com", "https://api.your-domain.com"]
+cors_max_age_seconds = 3600
+
+[websocket]
+# WebSocket configuration for real-time features
+enabled = true
+max_connections = 500
+heartbeat_interval_seconds = 30
+connection_timeout_seconds = 60
+broadcast_buffer_size = 1000
+
+[blockchain]
+# Blockchain configuration
+max_block_size = 1048576  # 1MB
+max_transactions_per_block = 1000
+block_validation_timeout_seconds = 30
+consensus_timeout_seconds = 60
+
+[storage]
+# Storage configuration
+data_directory = "/app/data"
+backup_directory = "/app/backups"
+max_backup_files = 10
+backup_interval_hours = 6
+compression_enabled = true
+
+[rdf]
+# RDF store configuration
+store_path = "/app/data/rdf_store"
+cache_size_mb = 512
+query_timeout_seconds = 30
+max_concurrent_queries = 50
+
+[logging]
+# Logging configuration
+level = "info"  # Options: error, warn, info, debug, trace
+format = "json"  # Options: json, pretty
+file_path = "/app/logs/provchain.log"
+max_file_size_mb = 100
+max_files = 5
+log_requests = true
+log_responses = false  # Set to true for debugging
+
+[monitoring]
+# Monitoring and metrics
+prometheus_enabled = true
+prometheus_port = 9090
+metrics_path = "/metrics"
+health_check_path = "/health"
+jaeger_enabled = true
+jaeger_endpoint = "http://jaeger:14268/api/traces"
+
+[security]
+# Security configuration
+rate_limiting_enabled = true
+rate_limit_requests_per_minute = 100
+rate_limit_burst = 20
+tls_enabled = false  # Set to true when using HTTPS termination
+secure_headers_enabled = true
+content_security_policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+
+[performance]
+# Performance optimization
+thread_pool_size = 8  # Adjust based on workload
+connection_pool_size = 20
+query_cache_size = 1000
+response_compression = true
+static_file_caching = true
+cache_max_age_seconds = 86400  # 24 hours
+
+[ontology]
+# Ontology management
+default_ontology = "generic_core"
+ontology_cache_enabled = true
+ontology_validation_enabled = true
+reasoning_enabled = true
+reasoning_timeout_seconds = 10
+
+[traceability]
+# Traceability features
+max_trace_depth = 100
+trace_cache_enabled = true
+trace_cache_ttl_seconds = 3600
+batch_processing_enabled = true
+batch_size = 100
+
+[analytics]
+# Analytics configuration
+enabled = true
+data_retention_days = 365
+aggregation_interval_minutes = 5
+export_enabled = true
+export_formats = ["json", "csv"]
+
+[deployment]
+# Deployment-specific settings
+environment = "production"
+version = "1.0.0"
+build_timestamp = "2025-08-31T14:00:00Z"
+git_commit = "latest"
+container_registry = "your-registry.com/provchain-org"
+health_check_interval_seconds = 30
+graceful_shutdown_timeout_seconds = 30
+
+[database]
+# Database configuration (if using external database)
+enabled = false
+url = "postgresql://user:password@localhost:5432/provchain"
+max_connections = 20
+connection_timeout_seconds = 30
+idle_timeout_seconds = 600
+
+[redis]
+# Redis configuration for caching and session storage
+enabled = false
+url = "redis://localhost:6379"
+max_connections = 10
+connection_timeout_seconds = 5
+key_prefix = "provchain:"
+default_ttl_seconds = 3600
+
+[backup]
+# Backup configuration
+enabled = true
+schedule = "0 2 * * *"  # Daily at 2 AM
+retention_days = 30
+compression = "gzip"
+encryption_enabled = false
+remote_storage_enabled = false
+remote_storage_url = "s3://your-bucket/backups/"
+
+[alerts]
+# Alerting configuration
+enabled = true
+webhook_url = "https://your-webhook-endpoint.com/alerts"
+email_enabled = false
+email_smtp_host = "smtp.your-domain.com"
+email_smtp_port = 587
+email_from = "alerts@your-domain.com"
+email_to = ["admin@your-domain.com"]
+
+# Alert thresholds
+cpu_threshold_percent = 80
+memory_threshold_percent = 85
+disk_threshold_percent = 90
+error_rate_threshold_percent = 5
+response_time_threshold_ms = 1000
+
+[features]
+# Feature flags
+websocket_real_time = true
+advanced_analytics = true
+ontology_reasoning = true
+blockchain_validation = true
+integrity_monitoring = true
+performance_metrics = true
+audit_logging = true
+api_versioning = true

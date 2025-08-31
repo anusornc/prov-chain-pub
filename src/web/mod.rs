@@ -5,5 +5,7 @@ pub mod server;
 pub mod handlers;
 pub mod auth;
 pub mod models;
+pub mod websocket;
 
 pub use server::WebServer;
+pub use websocket::{WebSocketState, BlockchainEventBroadcaster, websocket_handler};

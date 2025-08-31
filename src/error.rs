@@ -256,6 +256,9 @@ pub enum WebError {
     #[error("Invalid request: {0}")]
     InvalidRequest(String),
 
+    #[error("Bad request: {0}")]
+    BadRequest(String),
+
     #[error("Resource not found: {0}")]
     ResourceNotFound(String),
 

@@ -12,13 +12,14 @@ use crate::web::{
         get_products, get_product_by_id, get_product_trace_path, get_product_provenance,
         get_product_analytics, get_knowledge_graph,
     },
+    websocket::{WebSocketState, BlockchainEventBroadcaster, websocket_handler},
 };
 use axum::{
     middleware,
     routing::{get, post},
     Router,
 };
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::{Arc, Mutex}};
 use tower::ServiceBuilder;
 use tower_http::{
     cors::CorsLayer,
@@ -31,17 +32,30 @@ use tracing::{info, error};
 pub struct WebServer {
     app_state: AppState,
     auth_state: AuthState,
+    websocket_state: WebSocketState,
+    event_broadcaster: BlockchainEventBroadcaster,
     config: Config,
 }
 
 impl WebServer {
     /// Create a new web server instance
     pub fn new(blockchain: Blockchain, config: Config) -> Self {
+        let blockchain_arc = Arc::new(Mutex::new(blockchain.clone()));
+        let websocket_state = WebSocketState::new(blockchain_arc);
+        let event_broadcaster = BlockchainEventBroadcaster::new(websocket_state.clone());
+        
         Self {
             app_state: AppState::new(blockchain),
             auth_state: AuthState::new(),
+            websocket_state,
+            event_broadcaster,
             config,
         }
+    }
+
+    /// Get the event broadcaster for blockchain operations
+    pub fn event_broadcaster(&self) -> &BlockchainEventBroadcaster {
+        &self.event_broadcaster
     }
 
     /// Build CORS layer from configuration
@@ -91,6 +105,11 @@ impl WebServer {
         // Static file serving
         let static_service = ServeDir::new("static").append_index_html_on_directories(true);
 
+        // WebSocket routes (no authentication required for WebSocket upgrade)
+        let websocket_routes = Router::new()
+            .route("/ws", get(websocket_handler))
+            .with_state(self.websocket_state.clone());
+
         // Public routes (no authentication required)
         let public_routes = Router::new()
             .route("/health", get(health_check))
@@ -127,6 +146,7 @@ impl WebServer {
         let cors_layer = self.build_cors_layer(&cors_config);
 
         Router::new()
+            .merge(websocket_routes)
             .merge(public_routes)
             .merge(protected_routes)
             .nest_service("/", static_service)
@@ -165,8 +185,10 @@ impl WebServer {
 
         info!("Starting ProvChain web server on {}", addr);
         info!("Web UI available at: http://localhost:{}", self.config.web.port);
+        info!("WebSocket endpoint available at: ws://localhost:{}/ws", self.config.web.port);
         info!("API endpoints available:");
         info!("  GET  /health - Health check");
+        info!("  GET  /ws - WebSocket connection for real-time updates");
         info!("  POST /auth/login - Authentication");
         info!("  POST /api/wallet/register - Register new wallet");
         info!("  POST /api/transactions/create - Create new transaction");
@@ -181,6 +203,7 @@ impl WebServer {
         info!("  GET  /api/products/trace - Product traceability");
         info!("  POST /api/blockchain/add-triple - Add new triple");
         info!("Static files served from: ./static/");
+        info!("Real-time features: Block creation, transaction updates, integrity alerts");
 
         let listener = tokio::net::TcpListener::bind(addr).await?;
         let local_addr = listener.local_addr()?;

@@ -12,17 +12,18 @@ class WebSocketService {
   private listeners: Map<MessageType, Set<WebSocketCallback>> = new Map();
   private isConnectedState = false;
   private pollingInterval: NodeJS.Timeout | null = null;
+  private useSimulation = false;
 
   constructor() {
-    // For now, simulate connection without actual WebSocket
-    // This prevents the "Disconnected" status and network errors
-    this.simulateConnection();
+    // Try to connect to real WebSocket first, fall back to simulation if needed
+    this.initializeSocket();
   }
 
   private simulateConnection() {
     // Simulate a successful connection for development
     this.isConnectedState = true;
-    console.log('WebSocket service initialized (simulation mode)');
+    this.useSimulation = true;
+    console.log('WebSocket service initialized (simulation mode - real WebSocket unavailable)');
     
     // Start polling for updates instead of WebSocket
     this.startPolling();
@@ -43,22 +44,30 @@ class WebSocketService {
   }
 
   private initializeSocket() {
-    // Disabled for now to prevent connection errors
-    console.log('WebSocket initialization disabled - using polling mode');
-    return;
+    // Try to connect to real WebSocket server
+    console.log('Attempting WebSocket connection to ws://localhost:8080');
     
     try {
       this.socket = io('ws://localhost:8080', {
         transports: ['websocket'],
         autoConnect: true,
-        reconnection: true,
-        reconnectionAttempts: this.maxReconnectAttempts,
-        reconnectionDelay: this.reconnectDelay,
+        reconnection: false, // We'll handle reconnection manually
+        timeout: 5000, // 5 second timeout
       });
 
       this.setupEventHandlers();
+      
+      // Set a timeout to fall back to simulation if connection fails
+      setTimeout(() => {
+        if (!this.socket?.connected && !this.useSimulation) {
+          console.warn('WebSocket connection timeout, falling back to simulation mode');
+          this.simulateConnection();
+        }
+      }, 6000);
+      
     } catch (error) {
       console.error('Failed to initialize WebSocket connection:', error);
+      this.simulateConnection();
     }
   }
 
@@ -184,7 +193,13 @@ class WebSocketService {
       this.socket.disconnect();
       this.socket = null;
     }
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
     this.listeners.clear();
+    this.isConnectedState = false;
+    this.useSimulation = false;
   }
 
   public reconnect() {
