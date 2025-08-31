@@ -42,6 +42,7 @@ export const blockchainAPI = {
   getStatus: () => api.get('/blockchain/status'),
   getBlocks: () => api.get('/blockchain/blocks'),
   getBlock: (index: number) => api.get(`/blockchain/blocks/${index}`),
+  getBlockRdfSummary: (index: number) => api.get(`/blockchain/blocks/${index}/rdf-summary`),
   validate: () => api.get('/blockchain/validate'),
 };
 

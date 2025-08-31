@@ -332,3 +332,43 @@ This achievement positions ProvChainOrg as the first production-ready RDF-native
 | Production Readiness | Development | Full deployment | ✅ Ready |
 
 The system is now production-ready with real-time capabilities, optimized performance, comprehensive testing, and full deployment infrastructure.
+
+## Update - Frontend/Backend Consistency Fixes (Aug 31, 2025, evening)
+Context: Continue from frontend consistency work to ensure the RDF-native model is represented end-to-end (no Ethereum artifacts), align UI with backend data, honor immutability, and verify production build quality.
+
+What changed in this session:
+- Transaction Explorer (frontend)
+  - Confirmed UI shows RDF-native fields: Participants and RDF Data columns, no ETH/gas fields.
+  - Verified Transaction type (TS) enumerates 8 semantic types only.
+- Backend recent transactions (handlers.rs)
+  - Removed Ethereum-style fields (gas_used, gas_price).
+  - Added heuristic mapping from RDF predicate to 8 semantic transaction types:
+    Production | Processing | Transport | Quality | Transfer | Environmental | Compliance | Governance.
+  - Response now aligns with frontend Transaction shape.
+- Participants immutability
+  - Confirmed delete features removed in UI and backend (per instruction: “Because it the Blockchain we can not use delete features cancel this feature”).
+  - POST /api/participants returns the participant payload directly to match frontend expectation (non-persistent demo flow).
+- Traceability endpoints coverage
+  - Ensured endpoints exist and are registered with auth middleware:
+    GET /api/products/by-type/:type
+    GET /api/products/by-participant/:participantId
+    GET /api/products/:id/related
+    GET /api/products/:id/validate
+    POST /api/participants
+  - Frontend traceability service now consistently sends Authorization headers to protected routes.
+- Build and quality gates
+  - cargo check: success (dev profile), no warnings.
+  - Frontend: npm run build success; zero TS errors; code-splitting and bundle sizes preserved.
+
+Notes and small fixes:
+- Renamed unused Path parameter in validate_item to _item_id to eliminate lint noise.
+- Harmonized create_participant response shape with frontend expectations.
+
+Next actionable steps:
+- RBAC: Enforce Admin-only for POST /api/participants (claims-based check in middleware/handler).
+- Validation depth: Implement real signature/timestamp/integrity checks in GET /api/products/:id/validate.
+- Realtime UX: Optional participant_created websocket event to auto-refresh participants view.
+- Mock fallback audit: Gradually remove or clearly gate any remaining mock data paths behind explicit dev flags.
+- Documentation hygiene: ActiveContext and Progress files are large; plan to split into:
+  - activeContext/2025-08-31-frontend-consistency.md (this update, detailed)
+  - Keep activeContext.md as an index + latest summary; archive deep sections under memory-bank/activeContext/

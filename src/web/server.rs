@@ -10,13 +10,19 @@ use crate::web::{
         validate_blockchain, get_enhanced_product_trace, register_wallet,
         create_transaction, sign_transaction, submit_transaction,
         get_products, get_product_by_id, get_product_trace_path, get_product_provenance,
-        get_product_analytics, get_knowledge_graph,
+        get_product_analytics, get_knowledge_graph, get_participants,
+        get_products_by_type, get_products_by_participant, get_related_items, validate_item,
+        create_participant, get_block_rdf_summary,
+        // SPARQL helper endpoints
+        get_sparql_config, validate_sparql_endpoint, get_saved_sparql_queries,
+        save_sparql_query, delete_sparql_query, toggle_favorite_sparql_query,
+        get_analytics,
     },
     websocket::{WebSocketState, BlockchainEventBroadcaster, websocket_handler},
 };
 use axum::{
     middleware,
-    routing::{get, post},
+    routing::{get, post, delete},
     Router,
 };
 use std::{net::SocketAddr, sync::{Arc, Mutex}};
@@ -121,9 +127,17 @@ impl WebServer {
             .route("/api/blockchain/status", get(get_blockchain_status))
             .route("/api/blockchain/blocks", get(get_blocks))
             .route("/api/blockchain/blocks/:index", get(get_block))
+            .route("/api/blockchain/blocks/:index/rdf-summary", get(get_block_rdf_summary))
             .route("/api/blockchain/validate", get(validate_blockchain))
             .route("/api/transactions/recent", get(get_recent_transactions))
+            .route("/api/analytics", get(get_analytics))
             .route("/api/sparql/query", post(execute_sparql_query))
+            .route("/api/sparql/config", get(get_sparql_config))
+            .route("/api/sparql/validate", post(validate_sparql_endpoint))
+            .route("/api/sparql/queries", get(get_saved_sparql_queries))
+            .route("/api/sparql/queries", post(save_sparql_query))
+            .route("/api/sparql/queries/:id", delete(delete_sparql_query))
+            .route("/api/sparql/queries/:id/favorite", post(toggle_favorite_sparql_query))
             .route("/api/products/trace", get(get_product_trace))
             .route("/api/products/trace/enhanced", get(get_enhanced_product_trace))
             .route("/api/blockchain/add-triple", post(add_triple))
@@ -137,7 +151,13 @@ impl WebServer {
             .route("/api/products/:id/trace", get(get_product_trace_path))
             .route("/api/products/:id/provenance", get(get_product_provenance))
             .route("/api/products/:id/analytics", get(get_product_analytics))
+            .route("/api/products/by-type/:type", get(get_products_by_type))
+            .route("/api/products/by-participant/:participantId", get(get_products_by_participant))
+            .route("/api/products/:id/related", get(get_related_items))
+            .route("/api/products/:id/validate", get(validate_item))
             .route("/api/knowledge-graph", get(get_knowledge_graph))
+            .route("/api/participants", get(get_participants))
+            .route("/api/participants", post(create_participant))
             .layer(middleware::from_fn(auth_middleware))
             .with_state(self.app_state.clone());
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Clock, User, Hash, ArrowRight, Filter, Search } from 'lucide-react';
+import { Activity, Clock, User, Hash, ArrowRight, Filter, Search, CheckCircle } from 'lucide-react';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import type { Transaction, TransactionType } from '../../types';
 
@@ -47,25 +47,37 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
 
   const generateMockTransactions = (): Transaction[] => {
     const mockTransactions: Transaction[] = [];
-    const types: TransactionType[] = ['Production', 'Processing', 'Transport', 'Quality', 'Transfer'];
+    const types: TransactionType[] = ['Production', 'Processing', 'Transport', 'Quality', 'Transfer', 'Environmental', 'Compliance', 'Governance'];
     const statuses: ('confirmed' | 'pending' | 'failed')[] = ['confirmed', 'pending', 'failed'];
+    const participants = ['Producer_A', 'Manufacturer_B', 'LogisticsProvider_C', 'QualityLab_D', 'Retailer_E'];
     
     for (let i = 0; i < 20; i++) {
+      const type = types[Math.floor(Math.random() * types.length)];
+      const fromParticipant = participants[Math.floor(Math.random() * participants.length)];
+      const toParticipant = participants[Math.floor(Math.random() * participants.length)];
+      
       mockTransactions.push({
         id: `tx_${i.toString().padStart(3, '0')}`,
-        type: types[Math.floor(Math.random() * types.length)],
-        from: `0x${Math.random().toString(16).substr(2, 40)}`,
-        to: `0x${Math.random().toString(16).substr(2, 40)}`,
+        type,
+        from: fromParticipant,
+        to: Math.random() > 0.3 ? toParticipant : undefined,
         timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
         block_index: Math.floor(Math.random() * 1000) + 1000,
-        signature: `0x${Math.random().toString(16).substr(2, 128)}`,
+        signature: `sig_${Math.random().toString(36).substr(2, 16)}`,
         status: statuses[Math.floor(Math.random() * statuses.length)],
-        gas_used: Math.floor(Math.random() * 100000) + 21000,
-        gas_price: Math.floor(Math.random() * 50) + 10,
         data: {
-          rdf_triple: `<http://example.org/batch${i}> <http://example.org/status> "Processed" .`,
-          value: (Math.random() * 1000).toFixed(2),
-          description: `Transaction ${i} - ${types[Math.floor(Math.random() * types.length)]}`
+          rdf_data: `<http://provchain.org/item/batch${i}> <http://provchain.org/ontology#hasStatus> "${type}" .`,
+          subject: `http://provchain.org/item/batch${i}`,
+          predicate: `http://provchain.org/ontology#${type.toLowerCase()}`,
+          object: `Batch ${i} processed`,
+          triple_count: Math.floor(Math.random() * 10) + 1,
+          description: `${type} transaction for batch ${i}`,
+          location: `Location_${Math.floor(Math.random() * 5) + 1}`,
+          metadata: {
+            temperature: type === 'Transport' ? `${Math.floor(Math.random() * 10) + 15}°C` : undefined,
+            quality_score: type === 'Quality' ? Math.floor(Math.random() * 100) + 1 : undefined,
+            quantity: Math.floor(Math.random() * 1000) + 100
+          }
         },
       });
     }
@@ -100,10 +112,22 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'transfer':
-        return <ArrowRight className="w-4 h-4" />;
-      case 'mint':
+      case 'Production':
         return <Activity className="w-4 h-4" />;
+      case 'Processing':
+        return <Hash className="w-4 h-4" />;
+      case 'Transport':
+        return <ArrowRight className="w-4 h-4" />;
+      case 'Quality':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'Transfer':
+        return <ArrowRight className="w-4 h-4" />;
+      case 'Environmental':
+        return <Activity className="w-4 h-4" />;
+      case 'Compliance':
+        return <Hash className="w-4 h-4" />;
+      case 'Governance':
+        return <User className="w-4 h-4" />;
       default:
         return <Hash className="w-4 h-4" />;
     }
@@ -213,10 +237,10 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
                     Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    From/To
+                    Participants
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Value
+                    RDF Data
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Status
@@ -258,20 +282,24 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
                       <div className="text-sm">
                         <div className="text-gray-900 dark:text-white">
                           <User className="w-3 h-3 inline mr-1" />
-                          {truncateHash(transaction.from, 8)}
+                          {transaction.from}
                         </div>
-                        <div className="text-gray-500 dark:text-gray-400">
-                          <ArrowRight className="w-3 h-3 inline mr-1" />
-                          {transaction.to ? truncateHash(transaction.to, 8) : 'N/A'}
-                        </div>
+                        {transaction.to && (
+                          <div className="text-gray-500 dark:text-gray-400">
+                            <ArrowRight className="w-3 h-3 inline mr-1" />
+                            {transaction.to}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {String((transaction.data as Record<string, unknown>)?.value || 'N/A')} ETH
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Gas: {transaction.gas_used?.toLocaleString() || 'N/A'}
+                      <div className="text-sm">
+                        <div className="text-gray-900 dark:text-white">
+                          {((transaction.data as Record<string, unknown>)?.triple_count as number) || 0} triples
+                        </div>
+                        <div className="text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                          {String((transaction.data as Record<string, unknown>)?.subject || 'N/A')}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

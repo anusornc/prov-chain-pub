@@ -30,10 +30,12 @@ LIMIT 10`);
     setError(null);
     try {
       const response = await sparqlAPI.query(query);
-      setResults(response.data.results.bindings);
+      // Handle the SPARQL response structure correctly
+      const bindings = response.data.results?.bindings || [];
+      setResults(bindings);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Failed to execute query');
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      setError(error.response?.data?.message || error.message || 'Failed to execute query');
     } finally {
       setLoading(false);
     }
@@ -155,13 +157,13 @@ ORDER BY DESC(?startTime)`
         </div>
       )}
 
-      {results.length > 0 && !loading && (
+      {results && results.length > 0 && !loading && (
         <Card title={`Query Results (${results.length} results)`}>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {Object.keys(results[0]).map((header) => (
+                  {results[0] && Object.keys(results[0]).map((header) => (
                     <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {header}
                     </th>
@@ -174,11 +176,11 @@ ORDER BY DESC(?startTime)`
                     {Object.values(row).map((cell: { value: string; type: string }, cellIndex) => (
                       <td key={cellIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex items-center">
-                          <span>{cell.value}</span>
-                          {cell.type === 'uri' && (
+                          <span>{cell?.value || ''}</span>
+                          {cell?.type === 'uri' && (
                             <Badge variant="info" className="ml-2">URI</Badge>
                           )}
-                          {cell.type === 'literal' && (
+                          {cell?.type === 'literal' && (
                             <Badge variant="secondary" className="ml-2">Literal</Badge>
                           )}
                         </div>
@@ -192,7 +194,7 @@ ORDER BY DESC(?startTime)`
         </Card>
       )}
 
-      {results.length === 0 && !loading && !error && (
+      {(!results || results.length === 0) && !loading && !error && (
         <Card>
           <div className="text-center py-8">
             <div className="text-4xl mb-4">🔍</div>

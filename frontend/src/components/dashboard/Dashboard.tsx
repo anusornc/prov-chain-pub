@@ -152,40 +152,90 @@ const Dashboard: React.FC = () => {
     color: string;
   }>>([]);
 
-  // Set up real-time activity updates
+  // Set up real-time activity updates from backend
   useEffect(() => {
-    // Initialize with some mock recent activity
-    setRecentActivity([
-      {
-        id: '1',
-        type: 'block',
-        message: `New block #${metrics?.total_blocks || 0} mined`,
-        timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-        color: 'bg-green-400'
-      },
-      {
-        id: '2',
-        type: 'transaction',
-        message: 'Transaction confirmed',
-        timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-        color: 'bg-blue-400'
-      },
-      {
-        id: '3',
-        type: 'participant',
-        message: 'New participant joined',
-        timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-        color: 'bg-yellow-400'
-      },
-      {
-        id: '4',
-        type: 'item',
-        message: 'Item traced successfully',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        color: 'bg-purple-400'
+    const fetchRecentActivity = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/transactions/recent', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const activities = data.transactions.slice(0, 5).map((tx: {
+            id?: string;
+            type?: string;
+            timestamp: string;
+            data?: { subject?: string };
+          }, index: number) => ({
+            id: tx.id || `activity_${index}`,
+            type: (tx.type === 'RDF_Data' ? 'transaction' : 'block') as 'block' | 'transaction' | 'participant' | 'item',
+            message: `${tx.type === 'RDF_Data' ? 'RDF data added' : 'Block created'} - ${tx.data?.subject || 'Unknown'}`,
+            timestamp: tx.timestamp,
+            color: tx.type === 'RDF_Data' ? 'bg-blue-400' : 'bg-green-400'
+          }));
+          setRecentActivity(activities);
+        } else {
+          // Fallback to basic activity based on metrics
+          const activities: Array<{
+            id: string;
+            type: 'block' | 'transaction' | 'participant' | 'item';
+            message: string;
+            timestamp: string;
+            color: string;
+          }> = [];
+          if (metrics?.total_blocks && metrics.total_blocks > 0) {
+            activities.push({
+              id: 'latest_block',
+              type: 'block',
+              message: `Latest block #${metrics.total_blocks - 1} created`,
+              timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+              color: 'bg-green-400'
+            });
+          }
+          if (metrics?.total_transactions && metrics.total_transactions > 0) {
+            activities.push({
+              id: 'latest_transaction',
+              type: 'transaction',
+              message: `${metrics.total_transactions} transactions processed`,
+              timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+              color: 'bg-blue-400'
+            });
+          }
+          setRecentActivity(activities);
+        }
+      } catch (error) {
+        console.error('Error fetching recent activity:', error);
+        // Fallback to metrics-based activity
+        const activities: Array<{
+          id: string;
+          type: 'block' | 'transaction' | 'participant' | 'item';
+          message: string;
+          timestamp: string;
+          color: string;
+        }> = [];
+        if (metrics?.total_blocks && metrics.total_blocks > 0) {
+          activities.push({
+            id: 'system_status',
+            type: 'block',
+            message: `System active - ${metrics.total_blocks} blocks processed`,
+            timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+            color: 'bg-green-400'
+          });
+        }
+        setRecentActivity(activities);
       }
-    ]);
-  }, [metrics?.total_blocks]);
+    };
+
+    fetchRecentActivity();
+    
+    // Refresh activity every 30 seconds
+    const interval = setInterval(fetchRecentActivity, 30000);
+    return () => clearInterval(interval);
+  }, [metrics?.total_blocks, metrics?.total_transactions]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">

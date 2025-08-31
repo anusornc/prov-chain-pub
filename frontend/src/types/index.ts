@@ -20,8 +20,6 @@ export interface Transaction {
   signature: string;
   data: Record<string, unknown>;
   status: 'pending' | 'confirmed' | 'failed';
-  gas_used?: number;
-  gas_price?: number;
 }
 
 export type TransactionType = 

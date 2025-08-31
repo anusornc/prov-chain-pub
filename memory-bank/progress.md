@@ -540,3 +540,39 @@
 - **Quality Standards**: Zero-warning codebase with comprehensive testing sets new standards
 
 This progress summary demonstrates a project that has successfully achieved production readiness with both Phase 8 and Phase 4 completion, positioning ProvChainOrg as the definitive implementation of real-time semantic blockchain technology ready for enterprise deployment and real-world use cases.
+
+## Latest Update - Frontend/Backend Consistency Fixes (Aug 31, 2025, evening)
+Purpose: Ensure RDF-native model is reflected end-to-end (no Ethereum artifacts), align UI with backend, honor immutability, and pass production build checks.
+
+Highlights:
+- Transaction Explorer (frontend)
+  - Confirmed RDF-native columns: Participants, RDF Data. No ETH/gas display.
+  - Transaction type enumerates 8 semantic types: Production, Processing, Transport, Quality, Transfer, Environmental, Compliance, Governance.
+- Recent transactions API (backend)
+  - Removed Ethereum-style fields (gas_used, gas_price).
+  - Added heuristic mapping from RDF predicate -> 8 semantic transaction types for UI coherence.
+- Participants immutability
+  - Delete features removed in UI and backend (immutability preserved).
+  - POST /api/participants returns participant payload directly (non-persistent demo), matching frontend expectation.
+- Traceability endpoints coverage
+  - Confirmed protected routes registered with auth:
+    - GET /api/products/by-type/:type
+    - GET /api/products/by-participant/:participantId
+    - GET /api/products/:id/related
+    - GET /api/products/:id/validate
+    - POST /api/participants
+  - Frontend services now consistently include Authorization headers.
+- Build verification
+  - cargo check: success, no warnings.
+  - Frontend npm run build: success, zero TS errors; chunk sizes maintained.
+
+Notes and small fixes:
+- validate_item: Path arg renamed to _item_id to remove lint noise.
+- create_participant: response shape aligned to frontend (echo participant payload).
+
+Next steps:
+- Enforce RBAC: Admin-only POST /api/participants (claims check).
+- Implement real signature/timestamp/data-consistency checks in item validation.
+- Optionally emit participant_created websocket event for auto-refresh.
+- Audit and gate any remaining mock fallbacks behind explicit dev flags.
+- Documentation maintenance: split large memory-bank files into dated entries; keep active indices.

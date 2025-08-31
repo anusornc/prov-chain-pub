@@ -169,7 +169,9 @@ export class TraceabilityService {
    */
   async getItemsByType(type: string): Promise<TraceabilityItem[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/products/by-type/${type}`);
+      const response = await fetch(`${API_BASE_URL}/products/by-type/${type}`, {
+        headers: this.getAuthHeaders()
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to fetch items by type: ${response.statusText}`);
@@ -187,7 +189,9 @@ export class TraceabilityService {
    */
   async getItemsByParticipant(participantId: string): Promise<TraceabilityItem[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/products/by-participant/${participantId}`);
+      const response = await fetch(`${API_BASE_URL}/products/by-participant/${participantId}`, {
+        headers: this.getAuthHeaders()
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to fetch items by participant: ${response.statusText}`);
@@ -233,7 +237,9 @@ export class TraceabilityService {
    */
   async getRelatedItems(itemId: string): Promise<TraceabilityItem[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/products/${itemId}/related`);
+      const response = await fetch(`${API_BASE_URL}/products/${itemId}/related`, {
+        headers: this.getAuthHeaders()
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to fetch related items: ${response.statusText}`);
@@ -261,7 +267,9 @@ export class TraceabilityService {
     validation_time_ms: number;
   }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/products/${itemId}/validate`);
+      const response = await fetch(`${API_BASE_URL}/products/${itemId}/validate`, {
+        headers: this.getAuthHeaders()
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to validate item: ${response.statusText}`);

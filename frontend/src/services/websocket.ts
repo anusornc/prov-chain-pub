@@ -1,18 +1,17 @@
-import { io, Socket } from 'socket.io-client';
+// Native WebSocket implementation (replaced Socket.IO)
 import type { WebSocketMessage, MessageType, Block, Transaction, TraceabilityItem, NetworkHealth } from '../types';
 
 type WebSocketData = Block | Transaction | TraceabilityItem | NetworkHealth | Record<string, unknown>;
 type WebSocketCallback = (data: WebSocketData) => void;
 
 class WebSocketService {
-  private socket: Socket | null = null;
+  private socket: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private listeners: Map<MessageType, Set<WebSocketCallback>> = new Map();
   private isConnectedState = false;
   private pollingInterval: NodeJS.Timeout | null = null;
-  private useSimulation = false;
 
   constructor() {
     // Try to connect to real WebSocket first, fall back to simulation if needed
@@ -22,7 +21,6 @@ class WebSocketService {
   private simulateConnection() {
     // Simulate a successful connection for development
     this.isConnectedState = true;
-    this.useSimulation = true;
     console.log('WebSocket service initialized (simulation mode - real WebSocket unavailable)');
     
     // Start polling for updates instead of WebSocket
@@ -44,26 +42,42 @@ class WebSocketService {
   }
 
   private initializeSocket() {
-    // Try to connect to real WebSocket server
-    console.log('Attempting WebSocket connection to ws://localhost:8080');
+    // Try to connect to native WebSocket server
+    console.log('Attempting WebSocket connection to ws://localhost:8080/ws');
     
     try {
-      this.socket = io('ws://localhost:8080', {
-        transports: ['websocket'],
-        autoConnect: true,
-        reconnection: false, // We'll handle reconnection manually
-        timeout: 5000, // 5 second timeout
-      });
-
-      this.setupEventHandlers();
+      const ws = new WebSocket('ws://localhost:8080/ws');
       
-      // Set a timeout to fall back to simulation if connection fails
-      setTimeout(() => {
-        if (!this.socket?.connected && !this.useSimulation) {
-          console.warn('WebSocket connection timeout, falling back to simulation mode');
-          this.simulateConnection();
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        this.isConnectedState = true;
+        this.reconnectAttempts = 0;
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          console.log('Received WebSocket message:', message);
+          this.handleNativeMessage(message);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
         }
-      }, 6000);
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        this.isConnectedState = false;
+        this.handleReconnection();
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        this.isConnectedState = false;
+        this.handleReconnection();
+      };
+
+      // Store the native WebSocket
+      this.socket = ws;
       
     } catch (error) {
       console.error('Failed to initialize WebSocket connection:', error);
@@ -71,54 +85,53 @@ class WebSocketService {
     }
   }
 
-  private setupEventHandlers() {
-    if (!this.socket) return;
-
-    this.socket.on('connect', () => {
-      console.log('WebSocket connected');
-      this.reconnectAttempts = 0;
-    });
-
-    this.socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
-    });
-
-    this.socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
-      this.handleReconnection();
-    });
-
-    // Handle incoming messages
-    this.socket.on('message', (message: WebSocketMessage) => {
-      this.handleMessage(message);
-    });
-
-    // Handle specific message types
-    this.socket.on('new_block', (data) => {
-      this.notifyListeners('NewBlock', data);
-    });
-
-    this.socket.on('new_transaction', (data) => {
-      this.notifyListeners('NewTransaction', data);
-    });
-
-    this.socket.on('item_update', (data) => {
-      this.notifyListeners('ItemUpdate', data);
-    });
-
-    this.socket.on('network_status', (data) => {
-      this.notifyListeners('NetworkStatus', data);
-    });
-
-    this.socket.on('validation_alert', (data) => {
-      this.notifyListeners('ValidationAlert', data);
-    });
+  private handleNativeMessage(message: unknown) {
+    // Handle native WebSocket messages with proper type guards
+    if (this.isWebSocketMessage(message)) {
+      this.notifyListeners(message.message_type, message.data as WebSocketData);
+    } else if (this.isTypeMessage(message)) {
+      // Handle different message formats
+      switch (message.type) {
+        case 'new_block':
+          this.notifyListeners('NewBlock', (message.data || message) as WebSocketData);
+          break;
+        case 'new_transaction':
+          this.notifyListeners('NewTransaction', (message.data || message) as WebSocketData);
+          break;
+        case 'item_update':
+          this.notifyListeners('ItemUpdate', (message.data || message) as WebSocketData);
+          break;
+        case 'network_status':
+          this.notifyListeners('NetworkStatus', (message.data || message) as WebSocketData);
+          break;
+        case 'validation_alert':
+          this.notifyListeners('ValidationAlert', (message.data || message) as WebSocketData);
+          break;
+        default:
+          console.log('Unknown message type:', message.type);
+      }
+    } else {
+      // Direct data message
+      console.log('Received direct WebSocket data:', message);
+    }
   }
 
-  private handleMessage(message: WebSocketMessage) {
-    console.log('Received WebSocket message:', message);
-    this.notifyListeners(message.message_type, message.data as WebSocketData);
+  private isWebSocketMessage(message: unknown): message is WebSocketMessage {
+    return typeof message === 'object' && 
+           message !== null && 
+           'message_type' in message && 
+           'data' in message;
   }
+
+  private isTypeMessage(message: unknown): message is { type: string; data?: WebSocketData } {
+    return typeof message === 'object' && 
+           message !== null && 
+           'type' in message && 
+           typeof (message as { type: unknown }).type === 'string';
+  }
+
+  // Native WebSocket doesn't need separate event handler setup
+  // All event handlers are set up in initializeSocket()
 
   private notifyListeners(messageType: MessageType, data: WebSocketData) {
     const listeners = this.listeners.get(messageType);
@@ -139,12 +152,11 @@ class WebSocketService {
       console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
       
       setTimeout(() => {
-        if (this.socket) {
-          this.socket.connect();
-        }
+        this.initializeSocket();
       }, this.reconnectDelay * this.reconnectAttempts);
     } else {
-      console.error('Max reconnection attempts reached');
+      console.error('Max reconnection attempts reached, falling back to simulation');
+      this.simulateConnection();
     }
   }
 
@@ -177,20 +189,24 @@ class WebSocketService {
   }
 
   public emit(event: string, data: WebSocketData) {
-    if (this.socket && this.socket.connected) {
-      this.socket.emit(event, data);
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      const message = {
+        type: event,
+        data: data
+      };
+      this.socket.send(JSON.stringify(message));
     } else {
       console.warn('WebSocket not connected, cannot emit event:', event);
     }
   }
 
   public isConnected(): boolean {
-    return this.isConnectedState || this.socket?.connected || false;
+    return this.isConnectedState || (this.socket?.readyState === WebSocket.OPEN) || false;
   }
 
   public disconnect() {
     if (this.socket) {
-      this.socket.disconnect();
+      this.socket.close();
       this.socket = null;
     }
     if (this.pollingInterval) {
@@ -199,7 +215,7 @@ class WebSocketService {
     }
     this.listeners.clear();
     this.isConnectedState = false;
-    this.useSimulation = false;
+    // this.useSimulation = false; // Reset simulation flag
   }
 
   public reconnect() {

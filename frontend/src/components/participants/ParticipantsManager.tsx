@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Filter, Edit, Trash2, Shield, Key, Calendar, Clock, X } from 'lucide-react';
+import { Users, Plus, Search, Filter, Edit, Shield, Key, Calendar, Clock, X } from 'lucide-react';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
@@ -85,8 +85,14 @@ const ParticipantsManager: React.FC = () => {
         });
 
         if (response.ok) {
-          const data: Participant[] = await response.json();
-          setParticipants(data);
+          const data = await response.json();
+          // Handle the API response structure: { participants: [...], total_participants: N }
+          if (data.participants && Array.isArray(data.participants)) {
+            setParticipants(data.participants);
+          } else {
+            // Fallback if response structure is different
+            setParticipants(Array.isArray(data) ? data : []);
+          }
         } else {
           // Fallback to mock data if API not available
           loadMockParticipants();
@@ -109,8 +115,8 @@ const ParticipantsManager: React.FC = () => {
         id: 'participant-1',
         name: 'Organic Farms Co.',
         type: 'Producer',
-        address: '0x1234567890abcdef1234567890abcdef12345678',
-        public_key: 'ed25519:ABC123...',
+        address: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        public_key: 'ed25519:ABC123DEF456GHI789JKL012MNO345PQR678STU901VWX234YZ567',
         permissions: ['read', 'write'],
         created_at: '2025-01-15T10:00:00Z',
         last_active: '2025-08-31T08:30:00Z',
@@ -120,8 +126,8 @@ const ParticipantsManager: React.FC = () => {
         id: 'participant-2',
         name: 'Global Manufacturing Ltd.',
         type: 'Manufacturer',
-        address: '0x2345678901bcdef12345678901bcdef123456789',
-        public_key: 'ed25519:DEF456...',
+        address: '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+        public_key: 'ed25519:DEF456GHI789JKL012MNO345PQR678STU901VWX234YZ567ABC123',
         permissions: ['read', 'write', 'validate'],
         created_at: '2025-01-20T14:30:00Z',
         last_active: '2025-08-31T07:45:00Z',
@@ -131,8 +137,8 @@ const ParticipantsManager: React.FC = () => {
         id: 'participant-3',
         name: 'Swift Logistics',
         type: 'LogisticsProvider',
-        address: '0x3456789012cdef123456789012cdef1234567890',
-        public_key: 'ed25519:GHI789...',
+        address: '6ba7b811-9dad-11d1-80b4-00c04fd430c8',
+        public_key: 'ed25519:GHI789JKL012MNO345PQR678STU901VWX234YZ567ABC123DEF456',
         permissions: ['read', 'write'],
         created_at: '2025-02-01T09:15:00Z',
         last_active: '2025-08-30T16:20:00Z',
@@ -142,8 +148,8 @@ const ParticipantsManager: React.FC = () => {
         id: 'participant-4',
         name: 'Quality Assurance Labs',
         type: 'QualityLab',
-        address: '0x456789013def1234567890123def12345678901',
-        public_key: 'ed25519:JKL012...',
+        address: '6ba7b812-9dad-11d1-80b4-00c04fd430c8',
+        public_key: 'ed25519:JKL012MNO345PQR678STU901VWX234YZ567ABC123DEF456GHI789',
         permissions: ['read', 'write', 'validate', 'audit'],
         created_at: '2025-02-10T11:45:00Z',
         last_active: '2025-08-31T09:10:00Z',
@@ -153,8 +159,8 @@ const ParticipantsManager: React.FC = () => {
         id: 'participant-5',
         name: 'Independent Auditors',
         type: 'Auditor',
-        address: '0x56789014ef123456789014ef123456789012345',
-        public_key: 'ed25519:MNO345...',
+        address: '6ba7b813-9dad-11d1-80b4-00c04fd430c8',
+        public_key: 'ed25519:MNO345PQR678STU901VWX234YZ567ABC123DEF456GHI789JKL012',
         permissions: ['read', 'audit', 'validate'],
         created_at: '2025-02-15T13:20:00Z',
         last_active: '2025-08-29T14:30:00Z',
@@ -164,8 +170,8 @@ const ParticipantsManager: React.FC = () => {
         id: 'participant-6',
         name: 'Retail Chain Corp',
         type: 'Retailer',
-        address: '0x6789015f12345678905f123456789012345678',
-        public_key: 'ed25519:PQR678...',
+        address: '6ba7b814-9dad-11d1-80b4-00c04fd430c8',
+        public_key: 'ed25519:PQR678STU901VWX234YZ567ABC123DEF456GHI789JKL012MNO345',
         permissions: ['read'],
         created_at: '2025-03-01T08:00:00Z',
         last_active: '2025-08-31T06:15:00Z',
@@ -175,8 +181,8 @@ const ParticipantsManager: React.FC = () => {
         id: 'participant-7',
         name: 'System Administrator',
         type: 'Administrator',
-        address: '0x789016123456789016123456789012345678901',
-        public_key: 'ed25519:STU901...',
+        address: '6ba7b815-9dad-11d1-80b4-00c04fd430c8',
+        public_key: 'ed25519:STU901VWX234YZ567ABC123DEF456GHI789JKL012MNO345PQR678',
         permissions: ['read', 'write', 'validate', 'admin', 'audit'],
         created_at: '2025-01-01T00:00:00Z',
         last_active: '2025-08-31T09:00:00Z',
@@ -328,36 +334,6 @@ const ParticipantsManager: React.FC = () => {
     }
   };
 
-  const handleDeleteParticipant = async (participantId: string) => {
-    if (!confirm('Are you sure you want to delete this participant?')) return;
-
-    try {
-      const token = localStorage.getItem('authToken');
-      
-      // Try to delete via API
-      try {
-        const response = await fetch(`http://localhost:8080/api/participants/${participantId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          setParticipants(prev => prev.filter(p => p.id !== participantId));
-        } else {
-          // Fallback to local deletion
-          setParticipants(prev => prev.filter(p => p.id !== participantId));
-        }
-      } catch (error) {
-        console.warn('API not available, deleting locally:', error);
-        setParticipants(prev => prev.filter(p => p.id !== participantId));
-      }
-    } catch (error) {
-      console.error('Error deleting participant:', error);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -518,13 +494,6 @@ const ParticipantsManager: React.FC = () => {
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteParticipant(participant.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
 
@@ -655,13 +624,13 @@ const ParticipantsManager: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Blockchain Address *
+                    Participant ID *
                   </label>
                   <Input
                     type="text"
                     value={newParticipant.address}
                     onChange={(e) => setNewParticipant(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder="0x..."
+                    placeholder="UUID format (e.g., f47ac10b-58cc-4372-a567-0e02b2c3d479)"
                   />
                 </div>
 
@@ -797,7 +766,7 @@ const ParticipantsManager: React.FC = () => {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Address</h4>
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Participant ID</h4>
                     <p className="text-gray-600 dark:text-gray-300 font-mono text-sm break-all">
                       {selectedParticipant.address}
                     </p>
@@ -845,13 +814,6 @@ const ParticipantsManager: React.FC = () => {
                   >
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleDeleteParticipant(selectedParticipant.id)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
                   </Button>
                 </div>
               </div>

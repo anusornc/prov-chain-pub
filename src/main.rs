@@ -129,18 +129,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::WebServer { port } => {
             info!("Starting Phase 2 web server on port {}", port);
             
+            // Load ontology data first
+            info!("Loading core ontology...");
+            let ontology_data = fs::read_to_string("ontologies/generic_core.owl")
+                .map_err(|e| format!("Cannot read ontology file: {e}"))?;
+            blockchain.add_block(ontology_data)
+                .map_err(|e| format!("Failed to add ontology block: {e}"))?;
+            
             // Load some demo data into the blockchain
             let demo_data = vec![
-                "<http://example.org/batch1> <http://example.org/product> \"Organic Tomatoes\" .",
-                "<http://example.org/batch1> <http://example.org/origin> \"Farm A\" .",
-                "<http://example.org/batch1> <http://example.org/status> \"In Transit\" .",
+                // Link batch to a real product IRI (not a literal) using the trace namespace
+                "<http://example.org/batch1> <http://provchain.org/trace#product> <http://provchain.org/item/product-1> .",
+                // Give the product a human-readable name to avoid 'Unknown Product'
+                "<http://provchain.org/item/product-1> <http://provchain.org/trace#name> \"Organic Tomatoes\" .",
+                // Add proper type information for the product using core ontology
+                "<http://provchain.org/item/product-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Product> .",
+                // Add participant and location information
+                "<http://provchain.org/item/product-1> <http://provchain.org/trace#participant> \"Organic Farms Co.\" .",
+                "<http://provchain.org/item/product-1> <http://provchain.org/trace#location> \"Farm A, California\" .",
+                "<http://provchain.org/item/product-1> <http://provchain.org/trace#status> \"Fresh\" .",
+                // Use trace namespace for origin and status to align with backend queries
+                "<http://example.org/batch1> <http://provchain.org/trace#origin> \"Farm A\" .",
+                "<http://example.org/batch1> <http://provchain.org/trace#status> \"In Transit\" .",
             ];
+            
+            let demo_data_count = demo_data.len();
             
             // Add each piece of demo data as a separate block
             for data in demo_data {
                 blockchain.add_block(data.to_string())
                     .map_err(|e| format!("Failed to add block: {e}"))?;
             }
+            
+            info!("Loaded {} blocks (1 ontology + {} demo data)", blockchain.chain.len(), demo_data_count);
             
             // Create config with custom port
             let mut config = Config::load_or_default("config.toml");

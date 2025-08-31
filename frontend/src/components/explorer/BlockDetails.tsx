@@ -14,6 +14,7 @@ import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import useBlockchain from '../../hooks/useBlockchain';
+import { blockchainAPI, transactionAPI } from '../../services/api';
 import type { Block, Transaction, RdfSummary, ValidationStatus } from '../../types';
 
 interface BlockDetailsProps {
@@ -114,41 +115,39 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
           setDetailedBlock(blockData);
         }
 
-        // Mock transaction data - replace with actual API call
-        const transactionTypes: Array<'Production' | 'Processing' | 'Transport' | 'Quality'> = ['Production', 'Processing', 'Transport', 'Quality'];
-        const transactionStatuses: Array<'confirmed' | 'pending' | 'failed'> = ['confirmed', 'pending', 'failed'];
-        
-        const mockTransactions: Transaction[] = Array.from({ length: block.transaction_count }, (_, i) => ({
-          id: `tx_${block.index}_${i}`,
-          type: transactionTypes[i % 4],
-          from: `addr_${Math.random().toString(36).substr(2, 8)}`,
-          to: `addr_${Math.random().toString(36).substr(2, 8)}`,
-          timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString(),
-          block_index: block.index,
-          signature: `sig_${Math.random().toString(36).substr(2, 16)}`,
-          data: { amount: Math.floor(Math.random() * 1000) },
-          status: transactionStatuses[Math.floor(Math.random() * 3)],
-          gas_used: Math.floor(Math.random() * 50000),
-          gas_price: Math.floor(Math.random() * 100)
-        }));
-        setTransactions(mockTransactions);
+        // Fetch transactions for this block from backend (filter recent by block index)
+        try {
+          const recentResp = await transactionAPI.getRecent();
+          const txs = ((recentResp.data.transactions || []) as Transaction[]).filter((tx) => tx.block_index === block.index);
+          setTransactions(txs);
+        } catch (e) {
+          console.warn('Failed to fetch transactions; showing none for this block', e);
+          setTransactions([]);
+        }
 
-        // Mock RDF summary
-        setRdfSummary({
-          triple_count: Math.floor(Math.random() * 1000) + 100,
-          subject_count: Math.floor(Math.random() * 100) + 10,
-          predicate_count: Math.floor(Math.random() * 50) + 5,
-          object_count: Math.floor(Math.random() * 200) + 20,
-          namespaces: ['http://provchain.org/', 'http://www.w3.org/ns/prov#', 'http://example.org/']
-        });
+        // Fetch real RDF summary for this block
+        try {
+          const summaryResp = await blockchainAPI.getBlockRdfSummary(block.index);
+          setRdfSummary(summaryResp.data as RdfSummary);
+        } catch (e) {
+          console.warn('Failed to fetch RDF summary', e);
+          setRdfSummary(null);
+        }
 
-        // Mock validation status
-        setValidationStatus({
-          is_valid: Math.random() > 0.1,
-          validation_time_ms: Math.floor(Math.random() * 100) + 10,
-          errors: [],
-          warnings: Math.random() > 0.7 ? ['Minor validation warning'] : []
-        });
+        // Fetch basic validation status
+        try {
+          const validateResp = await blockchainAPI.validate();
+          const isValid = !!validateResp.data?.is_valid;
+          setValidationStatus({
+            is_valid: isValid,
+            validation_time_ms: 0,
+            errors: [],
+            warnings: []
+          });
+        } catch (e) {
+          console.warn('Failed to fetch validation status', e);
+          setValidationStatus(null);
+        }
 
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch block details';
