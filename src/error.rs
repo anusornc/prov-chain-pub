@@ -91,6 +91,9 @@ pub enum BlockchainError {
 
     #[error("Consensus error: {0}")]
     ConsensusError(String),
+
+    #[error("Ontology initialization failed: {0}")]
+    OntologyInitializationFailed(String),
 }
 
 /// Storage-specific errors

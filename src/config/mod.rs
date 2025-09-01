@@ -11,6 +11,7 @@ pub struct Config {
     pub storage: StorageConfig,
     pub logging: LoggingConfig,
     pub web: WebConfig,
+    pub ontology_config: Option<OntologyConfigFile>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -64,6 +65,33 @@ pub struct CorsConfig {
     pub allowed_headers: Vec<String>,
     pub allow_credentials: bool,
     pub max_age: Option<u64>,
+}
+
+/// Ontology configuration for TOML file
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OntologyConfigFile {
+    /// Path to the domain-specific ontology file
+    pub domain_ontology_path: String,
+    /// Path to the core ontology file (optional, defaults to generic_core.owl)
+    pub core_ontology_path: Option<String>,
+    /// Path to domain-specific SHACL shapes (optional, auto-derived from ontology)
+    pub domain_shacl_path: Option<String>,
+    /// Path to core SHACL shapes (optional, defaults to core.shacl.ttl)
+    pub core_shacl_path: Option<String>,
+    /// Whether validation is enabled (defaults to true)
+    pub validation_enabled: Option<bool>,
+}
+
+impl Default for OntologyConfigFile {
+    fn default() -> Self {
+        Self {
+            domain_ontology_path: "ontologies/generic_core.owl".to_string(),
+            core_ontology_path: Some("ontologies/generic_core.owl".to_string()),
+            domain_shacl_path: Some("shapes/core.shacl.ttl".to_string()),
+            core_shacl_path: Some("shapes/core.shacl.ttl".to_string()),
+            validation_enabled: Some(true),
+        }
+    }
 }
 
 impl Default for Config {
@@ -134,6 +162,7 @@ impl Default for Config {
                     max_age: Some(3600),
                 },
             },
+            ontology_config: None,
         }
     }
 }
@@ -228,5 +257,12 @@ mod tests {
         // Load config
         let loaded_config = Config::from_file(temp_file.path()).unwrap();
         assert_eq!(config.network.listen_port, loaded_config.network.listen_port);
+    }
+
+    #[test]
+    fn test_ontology_config_default() {
+        let ontology_config = OntologyConfigFile::default();
+        assert_eq!(ontology_config.domain_ontology_path, "ontologies/generic_core.owl");
+        assert_eq!(ontology_config.validation_enabled, Some(true));
     }
 }

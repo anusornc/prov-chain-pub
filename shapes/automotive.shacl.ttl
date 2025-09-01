@@ -1,0 +1,417 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix trace: <http://provchain.org/trace#> .
+@prefix core: <http://provchain.org/core#> .
+@prefix auto: <http://provchain.org/automotive#> .
+
+# Automotive-specific SHACL shapes
+# These shapes extend the core shapes with automotive parts traceability requirements
+
+# Automotive Part Shape - Extends core Product with automotive-specific requirements
+auto:AutomotivePartShape
+    a sh:NodeShape ;
+    sh:targetClass auto:AutomotivePart ;
+    sh:property [
+        sh:path trace:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive part must have exactly one name" ;
+    ] ;
+    sh:property [
+        sh:path auto:partNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z0-9]{8,15}$" ;
+        sh:message "Automotive part number must be 8-15 alphanumeric characters" ;
+    ] ;
+    sh:property [
+        sh:path auto:vehicleModel ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Automotive part must specify at least one compatible vehicle model" ;
+    ] ;
+    sh:property [
+        sh:path auto:partCategory ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Engine" "Transmission" "Brakes" "Suspension" "Electrical" "Body" "Interior" "Safety" ) ;
+        sh:message "Automotive part must have valid category" ;
+    ] ;
+    sh:property [
+        sh:path auto:materialType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Automotive part must specify at least one material type" ;
+    ] ;
+    sh:property [
+        sh:path auto:weight ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.01 ;
+        sh:maxInclusive 1000.0 ;
+        sh:message "Automotive part weight must be between 0.01kg and 1000kg" ;
+    ] ;
+    sh:property [
+        sh:path auto:serialNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z0-9]{10,20}$" ;
+        sh:message "Automotive part serial number must be 10-20 alphanumeric characters" ;
+    ] .
+
+# Automotive Manufacturing Shape - Specific requirements for automotive manufacturing
+auto:AutomotiveManufacturingShape
+    a sh:NodeShape ;
+    sh:targetClass auto:AutomotiveManufacturing ;
+    sh:property [
+        sh:path auto:manufacturingProcess ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Casting" "Forging" "Machining" "Welding" "Assembly" "Injection Molding" "Stamping" ) ;
+        sh:message "Automotive manufacturing must specify valid process type" ;
+    ] ;
+    sh:property [
+        sh:path auto:productionLine ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^LINE[0-9]{2,4}$" ;
+        sh:message "Automotive production line must follow pattern LINE followed by 2-4 digits" ;
+    ] ;
+    sh:property [
+        sh:path auto:batchSize ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 1 ;
+        sh:maxInclusive 10000 ;
+        sh:message "Automotive batch size must be between 1 and 10,000 units" ;
+    ] ;
+    sh:property [
+        sh:path auto:manufacturingDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive manufacturing must have exactly one manufacturing date" ;
+    ] ;
+    sh:property [
+        sh:path auto:plantCode ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z]{2,4}[0-9]{3,5}$" ;
+        sh:message "Automotive plant code must be 2-4 letters followed by 3-5 digits" ;
+    ] ;
+    sh:property [
+        sh:path trace:participant ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive manufacturing must have exactly one responsible manufacturer" ;
+    ] .
+
+# Automotive Quality Control Shape - Specific requirements for automotive quality testing
+auto:AutomotiveQualityShape
+    a sh:NodeShape ;
+    sh:targetClass auto:AutomotiveQualityControl ;
+    sh:property [
+        sh:path auto:dimensionalTest ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Pass" "Fail" "Rework" ) ;
+        sh:message "Automotive dimensional test must be Pass, Fail, or Rework" ;
+    ] ;
+    sh:property [
+        sh:path auto:materialTest ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Pass" "Fail" ) ;
+        sh:message "Automotive material test must be Pass or Fail" ;
+    ] ;
+    sh:property [
+        sh:path auto:functionalTest ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Pass" "Fail" "Conditional Pass" ) ;
+        sh:message "Automotive functional test must be Pass, Fail, or Conditional Pass" ;
+    ] ;
+    sh:property [
+        sh:path auto:torqueTest ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.1 ;
+        sh:maxInclusive 1000.0 ;
+        sh:message "Automotive torque test value must be between 0.1 and 1000 Nm if specified" ;
+    ] ;
+    sh:property [
+        sh:path auto:pressureTest ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.1 ;
+        sh:maxInclusive 100.0 ;
+        sh:message "Automotive pressure test value must be between 0.1 and 100 bar if specified" ;
+    ] ;
+    sh:property [
+        sh:path trace:testDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive quality control must have exactly one test date" ;
+    ] ;
+    sh:property [
+        sh:path trace:tester ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive quality control must have exactly one certified tester" ;
+    ] .
+
+# Automotive Assembly Shape - Specific requirements for automotive assembly
+auto:AutomotiveAssemblyShape
+    a sh:NodeShape ;
+    sh:targetClass auto:AutomotiveAssembly ;
+    sh:property [
+        sh:path auto:assemblyStation ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^STATION[0-9]{2,4}$" ;
+        sh:message "Automotive assembly station must follow pattern STATION followed by 2-4 digits" ;
+    ] ;
+    sh:property [
+        sh:path auto:assemblySequence ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 1 ;
+        sh:maxInclusive 1000 ;
+        sh:message "Automotive assembly sequence must be between 1 and 1000" ;
+    ] ;
+    sh:property [
+        sh:path auto:toolsUsed ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Automotive assembly must specify at least one tool used" ;
+    ] ;
+    sh:property [
+        sh:path auto:assemblyTime ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.1 ;
+        sh:maxInclusive 480.0 ;
+        sh:message "Automotive assembly time must be between 0.1 and 480 minutes" ;
+    ] ;
+    sh:property [
+        sh:path trace:timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive assembly must have exactly one timestamp" ;
+    ] ;
+    sh:property [
+        sh:path trace:participant ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive assembly must have exactly one operator" ;
+    ] .
+
+# Automotive Testing Shape - Specific requirements for automotive testing
+auto:AutomotiveTestingShape
+    a sh:NodeShape ;
+    sh:targetClass auto:AutomotiveTesting ;
+    sh:property [
+        sh:path auto:testType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Crash Test" "Emissions Test" "Performance Test" "Durability Test" "Safety Test" "Environmental Test" ) ;
+        sh:message "Automotive test type must be valid test category" ;
+    ] ;
+    sh:property [
+        sh:path auto:testStandard ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "ISO 26262" "FMVSS" "ECE R" "NCAP" "IIHS" "EPA" ) ;
+        sh:message "Automotive testing must reference valid standards" ;
+    ] ;
+    sh:property [
+        sh:path auto:testResult ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Pass" "Fail" "Conditional Pass" "Retest Required" ) ;
+        sh:message "Automotive test result must be valid result type" ;
+    ] ;
+    sh:property [
+        sh:path trace:testDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive testing must have exactly one test date" ;
+    ] ;
+    sh:property [
+        sh:path trace:tester ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive testing must have exactly one certified tester" ;
+    ] .
+
+# Automotive Recall Shape - Specific requirements for automotive recalls
+auto:AutomotiveRecallShape
+    a sh:NodeShape ;
+    sh:targetClass auto:AutomotiveRecall ;
+    sh:property [
+        sh:path auto:recallNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[0-9]{2}[A-Z][0-9]{3}$" ;
+        sh:message "Automotive recall number must follow pattern: 2 digits, 1 letter, 3 digits" ;
+    ] ;
+    sh:property [
+        sh:path auto:recallSeverity ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Safety" "Compliance" "Emissions" "Performance" ) ;
+        sh:message "Automotive recall severity must be Safety, Compliance, Emissions, or Performance" ;
+    ] ;
+    sh:property [
+        sh:path auto:affectedVehicles ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 1 ;
+        sh:message "Automotive recall must specify number of affected vehicles" ;
+    ] ;
+    sh:property [
+        sh:path auto:recallDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive recall must have exactly one recall date" ;
+    ] ;
+    sh:property [
+        sh:path auto:remedyDescription ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive recall must have exactly one remedy description" ;
+    ] .
+
+# Automotive Compliance Shape - Specific requirements for automotive regulatory compliance
+auto:AutomotiveComplianceShape
+    a sh:NodeShape ;
+    sh:targetClass auto:AutomotiveCompliance ;
+    sh:property [
+        sh:path trace:standard ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "FMVSS" "ECE" "ISO 26262" "ISO 14001" "IATF 16949" "EPA Tier 3" ) ;
+        sh:message "Automotive compliance must reference valid standards" ;
+    ] ;
+    sh:property [
+        sh:path auto:certificationNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z]{2,4}[0-9]{6,10}$" ;
+        sh:message "Automotive certification number must be 2-4 letters followed by 6-10 digits" ;
+    ] ;
+    sh:property [
+        sh:path auto:emissionLevel ;
+        sh:datatype xsd:string ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:in ( "Euro 6" "Tier 3" "LEV III" "SULEV" "ZEV" ) ;
+        sh:message "Automotive emission level must be valid standard if specified" ;
+    ] ;
+    sh:property [
+        sh:path trace:verifiedBy ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive compliance must have exactly one regulatory verifier" ;
+    ] ;
+    sh:property [
+        sh:path trace:verificationDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive compliance must have exactly one verification date" ;
+    ] ;
+    sh:property [
+        sh:path auto:validUntil ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive compliance certificate must have exactly one expiry date" ;
+    ] .
+
+# Automotive Supply Chain Shape - Specific requirements for automotive supply chain tracking
+auto:AutomotiveSupplyChainShape
+    a sh:NodeShape ;
+    sh:targetClass auto:AutomotiveSupplyChain ;
+    sh:property [
+        sh:path auto:supplierTier ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 1 ;
+        sh:maxInclusive 5 ;
+        sh:message "Automotive supplier tier must be between 1 and 5" ;
+    ] ;
+    sh:property [
+        sh:path auto:supplierCode ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z]{3}[0-9]{4,6}$" ;
+        sh:message "Automotive supplier code must be 3 letters followed by 4-6 digits" ;
+    ] ;
+    sh:property [
+        sh:path auto:contractNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z0-9]{8,12}$" ;
+        sh:message "Automotive contract number must be 8-12 alphanumeric characters" ;
+    ] ;
+    sh:property [
+        sh:path trace:origin ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive supply chain must have exactly one origin location" ;
+    ] ;
+    sh:property [
+        sh:path trace:destination ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive supply chain must have exactly one destination location" ;
+    ] ;
+    sh:property [
+        sh:path auto:deliveryDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Automotive supply chain must have exactly one delivery date" ;
+    ] .

@@ -1,0 +1,227 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix trace: <http://provchain.org/trace#> .
+@prefix core: <http://provchain.org/core#> .
+
+# Core SHACL shapes that apply to all domains
+# These shapes define the fundamental structure for blockchain traceability
+
+# Product Shape - Core requirements for all products
+core:ProductShape
+    a sh:NodeShape ;
+    sh:targetClass core:Product ;
+    sh:property [
+        sh:path trace:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Product must have exactly one name" ;
+    ] ;
+    sh:property [
+        sh:path trace:participant ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Product must have at least one participant" ;
+    ] ;
+    sh:property [
+        sh:path trace:status ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Product must have exactly one status" ;
+    ] ;
+    sh:property [
+        sh:path trace:location ;
+        sh:datatype xsd:string ;
+        sh:minCount 0 ;
+        sh:message "Product location must be a string if provided" ;
+    ] .
+
+# Batch Shape - Core requirements for all batches
+core:BatchShape
+    a sh:NodeShape ;
+    sh:targetClass core:Batch ;
+    sh:property [
+        sh:path trace:product ;
+        sh:class core:Product ;
+        sh:minCount 1 ;
+        sh:message "Batch must be linked to at least one product" ;
+    ] ;
+    sh:property [
+        sh:path trace:origin ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Batch must have exactly one origin" ;
+    ] ;
+    sh:property [
+        sh:path trace:status ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Batch must have exactly one status" ;
+    ] .
+
+# Transaction Shape - Core requirements for all transactions
+core:TransactionShape
+    a sh:NodeShape ;
+    sh:targetClass core:Transaction ;
+    sh:property [
+        sh:path trace:transactionType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Production" "Processing" "Transport" "Quality" "Transfer" "Environmental" "Compliance" "Governance" ) ;
+        sh:message "Transaction must have exactly one valid transaction type" ;
+    ] ;
+    sh:property [
+        sh:path trace:timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Transaction must have exactly one timestamp" ;
+    ] ;
+    sh:property [
+        sh:path trace:participant ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Transaction must have at least one participant" ;
+    ] .
+
+# Participant Shape - Core requirements for all participants
+core:ParticipantShape
+    a sh:NodeShape ;
+    sh:targetClass core:Participant ;
+    sh:property [
+        sh:path trace:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Participant must have exactly one name" ;
+    ] ;
+    sh:property [
+        sh:path trace:role ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Participant must have at least one role" ;
+    ] ;
+    sh:property [
+        sh:path trace:location ;
+        sh:datatype xsd:string ;
+        sh:minCount 0 ;
+        sh:message "Participant location must be a string if provided" ;
+    ] .
+
+# Provenance Shape - Core requirements for provenance tracking
+core:ProvenanceShape
+    a sh:NodeShape ;
+    sh:targetClass prov:Activity ;
+    sh:property [
+        sh:path prov:startedAtTime ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:message "Activity can have at most one start time" ;
+    ] ;
+    sh:property [
+        sh:path prov:endedAtTime ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:message "Activity can have at most one end time" ;
+    ] ;
+    sh:property [
+        sh:path prov:wasAssociatedWith ;
+        sh:class core:Participant ;
+        sh:minCount 1 ;
+        sh:message "Activity must be associated with at least one participant" ;
+    ] .
+
+# Quality Control Shape - Core requirements for quality data
+core:QualityShape
+    a sh:NodeShape ;
+    sh:targetClass core:QualityControl ;
+    sh:property [
+        sh:path trace:testResult ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Pass" "Fail" "Pending" ) ;
+        sh:message "Quality control must have exactly one valid test result" ;
+    ] ;
+    sh:property [
+        sh:path trace:testDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Quality control must have exactly one test date" ;
+    ] ;
+    sh:property [
+        sh:path trace:tester ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Quality control must have exactly one tester" ;
+    ] .
+
+# Environmental Data Shape - Core requirements for environmental tracking
+core:EnvironmentalShape
+    a sh:NodeShape ;
+    sh:targetClass core:EnvironmentalData ;
+    sh:property [
+        sh:path trace:temperature ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 0 ;
+        sh:message "Temperature must be a decimal value if provided" ;
+    ] ;
+    sh:property [
+        sh:path trace:humidity ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 0 ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 100.0 ;
+        sh:message "Humidity must be between 0 and 100 if provided" ;
+    ] ;
+    sh:property [
+        sh:path trace:recordedAt ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Environmental data must have exactly one recording timestamp" ;
+    ] .
+
+# Compliance Shape - Core requirements for compliance tracking
+core:ComplianceShape
+    a sh:NodeShape ;
+    sh:targetClass core:Compliance ;
+    sh:property [
+        sh:path trace:standard ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Compliance must reference at least one standard" ;
+    ] ;
+    sh:property [
+        sh:path trace:status ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Compliant" "Non-Compliant" "Under Review" ) ;
+        sh:message "Compliance must have exactly one valid status" ;
+    ] ;
+    sh:property [
+        sh:path trace:verifiedBy ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Compliance must have exactly one verifier" ;
+    ] ;
+    sh:property [
+        sh:path trace:verificationDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Compliance must have exactly one verification date" ;
+    ] .

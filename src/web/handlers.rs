@@ -384,7 +384,7 @@ pub async fn toggle_favorite_sparql_query(
     }))
 }
 
-/// Add new triple to blockchain
+/// Add new triple to blockchain with SHACL validation
 pub async fn add_triple(
     State(app_state): State<AppState>,
     Extension(claims): Extension<UserClaims>,
@@ -467,23 +467,53 @@ pub async fn add_triple(
     
     eprintln!("Adding triple data: {}", triple_data);
     
-    // Add to blockchain (this also adds to the internal RDF store)
-    let _ = blockchain.add_block(triple_data);
-    
-    let block_hash = blockchain.chain.last()
-        .map(|b| b.hash.clone())
-        .unwrap_or_else(|| "unknown".to_string());
-    
-    let response = serde_json::json!({
-        "success": true,
-        "block_hash": block_hash,
-        "block_index": blockchain.chain.len() - 1,
-        "added_by": claims.sub,
-        "timestamp": Utc::now()
-    });
-    
-    eprintln!("Add triple response: {}", response);
-    Ok(Json(response))
+    // STEP 9: Add to blockchain with SHACL validation (this also adds to the internal RDF store)
+    match blockchain.add_block(triple_data) {
+        Ok(()) => {
+            let block_hash = blockchain.chain.last()
+                .map(|b| b.hash.clone())
+                .unwrap_or_else(|| "unknown".to_string());
+            
+            let response = serde_json::json!({
+                "success": true,
+                "block_hash": block_hash,
+                "block_index": blockchain.chain.len() - 1,
+                "added_by": claims.sub,
+                "timestamp": Utc::now(),
+                "validation_status": "passed"
+            });
+            
+            eprintln!("Add triple response: {}", response);
+            Ok(Json(response))
+        }
+        Err(e) => {
+            eprintln!("Failed to add triple to blockchain: {}", e);
+            
+            // Check if this is a SHACL validation error
+            let error_msg = e.to_string();
+            if error_msg.contains("Transaction validation failed") || error_msg.contains("SHACL validation") {
+                // SHACL validation failure - return detailed validation error
+                return Err((
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    Json(ApiError {
+                        error: "shacl_validation_failed".to_string(),
+                        message: format!("Transaction rejected due to SHACL validation failure: {}", error_msg),
+                        timestamp: Utc::now(),
+                    }),
+                ));
+            } else {
+                // Other blockchain errors
+                return Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        error: "blockchain_error".to_string(),
+                        message: format!("Failed to add transaction to blockchain: {}", e),
+                        timestamp: Utc::now(),
+                    }),
+                ));
+            }
+        }
+    }
 }
 
 /// Get all products with filtering and pagination

@@ -11,8 +11,11 @@
 # Purpose: Extension of generic core for UHT milk manufacturing
 #################################################################
 
-# Import the generic core ontology
-owl:imports <http://provchain.org/core> .
+# Ontology declaration with imports
+: a owl:Ontology ;
+  owl:imports <http://provchain.org/core> ;
+  rdfs:label "UHT Manufacturing Ontology" ;
+  rdfs:comment "Ontology for UHT milk manufacturing traceability" .
 
 #################################################################
 # UHT-Specific Entity Classes

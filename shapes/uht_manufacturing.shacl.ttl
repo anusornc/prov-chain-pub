@@ -1,0 +1,322 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix trace: <http://provchain.org/trace#> .
+@prefix core: <http://provchain.org/core#> .
+@prefix uht: <http://provchain.org/uht#> .
+
+# UHT Manufacturing-specific SHACL shapes
+# These shapes extend the core shapes with UHT-specific requirements
+
+# UHT Product Shape - Extends core Product with UHT-specific requirements
+uht:UHTProductShape
+    a sh:NodeShape ;
+    sh:targetClass uht:UHTProduct ;
+    sh:property [
+        sh:path trace:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT Product must have exactly one name" ;
+    ] ;
+    sh:property [
+        sh:path uht:milkType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Whole" "Semi-Skimmed" "Skimmed" "Organic" ) ;
+        sh:message "UHT Product must specify exactly one valid milk type" ;
+    ] ;
+    sh:property [
+        sh:path uht:fatContent ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 10.0 ;
+        sh:message "UHT Product must have fat content between 0% and 10%" ;
+    ] ;
+    sh:property [
+        sh:path uht:proteinContent ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 2.0 ;
+        sh:maxInclusive 5.0 ;
+        sh:message "UHT Product must have protein content between 2% and 5%" ;
+    ] ;
+    sh:property [
+        sh:path uht:expiryDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT Product must have exactly one expiry date" ;
+    ] ;
+    sh:property [
+        sh:path uht:packageSize ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.1 ;
+        sh:maxInclusive 5.0 ;
+        sh:message "UHT Product package size must be between 0.1L and 5.0L" ;
+    ] .
+
+# UHT Processing Shape - Specific requirements for UHT processing
+uht:UHTProcessingShape
+    a sh:NodeShape ;
+    sh:targetClass uht:UHTProcessing ;
+    sh:property [
+        sh:path uht:heatingTemperature ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 135.0 ;
+        sh:maxInclusive 150.0 ;
+        sh:message "UHT heating temperature must be between 135°C and 150°C" ;
+    ] ;
+    sh:property [
+        sh:path uht:heatingDuration ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 1.0 ;
+        sh:maxInclusive 10.0 ;
+        sh:message "UHT heating duration must be between 1 and 10 seconds" ;
+    ] ;
+    sh:property [
+        sh:path uht:coolingTemperature ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 4.0 ;
+        sh:maxInclusive 8.0 ;
+        sh:message "UHT cooling temperature must be between 4°C and 8°C" ;
+    ] ;
+    sh:property [
+        sh:path trace:timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT processing must have exactly one timestamp" ;
+    ] ;
+    sh:property [
+        sh:path trace:participant ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT processing must have exactly one operator" ;
+    ] .
+
+# UHT Quality Control Shape - Specific requirements for UHT quality testing
+uht:UHTQualityShape
+    a sh:NodeShape ;
+    sh:targetClass uht:UHTQualityControl ;
+    sh:property [
+        sh:path uht:microbialCount ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:maxInclusive 10 ;
+        sh:message "UHT microbial count must be ≤ 10 CFU/ml" ;
+    ] ;
+    sh:property [
+        sh:path uht:shelfLifeTest ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Pass" "Fail" ) ;
+        sh:message "UHT shelf life test must be Pass or Fail" ;
+    ] ;
+    sh:property [
+        sh:path uht:tasteTest ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Excellent" "Good" "Acceptable" "Poor" ) ;
+        sh:message "UHT taste test must be one of: Excellent, Good, Acceptable, Poor" ;
+    ] ;
+    sh:property [
+        sh:path uht:colorTest ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Normal" "Slightly Off" "Off" ) ;
+        sh:message "UHT color test must be Normal, Slightly Off, or Off" ;
+    ] ;
+    sh:property [
+        sh:path trace:testDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT quality control must have exactly one test date" ;
+    ] ;
+    sh:property [
+        sh:path trace:tester ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT quality control must have exactly one tester" ;
+    ] .
+
+# UHT Packaging Shape - Specific requirements for UHT packaging
+uht:UHTPackagingShape
+    a sh:NodeShape ;
+    sh:targetClass uht:UHTPackaging ;
+    sh:property [
+        sh:path uht:packageType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Tetra Pak" "Plastic Bottle" "Glass Bottle" "Carton" ) ;
+        sh:message "UHT package type must be Tetra Pak, Plastic Bottle, Glass Bottle, or Carton" ;
+    ] ;
+    sh:property [
+        sh:path uht:sealIntegrity ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Intact" "Compromised" ) ;
+        sh:message "UHT package seal integrity must be Intact or Compromised" ;
+    ] ;
+    sh:property [
+        sh:path uht:batchCode ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^UHT[0-9]{8}$" ;
+        sh:message "UHT batch code must follow pattern UHT followed by 8 digits" ;
+    ] ;
+    sh:property [
+        sh:path trace:timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT packaging must have exactly one timestamp" ;
+    ] .
+
+# UHT Storage Shape - Specific requirements for UHT storage conditions
+uht:UHTStorageShape
+    a sh:NodeShape ;
+    sh:targetClass uht:UHTStorage ;
+    sh:property [
+        sh:path trace:temperature ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 15.0 ;
+        sh:maxInclusive 25.0 ;
+        sh:message "UHT storage temperature must be between 15°C and 25°C" ;
+    ] ;
+    sh:property [
+        sh:path trace:humidity ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 40.0 ;
+        sh:maxInclusive 70.0 ;
+        sh:message "UHT storage humidity must be between 40% and 70%" ;
+    ] ;
+    sh:property [
+        sh:path uht:lightExposure ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Protected" "Minimal" "Exposed" ) ;
+        sh:message "UHT storage light exposure must be Protected, Minimal, or Exposed" ;
+    ] ;
+    sh:property [
+        sh:path trace:recordedAt ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT storage conditions must have exactly one recording timestamp" ;
+    ] .
+
+# UHT Transport Shape - Specific requirements for UHT transport
+uht:UHTTransportShape
+    a sh:NodeShape ;
+    sh:targetClass uht:UHTTransport ;
+    sh:property [
+        sh:path uht:vehicleType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Refrigerated Truck" "Standard Truck" "Container" ) ;
+        sh:message "UHT transport vehicle must be Refrigerated Truck, Standard Truck, or Container" ;
+    ] ;
+    sh:property [
+        sh:path trace:temperature ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 10.0 ;
+        sh:maxInclusive 30.0 ;
+        sh:message "UHT transport temperature must be between 10°C and 30°C" ;
+    ] ;
+    sh:property [
+        sh:path uht:transitTime ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.5 ;
+        sh:maxInclusive 72.0 ;
+        sh:message "UHT transport time must be between 0.5 and 72 hours" ;
+    ] ;
+    sh:property [
+        sh:path trace:origin ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT transport must have exactly one origin location" ;
+    ] ;
+    sh:property [
+        sh:path trace:destination ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT transport must have exactly one destination location" ;
+    ] .
+
+# UHT Compliance Shape - Specific requirements for UHT regulatory compliance
+uht:UHTComplianceShape
+    a sh:NodeShape ;
+    sh:targetClass uht:UHTCompliance ;
+    sh:property [
+        sh:path trace:standard ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "FDA 21 CFR 113" "EU Regulation 852/2004" "HACCP" "ISO 22000" ) ;
+        sh:message "UHT compliance must reference valid standards: FDA 21 CFR 113, EU Regulation 852/2004, HACCP, or ISO 22000" ;
+    ] ;
+    sh:property [
+        sh:path uht:certificateNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z]{2,4}[0-9]{6,10}$" ;
+        sh:message "UHT certificate number must be 2-4 letters followed by 6-10 digits" ;
+    ] ;
+    sh:property [
+        sh:path trace:verifiedBy ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT compliance must have exactly one verifier" ;
+    ] ;
+    sh:property [
+        sh:path trace:verificationDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT compliance must have exactly one verification date" ;
+    ] ;
+    sh:property [
+        sh:path uht:validUntil ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "UHT compliance certificate must have exactly one expiry date" ;
+    ] .

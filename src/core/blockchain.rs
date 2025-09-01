@@ -5,6 +5,7 @@ use crate::storage::rdf_store::{RDFStore, StorageConfig};
 use crate::trace_optimization::{EnhancedTraceabilitySystem, EnhancedTraceResult};
 use crate::core::atomic_operations::AtomicOperationContext;
 use crate::error::{ProvChainError, Result, BlockchainError};
+use crate::ontology::{OntologyManager, OntologyConfig, ShaclValidator};
 use oxigraph::model::NamedNode;
 use std::path::Path;
 
@@ -74,6 +75,8 @@ impl Block {
 pub struct Blockchain {
     pub chain: Vec<Block>,
     pub rdf_store: RDFStore,
+    pub ontology_manager: Option<OntologyManager>,
+    pub shacl_validator: Option<ShaclValidator>,
 }
 
 impl Default for Blockchain {
@@ -88,6 +91,8 @@ impl Blockchain {
         let mut bc = Blockchain {
             chain: Vec::new(),
             rdf_store: RDFStore::new(),
+            ontology_manager: None,
+            shacl_validator: None,
         };
         
         // Load the traceability ontology
@@ -114,6 +119,8 @@ impl Blockchain {
         let mut bc = Blockchain {
             chain: Vec::new(),
             rdf_store,
+            ontology_manager: None,
+            shacl_validator: None,
         };
         
         // Load the traceability ontology
@@ -170,6 +177,8 @@ impl Blockchain {
         let mut bc = Blockchain {
             chain: Vec::new(),
             rdf_store,
+            ontology_manager: None,
+            shacl_validator: None,
         };
         
         // Load the traceability ontology
@@ -346,6 +355,116 @@ impl Blockchain {
         self.rdf_store.list_backups().map_err(|e| e.into())
     }
 
+    /// Create a new in-memory blockchain with ontology configuration
+    pub fn new_with_ontology(ontology_config: OntologyConfig) -> Result<Self> {
+        let mut bc = Blockchain {
+            chain: Vec::new(),
+            rdf_store: RDFStore::new(),
+            ontology_manager: None,
+            shacl_validator: None,
+        };
+        
+        // Initialize ontology manager and SHACL validator
+        bc.initialize_ontology_system(ontology_config)?;
+        
+        let genesis_block = bc.create_genesis_block();
+        
+        // Add genesis block data to RDF store
+        if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
+            bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
+            bc.rdf_store.add_block_metadata(&genesis_block);
+        } else {
+            eprintln!("Warning: Could not create graph name for genesis block");
+        }
+        
+        bc.chain.push(genesis_block);
+        Ok(bc)
+    }
+
+    /// Create a new persistent blockchain with ontology configuration
+    pub fn new_persistent_with_ontology<P: AsRef<Path>>(data_dir: P, ontology_config: OntologyConfig) -> Result<Self> {
+        let rdf_store = RDFStore::new_persistent(data_dir)?;
+        
+        let mut bc = Blockchain {
+            chain: Vec::new(),
+            rdf_store,
+            ontology_manager: None,
+            shacl_validator: None,
+        };
+        
+        // Initialize ontology manager and SHACL validator
+        bc.initialize_ontology_system(ontology_config)?;
+        
+        // Check if we need to create genesis block or load existing chain
+        let store_len = bc.rdf_store.store.len().unwrap_or(0);
+        if store_len == 0 {
+            // Create genesis block for new blockchain
+            let genesis_block = bc.create_genesis_block();
+            
+            // Add genesis block data to RDF store
+            if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
+                bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
+                bc.rdf_store.add_block_metadata(&genesis_block);
+            } else {
+                eprintln!("Warning: Could not create graph name for genesis block in persistent store");
+            }
+            
+            bc.chain.push(genesis_block);
+            
+            // Save to disk
+            if let Err(e) = bc.rdf_store.save_to_disk() {
+                eprintln!("Warning: Could not save to disk: {e}");
+            }
+        } else {
+            // Load existing blockchain from persistent storage
+            bc.load_chain_from_store()?;
+            
+            // If no blocks were loaded but store has data, something is wrong
+            // Create genesis block as fallback
+            if bc.chain.is_empty() {
+                eprintln!("Warning: Store has data but no blocks loaded, creating genesis block");
+                let genesis_block = bc.create_genesis_block();
+                
+                if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
+                    bc.rdf_store.add_rdf_to_graph(&genesis_block.data, &graph_name);
+                    bc.rdf_store.add_block_metadata(&genesis_block);
+                } else {
+                    eprintln!("Warning: Could not create graph name for fallback genesis block");
+                }
+                
+                bc.chain.push(genesis_block);
+            }
+        }
+        
+        Ok(bc)
+    }
+
+    /// Initialize the ontology management system
+    fn initialize_ontology_system(&mut self, ontology_config: OntologyConfig) -> std::result::Result<(), ProvChainError> {
+        // Create ontology manager
+        let ontology_manager = OntologyManager::new(ontology_config.clone())
+            .map_err(|e| ProvChainError::Blockchain(BlockchainError::OntologyInitializationFailed(
+                format!("Failed to initialize ontology manager: {}", e)
+            )))?;
+
+        // Create SHACL validator
+        let shacl_validator = ShaclValidator::new(
+            &ontology_config.core_shacl_path,
+            &ontology_config.domain_shacl_path,
+            ontology_config.ontology_hash.clone(),
+        ).map_err(|e| ProvChainError::Blockchain(BlockchainError::OntologyInitializationFailed(
+            format!("Failed to initialize SHACL validator: {}", e)
+        )))?;
+
+        self.ontology_manager = Some(ontology_manager);
+        self.shacl_validator = Some(shacl_validator);
+
+        println!("Initialized ontology system for domain: {}", 
+                 self.ontology_manager.as_ref().unwrap().get_domain_name());
+
+        Ok(())
+    }
+
     /// Restore blockchain from backup
     pub fn restore_from_backup<P: AsRef<Path>>(backup_path: P, target_dir: P) -> Result<Self> {
         let rdf_store = RDFStore::restore_from_backup(backup_path, target_dir).map_err(|e| ProvChainError::Anyhow(e))?;
@@ -353,6 +472,8 @@ impl Blockchain {
         let mut bc = Blockchain {
             chain: Vec::new(),
             rdf_store,
+            ontology_manager: None,
+            shacl_validator: None,
         };
         
         // Load the chain from the restored store
@@ -387,6 +508,7 @@ impl Blockchain {
         )
     }
 
+    /// Add a new block with SHACL validation and ontology consistency checking
     pub fn add_block(&mut self, data: String) -> Result<()> {
         // Ensure we have at least a genesis block
         if self.chain.is_empty() {
@@ -400,6 +522,40 @@ impl Blockchain {
                 )));
             }
             self.chain.push(genesis_block);
+        }
+
+        // STEP 8: SHACL VALIDATION - Validate transaction data before adding to blockchain
+        if let Some(ref shacl_validator) = self.shacl_validator {
+            // Validate the RDF data against SHACL shapes
+            match shacl_validator.validate_transaction(&data) {
+                Ok(validation_result) => {
+                    if !validation_result.is_valid {
+                        // STRICT ENFORCEMENT: Block invalid transactions
+                        let error_msg = format!(
+                            "Transaction validation failed: {} violations found. Details:\n{}",
+                            validation_result.violations.len(),
+                            validation_result.violations.iter()
+                                .map(|v| format!("- {}: {} ({})", v.constraint_type, v.message, v.severity))
+                                .collect::<Vec<_>>()
+                                .join("\n")
+                        );
+                        
+                        return Err(ProvChainError::Blockchain(BlockchainError::ValidationFailed(error_msg)));
+                    }
+                    
+                    // Log successful validation
+                    println!("✓ Transaction validation passed: {} constraints validated successfully", 
+                             validation_result.constraints_checked);
+                }
+                Err(validation_error) => {
+                    // STRICT ENFORCEMENT: Block transactions that fail validation process
+                    let error_msg = format!("SHACL validation process failed: {}", validation_error);
+                    return Err(ProvChainError::Blockchain(BlockchainError::ValidationFailed(error_msg)));
+                }
+            }
+        } else {
+            // If no SHACL validator is configured, warn but allow (for backward compatibility with existing tests)
+            eprintln!("Warning: No SHACL validator configured - transaction added without domain-specific validation");
         }
 
         let prev_block = self.chain.last()
@@ -476,26 +632,9 @@ impl Blockchain {
     }
 
     fn load_ontology(&mut self) {
-        // Try to use the new OntologyManager for flexible ontology loading
-        match crate::ontology::manager::OntologyManager::new() {
-            Ok(mut ontology_manager) => {
-                if let Err(e) = ontology_manager.load_configured_ontologies() {
-                    eprintln!("Warning: Could not load configured ontologies: {}", e);
-                    // Fallback to hardcoded loading
-                    self.load_ontology_hardcoded();
-                } else {
-                    // Successfully loaded ontologies using the manager
-                    // For now, we'll still use the hardcoded approach but with the manager's namespace support
-                    self.load_ontology_hardcoded();
-                    println!("Loaded traceability ontologies using OntologyManager");
-                }
-            },
-            Err(e) => {
-                eprintln!("Warning: Could not create OntologyManager: {}", e);
-                // Fallback to hardcoded loading
-                self.load_ontology_hardcoded();
-            }
-        }
+        // For now, use hardcoded ontology loading
+        // TODO: Integrate with CLI-based ontology selection in Step 7
+        self.load_ontology_hardcoded();
     }
 
     /// Fallback method for hardcoded ontology loading

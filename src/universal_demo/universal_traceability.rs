@@ -4,7 +4,8 @@ use crate::core::TraceableEntity;
 use crate::core::entity::{EntityType, DomainType, PropertyValue};
 use crate::domain::{DomainConfig};
 use std::collections::HashMap;
-use crate::ontology::OntologyManager;
+use crate::ontology::domain_manager::OntologyManager;
+use crate::ontology::OntologyConfig;
 use anyhow::Result;
 
 /// Demonstrate universal traceability platform capabilities
@@ -13,19 +14,30 @@ pub fn run_universal_traceability_demo() -> Result<()> {
     
     // 1. Show ontology management
     println!("1. Ontology Management");
-    let mut ontology_manager = OntologyManager::new()?;
+    
+    // Create a default ontology configuration for demo
+    let config = crate::config::Config::default();
+    let ontology_config = match OntologyConfig::new(Some("ontologies/healthcare.owl".to_string()), &config) {
+        Ok(config) => config,
+        Err(e) => {
+            println!("   Failed to create ontology config: {}", e);
+            return Ok(());
+        }
+    };
+    
+    let ontology_manager = match OntologyManager::new(ontology_config) {
+        Ok(manager) => manager,
+        Err(e) => {
+            println!("   Failed to create ontology manager: {}", e);
+            return Ok(());
+        }
+    };
     println!("   Created ontology manager");
     
-    // Load core ontology
-    let core_result = ontology_manager.load_main_ontology();
-    println!("   Attempted to load core ontology: {:?}", core_result.is_ok());
-    
-    // Load domain ontologies
-    let healthcare_result = ontology_manager.load_configured_ontologies();
-    println!("   Attempted to load healthcare ontology: {:?}", healthcare_result.is_ok());
-    
-    let pharma_result = ontology_manager.load_configured_ontologies();
-    println!("   Attempted to load pharmaceutical ontology: {:?}", pharma_result.is_ok());
+    // Show ontology information
+    println!("   Domain: {}", ontology_manager.get_domain_name());
+    println!("   Ontology hash: {}", ontology_manager.get_ontology_hash());
+    println!("   Supported transaction types: {:?}", ontology_manager.get_supported_transaction_types());
     
     println!();
     

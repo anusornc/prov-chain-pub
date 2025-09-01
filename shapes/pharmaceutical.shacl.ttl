@@ -1,0 +1,425 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix trace: <http://provchain.org/trace#> .
+@prefix core: <http://provchain.org/core#> .
+@prefix pharma: <http://provchain.org/pharma#> .
+
+# Pharmaceutical-specific SHACL shapes
+# These shapes extend the core shapes with pharmaceutical supply chain requirements
+
+# Pharmaceutical Product Shape - Extends core Product with pharma-specific requirements
+pharma:PharmaceuticalProductShape
+    a sh:NodeShape ;
+    sh:targetClass pharma:PharmaceuticalProduct ;
+    sh:property [
+        sh:path trace:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical product must have exactly one name" ;
+    ] ;
+    sh:property [
+        sh:path pharma:activeIngredient ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Pharmaceutical product must have at least one active ingredient" ;
+    ] ;
+    sh:property [
+        sh:path pharma:strength ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical product must have exactly one strength specification" ;
+    ] ;
+    sh:property [
+        sh:path pharma:dosageForm ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Tablet" "Capsule" "Liquid" "Injection" "Cream" "Ointment" "Patch" ) ;
+        sh:message "Pharmaceutical product must have valid dosage form" ;
+    ] ;
+    sh:property [
+        sh:path pharma:ndc ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[0-9]{4,5}-[0-9]{3,4}-[0-9]{1,2}$" ;
+        sh:message "Pharmaceutical product must have valid NDC number format" ;
+    ] ;
+    sh:property [
+        sh:path pharma:expiryDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical product must have exactly one expiry date" ;
+    ] ;
+    sh:property [
+        sh:path pharma:lotNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z0-9]{6,12}$" ;
+        sh:message "Pharmaceutical lot number must be 6-12 alphanumeric characters" ;
+    ] .
+
+# Pharmaceutical Manufacturing Shape - Specific requirements for drug manufacturing
+pharma:PharmaceuticalManufacturingShape
+    a sh:NodeShape ;
+    sh:targetClass pharma:PharmaceuticalManufacturing ;
+    sh:property [
+        sh:path pharma:gmpCompliance ;
+        sh:datatype xsd:boolean ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:hasValue true ;
+        sh:message "Pharmaceutical manufacturing must be GMP compliant" ;
+    ] ;
+    sh:property [
+        sh:path pharma:batchSize ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 100 ;
+        sh:maxInclusive 1000000 ;
+        sh:message "Pharmaceutical batch size must be between 100 and 1,000,000 units" ;
+    ] ;
+    sh:property [
+        sh:path pharma:manufacturingDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical manufacturing must have exactly one manufacturing date" ;
+    ] ;
+    sh:property [
+        sh:path pharma:facilityLicense ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z]{2}[0-9]{6,8}$" ;
+        sh:message "Pharmaceutical facility license must be 2 letters followed by 6-8 digits" ;
+    ] ;
+    sh:property [
+        sh:path trace:participant ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical manufacturing must have exactly one responsible manufacturer" ;
+    ] .
+
+# Pharmaceutical Quality Control Shape - Specific requirements for drug quality testing
+pharma:PharmaceuticalQualityShape
+    a sh:NodeShape ;
+    sh:targetClass pharma:PharmaceuticalQualityControl ;
+    sh:property [
+        sh:path pharma:assayResult ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 90.0 ;
+        sh:maxInclusive 110.0 ;
+        sh:message "Pharmaceutical assay result must be between 90% and 110%" ;
+    ] ;
+    sh:property [
+        sh:path pharma:purityTest ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 95.0 ;
+        sh:maxInclusive 100.0 ;
+        sh:message "Pharmaceutical purity must be between 95% and 100%" ;
+    ] ;
+    sh:property [
+        sh:path pharma:dissolutionTest ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Pass" "Fail" ) ;
+        sh:message "Pharmaceutical dissolution test must be Pass or Fail" ;
+    ] ;
+    sh:property [
+        sh:path pharma:microbialTest ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Pass" "Fail" ) ;
+        sh:message "Pharmaceutical microbial test must be Pass or Fail" ;
+    ] ;
+    sh:property [
+        sh:path pharma:stabilityTest ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Stable" "Unstable" "Under Study" ) ;
+        sh:message "Pharmaceutical stability test must be Stable, Unstable, or Under Study" ;
+    ] ;
+    sh:property [
+        sh:path trace:testDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical quality control must have exactly one test date" ;
+    ] ;
+    sh:property [
+        sh:path trace:tester ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical quality control must have exactly one qualified tester" ;
+    ] .
+
+# Pharmaceutical Packaging Shape - Specific requirements for drug packaging
+pharma:PharmaceuticalPackagingShape
+    a sh:NodeShape ;
+    sh:targetClass pharma:PharmaceuticalPackaging ;
+    sh:property [
+        sh:path pharma:packageType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Blister Pack" "Bottle" "Vial" "Ampoule" "Syringe" "Tube" "Box" ) ;
+        sh:message "Pharmaceutical package type must be valid packaging format" ;
+    ] ;
+    sh:property [
+        sh:path pharma:childResistant ;
+        sh:datatype xsd:boolean ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical packaging must specify child-resistant status" ;
+    ] ;
+    sh:property [
+        sh:path pharma:tamperEvident ;
+        sh:datatype xsd:boolean ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:hasValue true ;
+        sh:message "Pharmaceutical packaging must be tamper-evident" ;
+    ] ;
+    sh:property [
+        sh:path pharma:serialNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[0-9]{20}$" ;
+        sh:message "Pharmaceutical serial number must be exactly 20 digits" ;
+    ] ;
+    sh:property [
+        sh:path pharma:gtin ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[0-9]{14}$" ;
+        sh:message "Pharmaceutical GTIN must be exactly 14 digits" ;
+    ] ;
+    sh:property [
+        sh:path trace:timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical packaging must have exactly one timestamp" ;
+    ] .
+
+# Pharmaceutical Storage Shape - Specific requirements for drug storage conditions
+pharma:PharmaceuticalStorageShape
+    a sh:NodeShape ;
+    sh:targetClass pharma:PharmaceuticalStorage ;
+    sh:property [
+        sh:path trace:temperature ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 2.0 ;
+        sh:maxInclusive 30.0 ;
+        sh:message "Pharmaceutical storage temperature must be between 2°C and 30°C" ;
+    ] ;
+    sh:property [
+        sh:path trace:humidity ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 30.0 ;
+        sh:maxInclusive 65.0 ;
+        sh:message "Pharmaceutical storage humidity must be between 30% and 65%" ;
+    ] ;
+    sh:property [
+        sh:path pharma:lightProtection ;
+        sh:datatype xsd:boolean ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical storage must specify light protection status" ;
+    ] ;
+    sh:property [
+        sh:path pharma:controlledSubstance ;
+        sh:datatype xsd:boolean ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical storage must specify controlled substance status" ;
+    ] ;
+    sh:property [
+        sh:path pharma:securityLevel ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Standard" "High" "Maximum" ) ;
+        sh:message "Pharmaceutical storage security level must be Standard, High, or Maximum" ;
+    ] ;
+    sh:property [
+        sh:path trace:recordedAt ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical storage conditions must have exactly one recording timestamp" ;
+    ] .
+
+# Pharmaceutical Distribution Shape - Specific requirements for drug distribution
+pharma:PharmaceuticalDistributionShape
+    a sh:NodeShape ;
+    sh:targetClass pharma:PharmaceuticalDistribution ;
+    sh:property [
+        sh:path pharma:distributorLicense ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z]{2}[0-9]{6,8}$" ;
+        sh:message "Pharmaceutical distributor license must be 2 letters followed by 6-8 digits" ;
+    ] ;
+    sh:property [
+        sh:path pharma:coldChain ;
+        sh:datatype xsd:boolean ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical distribution must specify cold chain requirement" ;
+    ] ;
+    sh:property [
+        sh:path pharma:transitTime ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.5 ;
+        sh:maxInclusive 168.0 ;
+        sh:message "Pharmaceutical transit time must be between 0.5 and 168 hours" ;
+    ] ;
+    sh:property [
+        sh:path trace:origin ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical distribution must have exactly one origin location" ;
+    ] ;
+    sh:property [
+        sh:path trace:destination ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical distribution must have exactly one destination location" ;
+    ] ;
+    sh:property [
+        sh:path pharma:trackingNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z0-9]{10,20}$" ;
+        sh:message "Pharmaceutical tracking number must be 10-20 alphanumeric characters" ;
+    ] .
+
+# Pharmaceutical Compliance Shape - Specific requirements for drug regulatory compliance
+pharma:PharmaceuticalComplianceShape
+    a sh:NodeShape ;
+    sh:targetClass pharma:PharmaceuticalCompliance ;
+    sh:property [
+        sh:path trace:standard ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "FDA CFR 21" "EMA GMP" "ICH Q7" "USP" "Ph. Eur." "DSCSA" ) ;
+        sh:message "Pharmaceutical compliance must reference valid standards" ;
+    ] ;
+    sh:property [
+        sh:path pharma:regulatoryApproval ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "FDA Approved" "EMA Approved" "Health Canada Approved" "TGA Approved" "PMDA Approved" ) ;
+        sh:message "Pharmaceutical product must have valid regulatory approval" ;
+    ] ;
+    sh:property [
+        sh:path pharma:approvalNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z]{2,4}[0-9]{6,10}$" ;
+        sh:message "Pharmaceutical approval number must be 2-4 letters followed by 6-10 digits" ;
+    ] ;
+    sh:property [
+        sh:path pharma:clinicalTrialPhase ;
+        sh:datatype xsd:string ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:in ( "Phase I" "Phase II" "Phase III" "Phase IV" "Post-Market" ) ;
+        sh:message "Pharmaceutical clinical trial phase must be valid if specified" ;
+    ] ;
+    sh:property [
+        sh:path trace:verifiedBy ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical compliance must have exactly one regulatory verifier" ;
+    ] ;
+    sh:property [
+        sh:path trace:verificationDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical compliance must have exactly one verification date" ;
+    ] ;
+    sh:property [
+        sh:path pharma:validUntil ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical compliance approval must have exactly one expiry date" ;
+    ] .
+
+# Pharmaceutical Adverse Event Shape - Requirements for adverse event reporting
+pharma:PharmaceuticalAdverseEventShape
+    a sh:NodeShape ;
+    sh:targetClass pharma:PharmaceuticalAdverseEvent ;
+    sh:property [
+        sh:path pharma:eventSeverity ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Mild" "Moderate" "Severe" "Life-threatening" "Fatal" ) ;
+        sh:message "Pharmaceutical adverse event severity must be specified" ;
+    ] ;
+    sh:property [
+        sh:path pharma:eventDescription ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical adverse event must have exactly one description" ;
+    ] ;
+    sh:property [
+        sh:path pharma:reportingDate ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical adverse event must have exactly one reporting date" ;
+    ] ;
+    sh:property [
+        sh:path pharma:reporterType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Healthcare Professional" "Patient" "Pharmacist" "Manufacturer" "Regulatory Authority" ) ;
+        sh:message "Pharmaceutical adverse event reporter type must be specified" ;
+    ] ;
+    sh:property [
+        sh:path pharma:regulatoryReported ;
+        sh:datatype xsd:boolean ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Pharmaceutical adverse event must specify if reported to regulatory authority" ;
+    ] .
