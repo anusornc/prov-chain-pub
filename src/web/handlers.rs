@@ -1643,8 +1643,11 @@ pub struct KnowledgeGraphParams {
 pub struct AnalyticsQueryParams {
     start_date: Option<String>,
     end_date: Option<String>,
+    #[allow(dead_code)]
     participant_type: Option<String>,
+    #[allow(dead_code)]
     transaction_type: Option<String>,
+    #[allow(dead_code)]
     granularity: Option<String>, // hour | day | week | month
 }
 

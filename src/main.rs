@@ -1,14 +1,15 @@
 use clap::{Parser, Subcommand};
 use provchain_org::{
-    core::blockchain::Blockchain, 
-    demo, 
-    web::server::create_web_server, 
-    demo_runner::run_demo_with_args, 
-    semantic::simple_owl2_test::simple_owl2_integration_test, 
+    core::blockchain::Blockchain,
+    demo,
+    web::server::create_web_server,
+    demo_runner::run_demo_with_args,
+    semantic::simple_owl2_test::simple_owl2_integration_test,
     semantic::owl2_traceability::Owl2EnhancedTraceability,
     config::Config,
     ontology::OntologyConfig,
 };
+use chrono::Utc;
 use std::fs;
 use tracing::info;
 
@@ -102,6 +103,159 @@ enum Commands {
         #[arg(long)]
         ontology: Option<String>,
     },
+}
+
+/// Generate demo data based on the selected ontology
+fn generate_demo_data(ontology_config: &OntologyConfig) -> Vec<String> {
+    let domain_name = ontology_config.domain_name().unwrap_or_else(|_| "generic".to_string());
+    let timestamp = Utc::now().to_rfc3339();
+
+    match domain_name.as_str() {
+        "uht_manufacturing" => generate_uht_demo_data(&timestamp),
+        "automotive" => generate_automotive_demo_data(&timestamp),
+        "pharmaceutical" => generate_pharmaceutical_demo_data(&timestamp),
+        "healthcare" => generate_healthcare_demo_data(&timestamp),
+        _ => generate_generic_demo_data(&timestamp),
+    }
+}
+
+/// Generate UHT manufacturing specific demo data
+fn generate_uht_demo_data(timestamp: &str) -> Vec<String> {
+    vec![
+        // UHT Product with required properties
+        format!(r#"<http://provchain.org/item/uht-product-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/uht#UHTProduct> .
+<http://provchain.org/item/uht-product-1> <http://provchain.org/trace#name> "Organic Whole Milk" .
+<http://provchain.org/item/uht-product-1> <http://provchain.org/trace#participant> "Dairy Farms Co." .
+<http://provchain.org/item/uht-product-1> <http://provchain.org/trace#status> "Fresh" .
+<http://provchain.org/item/uht-product-1> <http://provchain.org/uht#milkType> "Whole" .
+<http://provchain.org/item/uht-product-1> <http://provchain.org/uht#fatContent> "3.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://provchain.org/item/uht-product-1> <http://provchain.org/uht#proteinContent> "3.2"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://provchain.org/item/uht-product-1> <http://provchain.org/uht#expiryDate> "{}"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://provchain.org/item/uht-product-1> <http://provchain.org/uht#packageSize> "1.0"^^<http://www.w3.org/2001/XMLSchema#decimal> ."#, timestamp),
+
+        // UHT Processing activity
+        format!(r#"<http://provchain.org/activity/uht-processing-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/uht#UHTProcessing> .
+<http://provchain.org/activity/uht-processing-1> <http://provchain.org/uht#heatingTemperature> "140.0"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://provchain.org/activity/uht-processing-1> <http://provchain.org/uht#heatingDuration> "5.0"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://provchain.org/activity/uht-processing-1> <http://provchain.org/uht#coolingTemperature> "6.0"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://provchain.org/activity/uht-processing-1> <http://provchain.org/trace#timestamp> "{}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/activity/uht-processing-1> <http://provchain.org/trace#participant> "UHT Processing Plant" ."#, timestamp),
+
+        // Batch linking to product
+        format!(r#"<http://example.org/uht-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/uht-product-1> .
+<http://example.org/uht-batch1> <http://provchain.org/trace#origin> "Dairy Farm A" .
+<http://example.org/uht-batch1> <http://provchain.org/trace#status> "Processed" .
+<http://example.org/uht-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."#),
+    ]
+}
+
+/// Generate automotive specific demo data
+fn generate_automotive_demo_data(timestamp: &str) -> Vec<String> {
+    vec![
+        // Automotive part with required properties
+        format!(r#"<http://provchain.org/item/auto-part-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/automotive#AutomotivePart> .
+<http://provchain.org/item/auto-part-1> <http://provchain.org/trace#name> "Engine Control Unit" .
+<http://provchain.org/item/auto-part-1> <http://provchain.org/trace#participant> "AutoParts Inc." .
+<http://provchain.org/item/auto-part-1> <http://provchain.org/trace#status> "Manufactured" .
+<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#partNumber> "ECU2023001" .
+<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#vehicleModel> "Model S" .
+<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#partCategory> "Electrical" .
+<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#materialType> "Electronic Components" .
+<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#weight> "0.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#serialNumber> "ECU1234567890" ."#),
+
+        // Manufacturing activity
+        format!(r#"<http://provchain.org/activity/auto-mfg-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/automotive#AutomotiveManufacturing> .
+<http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#manufacturingProcess> "Assembly" .
+<http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#productionLine> "LINE001" .
+<http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#batchSize> "100"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#manufacturingDate> "{}"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#plantCode> "FACT001" .
+<http://provchain.org/activity/auto-mfg-1> <http://provchain.org/trace#participant> "Manufacturing Plant" ."#, timestamp),
+
+        // Batch
+        r#"<http://example.org/auto-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/auto-part-1> .
+<http://example.org/auto-batch1> <http://provchain.org/trace#origin> "Factory A" .
+<http://example.org/auto-batch1> <http://provchain.org/trace#status> "Quality Checked" .
+<http://example.org/auto-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."#.to_string(),
+    ]
+}
+
+/// Generate pharmaceutical specific demo data
+fn generate_pharmaceutical_demo_data(timestamp: &str) -> Vec<String> {
+    vec![
+        // Pharmaceutical product
+        format!(r#"<http://provchain.org/item/pharma-product-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/pharmaceutical#PharmaceuticalProduct> .
+<http://provchain.org/item/pharma-product-1> <http://provchain.org/trace#name> "Amoxicillin 500mg" .
+<http://provchain.org/item/pharma-product-1> <http://provchain.org/trace#participant> "PharmaCorp" .
+<http://provchain.org/item/pharma-product-1> <http://provchain.org/trace#status> "Approved" .
+<http://provchain.org/item/pharma-product-1> <http://provchain.org/pharmaceutical#batchNumber> "PHA-2023-001" .
+<http://provchain.org/item/pharma-product-1> <http://provchain.org/pharmaceutical#dosage> "500mg" .
+<http://provchain.org/item/pharma-product-1> <http://provchain.org/pharmaceutical#expiryDate> "{}"^^<http://www.w3.org/2001/XMLSchema#date> ."#, timestamp),
+
+        // Quality control
+        format!(r#"<http://provchain.org/activity/pharma-qc-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/pharmaceutical#PharmaceuticalQualityControl> .
+<http://provchain.org/activity/pharma-qc-1> <http://provchain.org/pharmaceutical#testResult> "Passed" .
+<http://provchain.org/activity/pharma-qc-1> <http://provchain.org/pharmaceutical#labTechnician> "Dr. Smith" .
+<http://provchain.org/activity/pharma-qc-1> <http://provchain.org/trace#timestamp> "{}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/activity/pharma-qc-1> <http://provchain.org/trace#participant> "Quality Lab" ."#, timestamp),
+
+        // Batch
+        r#"<http://example.org/pharma-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/pharma-product-1> .
+<http://example.org/pharma-batch1> <http://provchain.org/trace#origin> "Manufacturing Facility A" .
+<http://example.org/pharma-batch1> <http://provchain.org/trace#status> "Released" .
+<http://example.org/pharma-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."#.to_string(),
+    ]
+}
+
+/// Generate healthcare specific demo data
+fn generate_healthcare_demo_data(timestamp: &str) -> Vec<String> {
+    vec![
+        // Healthcare product
+        format!(r#"<http://provchain.org/item/healthcare-product-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/healthcare#HealthcareProduct> .
+<http://provchain.org/item/healthcare-product-1> <http://provchain.org/trace#name> "Surgical Gloves" .
+<http://provchain.org/item/healthcare-product-1> <http://provchain.org/trace#participant> "MediSupply Inc." .
+<http://provchain.org/item/healthcare-product-1> <http://provchain.org/trace#status> "Sterilized" .
+<http://provchain.org/item/healthcare-product-1> <http://provchain.org/healthcare#sterilizationMethod> "Gamma Radiation" .
+<http://provchain.org/item/healthcare-product-1> <http://provchain.org/healthcare#lotNumber> "MED-2023-001" .
+<http://provchain.org/item/healthcare-product-1> <http://provchain.org/healthcare#expiryDate> "{}"^^<http://www.w3.org/2001/XMLSchema#date> ."#, timestamp),
+
+        // Healthcare activity
+        format!(r#"<http://provchain.org/activity/healthcare-activity-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/healthcare#HealthcareActivity> .
+<http://provchain.org/activity/healthcare-activity-1> <http://provchain.org/healthcare#procedure> "Sterilization" .
+<http://provchain.org/activity/healthcare-activity-1> <http://provchain.org/healthcare#operator> "Sterilization Technician" .
+<http://provchain.org/activity/healthcare-activity-1> <http://provchain.org/trace#timestamp> "{}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/activity/healthcare-activity-1> <http://provchain.org/trace#participant> "Sterilization Department" ."#, timestamp),
+
+        // Batch
+        r#"<http://example.org/healthcare-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/healthcare-product-1> .
+<http://example.org/healthcare-batch1> <http://provchain.org/trace#origin> "Medical Manufacturing Plant" .
+<http://example.org/healthcare-batch1> <http://provchain.org/trace#status> "Ready for Distribution" .
+<http://example.org/healthcare-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."#.to_string(),
+    ]
+}
+
+/// Generate generic demo data as fallback
+fn generate_generic_demo_data(timestamp: &str) -> Vec<String> {
+    vec![
+        // Generic product
+        format!(r#"<http://provchain.org/item/generic-product-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Product> .
+<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#name> "Generic Product" .
+<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#participant> "Generic Supplier" .
+<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#status> "Active" .
+<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#location> "Warehouse A" ."#),
+
+        // Generic activity
+        format!(r#"<http://provchain.org/activity/generic-activity-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Process> .
+<http://provchain.org/activity/generic-activity-1> <http://provchain.org/trace#timestamp> "{}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/activity/generic-activity-1> <http://provchain.org/trace#participant> "Generic Processor" ."#, timestamp),
+
+        // Batch
+        r#"<http://example.org/generic-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/generic-product-1> .
+<http://example.org/generic-batch1> <http://provchain.org/trace#origin> "Generic Origin" .
+<http://example.org/generic-batch1> <http://provchain.org/trace#status> "Processed" .
+<http://example.org/generic-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."#.to_string(),
+    ]
 }
 
 /// Helper function to create blockchain with ontology configuration
@@ -198,41 +352,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::WebServer { port, ontology } => {
             // Initialize blockchain with ontology configuration
             let mut blockchain = create_blockchain_with_ontology(ontology.clone())?;
-            
+
             info!("Starting Phase 2 web server on port {}", port);
-            
+
             // Load ontology data first
             info!("Loading core ontology...");
             let ontology_data = fs::read_to_string("ontologies/generic_core.owl")
                 .map_err(|e| format!("Cannot read ontology file: {e}"))?;
             blockchain.add_block(ontology_data)
                 .map_err(|e| format!("Failed to add ontology block: {e}"))?;
-            
-            // Load some demo data into the blockchain
-            let demo_data = vec![
-                // Link batch to a real product IRI (not a literal) using the trace namespace
-                "<http://example.org/batch1> <http://provchain.org/trace#product> <http://provchain.org/item/product-1> .",
-                // Give the product a human-readable name to avoid 'Unknown Product'
-                "<http://provchain.org/item/product-1> <http://provchain.org/trace#name> \"Organic Tomatoes\" .",
-                // Add proper type information for the product using core ontology
-                "<http://provchain.org/item/product-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Product> .",
-                // Add participant and location information
-                "<http://provchain.org/item/product-1> <http://provchain.org/trace#participant> \"Organic Farms Co.\" .",
-                "<http://provchain.org/item/product-1> <http://provchain.org/trace#location> \"Farm A, California\" .",
-                "<http://provchain.org/item/product-1> <http://provchain.org/trace#status> \"Fresh\" .",
-                // Use trace namespace for origin and status to align with backend queries
-                "<http://example.org/batch1> <http://provchain.org/trace#origin> \"Farm A\" .",
-                "<http://example.org/batch1> <http://provchain.org/trace#status> \"In Transit\" .",
-            ];
-            
+
+            // Generate ontology-aware demo data
+            let ontology_config = OntologyConfig::new(ontology, &Config::load_or_default("config.toml"))
+                .map_err(|e| format!("Failed to create ontology config: {e}"))?;
+            let demo_data = generate_demo_data(&ontology_config);
+
             let demo_data_count = demo_data.len();
-            
+
             // Add each piece of demo data as a separate block
             for data in demo_data {
-                blockchain.add_block(data.to_string())
+                blockchain.add_block(data)
                     .map_err(|e| format!("Failed to add block: {e}"))?;
             }
-            
+
             info!("Loaded {} blocks (1 ontology + {} demo data)", blockchain.chain.len(), demo_data_count);
             
             // Create config with custom port

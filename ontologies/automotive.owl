@@ -5,9 +5,8 @@
 @prefix auto: <http://provchain.org/automotive#> .
 @prefix core: <http://provchain.org/core#> .
 
-owl:imports <http://provchain.org/core> .
-
 auto:AutomotiveOntology a owl:Ontology ;
+    owl:imports <http://provchain.org/core> ;
     rdfs:label "Automotive Traceability Ontology" ;
     rdfs:comment "Extension of PROV-O for automotive traceability" .
 

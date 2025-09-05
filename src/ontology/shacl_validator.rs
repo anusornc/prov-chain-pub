@@ -17,6 +17,7 @@ pub struct ShaclValidator {
     /// Whether validation is enabled
     pub validation_enabled: bool,
     /// Oxigraph store for SHACL validation queries
+    #[allow(dead_code)]
     store: Store,
 }
 
