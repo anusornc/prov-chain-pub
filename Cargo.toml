@@ -95,7 +95,7 @@ thiserror = "1.0"         # Error handling
 async-trait = "0.1"       # Async traits
 
 # OWL2 library for enhanced ontology support
-owl2_rs = { path = "./owl2_rs" }
+owl2-reasoner = { path = "./owl2-reasoner" }
 
 [dev-dependencies]
 tempfile = "3.8"

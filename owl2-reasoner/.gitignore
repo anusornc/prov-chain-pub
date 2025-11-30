@@ -1,0 +1,458 @@
+# .gitignore for OWL2 Reasoner Project
+# Prevents sensitive and trivial files from being committed to GitHub
+
+# === Build and Compilation Artifacts ===
+# Rust build artifacts
+/target/
+/debug/
+/release/
+**/*.rs.bk
+**/*.o
+**/*.so
+**/*.dylib
+**/*.dll
+*.pdb
+*.lib
+*.a
+*.d
+
+# === Documentation Generated Files ===
+# Generated documentation (excluding committed docs)
+doc/
+/docs/api/generated/
+/docs/user/generated/
+/docs/performance/generated/
+
+# Typst generated files (technical docs are committed, but PDFs should not be)
+*.pdf
+docs/technical-documentation/*.pdf
+
+# === IDE and Editor Files ===
+# Vim
+*.swp
+*.swo
+*~
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# === OS Generated Files ===
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# === Temporary and Cache Files ===
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.cache
+
+# Log files (more comprehensive)
+test_*.log
+*_test.log
+benchmark*.log
+performance*.log
+external_*.log
+cargo_*.log
+detailed*.log
+
+# Rust cache
+.cargo/
+.rustup/
+**/.rustc_info.json
+
+# === Testing and Benchmarking Results ===
+# Test outputs (source code is committed, but outputs are not)
+target/criterion/
+benches/output/
+test-results/
+**/test_output/
+**/benchmark_results/
+benchmarking/results/
+target/reports/
+
+# Coverage reports
+coverage/
+**/*.cov
+
+# Specific test files
+*.ofn
+test_*.*
+established_reasoners/test_*.*
+
+# === Sensitive Information ===
+# API keys and secrets
+.env
+.env.local
+.env.*.local
+
+# Configuration files with sensitive data
+config/secrets.yml
+config/local.toml
+secrets.json
+
+# Credentials
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# Database files (if used in examples)
+*.db
+*.sqlite
+*.sqlite3
+
+# === Dependencies and Package Manager Files ===
+# Node.js (if any web interface)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if any Python tools)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Python debug and temporary files
+debug_*.py
+*_debug.py
+*_simple.py
+test_*.py
+
+# === Virtual Environment ===
+venv/
+env/
+ENV/
+.venv/
+
+# === Archive and Backup Files ===
+# Archive directories
+archive/
+**/archive/
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.rar
+*.7z
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# === Large Files and Data ===
+# Large test datasets
+test_data/
+datasets/
+*.csv
+*.json
+*.xml
+*.ttl
+*.owl
+*.rdf
+
+# Generated results and data files
+*.results
+*.json.results
+*.txt.results
+
+# Test and benchmark output files
+*_report.txt
+*_report.md
+*_report.log
+*_performance.txt
+*_validation_report.md
+*_test_report.txt
+external_benchmark_*
+real_external_benchmark.*
+advanced_test_report.*
+final_performance_report.*
+SYSTEM_VALIDATION_REPORT.*
+cargo_test_detailed.*
+external_benchmark_detailed.*
+
+# Generated ontology files (keep source, exclude generated)
+generated/
+output/
+
+# Large media files
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.mkv
+*.mp3
+*.wav
+*.flac
+*.aac
+
+# === Development Tools ===
+# Docker (if used for testing)
+.dockerignore
+Dockerfile.local
+
+# Kubernetes
+*.yaml
+*.yml
+!docs/kubernetes/*.yaml
+
+# === Project Specific ===
+# Local development configuration
+.local/
+local/
+dev/
+
+# Performance profiling
+*.prof
+*.perf
+
+# Memory dumps
+*.dmp
+*.core
+
+# Debug symbols
+*.debug
+
+# === Git Related ===
+# Git patch files
+*.patch
+*.rej
+
+# Git merge artifacts
+*.orig
+*.BACKUP.*
+*.BASE.*
+*.LOCAL.*
+*.REMOTE.*
+
+# === Documentation Build Systems ===
+# mdbook build artifacts (source is in docs/, but build artifacts excluded)
+book/
+docs/book/
+
+# Sphinx documentation (if used)
+docs/_build/
+
+# === LaTeX (if used for papers) ===
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.fls
+*.glo
+*.gls
+*.glsdefs
+*.idx
+*.ilg
+*.ind
+*.ist
+*.acn
+*.acr
+*.alg
+*.bcf
+*.run.xml
+*.upa
+*.upb
+*.ptc
+*.ptb
+*.xdv
+
+# === CI/CD and Deployment ===
+# CI/CD platform files
+.github/workflows/local-*.yml
+.github/workflows/*-local.yml
+
+# Deployment artifacts
+deploy/
+dist/
+build/
+
+# === Temporary Development Files ===
+# Scratch files
+scratch/
+tmp/
+temp/
+benchmarking/
+
+# Debug and test files
+debug_*.rs
+debug_*.py
+# test_*.rs - Commented out to allow test modules in src/
+test_*.py
+*_test.*
+*_debug.*
+
+# Exceptions for configuration files
+!ml/openevolve/openevolve_config.yaml
+!ml/openevolve/openevolve_config.py
+
+# ML and optimization outputs
+ml/openevolve/output/
+ml/results/temp/
+**/optimization_output/
+**/evolution_output/
+
+# Experimental features
+experimental/
+proto/
+
+# Personal notes
+NOTES.md
+TODO.md
+DRAFT.md
+
+# Test and benchmark reports (generated files)
+*_report.*
+report_*.*
+results_*.*
+output_*.*
+final_*.*
+advanced_*.*
+system_*.*
+validation_*.*
+
+# Test scripts and temporary files
+*_test.*
+# test_*.* - Allow test modules in src/ but ignore test outputs
+test_*.log
+test_*.txt
+test_*.json
+test_*.xml
+*_benchmark.*
+benchmark_*.*
+
+# Generated Python files
+*_benchmark.py
+benchmark_*.py
+
+# === Runtime Files ===
+# PID files
+*.pid
+
+# Lock files
+*.lock
+!.cargo/lock
+
+# Socket files
+*.sock
+
+# === Database and Storage ===
+# LevelDB and other embedded databases
+*.ldb
+*.dat
+
+# Redis dump
+dump.rdb
+
+# === Machine Learning Models ===
+# Trained models (if any ML components)
+*.model
+*.weights
+*.h5
+*.pt
+*.pth
+*.pkl
+*.joblib
+
+# === Cloud Service Files ===
+# AWS
+.aws/
+!docs/aws/*.tf
+
+# Google Cloud
+.gcloud/
+
+# Azure
+.azure/
+
+# === Miscellaneous ===
+# Session data
+sessions/
+*.session
+
+# Cache directories
+.cache/
+*.cache
+
+# Thumbnail files
+*.thumbnail
+*.thumb
+
+# System files
+.sys
+.system
+
+# Hidden files (except .gitkeep, .gitattributes, etc.)
+.*
+!.*
+!.gitignore
+!.gitattributes
+!.gitkeep
+!.gitmodules
+.clinerules/byterover-rules.md
+.kilocode/rules/byterover-rules.md
+.roo/rules/byterover-rules.md
+.windsurf/rules/byterover-rules.md
+.cursor/rules/byterover-rules.mdc
+.kiro/steering/byterover-rules.md
+.qoder/rules/byterover-rules.md
+.augment/rules/byterover-rules.md
+CRITICAL_FIXES_PLAN.md
+TABLEAUX_IMPLEMENTATION_PLAN.md
+THREAD_SAFETY_FIXES_PLAN.md
+green_group_tests.md
+red_group_tests.md

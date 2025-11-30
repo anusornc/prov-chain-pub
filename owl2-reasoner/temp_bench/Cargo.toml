@@ -1,0 +1,18 @@
+[package]
+name = "performance_validation"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+# Empty workspace to exclude from parent workspace
+
+[dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+rayon = "1.8"
+hashbrown = "0.14"
+dashmap = "5.5"
+rand = "0.8"
+
+[[bench]]
+name = "optimization_validation"
+harness = false

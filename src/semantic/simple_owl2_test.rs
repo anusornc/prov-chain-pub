@@ -1,31 +1,28 @@
 //! Simple OWL2 integration test
 
 use anyhow::Result;
-use owl2_rs::model::{Axiom, Class, ClassExpression, Individual, Ontology};
+use owl2_reasoner::{Class, ClassAssertionAxiom, ClassExpression, Ontology, IRI};
+use std::sync::Arc;
 
 /// Simple integration test
 pub fn simple_owl2_integration_test() -> Result<()> {
     println!("=== Simple OWL2 Integration Test ===");
 
-    // Create a new ontology
-    let mut ontology = Ontology::new(Some("http://provchain.org/test".to_string()));
+    // Create a new ontology with IRI
+    let mut ontology = Ontology::with_iri("http://provchain.org/test");
 
     // Create a class
-    let product_class = Class::new("http://provchain.org/test#Product".to_string());
+    let product_class = Class::new("http://provchain.org/test#Product");
     let class_expr = ClassExpression::Class(product_class);
 
-    // Create an individual
-    let product_instance = Individual::named("http://provchain.org/test#Product001".to_string());
+    // Create an individual IRI (returns Result, so we need to handle it)
+    let product_iri = Arc::new(IRI::new("http://provchain.org/test#Product001")?);
 
-    // Create an axiom
-    let axiom = Axiom::ClassAssertion(owl2_rs::model::axiom::ClassAssertionAxiom {
-        class: class_expr,
-        individual: product_instance,
-        annotations: vec![],
-    });
+    // Create a class assertion axiom
+    let class_assertion = ClassAssertionAxiom::new(product_iri, class_expr);
 
     // Add the axiom to the ontology
-    ontology.add_axiom(axiom);
+    ontology.add_class_assertion(class_assertion)?;
 
     println!(
         "Successfully created ontology with {} axioms",

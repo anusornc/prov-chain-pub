@@ -1,31 +1,28 @@
-//! Integration module for testing owl2_rs library with ProvChainOrg
+//! Integration module for testing owl2-reasoner library with ProvChainOrg
 
 use anyhow::Result;
-use owl2_rs::model::{Axiom, Class, ClassExpression, Individual, Ontology};
+use owl2_reasoner::{Class, ClassAssertionAxiom, ClassExpression, Ontology, IRI};
+use std::sync::Arc;
 
-/// Test the basic functionality of owl2_rs integration
+/// Test the basic functionality of owl2-reasoner integration
 pub fn test_owl2_integration() -> Result<()> {
-    println!("Testing owl2_rs integration with ProvChainOrg...");
+    println!("Testing owl2-reasoner integration with ProvChainOrg...");
 
-    // Create a new ontology
-    let mut ontology = Ontology::new(Some("http://provchain.org/ontology".to_string()));
+    // Create a new ontology with IRI
+    let mut ontology = Ontology::with_iri("http://provchain.org/ontology");
 
     // Create a class
-    let person_class = Class::new("http://provchain.org/ontology#Person".to_string());
+    let person_class = Class::new("http://provchain.org/ontology#Person");
     let class_expr = ClassExpression::Class(person_class.clone());
 
-    // Create an individual
-    let individual = Individual::named("http://provchain.org/ontology#Alice".to_string());
+    // Create an individual IRI (returns Result, so we need to handle it)
+    let individual_iri = Arc::new(IRI::new("http://provchain.org/ontology#Alice")?);
 
-    // Create an axiom
-    let axiom = Axiom::ClassAssertion(owl2_rs::model::axiom::ClassAssertionAxiom {
-        class: class_expr,
-        individual,
-        annotations: vec![],
-    });
+    // Create a class assertion axiom
+    let class_assertion = ClassAssertionAxiom::new(individual_iri, class_expr);
 
     // Add the axiom to the ontology
-    ontology.add_axiom(axiom);
+    ontology.add_class_assertion(class_assertion)?;
 
     println!(
         "Successfully created ontology with {} axioms",

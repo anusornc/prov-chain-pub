@@ -1,0 +1,238 @@
+[package]
+name = "owl2-reasoner"
+version = "0.2.0"
+edition = "2021"
+
+[dependencies]
+# RDF and OWL parsing
+rio_api = "0.8"
+rio_turtle = "0.8"
+rio_xml = "0.8"
+oxiri = "0.2"
+
+# Data structures and algorithms
+petgraph = "0.6"
+indexmap = "2.0"
+hashbrown = "0.14"
+bit-set = "0.5"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde-xml-rs = "0.6"
+xmltree = "0.10"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging and debugging
+log = "0.4"
+env_logger = "0.10"
+
+# Validation and benchmarking
+chrono = { version = "0.4", features = ["serde"] }
+time = { version = "0.3", features = ["serde"] }
+num_cpus = "1.13"
+
+# Utilities
+itertools = "0.12"
+once_cell = "1.19"
+regex = "1.10"
+
+# Performance
+rayon = "1.8"
+crossbeam = "0.8"
+dashmap = "5.5"
+libc = "0.2"
+bumpalo = "3.14"
+smallvec = "1.13"
+parking_lot = "0.12"
+lru = "0.12"
+futures = "0.3"
+
+# Testing
+proptest = "1.4"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# Random generation
+rand = "0.8"
+
+# Test suite integration
+glob = "0.3"
+
+# HTTP support for import resolution
+reqwest = { version = "0.11", features = ["json", "blocking"], optional = true }
+
+# Full JSON-LD 1.1 support
+json-ld = "0.21"
+iri-string = "0.7"
+url = "2.5"
+
+# Web service framework
+warp = { version = "0.3", optional = true }
+uuid = { version = "1.0", features = ["v4", "serde"], optional = true }
+tokio = { version = "1.0", features = ["rt", "macros", "rt-multi-thread", "sync"], optional = true }
+async-trait = { version = "0.1", optional = true }
+bincode = "2.0.1"
+dyn-clone = "1.0"
+erased-serde = "0.3"
+typetag = "0.2"
+
+[dev-dependencies]
+tempfile = "3.8"
+# owl2-reasoner-test-suite = { path = "../owl2-reasoner-test-suite" }
+clap = { version = "4", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1.0", features = ["rt", "macros", "rt-multi-thread"] }
+reqwest = { version = "0.11", features = ["json"] }
+
+# Benchmarking and performance testing
+criterion = { version = "0.5", features = ["html_reports", "cargo_bench_support"] }
+iai-callgrind = "0.10"
+
+# Memory profiling
+memmap2 = "0.9"
+sysinfo = "0.30"
+
+# Test data generation
+rand = "0.8"
+fake = { version = "2.9", features = ["derive"] }
+ 
+[features]
+# Default to streaming RDF/XML backend in non-strict mode
+default = ["rio-xml", "http", "tokio", "uuid", "async-trait"]
+rio-xml = []
+http = ["reqwest"]
+web-service = ["warp", "uuid", "tokio", "async-trait"]
+
+[[bench]]
+name = "basic_benchmarks"
+harness = false
+
+[[bench]]
+name = "performance_validation"
+harness = false
+
+[[bench]]
+name = "scale_testing"
+harness = false
+
+[[bench]]
+name = "parser_bench"
+harness = false
+
+[[bench]]
+name = "tableaux_main"
+harness = false
+
+[[bench]]
+name = "tableaux_benchmarks"
+harness = false
+
+[[bench]]
+name = "reasoning_bench"
+harness = false
+
+[[bench]]
+name = "standalone_performance_validation"
+harness = false
+
+
+[[bench]]
+name = "concurrent_reasoning"
+harness = false
+
+[[bench]]
+name = "cache_performance"
+harness = false
+
+[[bench]]
+name = "algorithmic_complexity"
+harness = false
+
+[[bench]]
+name = "iai_callgrind_bench"
+harness = false
+
+[[bench]]
+name = "query_optimization_bench"
+harness = false
+
+[[bench]]
+name = "memory_safety_benchmarks"
+harness = false
+
+[[bench]]
+name = "memory_tracking_bench"
+harness = false
+
+[[bench]]
+name = "parallel_query_bench"
+harness = false
+
+[lib]
+name = "owl2_reasoner"
+path = "src/lib.rs"
+
+[[bin]]
+name = "analyze_tableaux_performance"
+path = "scripts/analyze_tableaux_performance.rs"
+
+[[example]]
+name = "family_ontology"
+path = "examples/basic/family_ontology.rs"
+
+[[example]]
+name = "biomedical_ontology"
+path = "examples/basic/biomedical_ontology.rs"
+
+[[example]]
+name = "simple_example"
+path = "examples/basic/simple_example.rs"
+
+[[example]]
+name = "json_ld_example"
+path = "examples/basic/json_ld_example.rs"
+
+[[example]]
+name = "benchmark_cli"
+path = "examples/benchmarking/benchmark_cli.rs"
+
+[[example]]
+name = "performance_benchmarking"
+path = "examples/benchmarking/performance_benchmarking.rs"
+
+[[example]]
+name = "complete_validation"
+path = "examples/validation/complete_validation.rs"
+
+[[example]]
+name = "comparative_analysis"
+path = "examples/advanced/comparative_analysis.rs"
+
+[[example]]
+name = "cache_usage"
+path = "examples/cache_usage.rs"
+
+[[example]]
+name = "epcis_validation_suite"
+path = "examples/advanced/epcis_validation_suite.rs"
+
+[[example]]
+name = "import_resolution_example"
+path = "examples/import_resolution_example.rs"
+
+[[example]]
+name = "web_service_example"
+path = "examples/web_service_example.rs"
+required-features = ["web-service"]
+
+[[example]]
+name = "parallel_query_demo"
+path = "examples/parallel_query_demo.rs"
+
+[[bin]]
+name = "owl2_validation"
+path = "src/bin/owl2_validation.rs"
+ 

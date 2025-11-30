@@ -1,19 +1,20 @@
-//! Enhanced traceability using owl2_rs for OWL2 reasoning and optimization
+//! Enhanced traceability using owl2-reasoner for OWL2 reasoning and optimization
 //!
 //! This module enhances the existing traceability system by leveraging
-//! owl2_rs for more sophisticated ontology-based reasoning and optimization.
+//! owl2-reasoner for more sophisticated ontology-based reasoning and optimization.
 
 use crate::core::blockchain::Blockchain;
 use crate::core::entity::{EntityType, PropertyValue, TraceableEntity};
 use crate::trace_optimization::{EnhancedTraceResult, EnhancedTraceabilitySystem, TraceEvent};
 use anyhow::Result;
 use chrono::Utc;
-use owl2_rs::model::{
-    Axiom, Class, ClassExpression, DataProperty, Individual, Ontology, PropertyExpression,
+use owl2_reasoner::{
+    Class, ClassAssertionAxiom, ClassExpression, DataProperty, Ontology, IRI,
 };
 use std::collections::HashMap;
+use std::sync::Arc;
 
-/// Enhanced traceability system using owl2_rs for OWL2 reasoning
+/// Enhanced traceability system using owl2-reasoner for OWL2 reasoning
 pub struct Owl2EnhancedTraceability {
     blockchain: Blockchain,
 }
@@ -28,97 +29,60 @@ impl Owl2EnhancedTraceability {
     pub fn entities_to_owl_ontology(&self, entities: &[TraceableEntity]) -> Result<Ontology> {
         println!("=== Converting Traceable Entities to OWL2 Ontology ===");
 
-        let mut ontology = Ontology::new(Some("http://provchain.org/traceability".to_string()));
+        let mut ontology = Ontology::with_iri("http://provchain.org/traceability");
 
-        // Add common prefixes
-        ontology.add_prefix("prov", "http://www.w3.org/ns/prov#");
-        ontology.add_prefix("trace", "http://provchain.org/traceability#");
-        ontology.add_prefix("owl", "http://www.w3.org/2002/07/owl#");
-        ontology.add_prefix("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-        ontology.add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#");
+        // Note: Prefix registration can be done through the ontology's IRI registry if needed
+        // For now, we use full IRIs directly
 
         // Create classes based on entity types
         let mut class_map: HashMap<String, Class> = HashMap::new();
 
         for entity in entities {
             let class_name = match &entity.entity_type {
-                EntityType::Product => "trace:Product",
-                EntityType::Component => "trace:Component",
-                EntityType::Process => "trace:Process",
-                EntityType::Person => "trace:Person",
-                EntityType::Organization => "trace:Organization",
-                EntityType::Document => "trace:Document",
-                EntityType::DigitalAsset => "trace:DigitalAsset",
-                EntityType::Service => "trace:Service",
-                EntityType::Event => "trace:Event",
-                EntityType::Location => "trace:Location",
-                EntityType::Equipment => "trace:Equipment",
-                EntityType::DomainSpecific(domain) => &format!("trace:{}", domain),
+                EntityType::Product => "http://provchain.org/traceability#Product",
+                EntityType::Component => "http://provchain.org/traceability#Component",
+                EntityType::Process => "http://provchain.org/traceability#Process",
+                EntityType::Person => "http://provchain.org/traceability#Person",
+                EntityType::Organization => "http://provchain.org/traceability#Organization",
+                EntityType::Document => "http://provchain.org/traceability#Document",
+                EntityType::DigitalAsset => "http://provchain.org/traceability#DigitalAsset",
+                EntityType::Service => "http://provchain.org/traceability#Service",
+                EntityType::Event => "http://provchain.org/traceability#Event",
+                EntityType::Location => "http://provchain.org/traceability#Location",
+                EntityType::Equipment => "http://provchain.org/traceability#Equipment",
+                EntityType::DomainSpecific(domain) => {
+                    // For domain-specific types, we'll use a fallback
+                    // In a more sophisticated implementation, we'd handle these dynamically
+                    let _ = domain; // acknowledge the domain parameter
+                    "http://provchain.org/traceability#DomainSpecific"
+                }
             };
 
             // Create class if not already created
             if !class_map.contains_key(class_name) {
-                let class = Class::new(class_name.to_string());
+                let class = Class::new(class_name);
                 class_map.insert(class_name.to_string(), class.clone());
+                // Add class to ontology
+                ontology.add_class(class)?;
             }
 
-            // Create individual for the entity
+            // Create individual IRI for the entity (IRI::new returns Result)
             let individual_uri = format!("http://provchain.org/entity/{}", entity.id);
-            let individual = Individual::named(individual_uri.clone());
+            let individual_iri = Arc::new(IRI::new(&individual_uri)?);
 
             // Get the class expression
             let class_expr = ClassExpression::Class(class_map[class_name].clone());
 
             // Add class assertion
-            let class_assertion = Axiom::class_assertion(class_expr, individual.clone());
-            ontology.add_axiom(class_assertion);
+            let class_assertion = ClassAssertionAxiom::new(individual_iri, class_expr);
+            ontology.add_class_assertion(class_assertion)?;
 
             // Add properties from the entity
-            for (prop_name, prop_value) in &entity.properties {
-                match prop_value {
-                    PropertyValue::String(_value) => {
-                        // For string properties, we'll create data properties
-                        let data_prop = DataProperty::new(format!("trace:{}", prop_name));
-                        let _data_prop_expr = PropertyExpression::DataProperty(data_prop);
-                        // In a full implementation, we would add data property assertions
-                    }
-                    PropertyValue::Integer(_value) => {
-                        // For integer properties
-                        let data_prop = DataProperty::new(format!("trace:{}", prop_name));
-                        let _data_prop_expr = PropertyExpression::DataProperty(data_prop);
-                        // In a full implementation, we would add data property assertions
-                    }
-                    PropertyValue::Float(_value) => {
-                        // For float properties
-                        let data_prop = DataProperty::new(format!("trace:{}", prop_name));
-                        let _data_prop_expr = PropertyExpression::DataProperty(data_prop);
-                        // In a full implementation, we would add data property assertions
-                    }
-                    PropertyValue::Boolean(_value) => {
-                        // For boolean properties
-                        let data_prop = DataProperty::new(format!("trace:{}", prop_name));
-                        let _data_prop_expr = PropertyExpression::DataProperty(data_prop);
-                        // In a full implementation, we would add data property assertions
-                    }
-                    PropertyValue::DateTime(_value) => {
-                        // For datetime properties
-                        let data_prop = DataProperty::new(format!("trace:{}", prop_name));
-                        let _data_prop_expr = PropertyExpression::DataProperty(data_prop);
-                        // In a full implementation, we would add data property assertions
-                    }
-                    PropertyValue::Uri(_value) => {
-                        // For URI properties
-                        let data_prop = DataProperty::new(format!("trace:{}", prop_name));
-                        let _data_prop_expr = PropertyExpression::DataProperty(data_prop);
-                        // In a full implementation, we would add data property assertions
-                    }
-                    PropertyValue::DomainSpecific(_domain, _value) => {
-                        // For domain-specific properties
-                        let data_prop = DataProperty::new(format!("trace:{}", prop_name));
-                        let _data_prop_expr = PropertyExpression::DataProperty(data_prop);
-                        // In a full implementation, we would add data property assertions
-                    }
-                }
+            for (prop_name, _prop_value) in &entity.properties {
+                // Create data property for tracking
+                let _data_prop = DataProperty::new(format!("http://provchain.org/traceability#{}", prop_name));
+                // In a full implementation, we would add data property assertions
+                // For now, we just acknowledge the property exists
             }
         }
 
