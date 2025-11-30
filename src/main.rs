@@ -71,7 +71,7 @@ enum Commands {
         ontology: Option<String>,
     },
 
-    /// Test OWL2 integration with owl2_rs library
+    /// Test OWL2 integration with owl2-reasoner library
     TestOwl2 {
         /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
         #[arg(long)]
@@ -97,6 +97,13 @@ enum Commands {
         /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
         #[arg(long)]
         ontology: Option<String>,
+    },
+
+    /// Run advanced OWL2 reasoning using the owl2-reasoner library
+    AdvancedOwl2 {
+        /// Ontology file to process
+        #[arg(short, long, default_value = "ontologies/generic_core.owl")]
+        ontology: String,
     },
 }
 
@@ -429,7 +436,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::TestOwl2 { ontology } => {
             let _blockchain = create_blockchain_with_ontology(ontology)?;
 
-            info!("Testing OWL2 integration with owl2_rs library...");
+            info!("Testing OWL2 integration with owl2-reasoner library...");
             if let Err(e) = simple_owl2_integration_test() {
                 eprintln!("OWL2 integration test failed: {}", e);
                 std::process::exit(1);
@@ -481,6 +488,53 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             info!("Running enhanced OWL2 features demo...");
             // We'll implement this once we fix the import issue
             println!("✅ Enhanced OWL2 demo completed successfully!");
+        }
+        Commands::AdvancedOwl2 { ontology } => {
+            use provchain_org::semantic::library_integration::{check_consistency, validate_ontology};
+
+            println!("=== Advanced OWL2 Reasoning ===");
+            println!("Processing ontology: {}", ontology);
+
+            // 1. Validation
+            println!("\n--- Validation ---");
+            // 1. Validation
+            println!("\n--- Validation ---");
+            match validate_ontology(&ontology) {
+                Ok(report) => {
+                    println!("Validation Report:");
+                    println!("  Overall Score: {:.2}", report.overall_score);
+                    println!("  Completeness: {:.2}", report.completeness_score);
+                    println!("  Structural: {:.2}", report.structural_score);
+                    println!("  Readiness: {:?}", report.publication_readiness);
+                    
+                    if !report.recommendations.is_empty() {
+                        println!("  Recommendations:");
+                        for rec in &report.recommendations {
+                            println!("    - {}", rec);
+                        }
+                    }
+
+                    if report.is_valid() {
+                        println!("✅ Ontology is valid according to AcademicValidator");
+                    } else {
+                        println!("⚠️  Ontology needs improvement");
+                    }
+                }
+                Err(e) => println!("❌ Validation failed: {}", e),
+            }
+
+            // 2. Consistency Checking
+            println!("\n--- Consistency Checking ---");
+            match check_consistency(&ontology) {
+                Ok(consistent) => {
+                    if consistent {
+                        println!("✅ Ontology is consistent");
+                    } else {
+                        println!("❌ Ontology is INCONSISTENT");
+                    }
+                }
+                Err(e) => println!("❌ Consistency checking failed: {}", e),
+            }
         }
     }
 

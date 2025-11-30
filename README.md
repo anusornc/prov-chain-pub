@@ -274,7 +274,6 @@ The project follows a modular architecture with several key components:
 
 #### Semantic Module (`src/semantic/`)
 - Contains OWL reasoners and SHACL validators for semantic processing
-- Integrates with the `owl2_rs` library for advanced OWL2 features
 
 ### 2. Key Features and Capabilities
 
