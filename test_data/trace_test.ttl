@@ -1,0 +1,46 @@
+@prefix : <http://provchain.org/trace-test#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix trace: <http://provchain.org/trace#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Entities
+:FarmerA a trace:Farmer ;
+    trace:name "Farmer Alice" .
+
+:ManufacturerB a trace:Manufacturer ;
+    trace:name "Manufacturer Bob" .
+
+:RetailerC a trace:Retailer ;
+    trace:name "Retailer Charlie" .
+
+# Batch 1: Raw Material
+:Batch1 a trace:ProductBatch ;
+    trace:hasBatchID "BATCH-001" ;
+    trace:producedAt "2023-01-01T10:00:00Z"^^xsd:dateTime ;
+    prov:wasAttributedTo :FarmerA .
+
+# Activity: Processing
+:Processing1 a trace:ProcessingActivity ;
+    trace:recordedAt "2023-01-02T14:00:00Z"^^xsd:dateTime ;
+    prov:used :Batch1 ;
+    prov:wasAssociatedWith :ManufacturerB .
+
+# Batch 2: Processed Product
+:Batch2 a trace:ProductBatch ;
+    trace:hasBatchID "BATCH-002" ;
+    trace:producedAt "2023-01-02T16:00:00Z"^^xsd:dateTime ;
+    prov:wasGeneratedBy :Processing1 ;
+    prov:wasDerivedFrom :Batch1 .
+
+# Activity: Shipping
+:Shipping1 a trace:TransportActivity ;
+    trace:recordedAt "2023-01-03T09:00:00Z"^^xsd:dateTime ;
+    prov:used :Batch2 ;
+    prov:wasAssociatedWith :RetailerC .
+
+# Batch 3: Retail Product
+:Batch3 a trace:ProductBatch ;
+    trace:hasBatchID "BATCH-003" ;
+    trace:producedAt "2023-01-03T12:00:00Z"^^xsd:dateTime ;
+    prov:wasGeneratedBy :Shipping1 ;
+    prov:wasDerivedFrom :Batch2 .

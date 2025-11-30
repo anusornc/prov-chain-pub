@@ -9,7 +9,10 @@
 use anyhow::{anyhow, Result};
 use chrono::Utc;
 use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
 use uuid::Uuid;
+use hex;
 
 use crate::core::blockchain::Blockchain;
 use crate::transaction::transaction::{
@@ -85,7 +88,7 @@ impl TransactionBlockchain {
     }
 
     /// Create a new block with pending transactions
-    pub fn create_block(&mut self, max_transactions: usize) -> Result<()> {
+    pub fn create_block(&mut self, max_transactions: usize, validator_id: Uuid) -> Result<()> {
         let transactions = self
             .transaction_pool
             .get_transactions_for_block(max_transactions);
@@ -94,11 +97,26 @@ impl TransactionBlockchain {
             return Ok(()); // No transactions to process
         }
 
+        // Get validator wallet
+        let validator_wallet = self
+            .wallet_manager
+            .get_wallet(validator_id)
+            .ok_or_else(|| anyhow!("Validator wallet not found"))?;
+
         // Create block data from transactions
         let block_data = self.create_block_rdf_data(&transactions)?;
 
-        // Add block to blockchain
-        self.blockchain.add_block(block_data)?;
+        // Create block proposal
+        // Note: We use the hex string representation of the public key as the validator ID in the block
+        let validator_pub_key = hex::encode(validator_wallet.public_key.as_bytes());
+        let mut block = self.blockchain.create_block_proposal(block_data, validator_pub_key)?;
+
+        // Sign the block
+        let signature = validator_wallet.sign(block.hash.as_bytes())?;
+        block.signature = signature.to_string();
+
+        // Submit signed block
+        self.blockchain.submit_signed_block(block)?;
 
         // Update transaction index and UTXO set
         let block_index = self.blockchain.chain.len() as u64 - 1;
@@ -700,7 +718,7 @@ mod security_tests {
             }
 
             // Create block with transactions
-            let create_block_result = blockchain.create_block(3); // Process up to 3 transactions
+            let create_block_result = blockchain.create_block(3, farmer_id); // Process up to 3 transactions
             assert!(create_block_result.is_ok(), "Block creation should succeed");
 
             // Verify chain integrity after adding blocks
@@ -759,7 +777,7 @@ mod security_tests {
                 .expect("Second transaction should submit");
 
             // Create block - this would normally resolve based on consensus rules
-            let block_result = blockchain.create_block(10);
+            let block_result = blockchain.create_block(10, farmer_id);
             assert!(
                 block_result.is_ok(),
                 "Block creation should handle competing transactions"
@@ -801,7 +819,7 @@ mod security_tests {
             blockchain
                 .submit_transaction(valid_tx)
                 .expect("Valid transaction should submit");
-            let block_result = blockchain.create_block(5);
+            let block_result = blockchain.create_block(5, farmer_id);
             assert!(block_result.is_ok(), "Block creation should succeed");
 
             // Verify block contains only valid transactions
@@ -1084,7 +1102,7 @@ mod security_tests {
             }
 
             // Create blocks
-            let _ = blockchain.create_block(10);
+            let _ = blockchain.create_block(10, farmer_id);
 
             // Verify final state consistency
             let final_stats = blockchain.get_statistics();

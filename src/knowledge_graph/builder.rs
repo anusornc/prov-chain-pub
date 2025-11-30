@@ -182,10 +182,12 @@ impl EntityExtractor for ProductBatchExtractor {
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             
             SELECT ?batch ?batchId ?label ?producedAt WHERE {
-                ?batch a trace:ProductBatch .
-                OPTIONAL { ?batch trace:hasBatchID ?batchId }
-                OPTIONAL { ?batch rdfs:label ?label }
-                OPTIONAL { ?batch trace:producedAt ?producedAt }
+                GRAPH ?g {
+                    ?batch a trace:ProductBatch .
+                    OPTIONAL { ?batch trace:hasBatchID ?batchId }
+                    OPTIONAL { ?batch rdfs:label ?label }
+                    OPTIONAL { ?batch trace:producedAt ?producedAt }
+                }
             }
         "#;
 
@@ -204,7 +206,7 @@ impl EntityExtractor for ProductBatchExtractor {
                     }
 
                     let entity = KnowledgeEntity {
-                        uri: batch.to_string(),
+                        uri: batch.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
                         entity_type: "ProductBatch".to_string(),
                         label: sol.get("label").map(|l| l.to_string()),
                         properties,
@@ -231,13 +233,15 @@ impl EntityExtractor for AgentExtractor {
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             
             SELECT ?agent ?type ?label WHERE {
-                ?agent a ?type .
-                ?agent a trace:TraceAgent .
-                OPTIONAL { ?agent rdfs:label ?label }
-                OPTIONAL { ?agent prov:label ?label }
-                FILTER(?type = trace:Farmer || ?type = trace:Manufacturer || 
-                       ?type = trace:LogisticsProvider || ?type = trace:Retailer || 
-                       ?type = trace:Customer)
+                GRAPH ?g {
+                    ?agent a ?type .
+                    ?agent a trace:TraceAgent .
+                    OPTIONAL { ?agent rdfs:label ?label }
+                    OPTIONAL { ?agent prov:label ?label }
+                    FILTER(?type = trace:Farmer || ?type = trace:Manufacturer || 
+                           ?type = trace:LogisticsProvider || ?type = trace:Retailer || 
+                           ?type = trace:Customer)
+                }
             }
         "#;
 
@@ -253,7 +257,7 @@ impl EntityExtractor for AgentExtractor {
                         .to_string();
 
                     let entity = KnowledgeEntity {
-                        uri: agent.to_string(),
+                        uri: agent.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
                         entity_type: type_name,
                         label: sol.get("label").map(|l| l.to_string()),
                         properties: HashMap::new(),
@@ -279,11 +283,13 @@ impl EntityExtractor for ActivityExtractor {
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             
             SELECT ?activity ?type ?recordedAt WHERE {
-                ?activity a ?type .
-                ?activity a trace:TraceActivity .
-                OPTIONAL { ?activity trace:recordedAt ?recordedAt }
-                FILTER(?type = trace:ProcessingActivity || ?type = trace:TransportActivity || 
-                       ?type = trace:QualityCheck)
+                GRAPH ?g {
+                    ?activity a ?type .
+                    ?activity a trace:TraceActivity .
+                    OPTIONAL { ?activity trace:recordedAt ?recordedAt }
+                    FILTER(?type = trace:ProcessingActivity || ?type = trace:TransportActivity || 
+                           ?type = trace:QualityCheck)
+                }
             }
         "#;
 
@@ -307,7 +313,7 @@ impl EntityExtractor for ActivityExtractor {
                         .to_string();
 
                     let entity = KnowledgeEntity {
-                        uri: activity.to_string(),
+                        uri: activity.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
                         entity_type: type_name,
                         label: None,
                         properties,
@@ -332,10 +338,12 @@ impl RelationshipExtractor for ProvenanceRelationshipExtractor {
             PREFIX prov: <http://www.w3.org/ns/prov#>
             
             SELECT ?subject ?predicate ?object WHERE {
-                ?subject ?predicate ?object .
-                FILTER(?predicate = prov:wasGeneratedBy || ?predicate = prov:used || 
-                       ?predicate = prov:wasAssociatedWith || ?predicate = prov:wasDerivedFrom ||
-                       ?predicate = prov:wasAttributedTo)
+                GRAPH ?g {
+                    ?subject ?predicate ?object .
+                    FILTER(?predicate = prov:wasGeneratedBy || ?predicate = prov:used || 
+                           ?predicate = prov:wasAssociatedWith || ?predicate = prov:wasDerivedFrom ||
+                           ?predicate = prov:wasAttributedTo)
+                }
             }
         "#;
 
@@ -346,9 +354,9 @@ impl RelationshipExtractor for ProvenanceRelationshipExtractor {
                     (sol.get("subject"), sol.get("predicate"), sol.get("object"))
                 {
                     let relationship = KnowledgeRelationship {
-                        subject: subject.to_string(),
-                        predicate: predicate.to_string(),
-                        object: object.to_string(),
+                        subject: subject.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        predicate: predicate.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        object: object.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
                         confidence_score: 0.95,
                         temporal_info: None,
                     };
@@ -372,9 +380,11 @@ impl RelationshipExtractor for TemporalRelationshipExtractor {
             PREFIX prov: <http://www.w3.org/ns/prov#>
             
             SELECT ?activity1 ?activity2 ?time1 ?time2 WHERE {
-                ?activity1 trace:recordedAt ?time1 .
-                ?activity2 trace:recordedAt ?time2 .
-                FILTER(?activity1 != ?activity2 && ?time1 < ?time2)
+                GRAPH ?g {
+                    ?activity1 trace:recordedAt ?time1 .
+                    ?activity2 trace:recordedAt ?time2 .
+                    FILTER(?activity1 != ?activity2 && ?time1 < ?time2)
+                }
             }
         "#;
 
@@ -389,9 +399,9 @@ impl RelationshipExtractor for TemporalRelationshipExtractor {
                         .ok();
 
                     let relationship = KnowledgeRelationship {
-                        subject: activity1.to_string(),
+                        subject: activity1.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
                         predicate: "http://provchain.org/trace#precedes".to_string(),
-                        object: activity2.to_string(),
+                        object: activity2.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
                         confidence_score: 0.8,
                         temporal_info,
                     };
@@ -414,9 +424,11 @@ impl RelationshipExtractor for SupplyChainRelationshipExtractor {
             PREFIX trace: <http://provchain.org/trace#>
             
             SELECT ?subject ?predicate ?object WHERE {
-                ?subject ?predicate ?object .
-                FILTER(?predicate = trace:lotDerivedFrom || ?predicate = trace:hasCondition || 
-                       ?predicate = trace:hasCertificate)
+                GRAPH ?g {
+                    ?subject ?predicate ?object .
+                    FILTER(?predicate = trace:lotDerivedFrom || ?predicate = trace:hasCondition || 
+                           ?predicate = trace:hasCertificate)
+                }
             }
         "#;
 
@@ -427,9 +439,9 @@ impl RelationshipExtractor for SupplyChainRelationshipExtractor {
                     (sol.get("subject"), sol.get("predicate"), sol.get("object"))
                 {
                     let relationship = KnowledgeRelationship {
-                        subject: subject.to_string(),
-                        predicate: predicate.to_string(),
-                        object: object.to_string(),
+                        subject: subject.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        predicate: predicate.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        object: object.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
                         confidence_score: 0.9,
                         temporal_info: None,
                     };

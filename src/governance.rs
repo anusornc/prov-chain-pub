@@ -13,6 +13,7 @@ use std::collections::HashSet;
 use uuid::Uuid;
 
 /// Governance module for managing validator set and network configuration
+#[derive(Debug, Clone)]
 pub struct Governance {
     /// Current validator set
     pub validator_set: HashSet<String>,

@@ -43,6 +43,7 @@ fn test_block_metadata_storage_and_query() {
         "test data".into(),
         "some_hash".into(),
         "state_root_hash".into(),
+        "test_validator".into(),
     );
     store.add_block_metadata(&block);
 

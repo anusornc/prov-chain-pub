@@ -172,7 +172,7 @@ impl DemoRunner {
         println!("✅ Created production transaction: {}", tx_id);
 
         // Create a block
-        blockchain.create_block(10)?;
+        blockchain.create_block(10, farmer_id)?;
         println!("✅ Created block with transactions");
 
         // Display statistics
@@ -300,7 +300,7 @@ impl DemoRunner {
         println!("✅ Processor created processing transaction: {}", tx3_id);
 
         // Create block and finalize
-        blockchain.create_block(10)?;
+        blockchain.create_block(10, processor_id)?;
         println!("✅ Created block with all transactions");
 
         // Display network statistics

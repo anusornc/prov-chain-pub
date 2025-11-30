@@ -3,433 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProvChain - Blockchain Provenance System</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>ProvChainOrg Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
+        header { background-color: #2c3e50; color: white; padding: 1rem; text-align: center; }
+        .container { display: flex; height: calc(100vh - 60px); }
+        .sidebar { width: 300px; background-color: #ecf0f1; padding: 1rem; box-shadow: 2px 0 5px rgba(0,0,0,0.1); overflow-y: auto; }
+        .main { flex-grow: 1; position: relative; }
+        #cy { width: 100%; height: 100%; background-color: white; }
+        .control-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        input, button { width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #bdc3c7; border-radius: 4px; }
+        button { background-color: #3498db; color: white; border: none; cursor: pointer; transition: background 0.3s; }
+        button:hover { background-color: #2980b9; }
+        .status { margin-top: 1rem; padding: 0.5rem; border-radius: 4px; display: none; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        h2 { margin-top: 0; color: #2c3e50; }
+        .legend { position: absolute; bottom: 1rem; right: 1rem; background: rgba(255,255,255,0.9); padding: 1rem; border-radius: 4px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .legend-item { display: flex; align-items: center; margin-bottom: 0.5rem; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 0.5rem; }
+    </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Navigation -->
-        <nav class="navbar">
-            <div class="nav-container">
-                <div class="nav-brand">
-                    <i class="fas fa-link"></i>
-                    <span>ProvChain</span>
-                </div>
-                <div class="nav-menu">
-                    <a href="#dashboard" class="nav-link active" data-section="dashboard">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                    <a href="#blocks" class="nav-link" data-section="blocks">
-                        <i class="fas fa-cubes"></i> Blocks
-                    </a>
-                    <a href="#traceability" class="nav-link" data-section="traceability">
-                        <i class="fas fa-route"></i> Traceability
-                    </a>
-                    <a href="#sparql" class="nav-link" data-section="sparql">
-                        <i class="fas fa-search"></i> SPARQL
-                    </a>
-                    <a href="#transactions" class="nav-link" data-section="transactions">
-                        <i class="fas fa-exchange-alt"></i> RDF Transactions
-                    </a>
-                    <a href="#wallet" class="nav-link" data-section="wallet">
-                        <i class="fas fa-wallet"></i> Wallet
-                    </a>
-                    <a href="#transaction-management" class="nav-link" data-section="transaction-management">
-                        <i class="fas fa-exchange-alt"></i> Transaction Management
-                    </a>
-                </div>
-                <div class="nav-auth">
-                    <button id="loginBtn" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </button>
-                    <div id="userInfo" class="user-info" style="display: none;">
-                        <span id="username"></span>
-                        <button id="logoutBtn" class="btn btn-secondary">Logout</button>
-                    </div>
-                </div>
+    <header>
+        <h1>ProvChainOrg Supply Chain Visualization</h1>
+    </header>
+    <div class="container">
+        <div class="sidebar">
+            <div class="control-group">
+                <h2>Trace Product</h2>
+                <label for="from">From (Entity URI)</label>
+                <input type="text" id="from" placeholder="http://provchain.org/trace-test#Batch3">
+                
+                <label for="to">To (Entity URI)</label>
+                <input type="text" id="to" placeholder="http://provchain.org/trace-test#Batch1">
+                
+                <button onclick="tracePath()">Trace Path</button>
             </div>
-        </nav>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Dashboard Section -->
-            <section id="dashboard" class="content-section active">
-                <div class="section-header">
-                    <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
-                    <p>Overview of your blockchain provenance system</p>
-                </div>
+            <div class="control-group">
+                <h2>Explore Graph</h2>
+                <label for="root-item">Root Item URI (Optional)</label>
+                <input type="text" id="root-item" placeholder="Leave empty for full graph">
+                <button onclick="loadGraph()">Reload Graph</button>
+            </div>
 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-cubes"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="blockHeight">-</h3>
-                            <p>Total Blocks</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-exchange-alt"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="totalTransactions">-</h3>
-                            <p>Total Transactions</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-network-wired"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="networkPeers">-</h3>
-                            <p>Network Peers</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-shield-alt"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 id="blockchainStatus">-</h3>
-                            <p>Blockchain Status</p>
-                        </div>
-                    </div>
-                </div>
+            <div id="status" class="status"></div>
 
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h3><i class="fas fa-clock"></i> Recent Transactions</h3>
-                        <div id="recentTransactions" class="transaction-list">
-                            <div class="loading">Loading...</div>
-                        </div>
-                    </div>
-                    <div class="dashboard-card">
-                        <h3><i class="fas fa-chart-line"></i> System Health</h3>
-                        <div class="health-indicators">
-                            <div class="health-item">
-                                <span class="health-label">API Status</span>
-                                <span id="apiStatus" class="health-status">Checking...</span>
-                            </div>
-                            <div class="health-item">
-                                <span class="health-label">Last Block</span>
-                                <span id="lastBlockTime" class="health-status">-</span>
-                            </div>
-                            <div class="health-item">
-                                <span class="health-label">Validation</span>
-                                <span id="validationStatus" class="health-status">-</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Blocks Section -->
-            <section id="blocks" class="content-section">
-                <div class="section-header">
-                    <h1><i class="fas fa-cubes"></i> Block Explorer</h1>
-                    <p>Browse and explore blockchain blocks</p>
-                </div>
-
-                <div class="blocks-container">
-                    <div class="blocks-controls">
-                        <input type="text" id="blockSearch" placeholder="Search by block index or hash..." class="search-input">
-                        <button id="refreshBlocks" class="btn btn-secondary">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                    </div>
-                    <div id="blocksList" class="blocks-list">
-                        <div class="loading">Loading blocks...</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Traceability Section -->
-            <section id="traceability" class="content-section">
-                <div class="section-header">
-                    <h1><i class="fas fa-route"></i> Product Traceability</h1>
-                    <p>Track products through the supply chain</p>
-                </div>
-
-                <div class="trace-container">
-                    <div class="trace-search">
-                        <div class="search-form">
-                            <div class="form-group">
-                                <label for="batchId">Batch ID</label>
-                                <input type="text" id="batchId" placeholder="Enter batch ID...">
-                            </div>
-                            <div class="form-group">
-                                <label for="productName">Product Name (Optional)</label>
-                                <input type="text" id="productName" placeholder="Enter product name...">
-                            </div>
-                            <div class="form-group">
-                                <label for="optimizationLevel">Optimization Level</label>
-                                <select id="optimizationLevel" class="form-select">
-                                    <option value="0">Level 0 - Basic</option>
-                                    <option value="1" selected>Level 1 - Standard</option>
-                                    <option value="2">Level 2 - Advanced</option>
-                                </select>
-                            </div>
-                            <div class="form-buttons">
-                                <button id="traceProduct" class="btn btn-secondary">
-                                    <i class="fas fa-search"></i> Standard Trace
-                                </button>
-                                <button id="enhancedTraceProduct" class="btn btn-primary">
-                                    <i class="fas fa-bolt"></i> Enhanced Trace
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="traceResults" class="trace-results">
-                        <div class="trace-placeholder">
-                            <i class="fas fa-search"></i>
-                            <p>Enter a batch ID to trace a product through the supply chain</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SPARQL Section -->
-            <section id="sparql" class="content-section">
-                <div class="section-header">
-                    <h1><i class="fas fa-search"></i> SPARQL Query Interface</h1>
-                    <p>Execute SPARQL queries on the RDF knowledge graph</p>
-                </div>
-
-                <div class="sparql-container">
-                    <div class="query-editor">
-                        <div class="editor-header">
-                            <h3>Query Editor</h3>
-                            <div class="editor-controls">
-                                <select id="queryTemplates" class="form-select">
-                                    <option value="">Select a template...</option>
-                                    <option value="all-triples">All Triples</option>
-                                    <option value="batch-trace">Trace by Batch</option>
-                                    <option value="env-conditions">Environmental Conditions</option>
-                                    <option value="blockchain-metadata">Blockchain Metadata</option>
-                                </select>
-                                <button id="executeQuery" class="btn btn-primary">
-                                    <i class="fas fa-play"></i> Execute
-                                </button>
-                            </div>
-                        </div>
-                        <textarea id="sparqlQuery" placeholder="Enter your SPARQL query here..."></textarea>
-                    </div>
-                    <div class="query-results">
-                        <div class="results-header">
-                            <h3>Results</h3>
-                            <div id="queryStats" class="query-stats"></div>
-                        </div>
-                        <div id="sparqlResults" class="results-content">
-                            <div class="results-placeholder">
-                                <i class="fas fa-database"></i>
-                                <p>Execute a query to see results</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Transactions Section -->
-            <section id="transactions" class="content-section">
-                <div class="section-header">
-                    <h1><i class="fas fa-exchange-alt"></i> Transaction Management</h1>
-                    <p>Add new data and view transaction history</p>
-                </div>
-
-                <div class="transactions-container">
-                    <div class="add-transaction">
-                        <h3><i class="fas fa-plus"></i> Add New Triple</h3>
-                        <form id="addTripleForm" class="triple-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="subject">Subject</label>
-                                    <input type="text" id="subject" placeholder="e.g., :batch123" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="predicate">Predicate</label>
-                                    <input type="text" id="predicate" placeholder="e.g., tc:origin" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="object">Object</label>
-                                    <input type="text" id="object" placeholder="e.g., 'Farm ABC'" required>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Add Triple
-                            </button>
-                        </form>
-                    </div>
-                    <div class="transaction-history">
-                        <h3><i class="fas fa-history"></i> Recent Transactions</h3>
-                        <div id="transactionsList" class="transactions-list">
-                            <div class="loading">Loading transactions...</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Wallet Section -->
-            <section id="wallet" class="content-section">
-                <div class="section-header">
-                    <h1><i class="fas fa-wallet"></i> Wallet Management</h1>
-                    <p>Register and manage your blockchain wallet</p>
-                </div>
-
-                <div class="wallet-container">
-                    <div class="wallet-registration">
-                        <h3><i class="fas fa-user-plus"></i> Register New Wallet</h3>
-                        <form id="walletRegistrationForm" class="wallet-form">
-                            <div class="form-group">
-                                <label for="participantName">Participant Name</label>
-                                <input type="text" id="participantName" placeholder="Enter your name or organization name" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="participantType">Participant Type</label>
-                                <select id="participantType" class="form-select" required>
-                                    <option value="">Select your role</option>
-                                    <option value="farmer">Farmer/Producer</option>
-                                    <option value="processor">Processor/Manufacturer</option>
-                                    <option value="logistics">Logistics Provider</option>
-                                    <option value="quality_lab">Quality Lab</option>
-                                    <option value="auditor">Auditor</option>
-                                    <option value="retailer">Retailer</option>
-                                    <option value="admin">Administrator</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="participantLocation">Location (Optional)</label>
-                                <input type="text" id="participantLocation" placeholder="Enter your location">
-                            </div>
-                            <div class="form-group">
-                                <label for="contactEmail">Email (Optional)</label>
-                                <input type="email" id="contactEmail" placeholder="Enter your email">
-                            </div>
-                            <div class="form-group">
-                                <label for="contactPhone">Phone (Optional)</label>
-                                <input type="tel" id="contactPhone" placeholder="Enter your phone number">
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-wallet"></i> Register Wallet
-                            </button>
-                        </form>
-                    </div>
-                    <div class="wallet-info">
-                        <h3><i class="fas fa-info-circle"></i> Wallet Information</h3>
-                        <div id="walletDetails" class="wallet-details">
-                            <div class="wallet-placeholder">
-                                <i class="fas fa-wallet"></i>
-                                <p>Register a wallet to view your wallet information</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Transaction Management Section -->
-            <section id="transaction-management" class="content-section">
-                <div class="section-header">
-                    <h1><i class="fas fa-exchange-alt"></i> Transaction Management</h1>
-                    <p>Create, sign, and submit transactions to the blockchain</p>
-                </div>
-
-                <div class="transactions-container">
-                    <div class="create-transaction">
-                        <h3><i class="fas fa-plus-circle"></i> Create New Transaction</h3>
-                        <form id="createTransactionForm" class="transaction-form">
-                            <div class="form-group">
-                                <label for="transactionType">Transaction Type</label>
-                                <select id="transactionType" class="form-select" required>
-                                    <option value="">Select transaction type</option>
-                                    <option value="production">Production</option>
-                                    <option value="processing">Processing</option>
-                                    <option value="transport">Transport</option>
-                                    <option value="quality">Quality Control</option>
-                                    <option value="transfer">Transfer</option>
-                                    <option value="environmental">Environmental Data</option>
-                                    <option value="compliance">Compliance</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="transactionRdfData">RDF Data (Turtle format)</label>
-                                <textarea id="transactionRdfData" placeholder="Enter RDF data in Turtle format" rows="4" required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Create Transaction
-                            </button>
-                        </form>
-                    </div>
-                    <div class="sign-transaction">
-                        <h3><i class="fas fa-signature"></i> Sign Transaction</h3>
-                        <form id="signTransactionForm" class="transaction-form">
-                            <div class="form-group">
-                                <label for="signTransactionId">Transaction ID</label>
-                                <input type="text" id="signTransactionId" placeholder="Enter transaction ID" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="signParticipantId">Participant ID</label>
-                                <input type="text" id="signParticipantId" placeholder="Enter your participant ID" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-signature"></i> Sign Transaction
-                            </button>
-                        </form>
-                    </div>
-                    <div class="submit-transaction">
-                        <h3><i class="fas fa-paper-plane"></i> Submit Transaction</h3>
-                        <form id="submitTransactionForm" class="transaction-form">
-                            <div class="form-group">
-                                <label for="submitTransactionId">Transaction ID</label>
-                                <input type="text" id="submitTransactionId" placeholder="Enter transaction ID" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-paper-plane"></i> Submit Transaction
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                <div class="transaction-info">
-                    <h3><i class="fas fa-info-circle"></i> Transaction Status</h3>
-                    <div id="transactionDetails" class="transaction-details">
-                        <div class="transaction-placeholder">
-                            <i class="fas fa-exchange-alt"></i>
-                            <p>Create, sign, and submit a transaction to view status</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Login Modal -->
-        <div id="loginModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Login to ProvChain</h2>
-                    <span class="close">&times;</span>
-                </div>
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label for="loginUsername">Username</label>
-                        <input type="text" id="loginUsername" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="loginPassword">Password</label>
-                        <input type="password" id="loginPassword" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-full">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </button>
-                </form>
+            <div id="details">
+                <h3>Node Details</h3>
+                <p>Click on a node to see details.</p>
+                <pre id="node-data" style="white-space: pre-wrap; font-size: 0.9rem;"></pre>
             </div>
         </div>
-
-        <!-- Toast Notifications -->
-        <div id="toastContainer" class="toast-container"></div>
+        <div class="main">
+            <div id="cy"></div>
+            <div class="legend">
+                <div class="legend-item"><div class="dot" style="background: #3498db;"></div>Product/Batch</div>
+                <div class="legend-item"><div class="dot" style="background: #e74c3c;"></div>Activity</div>
+                <div class="legend-item"><div class="dot" style="background: #2ecc71;"></div>Agent</div>
+                <div class="legend-item"><div class="dot" style="background: #95a5a6;"></div>Other</div>
+            </div>
+        </div>
     </div>
-
-    <script src="app.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>

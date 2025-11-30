@@ -282,7 +282,10 @@ impl ConsensusManager {
         // Add block to our local blockchain using atomic operations
         {
             let mut blockchain = self.blockchain.write().await;
-            blockchain.add_block(block.data.clone())?;
+            // Update block signature before submitting
+            let mut signed_block = block.clone();
+            signed_block.signature = hex::encode(signature.to_bytes());
+            blockchain.submit_signed_block(signed_block)?;
         }
 
         // Broadcast the block to the network
@@ -355,7 +358,13 @@ impl ConsensusManager {
             self.network.node_id
         );
 
-        Ok(Block::new(index, rdf_data, previous_hash, state_root))
+        Ok(Block::new(
+            index,
+            rdf_data,
+            previous_hash,
+            state_root,
+            self.network.node_id.to_string(),
+        ))
     }
 
     /// Serialize block data for signing

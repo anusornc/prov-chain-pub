@@ -5,7 +5,11 @@ use provchain_org::{
     ontology::OntologyConfig, semantic::owl2_traceability::Owl2EnhancedTraceability,
     semantic::simple_owl2_test::simple_owl2_integration_test, web::server::create_web_server,
 };
+use std::env;
 use std::fs;
+use std::path::Path;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tracing::info;
 
 #[derive(Parser)]
@@ -104,6 +108,18 @@ enum Commands {
         /// Ontology file to process
         #[arg(short, long, default_value = "ontologies/generic_core.owl")]
         ontology: String,
+    },
+    /// Trace the shortest path between two entities in the knowledge graph
+    TracePath {
+        /// Start entity URI
+        #[arg(long)]
+        from: String,
+        /// End entity URI
+        #[arg(long)]
+        to: String,
+        /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
+        #[arg(long)]
+        ontology: Option<String>,
     },
 }
 
@@ -272,9 +288,15 @@ fn generate_generic_demo_data(timestamp: &str) -> Vec<String> {
 fn create_blockchain_with_ontology(
     ontology_path: Option<String>,
 ) -> Result<Blockchain, Box<dyn std::error::Error>> {
+    let data_dir = "data";
+    // Ensure data directory exists
+    if !Path::new(data_dir).exists() {
+        fs::create_dir_all(data_dir).map_err(|e| format!("Failed to create data directory: {}", e))?;
+    }
+
     if let Some(ontology_path) = ontology_path {
         info!(
-            "Initializing blockchain with domain ontology: {}",
+            "Initializing persistent blockchain with domain ontology: {}",
             ontology_path
         );
 
@@ -283,18 +305,19 @@ fn create_blockchain_with_ontology(
         let ontology_config = OntologyConfig::new(Some(ontology_path.clone()), &config)
             .map_err(|e| format!("Failed to create ontology configuration: {}", e))?;
 
-        // Create blockchain with ontology
-        let blockchain = Blockchain::new_with_ontology(ontology_config)
-            .map_err(|e| format!("Failed to initialize blockchain with ontology: {}", e))?;
+        // Create persistent blockchain with ontology
+        let blockchain = Blockchain::new_persistent_with_ontology(data_dir, ontology_config)
+            .map_err(|e| format!("Failed to initialize persistent blockchain with ontology: {}", e))?;
 
         info!(
-            "✅ Blockchain initialized with domain ontology: {}",
+            "✅ Persistent Blockchain initialized with domain ontology: {}",
             ontology_path
         );
         Ok(blockchain)
     } else {
-        info!("Initializing blockchain without domain ontology");
-        Ok(Blockchain::new())
+        info!("Initializing persistent blockchain without domain ontology");
+        Ok(Blockchain::new_persistent(data_dir)
+            .map_err(|e| format!("Failed to initialize persistent blockchain: {}", e))?)
     }
 }
 
@@ -534,6 +557,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 Err(e) => println!("❌ Consistency checking failed: {}", e),
+            }
+        }
+        Commands::TracePath { from, to, ontology } => {
+            use provchain_org::knowledge_graph::{builder::GraphBuilder, graph_db::GraphDatabase};
+
+            let blockchain = create_blockchain_with_ontology(ontology)?;
+
+            info!("Building knowledge graph from blockchain data...");
+            let builder = GraphBuilder::new(blockchain.rdf_store);
+            let kg = builder.build_knowledge_graph().map_err(|e| format!("Failed to build knowledge graph: {}", e))?;
+            
+            info!("Initializing graph database...");
+            let graph_db = GraphDatabase::new(kg);
+
+            info!("Tracing path from '{}' to '{}'...", from, to);
+            match graph_db.find_shortest_path(&from, &to) {
+                Some(path) => {
+                    println!("✅ Path found:");
+                    for (i, node) in path.iter().enumerate() {
+                        println!("  {}. {}", i + 1, node);
+                    }
+                }
+                None => {
+                    println!("❌ No path found between '{}' and '{}'", from, to);
+                }
             }
         }
     }

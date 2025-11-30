@@ -1111,6 +1111,18 @@ impl RDFStore {
                 ),
                 graph_name.clone(),
             ),
+            Quad::new(
+                block_uri.clone(),
+                NamedNode::new("http://provchain.org/hasValidator").unwrap(),
+                Literal::new_simple_literal(block.validator.clone()),
+                graph_name.clone(),
+            ),
+            Quad::new(
+                block_uri.clone(),
+                NamedNode::new("http://provchain.org/hasSignature").unwrap(),
+                Literal::new_simple_literal(block.signature.clone()),
+                graph_name.clone(),
+            ),
         ];
 
         if let Some(prev) = prev_block_uri {

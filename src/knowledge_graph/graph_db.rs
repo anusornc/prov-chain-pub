@@ -71,14 +71,18 @@ impl GraphDatabase {
         let from_idx = self.knowledge_graph.entity_index.get(from)?;
         let to_idx = self.knowledge_graph.entity_index.get(to)?;
 
-        let distances = dijkstra(&self.knowledge_graph.graph, *from_idx, Some(*to_idx), |_| 1);
-
-        if distances.contains_key(to_idx) {
-            // Reconstruct path (simplified - in real implementation would track predecessors)
-            Some(vec![from.to_string(), to.to_string()])
-        } else {
-            None
-        }
+        petgraph::algo::astar(
+            &self.knowledge_graph.graph,
+            *from_idx,
+            |finish| finish == *to_idx,
+            |_| 1,
+            |_| 0,
+        )
+        .map(|(_cost, path)| {
+            path.into_iter()
+                .map(|idx| self.knowledge_graph.graph[idx].clone())
+                .collect()
+        })
     }
 
     /// Find all paths between two entities up to a maximum length

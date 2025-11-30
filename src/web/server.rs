@@ -40,6 +40,7 @@ use crate::web::{
         validate_blockchain,
         validate_item,
         validate_sparql_endpoint,
+        trace_path_api,
         AppState,
     },
     websocket::{websocket_handler, BlockchainEventBroadcaster, WebSocketState},
@@ -148,6 +149,12 @@ impl WebServer {
             .route("/auth/login", post(authenticate))
             .with_state(self.auth_state.clone());
 
+        // Public blockchain routes (no auth, uses AppState)
+        let public_blockchain_routes = Router::new()
+            .route("/api/trace", get(trace_path_api))
+            .route("/api/knowledge-graph", get(get_knowledge_graph))
+            .with_state(self.app_state.clone());
+
         // Protected routes (authentication required)
         let protected_routes = Router::new()
             .route("/api/blockchain/status", get(get_blockchain_status))
@@ -193,8 +200,6 @@ impl WebServer {
             )
             .route("/api/products/:id/related", get(get_related_items))
             .route("/api/products/:id/validate", get(validate_item))
-            .route("/api/knowledge-graph", get(get_knowledge_graph))
-            .route("/api/participants", get(get_participants))
             .route("/api/participants", post(create_participant))
             .layer(middleware::from_fn(auth_middleware))
             .with_state(self.app_state.clone());
@@ -206,6 +211,7 @@ impl WebServer {
         Router::new()
             .merge(websocket_routes)
             .merge(public_routes)
+            .merge(public_blockchain_routes)
             .merge(protected_routes)
             .nest_service("/", static_service)
             .layer(

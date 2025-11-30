@@ -94,6 +94,9 @@ pub enum BlockchainError {
 
     #[error("Ontology initialization failed: {0}")]
     OntologyInitializationFailed(String),
+
+    #[error("Block addition failed: {0}")]
+    BlockAdditionFailed(String),
 }
 
 /// Storage-specific errors

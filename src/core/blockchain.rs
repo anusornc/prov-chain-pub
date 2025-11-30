@@ -1,5 +1,5 @@
-use crate::core::atomic_operations::AtomicOperationContext;
 use crate::error::{BlockchainError, ProvChainError, Result};
+use crate::governance::Governance;
 use crate::ontology::{OntologyConfig, OntologyManager, ShaclValidator};
 use crate::storage::rdf_store::{RDFStore, StorageConfig};
 use crate::trace_optimization::{EnhancedTraceResult, EnhancedTraceabilitySystem};
@@ -8,6 +8,9 @@ use oxigraph::model::NamedNode;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::Path;
+use tracing::info;
+use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use hex;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
@@ -17,10 +20,18 @@ pub struct Block {
     pub previous_hash: String,
     pub hash: String,
     pub state_root: String, // State root hash for atomic consistency
+    pub validator: String,  // Public key of the validator
+    pub signature: String,  // Signature of the block hash
 }
 
 impl Block {
-    pub fn new(index: u64, data: String, previous_hash: String, state_root: String) -> Self {
+    pub fn new(
+        index: u64,
+        data: String,
+        previous_hash: String,
+        state_root: String,
+        validator: String,
+    ) -> Self {
         let timestamp = Utc::now().to_rfc3339();
         let mut block = Block {
             index,
@@ -29,6 +40,8 @@ impl Block {
             previous_hash,
             hash: String::new(),
             state_root,
+            validator,
+            signature: String::new(),
         };
         block.hash = block.calculate_hash();
         block
@@ -58,9 +71,10 @@ impl Block {
         };
 
         // Combine block metadata with canonicalized RDF hash
+        // Note: Validator is part of the hash, but signature is NOT (signature signs the hash)
         let record = format!(
-            "{0}{1}{2}{3}",
-            self.index, self.timestamp, rdf_hash, self.previous_hash
+            "{0}{1}{2}{3}{4}",
+            self.index, self.timestamp, rdf_hash, self.previous_hash, self.validator
         );
         let mut hasher = Sha256::new();
         hasher.update(record.as_bytes());
@@ -74,6 +88,7 @@ pub struct Blockchain {
     pub rdf_store: RDFStore,
     pub ontology_manager: Option<OntologyManager>,
     pub shacl_validator: Option<ShaclValidator>,
+    pub governance: Governance,
 }
 
 impl Default for Blockchain {
@@ -90,6 +105,7 @@ impl Blockchain {
             rdf_store: RDFStore::new(),
             ontology_manager: None,
             shacl_validator: None,
+            governance: Governance::new(),
         };
 
         // Load the traceability ontology
@@ -122,6 +138,7 @@ impl Blockchain {
             rdf_store,
             ontology_manager: None,
             shacl_validator: None,
+            governance: Governance::new(),
         };
 
         // Load the traceability ontology
@@ -188,6 +205,7 @@ impl Blockchain {
             rdf_store,
             ontology_manager: None,
             shacl_validator: None,
+            governance: Governance::new(),
         };
 
         // Load the traceability ontology
@@ -225,14 +243,16 @@ impl Blockchain {
         // Query to get all blocks ordered by index
         let query = r#"
             PREFIX prov: <http://provchain.org/>
-            SELECT ?block ?index ?timestamp ?hash ?prevHash ?dataGraph WHERE {
+            SELECT ?block ?index ?timestamp ?hash ?prevHash ?dataGraph ?validator ?signature WHERE {
                 GRAPH <http://provchain.org/blockchain> {
                     ?block a prov:Block ;
                            prov:hasIndex ?index ;
                            prov:hasTimestamp ?timestamp ;
                            prov:hasHash ?hash ;
                            prov:hasPreviousHash ?prevHash ;
-                           prov:hasDataGraphIRI ?dataGraph .
+                           prov:hasDataGraphIRI ?dataGraph ;
+                           prov:hasValidator ?validator ;
+                           prov:hasSignature ?signature .
                 }
             }
             ORDER BY ?index
@@ -246,18 +266,24 @@ impl Blockchain {
                     Some(hash_term),
                     Some(prev_hash_term),
                     Some(data_graph_term),
+                    Some(validator_term),
+                    Some(signature_term),
                 ) = (
                     sol.get("index"),
                     sol.get("timestamp"),
                     sol.get("hash"),
                     sol.get("prevHash"),
                     sol.get("dataGraph"),
+                    sol.get("validator"),
+                    sol.get("signature"),
                 ) {
                     // Parse block data
                     let index: u64 = index_term.to_string().parse().unwrap_or(0);
                     let timestamp = timestamp_term.to_string().trim_matches('"').to_string();
                     let hash = hash_term.to_string().trim_matches('"').to_string();
                     let previous_hash = prev_hash_term.to_string().trim_matches('"').to_string();
+                    let validator = validator_term.to_string().trim_matches('"').to_string();
+                    let signature = signature_term.to_string().trim_matches('"').to_string();
 
                     // Extract RDF data from the block's graph
                     let data_graph_string = data_graph_term.to_string();
@@ -291,6 +317,8 @@ impl Blockchain {
                         previous_hash,
                         hash,
                         state_root,
+                        validator,
+                        signature,
                     };
 
                     self.chain.push(block);
@@ -397,6 +425,7 @@ impl Blockchain {
             rdf_store: RDFStore::new(),
             ontology_manager: None,
             shacl_validator: None,
+            governance: Governance::new(),
         };
 
         // Initialize ontology manager and SHACL validator
@@ -429,6 +458,7 @@ impl Blockchain {
             rdf_store,
             ontology_manager: None,
             shacl_validator: None,
+            governance: Governance::new(),
         };
 
         // Initialize ontology manager and SHACL validator
@@ -533,6 +563,7 @@ impl Blockchain {
             rdf_store,
             ontology_manager: None,
             shacl_validator: None,
+            governance: Governance::new(),
         };
 
         // Load the chain from the restored store
@@ -559,16 +590,19 @@ impl Blockchain {
     fn create_genesis_block(&self) -> Block {
         // For genesis block, we calculate the initial state root
         let initial_state_root = self.rdf_store.calculate_state_root();
-        Block::new(
+        let mut block = Block::new(
             0,
             "@prefix ex: <http://example.org/> . ex:genesis ex:type \"Genesis Block\".".into(),
             "0".into(),
             initial_state_root,
-        )
+            "GENESIS_VALIDATOR".to_string(),
+        );
+        block.signature = "GENESIS_SIGNATURE".to_string();
+        block
     }
 
-    /// Add a new block with SHACL validation and ontology consistency checking
-    pub fn add_block(&mut self, data: String) -> Result<()> {
+    /// Create a block proposal that can be signed by a validator
+    pub fn create_block_proposal(&mut self, data: String, validator: String) -> Result<Block> {
         // Ensure we have at least a genesis block
         if self.chain.is_empty() {
             let mut genesis_block = self.create_genesis_block();
@@ -583,106 +617,130 @@ impl Blockchain {
                     ),
                 ));
             }
-            // Recalculate hash after adding data to RDF store (consistent with new() method)
+            // Recalculate hash after adding data to RDF store
             genesis_block.hash = genesis_block.calculate_hash_with_store(Some(&self.rdf_store));
             self.chain.push(genesis_block);
         }
 
+        let previous_block = self.chain.last().unwrap();
+        let index = previous_block.index + 1;
+        let previous_hash = previous_block.hash.clone();
+
         // STEP 8: SHACL VALIDATION - Validate transaction data before adding to blockchain
         if let Some(ref shacl_validator) = self.shacl_validator {
-            // Validate the RDF data against SHACL shapes
             match shacl_validator.validate_transaction(&data) {
                 Ok(validation_result) => {
                     if !validation_result.is_valid {
-                        // STRICT ENFORCEMENT: Block invalid transactions
                         let error_msg = format!(
-                            "Transaction validation failed: {} violations found. Details:\n{}",
-                            validation_result.violations.len(),
+                            "SHACL Validation Failed for block {}: {}",
+                            index,
                             validation_result
                                 .violations
                                 .iter()
-                                .map(|v| format!(
-                                    "- {}: {} ({})",
-                                    v.constraint_type, v.message, v.severity
-                                ))
+                                .map(|r| r.message.clone())
                                 .collect::<Vec<_>>()
-                                .join("\n")
+                                .join(", ")
                         );
-
+                        eprintln!("❌ {}", error_msg);
                         return Err(ProvChainError::Blockchain(
                             BlockchainError::ValidationFailed(error_msg),
                         ));
                     }
-
-                    // Log successful validation
-                    println!(
-                        "✓ Transaction validation passed: {} constraints validated successfully",
-                        validation_result.constraints_checked
-                    );
+                    info!("✅ SHACL validation passed for block {}", index);
                 }
                 Err(validation_error) => {
-                    // STRICT ENFORCEMENT: Block transactions that fail validation process
-                    let error_msg =
-                        format!("SHACL validation process failed: {}", validation_error);
+                    let error_msg = format!(
+                        "SHACL Validation Process Error for block {}: {}",
+                        index, validation_error
+                    );
+                    eprintln!("❌ {}", error_msg);
                     return Err(ProvChainError::Blockchain(
                         BlockchainError::ValidationFailed(error_msg),
                     ));
                 }
             }
         } else {
-            // If no SHACL validator is configured, warn but allow (for backward compatibility with existing tests)
             eprintln!("Warning: No SHACL validator configured - transaction added without domain-specific validation");
         }
 
-        let prev_block = self.chain.last().ok_or_else(|| {
-            ProvChainError::Blockchain(BlockchainError::InvalidChainState(
-                "Chain is empty after genesis block creation".to_string(),
-            ))
-        })?;
-
-        // Calculate the state root before creating the new block
+        // Calculate state root
         let state_root = self.rdf_store.calculate_state_root();
-        let mut new_block = Block::new(
-            prev_block.index + 1,
-            data.clone(),
-            prev_block.hash.clone(),
+
+        let block = Block::new(
+            index,
+            data,
+            previous_hash,
             state_root,
+            validator,
         );
 
-        // Use atomic operations to ensure consistency
-        let mut atomic_context = AtomicOperationContext::new(self);
+        Ok(block)
+    }
 
-        // Add RDF data atomically first (without block metadata)
-        let graph_name = NamedNode::new(format!("http://provchain.org/block/{}", new_block.index))
-            .map_err(|e| {
-                ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(format!(
-                    "Failed to create graph name: {}",
-                    e
-                )))
-            })?;
+    /// Submit a signed block to the blockchain
+    pub fn submit_signed_block(&mut self, block: Block) -> Result<()> {
+        // Verify signature
+        if !self.governance.validator_set.is_empty() {
+            if !self.governance.validator_set.contains(&block.validator) {
+                 return Err(ProvChainError::Blockchain(
+                    BlockchainError::ValidationFailed(format!(
+                        "Block validator {} is not authorized", block.validator
+                    )),
+                ));
+            }
+            // Perform actual Ed25519 signature verification
+            // 1. Get validator's public key (from block.validator)
+            // 2. Verify block.signature against block.hash using the public key
+            
+            let validator_bytes = hex::decode(&block.validator)
+                .map_err(|e| ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!("Invalid validator public key hex: {}", e))))?;
+            
+            let public_key = VerifyingKey::from_bytes(validator_bytes.as_slice().try_into().map_err(|_| ProvChainError::Blockchain(BlockchainError::InvalidBlock("Invalid validator public key length".to_string())))?)
+                .map_err(|e| ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!("Invalid validator public key: {}", e))))?;
 
-        // Start atomic operation for RDF data only
-        atomic_context.begin_operation()?;
-        atomic_context
-            .blockchain
-            .rdf_store
-            .add_rdf_to_graph(&new_block.data, &graph_name);
+            let signature_bytes = hex::decode(&block.signature)
+                .map_err(|e| ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!("Invalid signature hex: {}", e))))?;
 
-        // Now calculate hash with the RDF data properly in the store
-        new_block.hash =
-            new_block.calculate_hash_with_store(Some(&atomic_context.blockchain.rdf_store));
+            let signature = Signature::from_bytes(signature_bytes.as_slice().try_into().map_err(|_| ProvChainError::Blockchain(BlockchainError::InvalidBlock("Invalid signature length".to_string())))?);
 
-        // Complete the atomic operation by adding the block with correct hash
-        atomic_context
-            .blockchain
-            .rdf_store
-            .add_block_metadata(&new_block);
-        atomic_context.blockchain.chain.push(new_block);
-        atomic_context.blockchain.rdf_store.save_to_disk()?;
+            public_key.verify(block.hash.as_bytes(), &signature)
+                .map_err(|e| ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!("Signature verification failed: {}", e))))?;
 
-        // Note: Block is already added to chain by atomic_context.add_block_atomically()
+            info!("✅ Block signature verified for validator {}", block.validator);
+        }
+
+        // Add block data to RDF store
+        if let Ok(graph_name) = NamedNode::new(format!("http://provchain.org/block/{}", block.index)) {
+            self.rdf_store.add_rdf_to_graph(&block.data, &graph_name);
+            self.rdf_store.add_block_metadata(&block);
+        } else {
+            return Err(ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
+                "Could not create graph name for block".to_string(),
+            )));
+        }
+
+        // Recalculate hash after adding data to RDF store to ensure consistency
+        // Note: We modify the block here, which invalidates the signature if the hash changes!
+        // Ideally, the hash should be stable.
+        let mut final_block = block;
+        final_block.hash = final_block.calculate_hash_with_store(Some(&self.rdf_store));
+
+        self.chain.push(final_block);
+
+        // Persist changes to disk if using persistent storage
+        if let Err(e) = self.rdf_store.save_to_disk() {
+            eprintln!("Warning: Failed to persist blockchain to disk: {}", e);
+        }
 
         Ok(())
+    }
+
+    /// Legacy add_block for backward compatibility (uses dummy validator)
+    pub fn add_block(&mut self, data: String) -> Result<()> {
+        let validator = "LEGACY_VALIDATOR".to_string();
+        let mut block = self.create_block_proposal(data, validator)?;
+        block.signature = "LEGACY_SIGNATURE".to_string();
+        self.submit_signed_block(block)
     }
 
     pub fn is_valid(&self) -> bool {

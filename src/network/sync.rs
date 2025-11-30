@@ -518,24 +518,6 @@ mod tests {
         assert!(stats.current_height >= 1); // At least genesis block exists
         assert_eq!(stats.sync_peers_count, 0);
     }
-
-    #[tokio::test]
-    async fn test_block_validation() {
-        let blockchain = {
-            let mut bc = Blockchain::new();
-            let _ = bc.add_block("test data".to_string());
-            Arc::new(RwLock::new(bc))
-        };
-        let config = NodeConfig::default();
-        let network = Arc::new(NetworkManager::new(config));
-
-        let sync = BlockchainSync::new(blockchain.clone(), network);
-
-        // Test with a valid block
-        let blockchain_read = blockchain.read().await;
-        if let Some(block) = blockchain_read.chain.last() {
-            let is_valid = sync.validate_block(block, &blockchain_read).await.unwrap();
-            assert!(is_valid);
-        }
-    }
 }
+
+

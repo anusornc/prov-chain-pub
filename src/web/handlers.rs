@@ -27,6 +27,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::RwLock;
+use crate::knowledge_graph::{builder::GraphBuilder, graph_db::GraphDatabase};
 
 /// Input validation functions
 fn validate_uri(uri: &str) -> Result<(), String> {
@@ -2258,4 +2259,74 @@ pub async fn register_wallet(
     );
 
     Ok(Json(response))
+}
+
+/// Trace path between two entities using GraphDatabase
+pub async fn trace_path_api(
+    Query(params): Query<std::collections::HashMap<String, String>>,
+    State(app_state): State<AppState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
+    let from = params.get("from").ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "missing_parameter".to_string(),
+                message: "Missing 'from' parameter".to_string(),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    let to = params.get("to").ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "missing_parameter".to_string(),
+                message: "Missing 'to' parameter".to_string(),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    let blockchain = app_state.blockchain.read().await;
+
+    // Build knowledge graph from blockchain data
+    // Note: In a production environment, this should be cached or incrementally updated
+    let builder = GraphBuilder::new(blockchain.rdf_store.clone());
+    let kg = builder.build_knowledge_graph().map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                error: "graph_build_failed".to_string(),
+                message: format!("Failed to build knowledge graph: {}", e),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    let graph_db = GraphDatabase::new(kg);
+
+    match graph_db.find_shortest_path(from, to) {
+        Some(path) => {
+            let response = serde_json::json!({
+                "found": true,
+                "path": path,
+                "length": path.len(),
+                "from": from,
+                "to": to
+            });
+            Ok(Json(response))
+        }
+        None => {
+            let response = serde_json::json!({
+                "found": false,
+                "path": [],
+                "length": 0,
+                "from": from,
+                "to": to,
+                "message": "No path found between specified entities"
+            });
+            Ok(Json(response))
+        }
+    }
 }

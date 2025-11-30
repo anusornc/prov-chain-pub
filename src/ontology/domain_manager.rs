@@ -1,11 +1,16 @@
 //! Domain-specific ontology loading and management
 
-use crate::ontology::error::{ConsistencyError, OntologyError, ValidationError};
-use crate::ontology::{OntologyConfig, ShaclValidator};
+use crate::ontology::OntologyConfig;
+use crate::ontology::ShaclValidator;
+use crate::ontology::error::{ConsistencyError, ConstraintType, OntologyError, ShapeViolation, ValidationError};
+use owl2_reasoner::ontology::Ontology;
+use owl2_reasoner::parser::ParserFactory;
+use owl2_reasoner::reasoning::{OwlReasoner, Reasoner};
 use oxigraph::store::Store;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 
 /// Domain configuration for ontology management
 #[derive(Debug, Clone)]
@@ -60,6 +65,8 @@ pub struct OntologyManager {
     pub validator: ShaclValidator,
     /// Loaded ontology store
     ontology_store: Store,
+    /// OWL2 Reasoner for advanced validation
+    pub reasoner: Option<Arc<std::sync::Mutex<OwlReasoner>>>,
 }
 
 impl std::fmt::Debug for OntologyManager {
@@ -79,11 +86,17 @@ impl Clone for OntologyManager {
         let ontology_store =
             Self::load_ontology_store(&self.config).unwrap_or_else(|_| Store::new().unwrap());
 
+        // Re-initialize reasoner
+        let reasoner = Self::initialize_reasoner(&self.config)
+            .ok()
+            .map(|r| Arc::new(std::sync::Mutex::new(r)));
+
         OntologyManager {
             config: self.config.clone(),
             domain_config: self.domain_config.clone(),
             validator: self.validator.clone(),
             ontology_store,
+            reasoner,
         }
     }
 }
@@ -108,12 +121,85 @@ impl OntologyManager {
         // Load ontology into store
         let ontology_store = Self::load_ontology_store(&config)?;
 
+        // Initialize OWL2 Reasoner
+        let reasoner = Self::initialize_reasoner(&config)
+            .ok()
+            .map(|r| Arc::new(std::sync::Mutex::new(r)));
+
         Ok(OntologyManager {
             config,
             domain_config,
             validator,
             ontology_store,
+            reasoner,
         })
+    }
+
+    /// Initialize OWL2 Reasoner with core and domain ontologies
+    fn initialize_reasoner(config: &OntologyConfig) -> Result<OwlReasoner, OntologyError> {
+        // 1. Load Core Ontology
+        let core_content = fs::read_to_string(&config.core_ontology_path).map_err(|e| {
+            OntologyError::OntologyLoadError {
+                path: config.core_ontology_path.clone(),
+                source: Box::new(e),
+            }
+        })?;
+
+        let mut ontology = if let Some(parser) = ParserFactory::auto_detect(&core_content) {
+            parser.parse_str(&core_content).map_err(|e| {
+                OntologyError::OntologyParseError {
+                    path: config.core_ontology_path.clone(),
+                    message: format!("Failed to parse core ontology: {}", e),
+                }
+            })?
+        } else {
+            return Err(OntologyError::OntologyParseError {
+                path: config.core_ontology_path.clone(),
+                message: "Could not detect ontology format".to_string(),
+            });
+        };
+
+        // 2. Load Domain Ontology and Merge
+        let domain_content = fs::read_to_string(&config.domain_ontology_path).map_err(|e| {
+            OntologyError::OntologyLoadError {
+                path: config.domain_ontology_path.clone(),
+                source: Box::new(e),
+            }
+        })?;
+
+        if let Some(parser) = ParserFactory::auto_detect(&domain_content) {
+            let domain_ontology = parser.parse_str(&domain_content).map_err(|e| {
+                OntologyError::OntologyParseError {
+                    path: config.domain_ontology_path.clone(),
+                    message: format!("Failed to parse domain ontology: {}", e),
+                }
+            })?;
+
+            // Merge domain ontology into core ontology
+            // Note: This is a simplified merge. In a real scenario, we'd use import resolution.
+            for axiom in domain_ontology.axioms() {
+                // We need to clone the axiom content, which involves dereferencing the Arc
+                // This is a bit tricky with the current API, so we'll rely on the fact that
+                // we are just initializing the reasoner with the combined set of axioms.
+                // For now, let's just add the classes and properties which is safer.
+                for class in domain_ontology.classes() {
+                     let _ = ontology.add_class((**class).clone());
+                }
+                for prop in domain_ontology.object_properties() {
+                    let _ = ontology.add_object_property((**prop).clone());
+                }
+                for prop in domain_ontology.data_properties() {
+                    let _ = ontology.add_data_property((**prop).clone());
+                }
+                
+                // For axioms, we need to be careful. The `add_axiom` takes an `Axiom` struct,
+                // but we have `Arc<Axiom>`. We need to clone the inner data.
+                let _ = ontology.add_axiom((**axiom).clone());
+            }
+        }
+
+        // 3. Create Reasoner
+        Ok(OwlReasoner::new(ontology))
     }
 
     /// Load domain configuration from ontology
@@ -333,6 +419,114 @@ impl OntologyManager {
         rdf_data: &str,
     ) -> Result<crate::ontology::error::ValidationResult, ValidationError> {
         self.validator.validate_transaction(rdf_data)
+    }
+
+    /// Validate that the domain ontology properly extends the core ontology
+    ///
+    /// This checks that key domain classes are subclasses of core classes.
+    pub fn validate_domain_extension(&mut self) -> Result<(), ValidationError> {
+        if let Some(reasoner_lock) = &self.reasoner {
+            let mut reasoner = reasoner_lock.lock().map_err(|_| ValidationError::with_violations(
+                "Lock Error".to_string(),
+                vec![ShapeViolation::new(
+                    "ReasonerLock".to_string(),
+                    ConstraintType::Custom("Locking".to_string()),
+                    "Failed to acquire reasoner lock".to_string(),
+                )],
+            ))?;
+
+            // Define core classes that should be extended
+            // In a real implementation, these IRIs would come from constants or the core ontology itself
+            let core_classes = vec![
+                "http://provchain.org/core#Batch",
+                "http://provchain.org/core#Product",
+                "http://provchain.org/core#Process",
+                "http://provchain.org/core#Participant",
+            ];
+
+            // Get all classes in the ontology
+            // We need to collect them first to avoid borrowing issues with the reasoner
+            let classes: Vec<String> = reasoner
+                .ontology()
+                .classes()
+                .iter()
+                .map(|c| c.iri().to_string())
+                .collect();
+
+            let domain_namespace = format!("http://provchain.org/{}#", self.domain_config.domain_name);
+
+            for class_iri_str in classes {
+                // Only check classes in the domain namespace
+                if class_iri_str.starts_with(&domain_namespace) {
+                    let class_iri = owl2_reasoner::iri::IRI::new(&class_iri_str).map_err(|e| {
+                        ValidationError::with_violations(
+                            "Invalid IRI encountered during validation".to_string(),
+                            vec![ShapeViolation::new(
+                                "InvalidIRI".to_string(),
+                                ConstraintType::Custom("IRI Parsing".to_string()),
+                                format!("Invalid class IRI: {}", e),
+                            )
+                            .with_value(class_iri_str.clone())],
+                        )
+                    })?;
+
+                    let mut is_valid_extension = false;
+
+                    for core_class_str in &core_classes {
+                        let core_class_iri = owl2_reasoner::iri::IRI::new(core_class_str.to_string()).map_err(|e| {
+                             ValidationError::with_violations(
+                                "Invalid Core IRI encountered".to_string(),
+                                vec![ShapeViolation::new(
+                                    "InvalidCoreIRI".to_string(),
+                                    ConstraintType::Custom("IRI Parsing".to_string()),
+                                    format!("Invalid core class IRI: {}", e),
+                                )
+                                .with_value(core_class_str.to_string())],
+                            )
+                        })?;
+
+                        // Check if domain class is a subclass of core class
+                        // Note: is_subclass_of returns true if they are the same class, 
+                        // but we want strict subclass or at least proper inheritance
+                        let is_sub = reasoner.is_subclass_of(&class_iri, &core_class_iri).unwrap_or(false);
+                        if is_sub {
+                            is_valid_extension = true;
+                            break;
+                        }
+                    }
+
+                    if !is_valid_extension {
+                        return Err(ValidationError::with_violations(
+                            "Domain extension validation failed".to_string(),
+                            vec![ShapeViolation::new(
+                                "DomainExtension".to_string(),
+                                ConstraintType::Class,
+                                format!(
+                                    "Domain class must be a subclass of one of the core classes: {:?}",
+                                    core_classes
+                                ),
+                            )
+                            .with_value(class_iri_str)],
+                        ));
+                    }
+                }
+            }
+            
+            Ok(())
+        } else {
+            // If no reasoner is available, we can't perform this validation
+            // This might happen if ontology loading failed or reasoner initialization failed
+            // For now, we'll log a warning and pass, or return an error depending on strictness
+            // Let's return an error to enforce the requirement
+            Err(ValidationError::with_violations(
+                "Reasoner not available".to_string(),
+                vec![ShapeViolation::new(
+                    "ReasonerAvailability".to_string(),
+                    ConstraintType::Custom("Initialization".to_string()),
+                    "OWL2 Reasoner is not initialized. Cannot validate domain extension.".to_string(),
+                )],
+            ))
+        }
     }
 
     /// Get ontology hash for network consistency checking
