@@ -79,9 +79,9 @@ fn bench_query_performance_scaling(c: &mut Criterion) {
     group.finish();
 }
 
-/// Benchmark memory usage and efficiency
-fn bench_memory_efficiency(c: &mut Criterion) {
-    let mut group = c.benchmark_group("memory_efficiency");
+/// Benchmark data complexity performance
+fn bench_data_complexity_performance(c: &mut Criterion) {
+    let mut group = c.benchmark_group("data_complexity_performance");
 
     // Test memory usage with different data types
     let memory_scenarios = vec![
@@ -532,7 +532,7 @@ criterion_group!(
     benches,
     bench_blockchain_throughput,
     bench_query_performance_scaling,
-    bench_memory_efficiency,
+    bench_data_complexity_performance,
     bench_validation_performance,
     bench_concurrent_operations,
     bench_rdf_complexity_impact,

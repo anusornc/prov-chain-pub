@@ -4,13 +4,13 @@ use crate::ontology::{OntologyConfig, OntologyManager, ShaclValidator};
 use crate::storage::rdf_store::{RDFStore, StorageConfig};
 use crate::trace_optimization::{EnhancedTraceResult, EnhancedTraceabilitySystem};
 use chrono::Utc;
+use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use hex;
 use oxigraph::model::NamedNode;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::Path;
-use tracing::info;
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-use hex;
+use tracing::{debug, info};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
@@ -660,19 +660,13 @@ impl Blockchain {
                 }
             }
         } else {
-            eprintln!("Warning: No SHACL validator configured - transaction added without domain-specific validation");
+            debug!("No SHACL validator configured - transaction added without domain-specific validation");
         }
 
         // Calculate state root
         let state_root = self.rdf_store.calculate_state_root();
 
-        let block = Block::new(
-            index,
-            data,
-            previous_hash,
-            state_root,
-            validator,
-        );
+        let block = Block::new(index, data, previous_hash, state_root, validator);
 
         Ok(block)
     }
@@ -682,41 +676,78 @@ impl Blockchain {
         // Verify signature
         if !self.governance.validator_set.is_empty() {
             if !self.governance.validator_set.contains(&block.validator) {
-                 return Err(ProvChainError::Blockchain(
+                return Err(ProvChainError::Blockchain(
                     BlockchainError::ValidationFailed(format!(
-                        "Block validator {} is not authorized", block.validator
+                        "Block validator {} is not authorized",
+                        block.validator
                     )),
                 ));
             }
             // Perform actual Ed25519 signature verification
             // 1. Get validator's public key (from block.validator)
             // 2. Verify block.signature against block.hash using the public key
-            
-            let validator_bytes = hex::decode(&block.validator)
-                .map_err(|e| ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!("Invalid validator public key hex: {}", e))))?;
-            
-            let public_key = VerifyingKey::from_bytes(validator_bytes.as_slice().try_into().map_err(|_| ProvChainError::Blockchain(BlockchainError::InvalidBlock("Invalid validator public key length".to_string())))?)
-                .map_err(|e| ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!("Invalid validator public key: {}", e))))?;
 
-            let signature_bytes = hex::decode(&block.signature)
-                .map_err(|e| ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!("Invalid signature hex: {}", e))))?;
+            let validator_bytes = hex::decode(&block.validator).map_err(|e| {
+                ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!(
+                    "Invalid validator public key hex: {}",
+                    e
+                )))
+            })?;
 
-            let signature = Signature::from_bytes(signature_bytes.as_slice().try_into().map_err(|_| ProvChainError::Blockchain(BlockchainError::InvalidBlock("Invalid signature length".to_string())))?);
+            let public_key =
+                VerifyingKey::from_bytes(validator_bytes.as_slice().try_into().map_err(|_| {
+                    ProvChainError::Blockchain(BlockchainError::InvalidBlock(
+                        "Invalid validator public key length".to_string(),
+                    ))
+                })?)
+                .map_err(|e| {
+                    ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!(
+                        "Invalid validator public key: {}",
+                        e
+                    )))
+                })?;
 
-            public_key.verify(block.hash.as_bytes(), &signature)
-                .map_err(|e| ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!("Signature verification failed: {}", e))))?;
+            let signature_bytes = hex::decode(&block.signature).map_err(|e| {
+                ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!(
+                    "Invalid signature hex: {}",
+                    e
+                )))
+            })?;
 
-            info!("✅ Block signature verified for validator {}", block.validator);
+            let signature =
+                Signature::from_bytes(signature_bytes.as_slice().try_into().map_err(|_| {
+                    ProvChainError::Blockchain(BlockchainError::InvalidBlock(
+                        "Invalid signature length".to_string(),
+                    ))
+                })?);
+
+            public_key
+                .verify(block.hash.as_bytes(), &signature)
+                .map_err(|e| {
+                    ProvChainError::Blockchain(BlockchainError::InvalidBlock(format!(
+                        "Signature verification failed: {}",
+                        e
+                    )))
+                })?;
+
+            info!(
+                "✅ Block signature verified for validator {}",
+                block.validator
+            );
         }
 
         // Add block data to RDF store
-        if let Ok(graph_name) = NamedNode::new(format!("http://provchain.org/block/{}", block.index)) {
+        if let Ok(graph_name) =
+            NamedNode::new(format!("http://provchain.org/block/{}", block.index))
+        {
             self.rdf_store.add_rdf_to_graph(&block.data, &graph_name);
             self.rdf_store.add_block_metadata(&block);
         } else {
-            return Err(ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
-                "Could not create graph name for block".to_string(),
-            )));
+            return Err(ProvChainError::Blockchain(
+                BlockchainError::BlockAdditionFailed(
+                    "Could not create graph name for block".to_string(),
+                ),
+            ));
         }
 
         // Recalculate hash after adding data to RDF store to ensure consistency

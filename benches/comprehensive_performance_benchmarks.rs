@@ -8,9 +8,7 @@
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use provchain_org::core::blockchain::Blockchain;
-use provchain_org::transaction::transaction::{Transaction, TransactionType};
 use provchain_org::web::server::WebServer;
-use serde_json::json;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tempfile::TempDir;
@@ -23,7 +21,7 @@ fn bench_production_blockchain_performance(c: &mut Criterion) {
     group.sample_size(100);
 
     // Test different realistic supply chain volumes
-    for &volume in &[100, 500, 1000, 5000, 10000].iter() {
+    for volume in [100, 500, 1000, 5000, 10000] {
         group.throughput(Throughput::Elements(volume as u64));
         group.bench_with_input(
             BenchmarkId::new("supply_chain_volume", volume),
@@ -50,7 +48,7 @@ fn bench_api_concurrent_performance(c: &mut Criterion) {
     let mut group = c.benchmark_group("api_concurrent_performance");
     group.measurement_time(Duration::from_secs(20));
 
-    for &concurrent_users in &[10, 50, 100, 500, 1000].iter() {
+    for concurrent_users in [10, 50, 100, 500, 1000] {
         group.bench_with_input(
             BenchmarkId::new("concurrent_users", concurrent_users),
             &concurrent_users,
@@ -60,7 +58,7 @@ fn bench_api_concurrent_performance(c: &mut Criterion) {
                 b.to_async(&rt).iter_batched(
                     || setup_test_web_server(),
                     |(server, _temp_dir)| async move {
-                        simulate_concurrent_api_load(server, users).await;
+                        simulate_concurrent_api_load(server.clone(), users).await;
                         server
                     },
                     criterion::BatchSize::LargeInput,
@@ -124,7 +122,7 @@ fn bench_resource_utilization(c: &mut Criterion) {
                 },
                 |(mut blockchain, test_data)| {
                     // Monitor memory usage during processing
-                    let start_memory = get_memory_usage();
+                    let start_memory = get_blockchain_estimated_size(&blockchain);
 
                     for batch in test_data {
                         let _ = blockchain.add_block(batch);
@@ -135,8 +133,8 @@ fn bench_resource_utilization(c: &mut Criterion) {
                         .rdf_store
                         .query("SELECT DISTINCT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10000");
 
-                    let end_memory = get_memory_usage();
-                    black_box((blockchain, end_memory - start_memory))
+                    let end_memory = get_blockchain_estimated_size(&blockchain);
+                    black_box((blockchain, end_memory.saturating_sub(start_memory)))
                 },
                 criterion::BatchSize::LargeInput,
             );
@@ -183,7 +181,7 @@ fn bench_supply_chain_workflows(c: &mut Criterion) {
                         let is_valid = blockchain.is_valid();
                         black_box((blockchain, is_valid))
                     },
-                    criterion::BatchSize::MediumInput,
+                    criterion::BatchSize::LargeInput,
                 );
             },
         );
@@ -240,7 +238,7 @@ fn bench_owl2_reasoning_performance(c: &mut Criterion) {
 fn bench_resilience_performance(c: &mut Criterion) {
     let mut group = c.benchmark_group("resilience_performance");
 
-    let failure_scenarios = vec![
+    let failure_scenarios: Vec<(&str, fn(&mut Blockchain, TestEnvironment))> = vec![
         ("network_partition", simulate_network_partition),
         ("high_error_rate", simulate_high_error_rate),
         ("resource_exhaustion", simulate_resource_exhaustion),
@@ -251,16 +249,16 @@ fn bench_resilience_performance(c: &mut Criterion) {
         group.bench_function(BenchmarkId::new("failure_resilience", scenario_name), |b| {
             b.iter_batched(
                 || setup_resilience_test_environment(),
-                |(blockchain, test_env)| {
+                |(mut blockchain, test_env)| {
                     let start_time = Instant::now();
 
                     // Simulate failure condition
-                    simulation_fn(blockchain, test_env);
+                    simulation_fn(&mut blockchain, test_env);
 
                     let recovery_time = start_time.elapsed();
                     black_box(recovery_time)
                 },
-                criterion::BatchSize::MediumInput,
+                criterion::BatchSize::LargeInput,
             );
         });
     }
@@ -342,15 +340,19 @@ async fn simulate_concurrent_api_load(server: Arc<WebServer>, users: usize) {
                 match request {
                     ApiRequest::Query(query) => {
                         // Simulate SPARQL query execution
-                        let _result = server_clone.rdf_store.query(&query);
+                        let blockchain = server_clone.get_blockchain();
+                        let store = &blockchain.read().await.rdf_store;
+                        let _result = store.query(&query);
                     }
                     ApiRequest::AddBlock(data) => {
                         // Simulate block addition
-                        let _result = server_clone.add_block(data).await;
+                        let blockchain = server_clone.get_blockchain();
+                        let _result = blockchain.write().await.add_block(data);
                     }
                     ApiRequest::ValidateChain => {
                         // Simulate chain validation
-                        let _is_valid = server_clone.blockchain.is_valid();
+                        let blockchain = server_clone.get_blockchain();
+                        let _is_valid = blockchain.read().await.is_valid();
                     }
                 }
 
@@ -407,7 +409,7 @@ trace:transaction{} a trace:Transaction ;
                 i,
                 chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),
                 ["production", "transport", "quality", "storage"][i % 4],
-                (i * 100) + rand::random::<u32>() % 1000
+                (i * 100) + (rand::random::<u32>() % 1000) as usize
             )
         })
         .collect()
@@ -703,9 +705,25 @@ enum ErrorInjection {
 
 // Performance Measurement Functions
 
-fn get_memory_usage() -> usize {
-    // Simple memory usage estimation
-    std::mem::size_of::<Blockchain>() + (std::mem::size_of::<String>() * 1000)
+fn get_blockchain_estimated_size(blockchain: &Blockchain) -> usize {
+    // Estimate size based on components
+    let chain_data_size: usize = blockchain
+        .chain
+        .iter()
+        .map(|b| {
+            b.data.len()
+                + b.hash.len()
+                + b.previous_hash.len()
+                + b.validator.len()
+                + b.signature.len()
+        })
+        .sum();
+
+    // Store size: count quads * approx size per quad (e.g. 150 bytes)
+    // This is an estimation of the in-memory footprint of the RDF data
+    let store_size = blockchain.rdf_store.store.len().unwrap_or(0) * 150;
+
+    chain_data_size + store_size
 }
 
 fn generate_user_api_requests(user_id: usize) -> Vec<ApiRequest> {
@@ -822,7 +840,7 @@ trace:packaging{} a trace:PackagingEvent ;
     trace:hasPackageType "Aseptic" ;
     trace:hasBatchCode "UHT{:06}" .
 "#,
-        id, id, id
+        id, id, id, id
     )
 }
 
@@ -837,6 +855,7 @@ trace:distribution{} a trace:DistributionEvent ;
     trace:hasDestination "Retailer-{}" ;
     trace:hasQuantity "{}" .
 "#,
+        id,
         id,
         id,
         id % 200,
@@ -1011,7 +1030,7 @@ trade:customs{} a trade:CustomsClearance ;
         id,
         id,
         id,
-        (id * 100) + rand::random::<u32>() % 1000
+        (id * 100) + (rand::random::<u32>() % 1000) as usize
     )
 }
 
@@ -1122,7 +1141,7 @@ cross:hasCrossDomainStandard a owl:ObjectProperty .
 
 // Failure Simulation Functions
 
-fn simulate_network_partition(blockchain: &mut Blockchain, test_env: TestEnvironment) {
+fn simulate_network_partition(blockchain: &mut Blockchain, _test_env: TestEnvironment) {
     // Simulate network partition effects
     std::thread::sleep(Duration::from_millis(100));
 
@@ -1133,7 +1152,7 @@ fn simulate_network_partition(blockchain: &mut Blockchain, test_env: TestEnviron
     }
 }
 
-fn simulate_high_error_rate(blockchain: &mut Blockchain, test_env: TestEnvironment) {
+fn simulate_high_error_rate(blockchain: &mut Blockchain, _test_env: TestEnvironment) {
     // Simulate high error rate environment
     for i in 0..20 {
         if i % 3 == 0 {
@@ -1146,7 +1165,7 @@ fn simulate_high_error_rate(blockchain: &mut Blockchain, test_env: TestEnvironme
     }
 }
 
-fn simulate_resource_exhaustion(blockchain: &mut Blockchain, test_env: TestEnvironment) {
+fn simulate_resource_exhaustion(blockchain: &mut Blockchain, _test_env: TestEnvironment) {
     // Simulate resource exhaustion scenario
     let large_transactions = generate_memory_stress_data(100);
     for tx in large_transactions {
@@ -1154,7 +1173,7 @@ fn simulate_resource_exhaustion(blockchain: &mut Blockchain, test_env: TestEnvir
     }
 }
 
-fn simulate_transaction_conflicts(blockchain: &mut Blockchain, test_env: TestEnvironment) {
+fn simulate_transaction_conflicts(blockchain: &mut Blockchain, _test_env: TestEnvironment) {
     // Simulate conflicting transactions
     for i in 0..10 {
         let conflicting_tx = format!(

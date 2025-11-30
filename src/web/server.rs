@@ -37,10 +37,10 @@ use crate::web::{
         sign_transaction,
         submit_transaction,
         toggle_favorite_sparql_query,
+        trace_path_api,
         validate_blockchain,
         validate_item,
         validate_sparql_endpoint,
-        trace_path_api,
         AppState,
     },
     websocket::{websocket_handler, BlockchainEventBroadcaster, WebSocketState},
@@ -81,6 +81,19 @@ impl WebServer {
             event_broadcaster,
             config,
         }
+    }
+
+    /// Create a new web server with a specific port (helper for tests/benchmarks)
+    pub fn new_with_port(port: u16) -> Self {
+        let mut config = Config::default();
+        config.web.port = port;
+        let blockchain = Blockchain::new();
+        Self::new(blockchain, config)
+    }
+
+    /// Access the underlying blockchain (for tests/benchmarks)
+    pub fn get_blockchain(&self) -> Arc<tokio::sync::RwLock<Blockchain>> {
+        self.app_state.blockchain.clone()
     }
 
     /// Get the event broadcaster for blockchain operations
