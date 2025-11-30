@@ -1,19 +1,21 @@
 //! Real-time integrity monitoring system
-//! 
+//!
 //! This module provides real-time monitoring of system integrity,
 //! including alerting and notification capabilities for integrity issues.
 
 use crate::core::blockchain::Blockchain;
 use crate::error::Result;
-use crate::integrity::{IntegrityValidationReport, IntegrityValidator, IntegrityStatus, RecommendationSeverity};
-use tracing::{info, warn, error, debug, instrument};
-use std::time::{Duration, Instant};
+use crate::integrity::{
+    IntegrityStatus, IntegrityValidationReport, IntegrityValidator, RecommendationSeverity,
+};
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
-use tokio::time::interval;
+use std::time::{Duration, Instant};
 use tokio::sync::broadcast;
-use serde::{Serialize, Deserialize};
-use chrono::{DateTime, Utc};
+use tokio::time::interval;
+use tracing::{debug, error, info, instrument, warn};
 
 /// Performance metrics collector for monitoring system performance
 #[derive(Debug, Clone)]
@@ -30,8 +32,8 @@ pub struct PerformanceMetricsCollector {
     pub max_history_size: usize,
 }
 
-impl PerformanceMetricsCollector {
-    pub fn new() -> Self {
+impl Default for PerformanceMetricsCollector {
+    fn default() -> Self {
         Self {
             validation_times: VecDeque::new(),
             memory_usage_history: VecDeque::new(),
@@ -39,6 +41,12 @@ impl PerformanceMetricsCollector {
             error_rates: VecDeque::new(),
             max_history_size: 1000,
         }
+    }
+}
+
+impl PerformanceMetricsCollector {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn record_validation_time(&mut self, duration: Duration) {
@@ -70,7 +78,14 @@ impl PerformanceMetricsCollector {
         }
 
         let recent_avg = self.validation_times.iter().rev().take(5).sum::<Duration>() / 5;
-        let older_avg = self.validation_times.iter().rev().skip(5).take(5).sum::<Duration>() / 5;
+        let older_avg = self
+            .validation_times
+            .iter()
+            .rev()
+            .skip(5)
+            .take(5)
+            .sum::<Duration>()
+            / 5;
 
         if recent_avg > older_avg * 2 {
             PerformanceTrend::Degrading
@@ -105,8 +120,8 @@ pub struct AlertManager {
     pub max_history_size: usize,
 }
 
-impl AlertManager {
-    pub fn new() -> Self {
+impl Default for AlertManager {
+    fn default() -> Self {
         Self {
             email_config: None,
             webhook_config: None,
@@ -114,6 +129,12 @@ impl AlertManager {
             alert_history: VecDeque::new(),
             max_history_size: 1000,
         }
+    }
+}
+
+impl AlertManager {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn configure_email(&mut self, config: EmailConfig) {
@@ -183,14 +204,20 @@ pub struct MonitoringHistory {
     pub max_history_size: usize,
 }
 
-impl MonitoringHistory {
-    pub fn new() -> Self {
+impl Default for MonitoringHistory {
+    fn default() -> Self {
         Self {
             reports: VecDeque::new(),
             performance_metrics: VecDeque::new(),
             alerts: VecDeque::new(),
             max_history_size: 10000,
         }
+    }
+}
+
+impl MonitoringHistory {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn add_report(&mut self, report: IntegrityValidationReport) {
@@ -213,7 +240,8 @@ impl MonitoringHistory {
         }
 
         let recent_reports: Vec<_> = self.reports.iter().rev().take(window_size).collect();
-        let healthy_count = recent_reports.iter()
+        let healthy_count = recent_reports
+            .iter()
             .filter(|r| matches!(r.overall_status, IntegrityStatus::Healthy))
             .count();
 
@@ -412,7 +440,12 @@ impl IntegrityMonitor {
     }
 
     /// Create a monitor with custom configuration
-    pub fn with_config(verbose: bool, interval_seconds: u64, alerting: bool, threshold: usize) -> Self {
+    pub fn with_config(
+        verbose: bool,
+        interval_seconds: u64,
+        alerting: bool,
+        threshold: usize,
+    ) -> Self {
         let (event_tx, _) = broadcast::channel(1000);
         Self {
             verbose_logging: verbose,
@@ -432,23 +465,31 @@ impl IntegrityMonitor {
     #[instrument(skip(self, blockchain))]
     pub async fn start_monitoring(&self, blockchain: &Blockchain) -> Result<()> {
         if self.verbose_logging {
-            info!("Starting integrity monitoring with {} second intervals", self.monitoring_interval_seconds);
+            info!(
+                "Starting integrity monitoring with {} second intervals",
+                self.monitoring_interval_seconds
+            );
         }
 
-        let mut monitoring_interval = interval(Duration::from_secs(self.monitoring_interval_seconds));
+        let mut monitoring_interval =
+            interval(Duration::from_secs(self.monitoring_interval_seconds));
         let mut monitoring_stats = MonitoringStatistics::new();
 
         loop {
             monitoring_interval.tick().await;
-            
-            match self.perform_monitoring_check(blockchain, &mut monitoring_stats).await {
+
+            match self
+                .perform_monitoring_check(blockchain, &mut monitoring_stats)
+                .await
+            {
                 Ok(report) => {
-                    self.process_monitoring_report(&report, &mut monitoring_stats).await?;
+                    self.process_monitoring_report(&report, &mut monitoring_stats)
+                        .await?;
                 }
                 Err(e) => {
                     error!("Monitoring check failed: {}", e);
                     monitoring_stats.failed_checks += 1;
-                    
+
                     if self.alerting_enabled {
                         self.send_monitoring_failure_alert(&e).await?;
                     }
@@ -459,24 +500,31 @@ impl IntegrityMonitor {
 
     /// Perform a single monitoring check with enhanced metrics collection
     #[instrument(skip(self, blockchain, stats))]
-    async fn perform_monitoring_check(&self, blockchain: &Blockchain, stats: &mut MonitoringStatistics) -> Result<IntegrityValidationReport> {
+    async fn perform_monitoring_check(
+        &self,
+        blockchain: &Blockchain,
+        stats: &mut MonitoringStatistics,
+    ) -> Result<IntegrityValidationReport> {
         let start_time = Instant::now();
-        
+
         if self.verbose_logging {
-            debug!("Performing integrity monitoring check #{}", stats.total_checks + 1);
+            debug!(
+                "Performing integrity monitoring check #{}",
+                stats.total_checks + 1
+            );
         }
 
         // Collect memory usage before validation
         let memory_before = self.get_memory_usage();
-        
+
         // Run integrity validation
         let report = self.validator.validate_system_integrity(blockchain)?;
-        
+
         // Calculate performance metrics
         let check_duration = start_time.elapsed();
         let memory_after = self.get_memory_usage();
         let memory_delta = memory_after.saturating_sub(memory_before);
-        
+
         // Update statistics
         stats.total_checks += 1;
         stats.total_check_time += check_duration;
@@ -486,7 +534,7 @@ impl IntegrityMonitor {
         if let Ok(mut collector) = self.metrics_collector.lock() {
             collector.record_validation_time(check_duration);
             collector.record_memory_usage(memory_after);
-            
+
             // Calculate throughput (checks per second)
             let throughput = if stats.total_checks > 0 && stats.total_check_time.as_secs() > 0 {
                 stats.total_checks as f64 / stats.total_check_time.as_secs_f64()
@@ -502,7 +550,7 @@ impl IntegrityMonitor {
         // Store report in history
         if let Ok(mut history) = self.monitoring_history.lock() {
             history.add_report(report.clone());
-            
+
             // Create performance snapshot
             let snapshot = PerformanceSnapshot {
                 timestamp: Utc::now(),
@@ -527,11 +575,14 @@ impl IntegrityMonitor {
         let _ = self.event_broadcaster.send(event);
 
         // Check for performance threshold violations
-        self.check_performance_thresholds(check_duration, memory_delta).await?;
+        self.check_performance_thresholds(check_duration, memory_delta)
+            .await?;
 
         if self.verbose_logging {
-            debug!("Monitoring check completed in {:?} with status: {:?}, memory delta: {} bytes", 
-                   check_duration, report.overall_status, memory_delta);
+            debug!(
+                "Monitoring check completed in {:?} with status: {:?}, memory delta: {} bytes",
+                check_duration, report.overall_status, memory_delta
+            );
         }
 
         Ok(report)
@@ -539,7 +590,11 @@ impl IntegrityMonitor {
 
     /// Process monitoring report and handle alerts
     #[instrument(skip(self, report, stats))]
-    async fn process_monitoring_report(&self, report: &IntegrityValidationReport, stats: &mut MonitoringStatistics) -> Result<()> {
+    async fn process_monitoring_report(
+        &self,
+        report: &IntegrityValidationReport,
+        stats: &mut MonitoringStatistics,
+    ) -> Result<()> {
         // Update statistics
         match report.overall_status {
             IntegrityStatus::Healthy => stats.healthy_checks += 1,
@@ -555,10 +610,12 @@ impl IntegrityMonitor {
 
         // Log monitoring results
         if self.verbose_logging {
-            info!("Monitoring report: status={:?}, issues={}, recommendations={}", 
-                  report.overall_status, 
-                  report.count_total_issues(),
-                  report.recommendations.len());
+            info!(
+                "Monitoring report: status={:?}, issues={}, recommendations={}",
+                report.overall_status,
+                report.count_total_issues(),
+                report.recommendations.len()
+            );
         }
 
         Ok(())
@@ -566,13 +623,21 @@ impl IntegrityMonitor {
 
     /// Handle monitoring alerts based on report
     #[instrument(skip(self, report, stats))]
-    async fn handle_monitoring_alerts(&self, report: &IntegrityValidationReport, stats: &MonitoringStatistics) -> Result<()> {
+    async fn handle_monitoring_alerts(
+        &self,
+        report: &IntegrityValidationReport,
+        stats: &MonitoringStatistics,
+    ) -> Result<()> {
         match report.overall_status {
             IntegrityStatus::Critical | IntegrityStatus::Corrupted => {
                 self.send_critical_alert(report, stats).await?;
             }
             IntegrityStatus::Warning => {
-                if report.recommendations.iter().any(|r| matches!(r.severity, RecommendationSeverity::Critical)) {
+                if report
+                    .recommendations
+                    .iter()
+                    .any(|r| matches!(r.severity, RecommendationSeverity::Critical))
+                {
                     self.send_warning_alert(report, stats).await?;
                 }
             }
@@ -589,7 +654,11 @@ impl IntegrityMonitor {
 
     /// Send critical integrity alert
     #[instrument(skip(self, report, stats))]
-    async fn send_critical_alert(&self, report: &IntegrityValidationReport, stats: &MonitoringStatistics) -> Result<()> {
+    async fn send_critical_alert(
+        &self,
+        report: &IntegrityValidationReport,
+        stats: &MonitoringStatistics,
+    ) -> Result<()> {
         if self.verbose_logging {
             warn!("Sending critical integrity alert");
         }
@@ -599,11 +668,14 @@ impl IntegrityMonitor {
         // - Log to external monitoring systems
         // - Trigger automated backup procedures
         // - Escalate to on-call personnel if configured
-        
+
         let alert = IntegrityAlert {
             alert_type: AlertType::Critical,
             timestamp: chrono::Utc::now(),
-            message: format!("Critical integrity issues detected: {} total issues", report.count_total_issues()),
+            message: format!(
+                "Critical integrity issues detected: {} total issues",
+                report.count_total_issues()
+            ),
             report_summary: report.get_summary(),
             monitoring_stats: stats.clone(),
         };
@@ -614,7 +686,11 @@ impl IntegrityMonitor {
 
     /// Send warning integrity alert
     #[instrument(skip(self, report, stats))]
-    async fn send_warning_alert(&self, report: &IntegrityValidationReport, stats: &MonitoringStatistics) -> Result<()> {
+    async fn send_warning_alert(
+        &self,
+        report: &IntegrityValidationReport,
+        stats: &MonitoringStatistics,
+    ) -> Result<()> {
         if self.verbose_logging {
             info!("Sending warning integrity alert");
         }
@@ -623,11 +699,14 @@ impl IntegrityMonitor {
         // - Send warning notifications
         // - Log to monitoring dashboard
         // - Schedule follow-up checks
-        
+
         let alert = IntegrityAlert {
             alert_type: AlertType::Warning,
             timestamp: chrono::Utc::now(),
-            message: format!("Integrity warnings detected: {} recommendations", report.recommendations.len()),
+            message: format!(
+                "Integrity warnings detected: {} recommendations",
+                report.recommendations.len()
+            ),
             report_summary: report.get_summary(),
             monitoring_stats: stats.clone(),
         };
@@ -638,7 +717,11 @@ impl IntegrityMonitor {
 
     /// Send recovery alert
     #[instrument(skip(self, report, stats))]
-    async fn send_recovery_alert(&self, report: &IntegrityValidationReport, stats: &MonitoringStatistics) -> Result<()> {
+    async fn send_recovery_alert(
+        &self,
+        report: &IntegrityValidationReport,
+        stats: &MonitoringStatistics,
+    ) -> Result<()> {
         if self.verbose_logging {
             info!("Sending recovery alert - system integrity restored");
         }
@@ -647,7 +730,7 @@ impl IntegrityMonitor {
         // - Send recovery notifications
         // - Update monitoring dashboard
         // - Log recovery metrics
-        
+
         let alert = IntegrityAlert {
             alert_type: AlertType::Recovery,
             timestamp: chrono::Utc::now(),
@@ -662,7 +745,10 @@ impl IntegrityMonitor {
 
     /// Send monitoring failure alert
     #[instrument(skip(self, error))]
-    async fn send_monitoring_failure_alert(&self, error: &crate::error::ProvChainError) -> Result<()> {
+    async fn send_monitoring_failure_alert(
+        &self,
+        error: &crate::error::ProvChainError,
+    ) -> Result<()> {
         if self.verbose_logging {
             error!("Sending monitoring failure alert");
         }
@@ -671,7 +757,7 @@ impl IntegrityMonitor {
         // - Alert about monitoring system failures
         // - Escalate monitoring issues
         // - Trigger fallback monitoring procedures
-        
+
         debug!("Monitoring failure alert prepared for error: {}", error);
         Ok(())
     }
@@ -682,19 +768,22 @@ impl IntegrityMonitor {
         // - Return current monitoring statistics
         // - Include performance metrics
         // - Provide trend analysis
-        
+
         MonitoringStatistics::new()
     }
 
     /// Perform on-demand integrity check
     #[instrument(skip(self, blockchain))]
-    pub async fn perform_on_demand_check(&self, blockchain: &Blockchain) -> Result<IntegrityValidationReport> {
+    pub async fn perform_on_demand_check(
+        &self,
+        blockchain: &Blockchain,
+    ) -> Result<IntegrityValidationReport> {
         if self.verbose_logging {
             info!("Performing on-demand integrity check");
         }
 
         let report = self.validator.validate_system_integrity(blockchain)?;
-        
+
         if self.alerting_enabled && !matches!(report.overall_status, IntegrityStatus::Healthy) {
             let temp_stats = MonitoringStatistics::new();
             self.handle_monitoring_alerts(&report, &temp_stats).await?;
@@ -707,17 +796,19 @@ impl IntegrityMonitor {
     pub fn configure_thresholds(&mut self, critical_threshold: usize, warning_threshold: usize) {
         self.critical_alert_threshold = critical_threshold;
         // TODO: Add warning threshold configuration
-        
+
         if self.verbose_logging {
-            info!("Updated monitoring thresholds: critical={}, warning={}", 
-                  critical_threshold, warning_threshold);
+            info!(
+                "Updated monitoring thresholds: critical={}, warning={}",
+                critical_threshold, warning_threshold
+            );
         }
     }
 
     /// Enable or disable alerting
     pub fn set_alerting_enabled(&mut self, enabled: bool) {
         self.alerting_enabled = enabled;
-        
+
         if self.verbose_logging {
             info!("Alerting {}", if enabled { "enabled" } else { "disabled" });
         }
@@ -738,7 +829,11 @@ impl IntegrityMonitor {
     }
 
     /// Check for performance threshold violations
-    async fn check_performance_thresholds(&self, duration: Duration, memory_delta: usize) -> Result<()> {
+    async fn check_performance_thresholds(
+        &self,
+        duration: Duration,
+        memory_delta: usize,
+    ) -> Result<()> {
         // Performance thresholds
         let max_validation_time = Duration::from_secs(30); // 30 seconds max
         let max_memory_delta = 100 * 1024 * 1024; // 100MB max delta
@@ -753,7 +848,10 @@ impl IntegrityMonitor {
             let _ = self.event_broadcaster.send(event);
 
             if self.verbose_logging {
-                warn!("Validation time threshold exceeded: {:?} > {:?}", duration, max_validation_time);
+                warn!(
+                    "Validation time threshold exceeded: {:?} > {:?}",
+                    duration, max_validation_time
+                );
             }
         }
 
@@ -767,7 +865,10 @@ impl IntegrityMonitor {
             let _ = self.event_broadcaster.send(event);
 
             if self.verbose_logging {
-                warn!("Memory delta threshold exceeded: {} bytes > {} bytes", memory_delta, max_memory_delta);
+                warn!(
+                    "Memory delta threshold exceeded: {} bytes > {} bytes",
+                    memory_delta, max_memory_delta
+                );
             }
         }
 
@@ -790,8 +891,20 @@ impl IntegrityMonitor {
         if let Ok(collector) = self.metrics_collector.lock() {
             dashboard_data.average_validation_time = collector.get_average_validation_time();
             dashboard_data.performance_trend = collector.get_performance_trend();
-            dashboard_data.recent_validation_times = collector.validation_times.iter().rev().take(10).cloned().collect();
-            dashboard_data.recent_throughput = collector.throughput_history.iter().rev().take(10).cloned().collect();
+            dashboard_data.recent_validation_times = collector
+                .validation_times
+                .iter()
+                .rev()
+                .take(10)
+                .cloned()
+                .collect();
+            dashboard_data.recent_throughput = collector
+                .throughput_history
+                .iter()
+                .rev()
+                .take(10)
+                .cloned()
+                .collect();
         }
 
         // Get historical data
@@ -804,7 +917,8 @@ impl IntegrityMonitor {
         // Get alert statistics
         if let Ok(alert_manager) = self.alert_manager.lock() {
             dashboard_data.total_alerts = alert_manager.alert_history.len();
-            dashboard_data.recent_alert_types = alert_manager.alert_history
+            dashboard_data.recent_alert_types = alert_manager
+                .alert_history
                 .iter()
                 .rev()
                 .take(10)
@@ -816,7 +930,12 @@ impl IntegrityMonitor {
     }
 
     /// Configure alert channels
-    pub async fn configure_alerts(&self, email_config: Option<EmailConfig>, webhook_config: Option<WebhookConfig>, slack_config: Option<SlackConfig>) -> Result<()> {
+    pub async fn configure_alerts(
+        &self,
+        email_config: Option<EmailConfig>,
+        webhook_config: Option<WebhookConfig>,
+        slack_config: Option<SlackConfig>,
+    ) -> Result<()> {
         if let Ok(mut alert_manager) = self.alert_manager.lock() {
             if let Some(config) = email_config {
                 alert_manager.configure_email(config);
@@ -839,7 +958,7 @@ impl IntegrityMonitor {
     /// Generate monitoring report for external systems
     pub async fn generate_monitoring_report(&self) -> Result<MonitoringReport> {
         let dashboard_data = self.get_dashboard_data().await?;
-        
+
         let report = MonitoringReport {
             timestamp: Utc::now(),
             system_health: dashboard_data.health_trend,
@@ -851,13 +970,19 @@ impl IntegrityMonitor {
             },
             alert_summary: AlertSummary {
                 total_alerts: dashboard_data.total_alerts,
-                critical_alerts: dashboard_data.recent_alert_types.iter()
+                critical_alerts: dashboard_data
+                    .recent_alert_types
+                    .iter()
                     .filter(|&t| matches!(t, AlertType::Critical))
                     .count(),
-                warning_alerts: dashboard_data.recent_alert_types.iter()
+                warning_alerts: dashboard_data
+                    .recent_alert_types
+                    .iter()
                     .filter(|&t| matches!(t, AlertType::Warning))
                     .count(),
-                recovery_alerts: dashboard_data.recent_alert_types.iter()
+                recovery_alerts: dashboard_data
+                    .recent_alert_types
+                    .iter()
                     .filter(|&t| matches!(t, AlertType::Recovery))
                     .count(),
             },
@@ -868,18 +993,25 @@ impl IntegrityMonitor {
     }
 
     /// Generate recommendations based on monitoring data
-    async fn generate_recommendations(&self, dashboard_data: &MonitoringDashboardData) -> Vec<String> {
+    async fn generate_recommendations(
+        &self,
+        dashboard_data: &MonitoringDashboardData,
+    ) -> Vec<String> {
         let mut recommendations = Vec::new();
 
         // Performance recommendations
-        if matches!(dashboard_data.performance_trend, PerformanceTrend::Degrading) {
+        if matches!(
+            dashboard_data.performance_trend,
+            PerformanceTrend::Degrading
+        ) {
             recommendations.push("Performance is degrading. Consider optimizing validation algorithms or increasing system resources.".to_string());
         }
 
         // Health recommendations
         match dashboard_data.health_trend {
             HealthTrend::Critical => {
-                recommendations.push("System health is critical. Immediate attention required.".to_string());
+                recommendations
+                    .push("System health is critical. Immediate attention required.".to_string());
             }
             HealthTrend::Concerning => {
                 recommendations.push("System health is concerning. Monitor closely and consider preventive measures.".to_string());
@@ -889,7 +1021,10 @@ impl IntegrityMonitor {
 
         // Alert frequency recommendations
         if dashboard_data.total_alerts > 50 {
-            recommendations.push("High alert frequency detected. Review alert thresholds and system stability.".to_string());
+            recommendations.push(
+                "High alert frequency detected. Review alert thresholds and system stability."
+                    .to_string(),
+            );
         }
 
         // Validation time recommendations
@@ -916,8 +1051,8 @@ pub struct MonitoringDashboardData {
     pub recent_alert_types: Vec<AlertType>,
 }
 
-impl MonitoringDashboardData {
-    pub fn new() -> Self {
+impl Default for MonitoringDashboardData {
+    fn default() -> Self {
         Self {
             current_stats: MonitoringStatistics::new(),
             average_validation_time: Duration::from_secs(0),
@@ -930,6 +1065,12 @@ impl MonitoringDashboardData {
             total_alerts: 0,
             recent_alert_types: Vec::new(),
         }
+    }
+}
+
+impl MonitoringDashboardData {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
@@ -1014,7 +1155,7 @@ mod tests {
         stats.healthy_checks = 8;
         stats.warning_checks = 2;
         stats.total_check_time = Duration::from_secs(100);
-        
+
         assert_eq!(stats.health_percentage(), 80.0);
         assert_eq!(stats.average_check_time(), Duration::from_secs(10));
         assert!(!stats.has_recent_issues());
@@ -1025,9 +1166,12 @@ mod tests {
         let mut collector = PerformanceMetricsCollector::new();
         collector.record_validation_time(Duration::from_millis(100));
         collector.record_validation_time(Duration::from_millis(150));
-        
+
         assert_eq!(collector.validation_times.len(), 2);
-        assert_eq!(collector.get_average_validation_time(), Duration::from_millis(125));
+        assert_eq!(
+            collector.get_average_validation_time(),
+            Duration::from_millis(125)
+        );
     }
 
     #[test]
@@ -1043,10 +1187,10 @@ mod tests {
     fn test_monitoring_history() {
         let mut history = MonitoringHistory::new();
         let report = IntegrityValidationReport::new();
-        
+
         history.add_report(report);
         assert_eq!(history.reports.len(), 1);
-        
+
         let trend = history.get_health_trend(5);
         assert_eq!(trend, HealthTrend::Insufficient);
     }
@@ -1055,11 +1199,31 @@ mod tests {
     async fn test_perform_on_demand_check() {
         let monitor = IntegrityMonitor::new();
         let blockchain = Blockchain::new();
-        
+
         let result = monitor.perform_on_demand_check(&blockchain).await;
         assert!(result.is_ok());
-        
+
         let report = result.unwrap();
+
+        // For a new blockchain with loaded ontology but no transactions,
+        // the system should be Healthy (ontology triples don't count as transactions)
         assert_eq!(report.overall_status, IntegrityStatus::Healthy);
+
+        // Verify that the blockchain has genesis block and has ontology data
+        assert_eq!(
+            report.blockchain_integrity.chain_length, 1,
+            "Should have genesis block"
+        );
+        assert!(
+            report.transaction_count_integrity.actual_rdf_triple_count > 0,
+            "Ontology should be loaded"
+        );
+        assert_eq!(
+            report
+                .transaction_count_integrity
+                .reported_total_transactions,
+            1,
+            "Should have genesis block transaction"
+        );
     }
 }

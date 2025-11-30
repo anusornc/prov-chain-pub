@@ -1,9 +1,9 @@
 //! Container orchestration and Docker support for production deployment
 
+use crate::production::ProductionError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use crate::production::ProductionError;
 
 /// Container configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -516,10 +516,9 @@ configMap:
             .iter()
             .map(|volume| {
                 let mode = if volume.read_only { ":ro" } else { "" };
-                format!("      - {}:{}{}",
-                    volume.host_path,
-                    volume.container_path,
-                    mode
+                format!(
+                    "      - {}:{}{}",
+                    volume.host_path, volume.container_path, mode
                 )
             })
             .collect::<Vec<_>>()
@@ -541,10 +540,9 @@ configMap:
             .iter()
             .enumerate()
             .map(|(i, volume)| {
-                format!("        - name: volume-{}\n          mountPath: {}\n          readOnly: {}",
-                    i,
-                    volume.container_path,
-                    volume.read_only
+                format!(
+                    "        - name: volume-{}\n          mountPath: {}\n          readOnly: {}",
+                    i, volume.container_path, volume.read_only
                 )
             })
             .collect::<Vec<_>>()
@@ -557,9 +555,9 @@ configMap:
             .iter()
             .enumerate()
             .map(|(i, volume)| {
-                format!("      - name: volume-{}\n        hostPath:\n          path: {}",
-                    i,
-                    volume.host_path
+                format!(
+                    "      - name: volume-{}\n        hostPath:\n          path: {}",
+                    i, volume.host_path
                 )
             })
             .collect::<Vec<_>>()
@@ -571,30 +569,48 @@ configMap:
         use tokio::fs;
 
         // Create output directory
-        fs::create_dir_all(output_dir).await
-            .map_err(|e| ProductionError::Configuration(format!("Failed to create output directory: {e}")))?;
+        fs::create_dir_all(output_dir).await.map_err(|e| {
+            ProductionError::Configuration(format!("Failed to create output directory: {e}"))
+        })?;
 
         // Write Dockerfile
         let dockerfile_path = output_dir.join("Dockerfile");
-        fs::write(&dockerfile_path, self.generate_dockerfile()).await
-            .map_err(|e| ProductionError::Configuration(format!("Failed to write Dockerfile: {e}")))?;
+        fs::write(&dockerfile_path, self.generate_dockerfile())
+            .await
+            .map_err(|e| {
+                ProductionError::Configuration(format!("Failed to write Dockerfile: {e}"))
+            })?;
 
         // Write Docker Compose
         let compose_path = output_dir.join("docker-compose.yml");
-        fs::write(&compose_path, self.generate_docker_compose()).await
-            .map_err(|e| ProductionError::Configuration(format!("Failed to write docker-compose.yml: {e}")))?;
+        fs::write(&compose_path, self.generate_docker_compose())
+            .await
+            .map_err(|e| {
+                ProductionError::Configuration(format!("Failed to write docker-compose.yml: {e}"))
+            })?;
 
         // Write Kubernetes deployment
         let k8s_path = output_dir.join("kubernetes-deployment.yaml");
-        fs::write(&k8s_path, self.generate_kubernetes_deployment()).await
-            .map_err(|e| ProductionError::Configuration(format!("Failed to write Kubernetes deployment: {e}")))?;
+        fs::write(&k8s_path, self.generate_kubernetes_deployment())
+            .await
+            .map_err(|e| {
+                ProductionError::Configuration(format!(
+                    "Failed to write Kubernetes deployment: {e}"
+                ))
+            })?;
 
         // Write Helm values
         let helm_path = output_dir.join("helm-values.yaml");
-        fs::write(&helm_path, self.generate_helm_values()).await
-            .map_err(|e| ProductionError::Configuration(format!("Failed to write Helm values: {e}")))?;
+        fs::write(&helm_path, self.generate_helm_values())
+            .await
+            .map_err(|e| {
+                ProductionError::Configuration(format!("Failed to write Helm values: {e}"))
+            })?;
 
-        tracing::info!("Container configuration files written to: {}", output_dir.display());
+        tracing::info!(
+            "Container configuration files written to: {}",
+            output_dir.display()
+        );
         Ok(())
     }
 }

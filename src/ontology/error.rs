@@ -6,24 +6,16 @@ use std::fmt;
 #[derive(Debug)]
 pub enum OntologyError {
     /// Ontology file not found at the specified path
-    OntologyNotFound {
-        path: String,
-    },
+    OntologyNotFound { path: String },
     /// Invalid ontology file path
-    InvalidOntologyPath {
-        path: String,
-        reason: String,
-    },
+    InvalidOntologyPath { path: String, reason: String },
     /// Error loading ontology file
     OntologyLoadError {
         path: String,
         source: Box<dyn std::error::Error + Send + Sync>,
     },
     /// Ontology parsing error
-    OntologyParseError {
-        path: String,
-        message: String,
-    },
+    OntologyParseError { path: String, message: String },
     /// Network consistency error - participants using different ontologies
     ConsistencyError {
         local_hash: String,
@@ -47,7 +39,11 @@ impl fmt::Display for OntologyError {
             OntologyError::OntologyParseError { path, message } => {
                 write!(f, "Failed to parse ontology from '{}': {}", path, message)
             }
-            OntologyError::ConsistencyError { local_hash, network_hash, message } => {
+            OntologyError::ConsistencyError {
+                local_hash,
+                network_hash,
+                message,
+            } => {
                 write!(
                     f,
                     "Ontology consistency error: local hash {} != network hash {}. {}",
@@ -117,7 +113,7 @@ impl ValidationError {
 impl fmt::Display for ValidationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "SHACL Validation Error: {}", self.message)?;
-        
+
         if let Some(tx_id) = &self.transaction_id {
             write!(f, " (Transaction: {})", tx_id)?;
         }
@@ -154,11 +150,7 @@ pub struct ShapeViolation {
 
 impl ShapeViolation {
     /// Create a new shape violation
-    pub fn new(
-        shape_id: String,
-        constraint_type: ConstraintType,
-        message: String,
-    ) -> Self {
+    pub fn new(shape_id: String, constraint_type: ConstraintType, message: String) -> Self {
         Self {
             shape_id,
             property_path: None,
@@ -191,11 +183,11 @@ impl ShapeViolation {
 impl fmt::Display for ShapeViolation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] {}: {}", self.severity, self.shape_id, self.message)?;
-        
+
         if let Some(path) = &self.property_path {
             write!(f, " (Property: {})", path)?;
         }
-        
+
         if let Some(value) = &self.value {
             write!(f, " (Value: {})", value)?;
         }
@@ -379,10 +371,18 @@ impl ValidationResult {
 impl fmt::Display for ValidationResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_valid {
-            write!(f, "Validation PASSED: {} constraints checked", self.constraints_checked)?;
+            write!(
+                f,
+                "Validation PASSED: {} constraints checked",
+                self.constraints_checked
+            )?;
         } else {
-            write!(f, "Validation FAILED: {} violations found, {} constraints checked", 
-                   self.violations.len(), self.constraints_checked)?;
+            write!(
+                f,
+                "Validation FAILED: {} violations found, {} constraints checked",
+                self.violations.len(),
+                self.constraints_checked
+            )?;
         }
 
         if let Some(time) = self.execution_time_ms {
@@ -428,10 +428,8 @@ mod tests {
             "Invalid datatype".to_string(),
         );
 
-        let error = ValidationError::with_violations(
-            "Multiple violations".to_string(),
-            vec![violation],
-        );
+        let error =
+            ValidationError::with_violations("Multiple violations".to_string(), vec![violation]);
 
         assert!(error.has_violations());
         assert_eq!(error.shape_violations.len(), 1);

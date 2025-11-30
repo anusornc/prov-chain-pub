@@ -11,7 +11,7 @@
 # Purpose: Test owl:hasKey and other OWL2 features
 #################################################################
 
-owl:imports <http://provchain.org/core> .
+[] owl:imports <http://provchain.org/core> .
 
 :TestEntity a owl:Class ;
   rdfs:label "TestEntity" ;

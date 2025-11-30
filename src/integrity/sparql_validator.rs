@@ -1,13 +1,15 @@
 //! SPARQL query consistency validation
-//! 
+//!
 //! This module validates SPARQL query consistency across the RDF store,
 //! ensuring that queries return expected results and that all graphs
 //! are accessible and consistent.
 
-use crate::storage::rdf_store::RDFStore;
 use crate::error::Result;
-use crate::integrity::{SparqlIntegrityStatus, QueryConsistencyResult, IntegrityRecommendation, RecommendationSeverity};
-use tracing::{info, warn, error, debug, instrument};
+use crate::integrity::{
+    IntegrityRecommendation, QueryConsistencyResult, RecommendationSeverity, SparqlIntegrityStatus,
+};
+use crate::storage::rdf_store::RDFStore;
+use tracing::{debug, error, info, instrument, warn};
 
 /// SPARQL query consistency validator
 pub struct SparqlConsistencyValidator {
@@ -43,13 +45,13 @@ impl SparqlConsistencyValidator {
         vec![
             // Basic triple count
             "SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o }".to_string(),
-            
+
             // Graph enumeration
             "SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o } }".to_string(),
-            
+
             // Block metadata validation
             "PREFIX prov: <http://provchain.org/> SELECT ?block ?index WHERE { GRAPH <http://provchain.org/blockchain> { ?block prov:hasIndex ?index } }".to_string(),
-            
+
             // Data graph accessibility
             "SELECT ?g (COUNT(*) as ?triples) WHERE { GRAPH ?g { ?s ?p ?o } FILTER(STRSTARTS(STR(?g), \"http://provchain.org/block/\")) } GROUP BY ?g".to_string(),
         ]
@@ -57,11 +59,18 @@ impl SparqlConsistencyValidator {
 
     /// Validate query result consistency
     #[instrument(skip(self, rdf_store, test_queries))]
-    pub fn validate_query_result_consistency(&self, rdf_store: &RDFStore, test_queries: &[String]) -> Result<Vec<QueryConsistencyResult>> {
+    pub fn validate_query_result_consistency(
+        &self,
+        rdf_store: &RDFStore,
+        test_queries: &[String],
+    ) -> Result<Vec<QueryConsistencyResult>> {
         let mut results = Vec::new();
-        
+
         if self.verbose_logging {
-            info!("Validating consistency for {} test queries", test_queries.len());
+            info!(
+                "Validating consistency for {} test queries",
+                test_queries.len()
+            );
         }
 
         for query in test_queries {
@@ -80,13 +89,20 @@ impl SparqlConsistencyValidator {
             }
         }
 
-        debug!("Query consistency validation completed for {} queries", results.len());
+        debug!(
+            "Query consistency validation completed for {} queries",
+            results.len()
+        );
         Ok(results)
     }
 
     /// Validate consistency of a single query
     #[instrument(skip(self, rdf_store, query))]
-    pub fn validate_single_query_consistency(&self, rdf_store: &RDFStore, query: &str) -> Result<QueryConsistencyResult> {
+    pub fn validate_single_query_consistency(
+        &self,
+        rdf_store: &RDFStore,
+        query: &str,
+    ) -> Result<QueryConsistencyResult> {
         if self.verbose_logging {
             debug!("Validating query: {}", query);
         }
@@ -107,19 +123,21 @@ impl SparqlConsistencyValidator {
                     match solution_result {
                         Ok(_) => count += 1,
                         Err(e) => {
-                            result.inaccessible_data.push(format!("Solution error: {}", e));
+                            result
+                                .inaccessible_data
+                                .push(format!("Solution error: {}", e));
                         }
                     }
                 }
                 result.actual_result_count = count;
-                
+
                 if self.verbose_logging {
                     debug!("Query returned {} solutions", count);
                 }
             }
             oxigraph::sparql::QueryResults::Boolean(boolean_result) => {
                 result.actual_result_count = if boolean_result { 1 } else { 0 };
-                
+
                 if self.verbose_logging {
                     debug!("Query returned boolean: {}", boolean_result);
                 }
@@ -130,12 +148,14 @@ impl SparqlConsistencyValidator {
                     match triple_result {
                         Ok(_) => count += 1,
                         Err(e) => {
-                            result.inaccessible_data.push(format!("Triple error: {}", e));
+                            result
+                                .inaccessible_data
+                                .push(format!("Triple error: {}", e));
                         }
                     }
                 }
                 result.actual_result_count = count;
-                
+
                 if self.verbose_logging {
                     debug!("Query returned {} triples", count);
                 }
@@ -155,9 +175,13 @@ impl SparqlConsistencyValidator {
         }
 
         if self.verbose_logging {
-            debug!("Query validation completed: expected={}, actual={}, missing_graphs={}, issues={}", 
-                   result.expected_result_count, result.actual_result_count, 
-                   result.missing_graphs.len(), result.inaccessible_data.len());
+            debug!(
+                "Query validation completed: expected={}, actual={}, missing_graphs={}, issues={}",
+                result.expected_result_count,
+                result.actual_result_count,
+                result.missing_graphs.len(),
+                result.inaccessible_data.len()
+            );
         }
 
         Ok(result)
@@ -167,7 +191,7 @@ impl SparqlConsistencyValidator {
     #[instrument(skip(self, rdf_store))]
     pub fn validate_graph_accessibility(&self, rdf_store: &RDFStore) -> Result<Vec<String>> {
         let mut accessibility_issues = Vec::new();
-        
+
         if self.verbose_logging {
             info!("Validating graph accessibility");
         }
@@ -181,10 +205,10 @@ impl SparqlConsistencyValidator {
                 for solution_result in solutions {
                     match solution_result {
                         Ok(solution) => {
-                            if let Some(graph_term) = solution.get("g") {
-                                if let oxigraph::model::Term::NamedNode(graph_node) = graph_term {
-                                    discovered_graphs.push(graph_node.as_str().to_string());
-                                }
+                            if let Some(oxigraph::model::Term::NamedNode(graph_node)) =
+                                solution.get("g")
+                            {
+                                discovered_graphs.push(graph_node.as_str().to_string());
                             }
                         }
                         Err(e) => {
@@ -194,7 +218,8 @@ impl SparqlConsistencyValidator {
                 }
             }
             _ => {
-                accessibility_issues.push("Graph enumeration query returned unexpected result type".to_string());
+                accessibility_issues
+                    .push("Graph enumeration query returned unexpected result type".to_string());
             }
         }
 
@@ -204,19 +229,20 @@ impl SparqlConsistencyValidator {
 
         // Test accessibility of each discovered graph
         for graph_name in &discovered_graphs {
-            let accessibility_query = format!(
-                "ASK {{ GRAPH <{}> {{ ?s ?p ?o }} }}", 
-                graph_name
-            );
+            let accessibility_query = format!("ASK {{ GRAPH <{}> {{ ?s ?p ?o }} }}", graph_name);
 
             match rdf_store.query(&accessibility_query) {
                 oxigraph::sparql::QueryResults::Boolean(accessible) => {
                     if !accessible {
-                        accessibility_issues.push(format!("Graph {} is not accessible", graph_name));
+                        accessibility_issues
+                            .push(format!("Graph {} is not accessible", graph_name));
                     }
                 }
                 _ => {
-                    accessibility_issues.push(format!("Failed to test accessibility of graph {}", graph_name));
+                    accessibility_issues.push(format!(
+                        "Failed to test accessibility of graph {}",
+                        graph_name
+                    ));
                 }
             }
         }
@@ -227,24 +253,29 @@ impl SparqlConsistencyValidator {
                 // Extract block index from graph name
                 if let Some(index_str) = graph_name.strip_prefix("http://provchain.org/block/") {
                     if index_str.parse::<u64>().is_err() {
-                        accessibility_issues.push(format!("Invalid block graph naming: {}", graph_name));
+                        accessibility_issues
+                            .push(format!("Invalid block graph naming: {}", graph_name));
                     }
                 }
             } else if graph_name == "http://provchain.org/blockchain" {
                 // Validate blockchain metadata graph has expected structure
                 let metadata_query = format!(
-                    "ASK {{ GRAPH <{}> {{ ?block <http://provchain.org/hasIndex> ?index }} }}", 
+                    "ASK {{ GRAPH <{}> {{ ?block <http://provchain.org/hasIndex> ?index }} }}",
                     graph_name
                 );
-                
+
                 match rdf_store.query(&metadata_query) {
                     oxigraph::sparql::QueryResults::Boolean(has_metadata) => {
                         if !has_metadata {
-                            accessibility_issues.push("Blockchain metadata graph missing expected structure".to_string());
+                            accessibility_issues.push(
+                                "Blockchain metadata graph missing expected structure".to_string(),
+                            );
                         }
                     }
                     _ => {
-                        accessibility_issues.push("Failed to validate blockchain metadata graph structure".to_string());
+                        accessibility_issues.push(
+                            "Failed to validate blockchain metadata graph structure".to_string(),
+                        );
                     }
                 }
             }
@@ -258,7 +289,10 @@ impl SparqlConsistencyValidator {
             }
         }
 
-        debug!("Graph accessibility validation completed with {} issues", accessibility_issues.len());
+        debug!(
+            "Graph accessibility validation completed with {} issues",
+            accessibility_issues.len()
+        );
         Ok(accessibility_issues)
     }
 
@@ -266,7 +300,7 @@ impl SparqlConsistencyValidator {
     #[instrument(skip(self, rdf_store))]
     pub fn cross_validate_query_results(&self, rdf_store: &RDFStore) -> Result<Vec<String>> {
         let mut validation_mismatches = Vec::new();
-        
+
         if self.verbose_logging {
             info!("Cross-validating query results against raw storage");
         }
@@ -276,14 +310,12 @@ impl SparqlConsistencyValidator {
         match rdf_store.query(count_query) {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
                 let mut query_count = 0;
-                for solution_result in solutions {
-                    if let Ok(solution) = solution_result {
-                        if let Some(count_term) = solution.get("count") {
-                            if let oxigraph::model::Term::Literal(literal) = count_term {
-                                if let Ok(count) = literal.value().parse::<usize>() {
-                                    query_count = count;
-                                    break;
-                                }
+                for solution in solutions.flatten() {
+                    if let Some(count_term) = solution.get("count") {
+                        if let oxigraph::model::Term::Literal(literal) = count_term {
+                            if let Ok(count) = literal.value().parse::<usize>() {
+                                query_count = count;
+                                break;
                             }
                         }
                     }
@@ -299,7 +331,7 @@ impl SparqlConsistencyValidator {
 
                 if query_count != direct_count {
                     validation_mismatches.push(format!(
-                        "Total triple count mismatch: query={}, direct={}", 
+                        "Total triple count mismatch: query={}, direct={}",
                         query_count, direct_count
                     ));
                 }
@@ -310,18 +342,17 @@ impl SparqlConsistencyValidator {
         }
 
         // Test 2: Validate graph count consistency
-        let graph_count_query = "SELECT (COUNT(DISTINCT ?g) as ?count) WHERE { GRAPH ?g { ?s ?p ?o } }";
+        let graph_count_query =
+            "SELECT (COUNT(DISTINCT ?g) as ?count) WHERE { GRAPH ?g { ?s ?p ?o } }";
         match rdf_store.query(graph_count_query) {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
                 let mut query_graph_count = 0;
-                for solution_result in solutions {
-                    if let Ok(solution) = solution_result {
-                        if let Some(count_term) = solution.get("count") {
-                            if let oxigraph::model::Term::Literal(literal) = count_term {
-                                if let Ok(count) = literal.value().parse::<usize>() {
-                                    query_graph_count = count;
-                                    break;
-                                }
+                for solution in solutions.flatten() {
+                    if let Some(count_term) = solution.get("count") {
+                        if let oxigraph::model::Term::Literal(literal) = count_term {
+                            if let Ok(count) = literal.value().parse::<usize>() {
+                                query_graph_count = count;
+                                break;
                             }
                         }
                     }
@@ -342,8 +373,9 @@ impl SparqlConsistencyValidator {
 
                 if query_graph_count != direct_graphs.len() {
                     validation_mismatches.push(format!(
-                        "Graph count mismatch: query={}, direct={}", 
-                        query_graph_count, direct_graphs.len()
+                        "Graph count mismatch: query={}, direct={}",
+                        query_graph_count,
+                        direct_graphs.len()
                     ));
                 }
             }
@@ -358,12 +390,10 @@ impl SparqlConsistencyValidator {
 
         match rdf_store.query(graph_enum_query) {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
-                for solution_result in solutions {
-                    if let Ok(solution) = solution_result {
-                        if let Some(graph_term) = solution.get("g") {
-                            if let oxigraph::model::Term::NamedNode(graph_node) = graph_term {
-                                discovered_graphs.push(graph_node.as_str().to_string());
-                            }
+                for solution in solutions.flatten() {
+                    if let Some(graph_term) = solution.get("g") {
+                        if let oxigraph::model::Term::NamedNode(graph_node) = graph_term {
+                            discovered_graphs.push(graph_node.as_str().to_string());
                         }
                     }
                 }
@@ -376,21 +406,19 @@ impl SparqlConsistencyValidator {
         // For each discovered graph, validate triple count consistency
         for graph_name in discovered_graphs {
             let graph_triple_query = format!(
-                "SELECT (COUNT(*) as ?count) WHERE {{ GRAPH <{}> {{ ?s ?p ?o }} }}", 
+                "SELECT (COUNT(*) as ?count) WHERE {{ GRAPH <{}> {{ ?s ?p ?o }} }}",
                 graph_name
             );
 
             match rdf_store.query(&graph_triple_query) {
                 oxigraph::sparql::QueryResults::Solutions(solutions) => {
                     let mut query_triple_count = 0;
-                    for solution_result in solutions {
-                        if let Ok(solution) = solution_result {
-                            if let Some(count_term) = solution.get("count") {
-                                if let oxigraph::model::Term::Literal(literal) = count_term {
-                                    if let Ok(count) = literal.value().parse::<usize>() {
-                                        query_triple_count = count;
-                                        break;
-                                    }
+                    for solution in solutions.flatten() {
+                        if let Some(count_term) = solution.get("count") {
+                            if let oxigraph::model::Term::Literal(literal) = count_term {
+                                if let Ok(count) = literal.value().parse::<usize>() {
+                                    query_triple_count = count;
+                                    break;
                                 }
                             }
                         }
@@ -399,7 +427,12 @@ impl SparqlConsistencyValidator {
                     // Count triples in this graph through direct iteration
                     let mut direct_triple_count = 0;
                     if let Ok(graph_node) = oxigraph::model::NamedNode::new(&graph_name) {
-                        for quad_result in rdf_store.store.quads_for_pattern(None, None, None, Some((&graph_node).into())) {
+                        for quad_result in rdf_store.store.quads_for_pattern(
+                            None,
+                            None,
+                            None,
+                            Some((&graph_node).into()),
+                        ) {
                             if quad_result.is_ok() {
                                 direct_triple_count += 1;
                             }
@@ -408,26 +441,33 @@ impl SparqlConsistencyValidator {
 
                     if query_triple_count != direct_triple_count {
                         validation_mismatches.push(format!(
-                            "Graph {} triple count mismatch: query={}, direct={}", 
+                            "Graph {} triple count mismatch: query={}, direct={}",
                             graph_name, query_triple_count, direct_triple_count
                         ));
                     }
                 }
                 _ => {
-                    validation_mismatches.push(format!("Failed to count triples in graph {}", graph_name));
+                    validation_mismatches
+                        .push(format!("Failed to count triples in graph {}", graph_name));
                 }
             }
         }
 
-        debug!("Cross-validation completed with {} mismatches", validation_mismatches.len());
+        debug!(
+            "Cross-validation completed with {} mismatches",
+            validation_mismatches.len()
+        );
         Ok(validation_mismatches)
     }
 
     /// Cross-validate canonicalization with queries
     #[instrument(skip(self, rdf_store))]
-    pub fn cross_validate_canonicalization_queries(&self, rdf_store: &RDFStore) -> Result<Vec<String>> {
+    pub fn cross_validate_canonicalization_queries(
+        &self,
+        rdf_store: &RDFStore,
+    ) -> Result<Vec<String>> {
         let mut canonicalization_mismatches = Vec::new();
-        
+
         if self.verbose_logging {
             info!("Cross-validating canonicalization with query results");
         }
@@ -438,18 +478,17 @@ impl SparqlConsistencyValidator {
 
         match rdf_store.query(graph_enumeration_query) {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
-                for solution_result in solutions {
-                    if let Ok(solution) = solution_result {
-                        if let Some(graph_term) = solution.get("g") {
-                            if let oxigraph::model::Term::NamedNode(graph_node) = graph_term {
-                                discovered_graphs.push(graph_node.as_str().to_string());
-                            }
+                for solution in solutions.flatten() {
+                    if let Some(graph_term) = solution.get("g") {
+                        if let oxigraph::model::Term::NamedNode(graph_node) = graph_term {
+                            discovered_graphs.push(graph_node.as_str().to_string());
                         }
                     }
                 }
             }
             _ => {
-                canonicalization_mismatches.push("Failed to enumerate graphs for canonicalization validation".to_string());
+                canonicalization_mismatches
+                    .push("Failed to enumerate graphs for canonicalization validation".to_string());
                 return Ok(canonicalization_mismatches);
             }
         }
@@ -458,7 +497,8 @@ impl SparqlConsistencyValidator {
         for graph_name in discovered_graphs {
             if let Ok(graph_node) = oxigraph::model::NamedNode::new(&graph_name) {
                 // Test 1: Validate that canonicalized graphs are queryable
-                let graph_accessibility_query = format!("ASK {{ GRAPH <{}> {{ ?s ?p ?o }} }}", graph_name);
+                let graph_accessibility_query =
+                    format!("ASK {{ GRAPH <{}> {{ ?s ?p ?o }} }}", graph_name);
                 match rdf_store.query(&graph_accessibility_query) {
                     oxigraph::sparql::QueryResults::Boolean(accessible) => {
                         if !accessible {
@@ -480,22 +520,18 @@ impl SparqlConsistencyValidator {
 
                 // Test 2: Compare query-based triple enumeration with canonicalization input
                 let triple_enumeration_query = format!(
-                    "SELECT ?s ?p ?o WHERE {{ GRAPH <{}> {{ ?s ?p ?o }} }}", 
+                    "SELECT ?s ?p ?o WHERE {{ GRAPH <{}> {{ ?s ?p ?o }} }}",
                     graph_name
                 );
 
                 let mut query_triples = Vec::new();
                 match rdf_store.query(&triple_enumeration_query) {
                     oxigraph::sparql::QueryResults::Solutions(solutions) => {
-                        for solution_result in solutions {
-                            if let Ok(solution) = solution_result {
-                                if let (Some(s), Some(p), Some(o)) = (
-                                    solution.get("s"),
-                                    solution.get("p"),
-                                    solution.get("o")
-                                ) {
-                                    query_triples.push((s.clone(), p.clone(), o.clone()));
-                                }
+                        for solution in solutions.flatten() {
+                            if let (Some(s), Some(p), Some(o)) =
+                                (solution.get("s"), solution.get("p"), solution.get("o"))
+                            {
+                                query_triples.push((s.clone(), p.clone(), o.clone()));
                             }
                         }
                     }
@@ -537,7 +573,7 @@ impl SparqlConsistencyValidator {
                 // Generate a simple hash based on query results for comparison
                 let mut query_content_hash = std::collections::hash_map::DefaultHasher::new();
                 use std::hash::Hasher;
-                
+
                 for (s, p, o) in &query_triples {
                     query_content_hash.write(s.to_string().as_bytes());
                     query_content_hash.write(p.to_string().as_bytes());
@@ -547,18 +583,19 @@ impl SparqlConsistencyValidator {
 
                 // Get canonicalization hash for comparison
                 let canonical_hash = rdf_store.canonicalize_graph(&graph_node);
-                
+
                 // Note: We can't directly compare these hashes as they use different algorithms,
                 // but we can validate that both methods see the same content structure
                 if query_triples.is_empty() && !canonical_hash.is_empty() {
                     canonicalization_mismatches.push(format!(
-                        "Graph {} appears empty via SPARQL but has canonicalization hash: {}", 
+                        "Graph {} appears empty via SPARQL but has canonicalization hash: {}",
                         graph_name, canonical_hash
                     ));
                 } else if !query_triples.is_empty() && canonical_hash.is_empty() {
                     canonicalization_mismatches.push(format!(
-                        "Graph {} has {} triples via SPARQL but empty canonicalization hash", 
-                        graph_name, query_triples.len()
+                        "Graph {} has {} triples via SPARQL but empty canonicalization hash",
+                        graph_name,
+                        query_triples.len()
                     ));
                 }
 
@@ -569,13 +606,20 @@ impl SparqlConsistencyValidator {
             }
         }
 
-        debug!("Canonicalization cross-validation completed with {} mismatches", canonicalization_mismatches.len());
+        debug!(
+            "Canonicalization cross-validation completed with {} mismatches",
+            canonicalization_mismatches.len()
+        );
         Ok(canonicalization_mismatches)
     }
 
     /// Test query performance and timeout handling
     #[instrument(skip(self, rdf_store, query))]
-    pub fn test_query_performance(&self, rdf_store: &RDFStore, query: &str) -> Result<QueryPerformanceResult> {
+    pub fn test_query_performance(
+        &self,
+        rdf_store: &RDFStore,
+        query: &str,
+    ) -> Result<QueryPerformanceResult> {
         if self.verbose_logging {
             debug!("Testing performance for query: {}", query);
         }
@@ -603,7 +647,7 @@ impl SparqlConsistencyValidator {
                     if solution_result.is_ok() {
                         result_count += 1;
                     }
-                    
+
                     // Check for timeout during result iteration
                     if start_time.elapsed().as_secs() > self.max_query_time {
                         timed_out = true;
@@ -619,7 +663,7 @@ impl SparqlConsistencyValidator {
                     if triple_result.is_ok() {
                         result_count += 1;
                     }
-                    
+
                     // Check for timeout during result iteration
                     if start_time.elapsed().as_secs() > self.max_query_time {
                         timed_out = true;
@@ -641,18 +685,23 @@ impl SparqlConsistencyValidator {
         };
 
         if self.verbose_logging {
-            debug!("Query performance: {}ms, {} results, {}KB memory, timed_out={}", 
-                   performance_result.execution_time_ms,
-                   performance_result.result_count,
-                   performance_result.memory_usage_bytes / 1024,
-                   performance_result.timed_out);
+            debug!(
+                "Query performance: {}ms, {} results, {}KB memory, timed_out={}",
+                performance_result.execution_time_ms,
+                performance_result.result_count,
+                performance_result.memory_usage_bytes / 1024,
+                performance_result.timed_out
+            );
         }
 
         Ok(performance_result)
     }
 
     /// Generate SPARQL consistency recommendations
-    pub fn generate_recommendations(&self, status: &SparqlIntegrityStatus) -> Vec<IntegrityRecommendation> {
+    pub fn generate_recommendations(
+        &self,
+        status: &SparqlIntegrityStatus,
+    ) -> Vec<IntegrityRecommendation> {
         let mut recommendations = Vec::new();
 
         // Graph accessibility issues recommendations
@@ -660,7 +709,10 @@ impl SparqlConsistencyValidator {
             recommendations.push(IntegrityRecommendation {
                 severity: RecommendationSeverity::Warning,
                 category: "SPARQL Consistency".to_string(),
-                description: format!("Found {} graph accessibility issues", status.graph_accessibility_issues.len()),
+                description: format!(
+                    "Found {} graph accessibility issues",
+                    status.graph_accessibility_issues.len()
+                ),
                 action_required: "Review graph naming and accessibility patterns".to_string(),
                 auto_fixable: false,
             });
@@ -678,10 +730,14 @@ impl SparqlConsistencyValidator {
         }
 
         // Query consistency issues recommendations
-        let failed_queries = status.query_consistency_checks.iter()
-            .filter(|check| check.expected_result_count != check.actual_result_count || 
-                           !check.missing_graphs.is_empty() || 
-                           !check.inaccessible_data.is_empty())
+        let failed_queries = status
+            .query_consistency_checks
+            .iter()
+            .filter(|check| {
+                check.expected_result_count != check.actual_result_count
+                    || !check.missing_graphs.is_empty()
+                    || !check.inaccessible_data.is_empty()
+            })
             .count();
 
         if failed_queries > 0 {
@@ -694,15 +750,20 @@ impl SparqlConsistencyValidator {
             recommendations.push(IntegrityRecommendation {
                 severity,
                 category: "SPARQL Consistency".to_string(),
-                description: format!("Found consistency issues in {} out of {} test queries", 
-                                   failed_queries, status.query_consistency_checks.len()),
+                description: format!(
+                    "Found consistency issues in {} out of {} test queries",
+                    failed_queries,
+                    status.query_consistency_checks.len()
+                ),
                 action_required: "Review query execution logic and data consistency".to_string(),
                 auto_fixable: false,
             });
         }
 
         // Missing graphs recommendations
-        let total_missing_graphs: usize = status.query_consistency_checks.iter()
+        let total_missing_graphs: usize = status
+            .query_consistency_checks
+            .iter()
             .map(|check| check.missing_graphs.len())
             .sum();
 
@@ -710,14 +771,19 @@ impl SparqlConsistencyValidator {
             recommendations.push(IntegrityRecommendation {
                 severity: RecommendationSeverity::Critical,
                 category: "SPARQL Consistency".to_string(),
-                description: format!("Found {} missing graphs across test queries", total_missing_graphs),
+                description: format!(
+                    "Found {} missing graphs across test queries",
+                    total_missing_graphs
+                ),
                 action_required: "Restore missing graphs or update query expectations".to_string(),
                 auto_fixable: false,
             });
         }
 
         // Inaccessible data recommendations
-        let total_inaccessible_data: usize = status.query_consistency_checks.iter()
+        let total_inaccessible_data: usize = status
+            .query_consistency_checks
+            .iter()
             .map(|check| check.inaccessible_data.len())
             .sum();
 
@@ -725,7 +791,10 @@ impl SparqlConsistencyValidator {
             recommendations.push(IntegrityRecommendation {
                 severity: RecommendationSeverity::Warning,
                 category: "SPARQL Consistency".to_string(),
-                description: format!("Found {} inaccessible data issues across test queries", total_inaccessible_data),
+                description: format!(
+                    "Found {} inaccessible data issues across test queries",
+                    total_inaccessible_data
+                ),
                 action_required: "Review data accessibility and query permissions".to_string(),
                 auto_fixable: false,
             });
@@ -735,19 +804,30 @@ impl SparqlConsistencyValidator {
     }
 
     /// Get SPARQL validation statistics
-    pub fn get_validation_statistics(&self, status: &SparqlIntegrityStatus) -> SparqlValidationStatistics {
+    pub fn get_validation_statistics(
+        &self,
+        status: &SparqlIntegrityStatus,
+    ) -> SparqlValidationStatistics {
         let total_queries = status.query_consistency_checks.len();
-        let successful_queries = status.query_consistency_checks.iter()
-            .filter(|check| check.expected_result_count == check.actual_result_count && 
-                           check.missing_graphs.is_empty() && 
-                           check.inaccessible_data.is_empty())
+        let successful_queries = status
+            .query_consistency_checks
+            .iter()
+            .filter(|check| {
+                check.expected_result_count == check.actual_result_count
+                    && check.missing_graphs.is_empty()
+                    && check.inaccessible_data.is_empty()
+            })
             .count();
-        
-        let total_missing_graphs: usize = status.query_consistency_checks.iter()
+
+        let total_missing_graphs: usize = status
+            .query_consistency_checks
+            .iter()
             .map(|check| check.missing_graphs.len())
             .sum();
-        
-        let total_inaccessible_data: usize = status.query_consistency_checks.iter()
+
+        let total_inaccessible_data: usize = status
+            .query_consistency_checks
+            .iter()
             .map(|check| check.inaccessible_data.len())
             .sum();
 
@@ -780,43 +860,38 @@ impl SparqlConsistencyValidator {
 
         // For graph enumeration queries
         if query.contains("SELECT DISTINCT ?g") && query.contains("GRAPH ?g") {
-            let graph_count_query = "SELECT (COUNT(DISTINCT ?g) as ?count) WHERE { GRAPH ?g { ?s ?p ?o } }";
-            match rdf_store.query(graph_count_query) {
-                oxigraph::sparql::QueryResults::Solutions(solutions) => {
-                    for solution_result in solutions {
-                        if let Ok(solution) = solution_result {
-                            if let Some(count_term) = solution.get("count") {
-                                if let oxigraph::model::Term::Literal(literal) = count_term {
-                                    if let Ok(count) = literal.value().parse::<usize>() {
-                                        return Ok(count);
-                                    }
-                                }
+            let graph_count_query =
+                "SELECT (COUNT(DISTINCT ?g) as ?count) WHERE { GRAPH ?g { ?s ?p ?o } }";
+            if let oxigraph::sparql::QueryResults::Solutions(solutions) =
+                rdf_store.query(graph_count_query)
+            {
+                for solution in solutions.flatten() {
+                    if let Some(count_term) = solution.get("count") {
+                        if let oxigraph::model::Term::Literal(literal) = count_term {
+                            if let Ok(count) = literal.value().parse::<usize>() {
+                                return Ok(count);
                             }
                         }
                     }
                 }
-                _ => {}
             }
         }
 
         // For block metadata queries
         if query.contains("prov:hasIndex") && query.contains("http://provchain.org/blockchain") {
             let block_count_query = "SELECT (COUNT(*) as ?count) WHERE { GRAPH <http://provchain.org/blockchain> { ?block <http://provchain.org/hasIndex> ?index } }";
-            match rdf_store.query(block_count_query) {
-                oxigraph::sparql::QueryResults::Solutions(solutions) => {
-                    for solution_result in solutions {
-                        if let Ok(solution) = solution_result {
-                            if let Some(count_term) = solution.get("count") {
-                                if let oxigraph::model::Term::Literal(literal) = count_term {
-                                    if let Ok(count) = literal.value().parse::<usize>() {
-                                        return Ok(count);
-                                    }
-                                }
+            if let oxigraph::sparql::QueryResults::Solutions(solutions) =
+                rdf_store.query(block_count_query)
+            {
+                for solution in solutions.flatten() {
+                    if let Some(count_term) = solution.get("count") {
+                        if let oxigraph::model::Term::Literal(literal) = count_term {
+                            if let Ok(count) = literal.value().parse::<usize>() {
+                                return Ok(count);
                             }
                         }
                     }
                 }
-                _ => {}
             }
         }
 
@@ -824,21 +899,18 @@ impl SparqlConsistencyValidator {
         if query.contains("http://provchain.org/block/") && query.contains("GROUP BY ?g") {
             // Count distinct block graphs
             let block_graph_query = "SELECT (COUNT(DISTINCT ?g) as ?count) WHERE { GRAPH ?g { ?s ?p ?o } FILTER(STRSTARTS(STR(?g), \"http://provchain.org/block/\")) }";
-            match rdf_store.query(block_graph_query) {
-                oxigraph::sparql::QueryResults::Solutions(solutions) => {
-                    for solution_result in solutions {
-                        if let Ok(solution) = solution_result {
-                            if let Some(count_term) = solution.get("count") {
-                                if let oxigraph::model::Term::Literal(literal) = count_term {
-                                    if let Ok(count) = literal.value().parse::<usize>() {
-                                        return Ok(count);
-                                    }
-                                }
+            if let oxigraph::sparql::QueryResults::Solutions(solutions) =
+                rdf_store.query(block_graph_query)
+            {
+                for solution in solutions.flatten() {
+                    if let Some(count_term) = solution.get("count") {
+                        if let oxigraph::model::Term::Literal(literal) = count_term {
+                            if let Ok(count) = literal.value().parse::<usize>() {
+                                return Ok(count);
                             }
                         }
                     }
                 }
-                _ => {}
             }
         }
 
@@ -847,7 +919,11 @@ impl SparqlConsistencyValidator {
     }
 
     /// Detect missing graphs referenced in a query
-    fn detect_missing_graphs_in_query(&self, rdf_store: &RDFStore, query: &str) -> Result<Vec<String>> {
+    fn detect_missing_graphs_in_query(
+        &self,
+        rdf_store: &RDFStore,
+        query: &str,
+    ) -> Result<Vec<String>> {
         let mut missing_graphs = Vec::new();
 
         // Extract explicit graph references from the query
@@ -874,23 +950,23 @@ impl SparqlConsistencyValidator {
     /// Extract graph references from a SPARQL query
     fn extract_graph_references(&self, query: &str) -> Vec<String> {
         let mut graph_refs = Vec::new();
-        
+
         // Simple regex-like extraction for GRAPH <uri> patterns
         let _query_lower = query.to_lowercase();
         let chars: Vec<char> = query.chars().collect();
         let mut i = 0;
-        
+
         while i < chars.len() {
             // Look for "graph <" pattern
             if i + 6 < chars.len() {
-                let slice: String = chars[i..i+6].iter().collect::<String>().to_lowercase();
+                let slice: String = chars[i..i + 6].iter().collect::<String>().to_lowercase();
                 if slice == "graph " {
                     // Skip to find the opening <
                     let mut j = i + 6;
                     while j < chars.len() && chars[j].is_whitespace() {
                         j += 1;
                     }
-                    
+
                     if j < chars.len() && chars[j] == '<' {
                         // Extract URI until closing >
                         j += 1; // Skip opening <
@@ -898,7 +974,7 @@ impl SparqlConsistencyValidator {
                         while j < chars.len() && chars[j] != '>' {
                             j += 1;
                         }
-                        
+
                         if j < chars.len() && chars[j] == '>' {
                             let uri: String = chars[start..j].iter().collect();
                             graph_refs.push(uri);
@@ -908,29 +984,28 @@ impl SparqlConsistencyValidator {
             }
             i += 1;
         }
-        
+
         graph_refs
     }
 
     /// Get expected blockchain graphs based on metadata
     fn get_expected_blockchain_graphs(&self, rdf_store: &RDFStore) -> Result<Vec<String>> {
         let mut expected_graphs = Vec::new();
-        
+
         // Always expect the blockchain metadata graph
         expected_graphs.push("http://provchain.org/blockchain".to_string());
-        
+
         // Query for all block indices to determine expected block graphs
         let block_query = "SELECT ?index WHERE { GRAPH <http://provchain.org/blockchain> { ?block <http://provchain.org/hasIndex> ?index } } ORDER BY ?index";
-        
+
         match rdf_store.query(block_query) {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
-                for solution_result in solutions {
-                    if let Ok(solution) = solution_result {
-                        if let Some(index_term) = solution.get("index") {
-                            if let oxigraph::model::Term::Literal(literal) = index_term {
-                                if let Ok(index) = literal.value().parse::<u64>() {
-                                    expected_graphs.push(format!("http://provchain.org/block/{}", index));
-                                }
+                for solution in solutions.flatten() {
+                    if let Some(index_term) = solution.get("index") {
+                        if let oxigraph::model::Term::Literal(literal) = index_term {
+                            if let Ok(index) = literal.value().parse::<u64>() {
+                                expected_graphs
+                                    .push(format!("http://provchain.org/block/{}", index));
                             }
                         }
                     }
@@ -940,7 +1015,7 @@ impl SparqlConsistencyValidator {
                 warn!("Failed to query block indices for expected graphs");
             }
         }
-        
+
         Ok(expected_graphs)
     }
 }
@@ -1009,7 +1084,7 @@ mod tests {
         let validator = SparqlConsistencyValidator::new();
         let rdf_store = RDFStore::new();
         let test_queries = vec!["SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o }".to_string()];
-        
+
         let result = validator.validate_query_result_consistency(&rdf_store, &test_queries);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), 1);

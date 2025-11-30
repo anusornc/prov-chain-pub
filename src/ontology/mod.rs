@@ -1,19 +1,19 @@
 //! Ontology Management Module
-//! 
+//!
 //! This module provides domain-specific ontology management and SHACL validation
 //! for the ProvChainOrg blockchain system. It enables CLI-based ontology selection
 //! at startup with strict validation that blocks invalid transactions.
 
 pub mod domain_manager;
-pub mod shacl_validator;
 pub mod error;
+pub mod shacl_validator;
 
-pub use domain_manager::{OntologyManager, DomainConfig};
-pub use shacl_validator::{ShaclValidator, ShaclShape, ShaclProperty, ShaclConstraint};
-pub use error::{OntologyError, ValidationError, ShapeViolation, ConsistencyError};
+pub use domain_manager::{DomainConfig, OntologyManager};
+pub use error::{ConsistencyError, OntologyError, ShapeViolation, ValidationError};
+pub use shacl_validator::{ShaclConstraint, ShaclProperty, ShaclShape, ShaclValidator};
 
-use std::path::Path;
 use crate::config::Config;
+use std::path::Path;
 
 /// Ontology configuration for domain-specific blockchain validation
 #[derive(Debug, Clone)]
@@ -33,26 +33,23 @@ pub struct OntologyConfig {
 }
 
 /// Validation mode for SHACL constraint checking
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum ValidationMode {
     /// Block invalid transactions (default and only supported mode)
+    #[default]
     Strict,
-}
-
-impl Default for ValidationMode {
-    fn default() -> Self {
-        ValidationMode::Strict
-    }
 }
 
 impl OntologyConfig {
     /// Create a new ontology configuration from CLI parameters and config file
-    pub fn new(
-        domain_ontology: Option<String>,
-        config: &Config,
-    ) -> Result<Self, OntologyError> {
+    pub fn new(domain_ontology: Option<String>, config: &Config) -> Result<Self, OntologyError> {
         let domain_ontology_path = domain_ontology
-            .or_else(|| config.ontology_config.as_ref().map(|c| c.domain_ontology_path.clone()))
+            .or_else(|| {
+                config
+                    .ontology_config
+                    .as_ref()
+                    .map(|c| c.domain_ontology_path.clone())
+            })
             .unwrap_or_else(|| "ontologies/generic_core.owl".to_string());
 
         // Validate that the ontology file exists
@@ -65,7 +62,7 @@ impl OntologyConfig {
         // Derive domain-specific paths from the ontology file
         let domain_name = Self::extract_domain_name(&domain_ontology_path)?;
         let domain_shacl_path = format!("shapes/{}.shacl.ttl", domain_name);
-        
+
         // Generate ontology hash for consistency checking
         let ontology_hash = Self::generate_ontology_hash(&domain_ontology_path)?;
 
@@ -83,23 +80,24 @@ impl OntologyConfig {
     /// e.g., "ontologies/uht_manufacturing.owl" -> "uht_manufacturing"
     fn extract_domain_name(ontology_path: &str) -> Result<String, OntologyError> {
         let path = Path::new(ontology_path);
-        let filename = path.file_stem()
+        let filename = path
+            .file_stem()
             .ok_or_else(|| OntologyError::InvalidOntologyPath {
                 path: ontology_path.to_string(),
                 reason: "Cannot extract filename".to_string(),
             })?;
-        
+
         Ok(filename.to_string_lossy().to_string())
     }
 
     /// Generate a hash of the ontology file for network consistency checking
     fn generate_ontology_hash(ontology_path: &str) -> Result<String, OntologyError> {
-        use std::fs;
         use std::collections::hash_map::DefaultHasher;
+        use std::fs;
         use std::hash::{Hash, Hasher};
 
-        let content = fs::read_to_string(ontology_path)
-            .map_err(|e| OntologyError::OntologyLoadError {
+        let content =
+            fs::read_to_string(ontology_path).map_err(|e| OntologyError::OntologyLoadError {
                 path: ontology_path.to_string(),
                 source: Box::new(e),
             })?;
@@ -158,17 +156,15 @@ mod tests {
     fn test_ontology_config_creation() {
         let temp_dir = TempDir::new().unwrap();
         let ontology_path = temp_dir.path().join("test_ontology.owl");
-        
+
         // Create a test ontology file
         let mut file = fs::File::create(&ontology_path).unwrap();
         writeln!(file, "@prefix owl: <http://www.w3.org/2002/07/owl#> .").unwrap();
-        
+
         let config = Config::default();
-        let ontology_config = OntologyConfig::new(
-            Some(ontology_path.to_string_lossy().to_string()),
-            &config,
-        );
-        
+        let ontology_config =
+            OntologyConfig::new(Some(ontology_path.to_string_lossy().to_string()), &config);
+
         assert!(ontology_config.is_ok());
         let config = ontology_config.unwrap();
         assert_eq!(config.validation_mode, ValidationMode::Strict);
@@ -178,11 +174,8 @@ mod tests {
     #[test]
     fn test_ontology_not_found() {
         let config = Config::default();
-        let result = OntologyConfig::new(
-            Some("nonexistent/ontology.owl".to_string()),
-            &config,
-        );
-        
+        let result = OntologyConfig::new(Some("nonexistent/ontology.owl".to_string()), &config);
+
         assert!(result.is_err());
         match result.unwrap_err() {
             OntologyError::OntologyNotFound { path } => {

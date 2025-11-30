@@ -1,5 +1,5 @@
 //! Knowledge Graph module for Phase 3
-//! 
+//!
 //! This module provides advanced knowledge graph construction, entity linking,
 //! and graph analytics capabilities for the provenance blockchain system.
 
@@ -7,9 +7,9 @@ pub mod builder;
 pub mod entity_linking;
 pub mod graph_db;
 
+use anyhow::Result;
 use petgraph::Graph;
 use std::collections::HashMap;
-use anyhow::Result;
 
 /// Represents an entity in the knowledge graph
 #[derive(Debug, Clone)]
@@ -89,7 +89,8 @@ impl KnowledgeGraph {
             self.entity_index.get(&relationship.subject),
             self.entity_index.get(&relationship.object),
         ) {
-            self.graph.add_edge(subject_idx, object_idx, relationship.predicate.clone());
+            self.graph
+                .add_edge(subject_idx, object_idx, relationship.predicate.clone());
         }
 
         self.relationships.push(relationship);
@@ -116,16 +117,21 @@ impl KnowledgeGraph {
     pub fn get_statistics(&self) -> KnowledgeGraphStats {
         let mut entity_type_counts = HashMap::new();
         for entity in self.entities.values() {
-            *entity_type_counts.entry(entity.entity_type.clone()).or_insert(0) += 1;
+            *entity_type_counts
+                .entry(entity.entity_type.clone())
+                .or_insert(0) += 1;
         }
 
         KnowledgeGraphStats {
             total_entities: self.entities.len(),
             total_relationships: self.relationships.len(),
             entity_type_counts,
-            average_confidence: self.entities.values()
+            average_confidence: self
+                .entities
+                .values()
                 .map(|e| e.confidence_score)
-                .sum::<f64>() / self.entities.len() as f64,
+                .sum::<f64>()
+                / self.entities.len() as f64,
         }
     }
 }

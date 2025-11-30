@@ -1,7 +1,19 @@
 // Native WebSocket implementation (replaced Socket.IO)
-import type { WebSocketMessage, MessageType, Block, Transaction, TraceabilityItem, NetworkHealth } from '../types';
+import type {
+  WebSocketMessage,
+  MessageType,
+  Block,
+  Transaction,
+  TraceabilityItem,
+  NetworkHealth,
+} from "../types";
 
-type WebSocketData = Block | Transaction | TraceabilityItem | NetworkHealth | Record<string, unknown>;
+type WebSocketData =
+  | Block
+  | Transaction
+  | TraceabilityItem
+  | NetworkHealth
+  | Record<string, unknown>;
 type WebSocketCallback = (data: WebSocketData) => void;
 
 class WebSocketService {
@@ -21,8 +33,10 @@ class WebSocketService {
   private simulateConnection() {
     // Simulate a successful connection for development
     this.isConnectedState = true;
-    console.log('WebSocket service initialized (simulation mode - real WebSocket unavailable)');
-    
+    console.log(
+      "WebSocket service initialized (simulation mode - real WebSocket unavailable)",
+    );
+
     // Start polling for updates instead of WebSocket
     this.startPolling();
   }
@@ -31,25 +45,25 @@ class WebSocketService {
     // Poll for updates every 5 seconds
     this.pollingInterval = setInterval(() => {
       // Simulate network status updates
-      this.notifyListeners('NetworkStatus', {
-        status: 'healthy',
+      this.notifyListeners("NetworkStatus", {
+        status: "healthy",
         uptime: Math.floor(Date.now() / 1000),
         peer_count: 1,
-        sync_status: 'synced',
-        last_block_age: 30
+        sync_status: "synced",
+        last_block_age: 30,
       });
     }, 5000);
   }
 
   private initializeSocket() {
     // Try to connect to native WebSocket server
-    console.log('Attempting WebSocket connection to ws://localhost:8080/ws');
-    
+    console.log("Attempting WebSocket connection to ws://localhost:8080/ws");
+
     try {
-      const ws = new WebSocket('ws://localhost:8080/ws');
-      
+      const ws = new WebSocket("ws://localhost:8080/ws");
+
       ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log("WebSocket connected");
         this.isConnectedState = true;
         this.reconnectAttempts = 0;
       };
@@ -57,30 +71,29 @@ class WebSocketService {
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          console.log('Received WebSocket message:', message);
+          console.log("Received WebSocket message:", message);
           this.handleNativeMessage(message);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error("Error parsing WebSocket message:", error);
         }
       };
 
       ws.onclose = () => {
-        console.log('WebSocket disconnected');
+        console.log("WebSocket disconnected");
         this.isConnectedState = false;
         this.handleReconnection();
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error("WebSocket error:", error);
         this.isConnectedState = false;
         this.handleReconnection();
       };
 
       // Store the native WebSocket
       this.socket = ws;
-      
     } catch (error) {
-      console.error('Failed to initialize WebSocket connection:', error);
+      console.error("Failed to initialize WebSocket connection:", error);
       this.simulateConnection();
     }
   }
@@ -92,42 +105,63 @@ class WebSocketService {
     } else if (this.isTypeMessage(message)) {
       // Handle different message formats
       switch (message.type) {
-        case 'new_block':
-          this.notifyListeners('NewBlock', (message.data || message) as WebSocketData);
+        case "new_block":
+          this.notifyListeners(
+            "NewBlock",
+            (message.data || message) as WebSocketData,
+          );
           break;
-        case 'new_transaction':
-          this.notifyListeners('NewTransaction', (message.data || message) as WebSocketData);
+        case "new_transaction":
+          this.notifyListeners(
+            "NewTransaction",
+            (message.data || message) as WebSocketData,
+          );
           break;
-        case 'item_update':
-          this.notifyListeners('ItemUpdate', (message.data || message) as WebSocketData);
+        case "item_update":
+          this.notifyListeners(
+            "ItemUpdate",
+            (message.data || message) as WebSocketData,
+          );
           break;
-        case 'network_status':
-          this.notifyListeners('NetworkStatus', (message.data || message) as WebSocketData);
+        case "network_status":
+          this.notifyListeners(
+            "NetworkStatus",
+            (message.data || message) as WebSocketData,
+          );
           break;
-        case 'validation_alert':
-          this.notifyListeners('ValidationAlert', (message.data || message) as WebSocketData);
+        case "validation_alert":
+          this.notifyListeners(
+            "ValidationAlert",
+            (message.data || message) as WebSocketData,
+          );
           break;
         default:
-          console.log('Unknown message type:', message.type);
+          console.log("Unknown message type:", message.type);
       }
     } else {
       // Direct data message
-      console.log('Received direct WebSocket data:', message);
+      console.log("Received direct WebSocket data:", message);
     }
   }
 
   private isWebSocketMessage(message: unknown): message is WebSocketMessage {
-    return typeof message === 'object' && 
-           message !== null && 
-           'message_type' in message && 
-           'data' in message;
+    return (
+      typeof message === "object" &&
+      message !== null &&
+      "message_type" in message &&
+      "data" in message
+    );
   }
 
-  private isTypeMessage(message: unknown): message is { type: string; data?: WebSocketData } {
-    return typeof message === 'object' && 
-           message !== null && 
-           'type' in message && 
-           typeof (message as { type: unknown }).type === 'string';
+  private isTypeMessage(
+    message: unknown,
+  ): message is { type: string; data?: WebSocketData } {
+    return (
+      typeof message === "object" &&
+      message !== null &&
+      "type" in message &&
+      typeof (message as { type: unknown }).type === "string"
+    );
   }
 
   // Native WebSocket doesn't need separate event handler setup
@@ -136,11 +170,14 @@ class WebSocketService {
   private notifyListeners(messageType: MessageType, data: WebSocketData) {
     const listeners = this.listeners.get(messageType);
     if (listeners) {
-      listeners.forEach(callback => {
+      listeners.forEach((callback) => {
         try {
           callback(data);
         } catch (error) {
-          console.error(`Error in WebSocket listener for ${messageType}:`, error);
+          console.error(
+            `Error in WebSocket listener for ${messageType}:`,
+            error,
+          );
         }
       });
     }
@@ -149,23 +186,30 @@ class WebSocketService {
   private handleReconnection() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-      
+      console.log(
+        `Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+      );
+
       setTimeout(() => {
         this.initializeSocket();
       }, this.reconnectDelay * this.reconnectAttempts);
     } else {
-      console.error('Max reconnection attempts reached, falling back to simulation');
+      console.error(
+        "Max reconnection attempts reached, falling back to simulation",
+      );
       this.simulateConnection();
     }
   }
 
   // Public methods
-  public subscribe(messageType: MessageType, callback: WebSocketCallback): () => void {
+  public subscribe(
+    messageType: MessageType,
+    callback: WebSocketCallback,
+  ): () => void {
     if (!this.listeners.has(messageType)) {
       this.listeners.set(messageType, new Set());
     }
-    
+
     const listeners = this.listeners.get(messageType)!;
     listeners.add(callback);
 
@@ -192,16 +236,20 @@ class WebSocketService {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       const message = {
         type: event,
-        data: data
+        data: data,
       };
       this.socket.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket not connected, cannot emit event:', event);
+      console.warn("WebSocket not connected, cannot emit event:", event);
     }
   }
 
   public isConnected(): boolean {
-    return this.isConnectedState || (this.socket?.readyState === WebSocket.OPEN) || false;
+    return (
+      this.isConnectedState ||
+      this.socket?.readyState === WebSocket.OPEN ||
+      false
+    );
   }
 
   public disconnect() {
@@ -226,23 +274,23 @@ class WebSocketService {
 
   // Specific subscription methods for type safety
   public onNewBlock(callback: (block: Block) => void) {
-    return this.subscribe('NewBlock', callback as WebSocketCallback);
+    return this.subscribe("NewBlock", callback as WebSocketCallback);
   }
 
   public onNewTransaction(callback: (transaction: Transaction) => void) {
-    return this.subscribe('NewTransaction', callback as WebSocketCallback);
+    return this.subscribe("NewTransaction", callback as WebSocketCallback);
   }
 
   public onItemUpdate(callback: (item: TraceabilityItem) => void) {
-    return this.subscribe('ItemUpdate', callback as WebSocketCallback);
+    return this.subscribe("ItemUpdate", callback as WebSocketCallback);
   }
 
   public onNetworkStatus(callback: (status: NetworkHealth) => void) {
-    return this.subscribe('NetworkStatus', callback as WebSocketCallback);
+    return this.subscribe("NetworkStatus", callback as WebSocketCallback);
   }
 
   public onValidationAlert(callback: (alert: Record<string, unknown>) => void) {
-    return this.subscribe('ValidationAlert', callback as WebSocketCallback);
+    return this.subscribe("ValidationAlert", callback as WebSocketCallback);
   }
 }
 

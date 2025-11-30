@@ -112,7 +112,7 @@ impl WebSocketState {
     /// Create new WebSocket state
     pub fn new(blockchain: Arc<Mutex<Blockchain>>) -> Self {
         let (event_sender, _) = broadcast::channel(1000);
-        
+
         Self {
             clients: Arc::new(Mutex::new(HashMap::new())),
             event_sender,
@@ -124,7 +124,10 @@ impl WebSocketState {
     pub fn broadcast_event(&self, event: BlockchainEvent) {
         match self.event_sender.send(event.clone()) {
             Ok(receiver_count) => {
-                debug!("Broadcasted event to {} clients: {:?}", receiver_count, event);
+                debug!(
+                    "Broadcasted event to {} clients: {:?}",
+                    receiver_count, event
+                );
             }
             Err(e) => {
                 warn!("Failed to broadcast event: {}", e);
@@ -144,10 +147,13 @@ impl WebSocketState {
             connected_at: chrono::Utc::now(),
             last_ping: chrono::Utc::now(),
         };
-        
-        self.clients.lock().unwrap().insert(client_id.clone(), client);
+
+        self.clients
+            .lock()
+            .unwrap()
+            .insert(client_id.clone(), client);
         info!("WebSocket client connected: {}", client_id);
-        
+
         // Broadcast system status to new client
         if let Ok(blockchain) = self.blockchain.lock() {
             let status_event = BlockchainEvent::SystemStatus {
@@ -185,24 +191,27 @@ pub async fn websocket_handler(
 /// Handle individual WebSocket connection
 async fn handle_websocket(socket: WebSocket, state: WebSocketState) {
     let client_id = Uuid::new_v4().to_string();
-    
+
     // Add client to state
     state.add_client(client_id.clone());
-    
+
     // Split socket into sender and receiver
     let (mut sender, mut receiver) = socket.split();
-    
+
     // Subscribe to blockchain events
     let mut event_receiver = state.event_sender.subscribe();
-    
+
     // Send connection acknowledgment
     let connect_msg = WebSocketMessage::Connected {
         client_id: client_id.clone(),
     };
-    
+
     if let Ok(msg_text) = serde_json::to_string(&connect_msg) {
         if sender.send(Message::Text(msg_text)).await.is_err() {
-            error!("Failed to send connection acknowledgment to client {}", client_id);
+            error!(
+                "Failed to send connection acknowledgment to client {}",
+                client_id
+            );
             state.remove_client(&client_id);
             return;
         }
@@ -214,15 +223,18 @@ async fn handle_websocket(socket: WebSocket, state: WebSocketState) {
     let outgoing_task = tokio::spawn(async move {
         while let Ok(event) = event_receiver.recv().await {
             let message = WebSocketMessage::Event(event);
-            
+
             if let Ok(msg_text) = serde_json::to_string(&message) {
                 if sender.send(Message::Text(msg_text)).await.is_err() {
-                    debug!("Client {} disconnected during event send", outgoing_client_id);
+                    debug!(
+                        "Client {} disconnected during event send",
+                        outgoing_client_id
+                    );
                     break;
                 }
             }
         }
-        
+
         outgoing_state.remove_client(&outgoing_client_id);
     });
 
@@ -233,12 +245,17 @@ async fn handle_websocket(socket: WebSocket, state: WebSocketState) {
         while let Some(msg) = receiver.next().await {
             match msg {
                 Ok(Message::Text(text)) => {
-                    if let Err(e) = handle_client_message(&text, &incoming_client_id, &incoming_state).await {
+                    if let Err(e) =
+                        handle_client_message(&text, &incoming_client_id, &incoming_state).await
+                    {
                         warn!("Error handling client message: {}", e);
                     }
                 }
                 Ok(Message::Binary(_)) => {
-                    debug!("Received binary message from client {}, ignoring", incoming_client_id);
+                    debug!(
+                        "Received binary message from client {}, ignoring",
+                        incoming_client_id
+                    );
                 }
                 Ok(Message::Ping(_data)) => {
                     debug!("Received ping from client {}", incoming_client_id);
@@ -259,7 +276,7 @@ async fn handle_websocket(socket: WebSocket, state: WebSocketState) {
                 }
             }
         }
-        
+
         incoming_state.remove_client(&incoming_client_id);
     });
 
@@ -293,23 +310,29 @@ async fn handle_client_message(
             // For now, all clients receive all events
         }
         WebSocketMessage::Unsubscribe { events } => {
-            debug!("Client {} unsubscribed from events: {:?}", client_id, events);
+            debug!(
+                "Client {} unsubscribed from events: {:?}",
+                client_id, events
+            );
             // In a more complex implementation, we would update per-client subscriptions
         }
         WebSocketMessage::Ping { timestamp } => {
             debug!("Received ping from client {} at {}", client_id, timestamp);
             state.update_client_ping(client_id);
-            
+
             // Send pong response
             let _pong_msg = WebSocketMessage::Pong {
                 timestamp: chrono::Utc::now().to_rfc3339(),
             };
-            
+
             // Note: In a real implementation, we'd need to send this back to the specific client
             // This would require maintaining per-client senders
         }
         _ => {
-            warn!("Unexpected message type from client {}: {:?}", client_id, parsed_message);
+            warn!(
+                "Unexpected message type from client {}: {:?}",
+                client_id, parsed_message
+            );
         }
     }
 
@@ -340,7 +363,7 @@ impl BlockchainEventBroadcaster {
             timestamp: chrono::Utc::now().to_rfc3339(),
             transaction_count,
         };
-        
+
         self.websocket_state.broadcast_event(event);
     }
 
@@ -357,7 +380,7 @@ impl BlockchainEventBroadcaster {
             participant,
             timestamp: chrono::Utc::now().to_rfc3339(),
         };
-        
+
         self.websocket_state.broadcast_event(event);
     }
 
@@ -373,7 +396,7 @@ impl BlockchainEventBroadcaster {
             is_valid,
             validation_time_ms,
         };
-        
+
         self.websocket_state.broadcast_event(event);
     }
 
@@ -390,7 +413,7 @@ impl BlockchainEventBroadcaster {
             timestamp: chrono::Utc::now().to_rfc3339(),
             block_index,
         };
-        
+
         self.websocket_state.broadcast_event(event);
     }
 
@@ -408,7 +431,7 @@ impl BlockchainEventBroadcaster {
             average_block_time,
             validation_performance,
         };
-        
+
         self.websocket_state.broadcast_event(event);
     }
 
@@ -427,7 +450,7 @@ mod tests {
     async fn test_websocket_state_creation() {
         let blockchain = Arc::new(Mutex::new(Blockchain::new()));
         let state = WebSocketState::new(blockchain);
-        
+
         assert_eq!(state.client_count(), 0);
     }
 
@@ -435,12 +458,12 @@ mod tests {
     async fn test_client_management() {
         let blockchain = Arc::new(Mutex::new(Blockchain::new()));
         let state = WebSocketState::new(blockchain);
-        
+
         let client_id = "test-client-123".to_string();
         state.add_client(client_id.clone());
-        
+
         assert_eq!(state.client_count(), 1);
-        
+
         state.remove_client(&client_id);
         assert_eq!(state.client_count(), 0);
     }
@@ -449,14 +472,14 @@ mod tests {
     async fn test_event_broadcasting() {
         let blockchain = Arc::new(Mutex::new(Blockchain::new()));
         let state = WebSocketState::new(blockchain);
-        
+
         let event = BlockchainEvent::BlockCreated {
             block_index: 1,
             block_hash: "test-hash".to_string(),
             timestamp: chrono::Utc::now().to_rfc3339(),
             transaction_count: 5,
         };
-        
+
         // This should not panic even with no subscribers
         state.broadcast_event(event);
     }
@@ -469,10 +492,10 @@ mod tests {
             timestamp: "2025-08-31T13:00:00Z".to_string(),
             transaction_count: 5,
         };
-        
+
         let serialized = serde_json::to_string(&event).unwrap();
         let deserialized: BlockchainEvent = serde_json::from_str(&serialized).unwrap();
-        
+
         match deserialized {
             BlockchainEvent::BlockCreated { block_index, .. } => {
                 assert_eq!(block_index, 1);
@@ -486,10 +509,10 @@ mod tests {
         let message = WebSocketMessage::Connected {
             client_id: "test-123".to_string(),
         };
-        
+
         let serialized = serde_json::to_string(&message).unwrap();
         let deserialized: WebSocketMessage = serde_json::from_str(&serialized).unwrap();
-        
+
         match deserialized {
             WebSocketMessage::Connected { client_id } => {
                 assert_eq!(client_id, "test-123");

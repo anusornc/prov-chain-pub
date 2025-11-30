@@ -1,17 +1,17 @@
 //! Analytics module for Phase 3
-//! 
+//!
 //! This module provides advanced analytics and intelligence capabilities
 //! including supply chain analytics, sustainability tracking, and predictive analytics.
 
+pub mod predictive;
 pub mod supply_chain;
 pub mod sustainability;
-pub mod predictive;
 
 use crate::knowledge_graph::KnowledgeGraph;
 use crate::storage::rdf_store::RDFStore;
-use std::collections::HashMap;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 
 /// Main analytics engine
 pub struct AnalyticsEngine {
@@ -38,7 +38,8 @@ impl AnalyticsEngine {
     pub fn update_knowledge_graph(&mut self, knowledge_graph: KnowledgeGraph) {
         self.knowledge_graph = knowledge_graph;
         self.supply_chain_analyzer = supply_chain::SupplyChainAnalyzer::new(&self.knowledge_graph);
-        self.sustainability_tracker = sustainability::SustainabilityTracker::new(&self.knowledge_graph);
+        self.sustainability_tracker =
+            sustainability::SustainabilityTracker::new(&self.knowledge_graph);
         self.predictive_analyzer = predictive::PredictiveAnalyzer::new(&self.knowledge_graph);
     }
 
@@ -61,17 +62,19 @@ impl AnalyticsEngine {
     fn generate_executive_summary(&self) -> Result<ExecutiveSummary> {
         let total_entities = self.knowledge_graph.entities.len();
         let total_relationships = self.knowledge_graph.relationships.len();
-        
+
         // Count entities by type
         let mut entity_type_counts = HashMap::new();
         for entity in self.knowledge_graph.entities.values() {
-            *entity_type_counts.entry(entity.entity_type.clone()).or_insert(0) += 1;
+            *entity_type_counts
+                .entry(entity.entity_type.clone())
+                .or_insert(0) += 1;
         }
 
         let product_batches = entity_type_counts.get("ProductBatch").unwrap_or(&0);
-        let activities = entity_type_counts.get("ProcessingActivity").unwrap_or(&0) +
-                        entity_type_counts.get("TransportActivity").unwrap_or(&0) +
-                        entity_type_counts.get("QualityCheck").unwrap_or(&0);
+        let activities = entity_type_counts.get("ProcessingActivity").unwrap_or(&0)
+            + entity_type_counts.get("TransportActivity").unwrap_or(&0)
+            + entity_type_counts.get("QualityCheck").unwrap_or(&0);
 
         Ok(ExecutiveSummary {
             total_entities,
@@ -79,8 +82,15 @@ impl AnalyticsEngine {
             product_batches: *product_batches,
             total_activities: activities,
             key_insights: vec![
-                format!("Knowledge graph contains {} entities across {} types", total_entities, entity_type_counts.len()),
-                format!("Tracking {} product batches through {} activities", product_batches, activities),
+                format!(
+                    "Knowledge graph contains {} entities across {} types",
+                    total_entities,
+                    entity_type_counts.len()
+                ),
+                format!(
+                    "Tracking {} product batches through {} activities",
+                    product_batches, activities
+                ),
                 "Supply chain visibility and traceability fully operational".to_string(),
             ],
         })

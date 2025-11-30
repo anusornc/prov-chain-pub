@@ -1,5 +1,5 @@
 //! ProvChain Performance & Scalability Module
-//! 
+//!
 //! This module provides comprehensive performance optimization features including:
 //! - RDF canonicalization caching and optimization
 //! - Database performance enhancements
@@ -8,15 +8,15 @@
 //! - Storage optimization features
 
 pub mod canonicalization_cache;
-pub mod database_optimization;
 pub mod concurrent_operations;
+pub mod database_optimization;
+pub mod memory_optimization;
+pub mod metrics;
 pub mod scaling;
 pub mod storage_optimization;
-pub mod metrics;
-pub mod memory_optimization;
 
-use std::time::Duration;
 use std::collections::HashMap;
+use std::time::Duration;
 
 /// Performance configuration for ProvChain
 #[derive(Debug, Clone)]
@@ -100,13 +100,25 @@ impl PerformanceMetrics {
     /// Print a summary of performance metrics
     pub fn print_summary(&self) {
         println!("\n=== ProvChain Performance Metrics ===");
-        println!("Canonicalization cache hit rate: {:.2}%", self.canonicalization_cache_hit_rate * 100.0);
-        println!("Query cache hit rate: {:.2}%", self.query_cache_hit_rate * 100.0);
-        println!("Average block processing time: {:?}", self.avg_block_processing_time);
+        println!(
+            "Canonicalization cache hit rate: {:.2}%",
+            self.canonicalization_cache_hit_rate * 100.0
+        );
+        println!(
+            "Query cache hit rate: {:.2}%",
+            self.query_cache_hit_rate * 100.0
+        );
+        println!(
+            "Average block processing time: {:?}",
+            self.avg_block_processing_time
+        );
         println!("Average query time: {:?}", self.avg_query_time);
         println!("Memory usage: {} MB", self.memory_usage_mb);
         println!("Storage compression ratio: {:.2}:1", self.compression_ratio);
-        println!("Concurrent throughput: {:.2} ops/sec", self.concurrent_throughput);
+        println!(
+            "Concurrent throughput: {:.2} ops/sec",
+            self.concurrent_throughput
+        );
         println!("Total operations processed: {}", self.total_operations);
         println!("=====================================\n");
     }
@@ -114,10 +126,18 @@ impl PerformanceMetrics {
     /// Calculate overall performance score (0-100)
     pub fn calculate_performance_score(&self) -> f64 {
         let cache_score = (self.canonicalization_cache_hit_rate + self.query_cache_hit_rate) * 25.0;
-        let speed_score = if self.avg_block_processing_time.as_millis() < 100 { 25.0 } else { 25.0 * (100.0 / self.avg_block_processing_time.as_millis() as f64) };
-        let memory_score = if self.memory_usage_mb < 100 { 25.0 } else { 25.0 * (100.0 / self.memory_usage_mb as f64) };
+        let speed_score = if self.avg_block_processing_time.as_millis() < 100 {
+            25.0
+        } else {
+            25.0 * (100.0 / self.avg_block_processing_time.as_millis() as f64)
+        };
+        let memory_score = if self.memory_usage_mb < 100 {
+            25.0
+        } else {
+            25.0 * (100.0 / self.memory_usage_mb as f64)
+        };
         let compression_score = (self.compression_ratio - 1.0) * 25.0;
-        
+
         (cache_score + speed_score + memory_score + compression_score).min(100.0)
     }
 }
@@ -143,10 +163,16 @@ impl PerformanceManager {
     /// Create a new performance manager with custom configuration
     pub fn with_config(config: PerformanceConfig) -> Self {
         Self {
-            canonicalization_cache: canonicalization_cache::CanonicalizationCache::new(config.max_cache_size),
+            canonicalization_cache: canonicalization_cache::CanonicalizationCache::new(
+                config.max_cache_size,
+            ),
             query_cache: database_optimization::QueryCache::new(config.max_query_cache_size),
-            concurrent_manager: concurrent_operations::ConcurrentManager::new(config.max_worker_threads),
-            storage_optimizer: storage_optimization::StorageOptimizer::new(config.compression_level),
+            concurrent_manager: concurrent_operations::ConcurrentManager::new(
+                config.max_worker_threads,
+            ),
+            storage_optimizer: storage_optimization::StorageOptimizer::new(
+                config.compression_level,
+            ),
             metrics_collector: metrics::MetricsCollector::new(config.metrics_interval),
             metrics: PerformanceMetrics::default(),
             config,
@@ -173,8 +199,9 @@ impl PerformanceManager {
         let cache_memory = self.canonicalization_cache.estimate_memory_usage();
         let query_cache_memory = self.query_cache.estimate_memory_usage();
         let concurrent_memory = self.concurrent_manager.estimate_memory_usage();
-        
-        (cache_memory + query_cache_memory + concurrent_memory) as u64 / 1024 / 1024 // Convert to MB
+
+        (cache_memory + query_cache_memory + concurrent_memory) as u64 / 1024 / 1024
+        // Convert to MB
     }
 
     /// Get performance configuration
@@ -186,10 +213,13 @@ impl PerformanceManager {
     pub fn update_config(&mut self, config: PerformanceConfig) {
         self.config = config;
         // Update component configurations
-        self.canonicalization_cache.resize(self.config.max_cache_size);
+        self.canonicalization_cache
+            .resize(self.config.max_cache_size);
         self.query_cache.resize(self.config.max_query_cache_size);
-        self.concurrent_manager.set_max_threads(self.config.max_worker_threads);
-        self.storage_optimizer.set_compression_level(self.config.compression_level);
+        self.concurrent_manager
+            .set_max_threads(self.config.max_worker_threads);
+        self.storage_optimizer
+            .set_compression_level(self.config.compression_level);
     }
 
     /// Clear all caches
@@ -201,10 +231,22 @@ impl PerformanceManager {
     /// Get cache statistics
     pub fn get_cache_stats(&self) -> HashMap<String, f64> {
         let mut stats = HashMap::new();
-        stats.insert("canonicalization_cache_hit_rate".to_string(), self.canonicalization_cache.get_hit_rate());
-        stats.insert("canonicalization_cache_size".to_string(), self.canonicalization_cache.size() as f64);
-        stats.insert("query_cache_hit_rate".to_string(), self.query_cache.get_hit_rate());
-        stats.insert("query_cache_size".to_string(), self.query_cache.size() as f64);
+        stats.insert(
+            "canonicalization_cache_hit_rate".to_string(),
+            self.canonicalization_cache.get_hit_rate(),
+        );
+        stats.insert(
+            "canonicalization_cache_size".to_string(),
+            self.canonicalization_cache.size() as f64,
+        );
+        stats.insert(
+            "query_cache_hit_rate".to_string(),
+            self.query_cache.get_hit_rate(),
+        );
+        stats.insert(
+            "query_cache_size".to_string(),
+            self.query_cache.size() as f64,
+        );
         stats
     }
 }
@@ -239,7 +281,7 @@ mod tests {
         metrics.avg_block_processing_time = Duration::from_millis(50);
         metrics.memory_usage_mb = 50;
         metrics.compression_ratio = 2.0;
-        
+
         let score = metrics.calculate_performance_score();
         assert!(score > 80.0); // Should be a high score with good metrics
     }
@@ -248,13 +290,13 @@ mod tests {
     fn test_performance_manager_creation() {
         let manager = PerformanceManager::new();
         assert!(manager.get_config().enable_canonicalization_cache);
-        
+
         let custom_config = PerformanceConfig {
             max_cache_size: 5000,
             max_worker_threads: 4,
             ..Default::default()
         };
-        
+
         let custom_manager = PerformanceManager::with_config(custom_config);
         assert_eq!(custom_manager.get_config().max_cache_size, 5000);
         assert_eq!(custom_manager.get_config().max_worker_threads, 4);
@@ -264,7 +306,7 @@ mod tests {
     fn test_cache_stats() {
         let manager = PerformanceManager::new();
         let stats = manager.get_cache_stats();
-        
+
         assert!(stats.contains_key("canonicalization_cache_hit_rate"));
         assert!(stats.contains_key("canonicalization_cache_size"));
         assert!(stats.contains_key("query_cache_hit_rate"));

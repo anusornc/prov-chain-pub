@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { sparqlAPI } from '../../services/api';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import TextArea from '../../components/ui/TextArea';
-import Alert from '../../components/ui/Alert';
-import Badge from '../../components/ui/Badge';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import React, { useState } from "react";
+import { sparqlAPI } from "../../services/api";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import TextArea from "../../components/ui/TextArea";
+import Alert from "../../components/ui/Alert";
+import Badge from "../../components/ui/Badge";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
 const TraceabilityQueries: React.FC = () => {
   const [query, setQuery] = useState(`PREFIX prov: <http://www.w3.org/ns/prov#>
@@ -21,7 +21,9 @@ WHERE {
 }
 ORDER BY DESC(?timestamp)
 LIMIT 10`);
-  const [results, setResults] = useState<Record<string, { value: string; type: string }>[]>([]);
+  const [results, setResults] = useState<
+    Record<string, { value: string; type: string }>[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,8 +36,15 @@ LIMIT 10`);
       const bindings = response.data.results?.bindings || [];
       setResults(bindings);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
-      setError(error.response?.data?.message || error.message || 'Failed to execute query');
+      const error = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to execute query",
+      );
     } finally {
       setLoading(false);
     }
@@ -43,7 +52,7 @@ LIMIT 10`);
 
   const predefinedQueries = [
     {
-      name: 'Product Traceability',
+      name: "Product Traceability",
       query: `PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX core: <http://provchain.org/core#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -56,10 +65,10 @@ WHERE {
   ?process prov:startedAtTime ?timestamp .
 }
 ORDER BY DESC(?timestamp)
-LIMIT 10`
+LIMIT 10`,
     },
     {
-      name: 'Supplier Relationships',
+      name: "Supplier Relationships",
       query: `PREFIX core: <http://provchain.org/core#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
@@ -68,10 +77,10 @@ WHERE {
   ?supplier rdf:type core:Supplier .
   ?component core:suppliedBy ?supplier .
   ?component core:partOf ?product .
-}`
+}`,
     },
     {
-      name: 'Process Timeline',
+      name: "Process Timeline",
       query: `PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX core: <http://provchain.org/core#>
 
@@ -82,8 +91,8 @@ WHERE {
   OPTIONAL { ?process prov:endedAtTime ?endTime }
   OPTIONAL { ?process prov:wasAssociatedWith ?participant }
 }
-ORDER BY DESC(?startTime)`
-    }
+ORDER BY DESC(?startTime)`,
+    },
   ];
 
   const loadPredefinedQuery = (predefinedQuery: string) => {
@@ -96,15 +105,12 @@ ORDER BY DESC(?startTime)`
         <div>
           <h2 className="feature-title">Traceability Queries</h2>
           <p className="feature-description">
-            Execute SPARQL queries to explore and analyze your semantic blockchain data
+            Execute SPARQL queries to explore and analyze your semantic
+            blockchain data
           </p>
         </div>
-        <Button 
-          variant="primary" 
-          onClick={executeQuery}
-          disabled={loading}
-        >
-          {loading ? 'Executing...' : '▶ Execute Query'}
+        <Button variant="primary" onClick={executeQuery} disabled={loading}>
+          {loading ? "Executing..." : "▶ Execute Query"}
         </Button>
       </div>
 
@@ -141,8 +147,8 @@ ORDER BY DESC(?startTime)`
 
       {error && (
         <div className="mb-6">
-          <Alert 
-            variant="error" 
+          <Alert
+            variant="error"
             title="Query Error"
             message={error}
             dismissible
@@ -163,29 +169,42 @@ ORDER BY DESC(?startTime)`
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {results[0] && Object.keys(results[0]).map((header) => (
-                    <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {header}
-                    </th>
-                  ))}
+                  {results[0] &&
+                    Object.keys(results[0]).map((header) => (
+                      <th
+                        key={header}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        {header}
+                      </th>
+                    ))}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {results.map((row, index) => (
                   <tr key={index} className="hover:bg-gray-50">
-                    {Object.values(row).map((cell: { value: string; type: string }, cellIndex) => (
-                      <td key={cellIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="flex items-center">
-                          <span>{cell?.value || ''}</span>
-                          {cell?.type === 'uri' && (
-                            <Badge variant="info" className="ml-2">URI</Badge>
-                          )}
-                          {cell?.type === 'literal' && (
-                            <Badge variant="secondary" className="ml-2">Literal</Badge>
-                          )}
-                        </div>
-                      </td>
-                    ))}
+                    {Object.values(row).map(
+                      (cell: { value: string; type: string }, cellIndex) => (
+                        <td
+                          key={cellIndex}
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                        >
+                          <div className="flex items-center">
+                            <span>{cell?.value || ""}</span>
+                            {cell?.type === "uri" && (
+                              <Badge variant="info" className="ml-2">
+                                URI
+                              </Badge>
+                            )}
+                            {cell?.type === "literal" && (
+                              <Badge variant="secondary" className="ml-2">
+                                Literal
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
+                      ),
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -198,9 +217,12 @@ ORDER BY DESC(?startTime)`
         <Card>
           <div className="text-center py-8">
             <div className="text-4xl mb-4">🔍</div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Results Yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              No Results Yet
+            </h3>
             <p className="text-gray-600 dark:text-gray-300">
-              Execute a query to see results here. Try one of the predefined queries or write your own SPARQL query.
+              Execute a query to see results here. Try one of the predefined
+              queries or write your own SPARQL query.
             </p>
           </div>
         </Card>

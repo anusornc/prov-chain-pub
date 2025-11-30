@@ -1,19 +1,19 @@
 //! Wallet system for ProvChainOrg participants
-//! 
+//!
 //! This module implements:
 //! - Multi-participant wallet management
 //! - Secure key storage and management
 //! - Participant identity and role management
 //! - Transaction signing capabilities
 
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::fs;
+use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
-use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer};
+use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
 use uuid::Uuid;
-use anyhow::{Result, anyhow};
 
 /// Participant types in the supply chain
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -272,9 +272,11 @@ impl Wallet {
 
     /// Sign data with the wallet's private key
     pub fn sign(&self, data: &[u8]) -> Result<Signature> {
-        let signing_key = self.signing_key.as_ref()
+        let signing_key = self
+            .signing_key
+            .as_ref()
             .ok_or_else(|| anyhow!("No signing key available"))?;
-        
+
         Ok(signing_key.sign(data))
     }
 
@@ -298,16 +300,18 @@ impl Wallet {
     pub fn has_valid_certificate(&self, cert_type: &str) -> bool {
         let now = Utc::now();
         self.participant.certificates.iter().any(|cert| {
-            cert.cert_type == cert_type &&
-            cert.status == CertificateStatus::Active &&
-            cert.expires_at > now
+            cert.cert_type == cert_type
+                && cert.status == CertificateStatus::Active
+                && cert.expires_at > now
         })
     }
 
     /// Get active certificates
     pub fn get_active_certificates(&self) -> Vec<&Certificate> {
         let now = Utc::now();
-        self.participant.certificates.iter()
+        self.participant
+            .certificates
+            .iter()
             .filter(|cert| cert.status == CertificateStatus::Active && cert.expires_at > now)
             .collect()
     }
@@ -329,7 +333,7 @@ impl WalletManager {
     /// Create a new wallet manager
     pub fn new<P: AsRef<Path>>(storage_dir: P) -> Result<Self> {
         let storage_dir = storage_dir.as_ref().to_path_buf();
-        
+
         // Create storage directory if it doesn't exist
         if !storage_dir.exists() {
             fs::create_dir_all(&storage_dir)?;
@@ -349,27 +353,30 @@ impl WalletManager {
     pub fn create_wallet(&mut self, participant: Participant) -> Result<Uuid> {
         let participant_id = participant.id;
         let wallet = Wallet::new(participant);
-        
+
         // Save wallet to disk
         self.save_wallet(&wallet)?;
-        
+
         // Add to memory
         self.wallets.insert(participant_id, wallet);
-        
+
         Ok(participant_id)
     }
 
     /// Load a wallet from storage
     pub fn load_wallet(&mut self, participant_id: Uuid) -> Result<()> {
         let wallet_path = self.get_wallet_path(participant_id);
-        
+
         if !wallet_path.exists() {
-            return Err(anyhow!("Wallet file not found for participant {}", participant_id));
+            return Err(anyhow!(
+                "Wallet file not found for participant {}",
+                participant_id
+            ));
         }
 
         let wallet_data = fs::read(&wallet_path)?;
         let wallet = self.decrypt_wallet_data(&wallet_data)?;
-        
+
         self.wallets.insert(participant_id, wallet);
         Ok(())
     }
@@ -378,7 +385,7 @@ impl WalletManager {
     pub fn save_wallet(&self, wallet: &Wallet) -> Result<()> {
         let wallet_path = self.get_wallet_path(wallet.participant_id());
         let encrypted_data = self.encrypt_wallet_data(wallet)?;
-        
+
         fs::write(wallet_path, encrypted_data)?;
         Ok(())
     }
@@ -400,7 +407,8 @@ impl WalletManager {
 
     /// Get participants by type
     pub fn get_participants_by_type(&self, participant_type: &ParticipantType) -> Vec<&Wallet> {
-        self.wallets.values()
+        self.wallets
+            .values()
             .filter(|wallet| &wallet.participant.participant_type == participant_type)
             .collect()
     }
@@ -409,13 +417,13 @@ impl WalletManager {
     pub fn remove_wallet(&mut self, participant_id: Uuid) -> Result<()> {
         // Remove from memory
         self.wallets.remove(&participant_id);
-        
+
         // Remove from storage
         let wallet_path = self.get_wallet_path(participant_id);
         if wallet_path.exists() {
             fs::remove_file(wallet_path)?;
         }
-        
+
         Ok(())
     }
 
@@ -428,10 +436,10 @@ impl WalletManager {
 
         let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
         let backup_path = backup_dir.join(format!("wallet_backup_{}.json", timestamp));
-        
+
         let backup_data = serde_json::to_string_pretty(&self.wallets)?;
         fs::write(&backup_path, backup_data)?;
-        
+
         Ok(backup_path.to_string_lossy().to_string())
     }
 
@@ -462,9 +470,11 @@ impl WalletManager {
         let mut active_participants = 0;
 
         for wallet in self.wallets.values() {
-            *type_counts.entry(wallet.participant.participant_type.clone()).or_insert(0) += 1;
+            *type_counts
+                .entry(wallet.participant.participant_type.clone())
+                .or_insert(0) += 1;
             total_certificates += wallet.participant.certificates.len();
-            
+
             if wallet.participant.last_activity.is_some() {
                 active_participants += 1;
             }
@@ -608,10 +618,8 @@ mod tests {
 
     #[test]
     fn test_participant_creation() {
-        let farmer = Participant::new_farmer(
-            "John's Dairy Farm".to_string(),
-            "Vermont, USA".to_string()
-        );
+        let farmer =
+            Participant::new_farmer("John's Dairy Farm".to_string(), "Vermont, USA".to_string());
 
         assert_eq!(farmer.participant_type, ParticipantType::Producer);
         assert!(farmer.permissions.can_produce);
@@ -620,10 +628,8 @@ mod tests {
 
     #[test]
     fn test_wallet_creation() {
-        let farmer = Participant::new_farmer(
-            "John's Dairy Farm".to_string(),
-            "Vermont, USA".to_string()
-        );
+        let farmer =
+            Participant::new_farmer("John's Dairy Farm".to_string(), "Vermont, USA".to_string());
 
         let wallet = Wallet::new(farmer);
         assert!(wallet.signing_key.is_some());
@@ -633,14 +639,12 @@ mod tests {
 
     #[test]
     fn test_wallet_signing() {
-        let farmer = Participant::new_farmer(
-            "John's Dairy Farm".to_string(),
-            "Vermont, USA".to_string()
-        );
+        let farmer =
+            Participant::new_farmer("John's Dairy Farm".to_string(), "Vermont, USA".to_string());
 
         let wallet = Wallet::new(farmer);
         let data = b"test message";
-        
+
         let signature = wallet.sign(data).unwrap();
         assert!(wallet.verify(data, &signature));
     }
@@ -650,10 +654,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let mut manager = WalletManager::new(temp_dir.path()).unwrap();
 
-        let farmer = Participant::new_farmer(
-            "John's Dairy Farm".to_string(),
-            "Vermont, USA".to_string()
-        );
+        let farmer =
+            Participant::new_farmer("John's Dairy Farm".to_string(), "Vermont, USA".to_string());
 
         let participant_id = manager.create_wallet(farmer).unwrap();
         assert!(manager.get_wallet(participant_id).is_some());
@@ -664,13 +666,11 @@ mod tests {
 
     #[test]
     fn test_certificate_management() {
-        let farmer = Participant::new_farmer(
-            "John's Dairy Farm".to_string(),
-            "Vermont, USA".to_string()
-        );
+        let farmer =
+            Participant::new_farmer("John's Dairy Farm".to_string(), "Vermont, USA".to_string());
 
         let mut wallet = Wallet::new(farmer);
-        
+
         let cert = Certificate {
             id: "ORGANIC-001".to_string(),
             cert_type: "ORGANIC".to_string(),

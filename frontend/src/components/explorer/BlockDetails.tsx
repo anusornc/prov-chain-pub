@@ -1,21 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ArrowLeft, 
-  Copy, 
-  ExternalLink, 
-  Clock, 
-  Database, 
-  Activity, 
-  CheckCircle, 
-  AlertCircle
-} from 'lucide-react';
-import Button from '../ui/Button';
-import Card from '../ui/Card';
-import Badge from '../ui/Badge';
-import LoadingSpinner from '../ui/LoadingSpinner';
-import useBlockchain from '../../hooks/useBlockchain';
-import { blockchainAPI, transactionAPI } from '../../services/api';
-import type { Block, Transaction, RdfSummary, ValidationStatus } from '../../types';
+import React, { useState, useEffect } from "react";
+import {
+  ArrowLeft,
+  Copy,
+  ExternalLink,
+  Clock,
+  Database,
+  Activity,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+import Button from "../ui/Button";
+import Card from "../ui/Card";
+import Badge from "../ui/Badge";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import useBlockchain from "../../hooks/useBlockchain";
+import { blockchainAPI, transactionAPI } from "../../services/api";
+import type {
+  Block,
+  Transaction,
+  RdfSummary,
+  ValidationStatus,
+} from "../../types";
 
 interface BlockDetailsProps {
   block: Block;
@@ -28,31 +33,45 @@ interface TransactionListItemProps {
   onClick: (transaction: Transaction) => void;
 }
 
-const TransactionListItem: React.FC<TransactionListItemProps> = ({ transaction, onClick }) => {
+const TransactionListItem: React.FC<TransactionListItemProps> = ({
+  transaction,
+  onClick,
+}) => {
   const formatTimestamp = (timestamp: string) => {
     return new Date(timestamp).toLocaleString();
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'text-green-600 dark:text-green-400';
-      case 'pending': return 'text-yellow-600 dark:text-yellow-400';
-      case 'failed': return 'text-red-600 dark:text-red-400';
-      default: return 'text-gray-600 dark:text-gray-400';
+      case "confirmed":
+        return "text-green-600 dark:text-green-400";
+      case "pending":
+        return "text-yellow-600 dark:text-yellow-400";
+      case "failed":
+        return "text-red-600 dark:text-red-400";
+      default:
+        return "text-gray-600 dark:text-gray-400";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'confirmed': return <CheckCircle className="w-4 h-4" />;
-      case 'pending': return <Clock className="w-4 h-4" />;
-      case 'failed': return <AlertCircle className="w-4 h-4" />;
-      default: return <Activity className="w-4 h-4" />;
+      case "confirmed":
+        return <CheckCircle className="w-4 h-4" />;
+      case "pending":
+        return <Clock className="w-4 h-4" />;
+      case "failed":
+        return <AlertCircle className="w-4 h-4" />;
+      default:
+        return <Activity className="w-4 h-4" />;
     }
   };
 
   return (
-    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => onClick(transaction)}>
+    <Card
+      className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => onClick(transaction)}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center justify-center w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -72,7 +91,7 @@ const TransactionListItem: React.FC<TransactionListItemProps> = ({ transaction, 
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <div className="text-right">
             <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -84,9 +103,13 @@ const TransactionListItem: React.FC<TransactionListItemProps> = ({ transaction, 
               </p>
             )}
           </div>
-          <div className={`flex items-center space-x-1 ${getStatusColor(transaction.status)}`}>
+          <div
+            className={`flex items-center space-x-1 ${getStatusColor(transaction.status)}`}
+          >
             {getStatusIcon(transaction.status)}
-            <span className="text-sm font-medium capitalize">{transaction.status}</span>
+            <span className="text-sm font-medium capitalize">
+              {transaction.status}
+            </span>
           </div>
         </div>
       </div>
@@ -94,12 +117,17 @@ const TransactionListItem: React.FC<TransactionListItemProps> = ({ transaction, 
   );
 };
 
-const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactionSelect }) => {
+const BlockDetails: React.FC<BlockDetailsProps> = ({
+  block,
+  onBack,
+  onTransactionSelect,
+}) => {
   const { fetchBlock } = useBlockchain();
   const [detailedBlock, setDetailedBlock] = useState<Block | null>(block);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [rdfSummary, setRdfSummary] = useState<RdfSummary | null>(null);
-  const [validationStatus, setValidationStatus] = useState<ValidationStatus | null>(null);
+  const [validationStatus, setValidationStatus] =
+    useState<ValidationStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -118,19 +146,26 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
         // Fetch transactions for this block from backend (filter recent by block index)
         try {
           const recentResp = await transactionAPI.getRecent();
-          const txs = ((recentResp.data.transactions || []) as Transaction[]).filter((tx) => tx.block_index === block.index);
+          const txs = (
+            (recentResp.data.transactions || []) as Transaction[]
+          ).filter((tx) => tx.block_index === block.index);
           setTransactions(txs);
         } catch (e) {
-          console.warn('Failed to fetch transactions; showing none for this block', e);
+          console.warn(
+            "Failed to fetch transactions; showing none for this block",
+            e,
+          );
           setTransactions([]);
         }
 
         // Fetch real RDF summary for this block
         try {
-          const summaryResp = await blockchainAPI.getBlockRdfSummary(block.index);
+          const summaryResp = await blockchainAPI.getBlockRdfSummary(
+            block.index,
+          );
           setRdfSummary(summaryResp.data as RdfSummary);
         } catch (e) {
-          console.warn('Failed to fetch RDF summary', e);
+          console.warn("Failed to fetch RDF summary", e);
           setRdfSummary(null);
         }
 
@@ -142,17 +177,17 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
             is_valid: isValid,
             validation_time_ms: 0,
             errors: [],
-            warnings: []
+            warnings: [],
           });
         } catch (e) {
-          console.warn('Failed to fetch validation status', e);
+          console.warn("Failed to fetch validation status", e);
           setValidationStatus(null);
         }
-
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch block details';
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to fetch block details";
         setError(errorMessage);
-        console.error('Error fetching block details:', err);
+        console.error("Error fetching block details:", err);
       } finally {
         setLoading(false);
       }
@@ -178,7 +213,9 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner size="lg" />
-        <span className="ml-2 text-gray-600 dark:text-gray-400">Loading block details...</span>
+        <span className="ml-2 text-gray-600 dark:text-gray-400">
+          Loading block details...
+        </span>
       </div>
     );
   }
@@ -235,12 +272,18 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
         </div>
         <div className="flex items-center space-x-2">
           {validationStatus?.is_valid ? (
-            <Badge variant="secondary" className="text-green-600 bg-green-100 dark:bg-green-900">
+            <Badge
+              variant="secondary"
+              className="text-green-600 bg-green-100 dark:bg-green-900"
+            >
               <CheckCircle className="w-3 h-3 mr-1" />
               Valid
             </Badge>
           ) : (
-            <Badge variant="secondary" className="text-red-600 bg-red-100 dark:bg-red-900">
+            <Badge
+              variant="secondary"
+              className="text-red-600 bg-red-100 dark:bg-red-900"
+            >
               <AlertCircle className="w-3 h-3 mr-1" />
               Invalid
             </Badge>
@@ -256,7 +299,9 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Block Hash</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Block Hash
+              </span>
               <div className="flex items-center space-x-2">
                 <code className="text-sm font-mono text-gray-900 dark:text-white">
                   {formatHash(detailedBlock.hash)}
@@ -270,9 +315,11 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
                 </Button>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Previous Hash</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Previous Hash
+              </span>
               <div className="flex items-center space-x-2">
                 <code className="text-sm font-mono text-gray-900 dark:text-white">
                   {formatHash(detailedBlock.previous_hash)}
@@ -286,31 +333,39 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
                 </Button>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Timestamp</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Timestamp
+              </span>
               <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {formatTimestamp(detailedBlock.timestamp)}
               </span>
             </div>
-            
+
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Size</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Size
+              </span>
               <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {(detailedBlock.size / 1024).toFixed(2)} KB
               </span>
             </div>
-            
+
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Transaction Count</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Transaction Count
+              </span>
               <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {detailedBlock.transaction_count}
               </span>
             </div>
-            
+
             {detailedBlock.validator && (
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Validator</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Validator
+                </span>
                 <code className="text-sm font-mono text-gray-900 dark:text-white">
                   {detailedBlock.validator.slice(0, 16)}...
                 </code>
@@ -331,35 +386,46 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {rdfSummary.triple_count.toLocaleString()}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Triples</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Triples
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {rdfSummary.subject_count.toLocaleString()}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Subjects</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Subjects
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                     {rdfSummary.predicate_count.toLocaleString()}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Predicates</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Predicates
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                     {rdfSummary.object_count.toLocaleString()}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Objects</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Objects
+                  </div>
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                   Namespaces
                 </h4>
                 <div className="space-y-1">
                   {rdfSummary.namespaces.map((namespace, index) => (
-                    <code key={index} className="block text-xs text-gray-600 dark:text-gray-400">
+                    <code
+                      key={index}
+                      className="block text-xs text-gray-600 dark:text-gray-400"
+                    >
                       {namespace}
                     </code>
                   ))}
@@ -378,21 +444,23 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
           </h3>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className={`flex items-center space-x-2 ${validationStatus.is_valid ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              <div
+                className={`flex items-center space-x-2 ${validationStatus.is_valid ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+              >
                 {validationStatus.is_valid ? (
                   <CheckCircle className="w-5 h-5" />
                 ) : (
                   <AlertCircle className="w-5 h-5" />
                 )}
                 <span className="font-medium">
-                  {validationStatus.is_valid ? 'Valid' : 'Invalid'}
+                  {validationStatus.is_valid ? "Valid" : "Invalid"}
                 </span>
               </div>
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 Validated in {validationStatus.validation_time_ms}ms
               </span>
             </div>
-            
+
             {validationStatus.warnings.length > 0 && (
               <div className="text-sm text-yellow-600 dark:text-yellow-400">
                 {validationStatus.warnings.length} warning(s)
@@ -413,11 +481,13 @@ const BlockDetails: React.FC<BlockDetailsProps> = ({ block, onBack, onTransactio
             View All
           </Button>
         </div>
-        
+
         {transactions.length === 0 ? (
           <div className="text-center py-8">
             <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">No transactions in this block</p>
+            <p className="text-gray-600 dark:text-gray-400">
+              No transactions in this block
+            </p>
           </div>
         ) : (
           <div className="space-y-3">

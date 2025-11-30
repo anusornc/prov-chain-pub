@@ -1,10 +1,10 @@
 //! Monitoring and observability for production deployment
 
+use crate::production::ProductionError;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use crate::production::ProductionError;
 
 /// Monitoring configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,7 +54,11 @@ impl Default for MonitoringConfig {
                     name: "api_request_duration_seconds".to_string(),
                     metric_type: MetricType::Histogram,
                     description: "API request duration in seconds".to_string(),
-                    labels: vec!["method".to_string(), "endpoint".to_string(), "status".to_string()],
+                    labels: vec![
+                        "method".to_string(),
+                        "endpoint".to_string(),
+                        "status".to_string(),
+                    ],
                 },
                 CustomMetricConfig {
                     name: "system_memory_usage_bytes".to_string(),
@@ -183,7 +187,10 @@ impl MonitoringManager {
 
     /// Initialize Prometheus metrics
     async fn initialize_prometheus(&self) -> Result<(), ProductionError> {
-        tracing::info!("Initializing Prometheus metrics on port {}", self.config.prometheus_port);
+        tracing::info!(
+            "Initializing Prometheus metrics on port {}",
+            self.config.prometheus_port
+        );
 
         // Register custom metrics
         for metric_config in &self.config.custom_metrics {
@@ -196,7 +203,10 @@ impl MonitoringManager {
     /// Initialize distributed tracing
     async fn initialize_tracing(&self) -> Result<(), ProductionError> {
         if let Some(jaeger_endpoint) = &self.config.jaeger_endpoint {
-            tracing::info!("Initializing distributed tracing with Jaeger endpoint: {}", jaeger_endpoint);
+            tracing::info!(
+                "Initializing distributed tracing with Jaeger endpoint: {}",
+                jaeger_endpoint
+            );
         }
         Ok(())
     }
@@ -211,10 +221,10 @@ impl MonitoringManager {
 
         tokio::spawn(async move {
             let mut interval_timer = tokio::time::interval(interval);
-            
+
             loop {
                 interval_timer.tick().await;
-                
+
                 // Collect system metrics
                 let sys_metrics = Self::collect_system_metrics(start_time).await;
                 let app_metrics_data = Self::collect_application_metrics().await;
@@ -248,13 +258,13 @@ impl MonitoringManager {
         // Simplified implementation - in production would use proper system monitoring
         SystemMetrics {
             timestamp: chrono::Utc::now(),
-            cpu_usage_percent: 0.0, // Would be collected from system
-            memory_usage_bytes: 0, // Would be collected from system
-            memory_total_bytes: 0, // Would be collected from system
-            disk_usage_bytes: 0, // Would be collected from system
-            disk_total_bytes: 0, // Would be collected from system
-            network_rx_bytes: 0, // Would be collected from system
-            network_tx_bytes: 0, // Would be collected from system
+            cpu_usage_percent: 0.0,   // Would be collected from system
+            memory_usage_bytes: 0,    // Would be collected from system
+            memory_total_bytes: 0,    // Would be collected from system
+            disk_usage_bytes: 0,      // Would be collected from system
+            disk_total_bytes: 0,      // Would be collected from system
+            network_rx_bytes: 0,      // Would be collected from system
+            network_tx_bytes: 0,      // Would be collected from system
             open_file_descriptors: 0, // Would need platform-specific implementation
             uptime_seconds: start_time.elapsed().as_secs(),
         }
@@ -265,14 +275,14 @@ impl MonitoringManager {
         // In a real implementation, these would be collected from the actual application
         ApplicationMetrics {
             timestamp: chrono::Utc::now(),
-            blockchain_blocks: 0, // Would be collected from blockchain
-            rdf_triples: 0, // Would be collected from RDF store
-            active_connections: 0, // Would be collected from web server
-            api_requests_total: 0, // Would be collected from request counter
-            api_requests_per_second: 0.0, // Calculated from request rate
+            blockchain_blocks: 0,          // Would be collected from blockchain
+            rdf_triples: 0,                // Would be collected from RDF store
+            active_connections: 0,         // Would be collected from web server
+            api_requests_total: 0,         // Would be collected from request counter
+            api_requests_per_second: 0.0,  // Calculated from request rate
             average_response_time_ms: 0.0, // Calculated from response times
-            error_rate_percent: 0.0, // Calculated from error count
-            cache_hit_rate_percent: 0.0, // Would be collected from cache
+            error_rate_percent: 0.0,       // Calculated from error count
+            cache_hit_rate_percent: 0.0,   // Would be collected from cache
         }
     }
 
@@ -524,7 +534,7 @@ impl MetricsRecorder {
         let request_count = *self.request_count.read().await;
         let error_count = *self.error_count.read().await;
         let response_times = self.response_times.read().await;
-        
+
         let avg_response_time = if response_times.is_empty() {
             0.0
         } else {

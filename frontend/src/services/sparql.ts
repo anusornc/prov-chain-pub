@@ -1,16 +1,17 @@
-import type { SPARQLQuery, SPARQLResult } from '../types';
+import type { SPARQLQuery, SPARQLResult } from "../types";
+import { API_ENDPOINTS } from "../config/api";
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = API_ENDPOINTS.API;
 
 export interface QueryTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'traceability' | 'provenance' | 'analytics' | 'compliance';
+  category: "traceability" | "provenance" | "analytics" | "compliance";
   query: string;
   parameters?: {
     name: string;
-    type: 'uri' | 'literal' | 'variable';
+    type: "uri" | "literal" | "variable";
     description: string;
     required: boolean;
     default?: string;
@@ -35,11 +36,11 @@ export class SPARQLService {
   }
 
   private getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem("authToken");
     return {
-      'Content-Type': 'application/json',
-      'Accept': 'application/sparql-results+json',
-      ...(token && { 'Authorization': `Bearer ${token}` })
+      "Content-Type": "application/json",
+      Accept: "application/sparql-results+json",
+      ...(token && { Authorization: `Bearer ${token}` }),
     };
   }
 
@@ -49,19 +50,21 @@ export class SPARQLService {
   async executeQuery(query: string): Promise<SPARQLResult> {
     try {
       const response = await fetch(`${API_BASE_URL}/sparql/query`, {
-        method: 'POST',
+        method: "POST",
         headers: this.getAuthHeaders(),
-        body: JSON.stringify({ query })
+        body: JSON.stringify({ query }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`SPARQL query failed: ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `SPARQL query failed: ${response.statusText} - ${errorText}`,
+        );
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error executing SPARQL query:', error);
+      console.error("Error executing SPARQL query:", error);
       throw error;
     }
   }
@@ -72,11 +75,11 @@ export class SPARQLService {
   async saveQuery(query: SPARQLQuery): Promise<SPARQLQuery> {
     try {
       const response = await fetch(`${API_BASE_URL}/sparql/queries`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(query)
+        body: JSON.stringify(query),
       });
 
       if (!response.ok) {
@@ -85,7 +88,7 @@ export class SPARQLService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error saving SPARQL query:', error);
+      console.error("Error saving SPARQL query:", error);
       throw error;
     }
   }
@@ -98,12 +101,14 @@ export class SPARQLService {
       const response = await fetch(`${API_BASE_URL}/sparql/queries`);
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch saved queries: ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch saved queries: ${response.statusText}`,
+        );
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching saved queries:', error);
+      console.error("Error fetching saved queries:", error);
       throw error;
     }
   }
@@ -113,15 +118,18 @@ export class SPARQLService {
    */
   async deleteQuery(queryId: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/sparql/queries/${queryId}`, {
-        method: 'DELETE'
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/sparql/queries/${queryId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to delete query: ${response.statusText}`);
       }
     } catch (error) {
-      console.error('Error deleting SPARQL query:', error);
+      console.error("Error deleting SPARQL query:", error);
       throw error;
     }
   }
@@ -131,9 +139,12 @@ export class SPARQLService {
    */
   async toggleFavorite(queryId: string): Promise<SPARQLQuery> {
     try {
-      const response = await fetch(`${API_BASE_URL}/sparql/queries/${queryId}/favorite`, {
-        method: 'POST'
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/sparql/queries/${queryId}/favorite`,
+        {
+          method: "POST",
+        },
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to toggle favorite: ${response.statusText}`);
@@ -141,7 +152,7 @@ export class SPARQLService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      console.error("Error toggling favorite:", error);
       throw error;
     }
   }
@@ -160,7 +171,7 @@ export class SPARQLService {
 
       return await response.json();
     } catch (error) {
-      console.warn('Using default SPARQL config:', error);
+      console.warn("Using default SPARQL config:", error);
       return this.getDefaultConfig();
     }
   }
@@ -175,18 +186,18 @@ export class SPARQLService {
   }> {
     try {
       const response = await fetch(`${API_BASE_URL}/sparql/validate`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/sparql-query'
+          "Content-Type": "application/sparql-query",
         },
-        body: query
+        body: query,
       });
 
       if (!response.ok) {
         return {
           is_valid: false,
           errors: [`HTTP ${response.status}: ${response.statusText}`],
-          warnings: []
+          warnings: [],
         };
       }
 
@@ -194,8 +205,10 @@ export class SPARQLService {
     } catch (error) {
       return {
         is_valid: false,
-        errors: [error instanceof Error ? error.message : 'Unknown validation error'],
-        warnings: []
+        errors: [
+          error instanceof Error ? error.message : "Unknown validation error",
+        ],
+        warnings: [],
       };
     }
   }
@@ -207,10 +220,10 @@ export class SPARQLService {
     return {
       templates: [
         {
-          id: 'item-trace',
-          name: 'Item Trace Path',
-          description: 'Get the complete trace path for an item',
-          category: 'traceability',
+          id: "item-trace",
+          name: "Item Trace Path",
+          description: "Get the complete trace path for an item",
+          category: "traceability",
           query: `PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX pc: <http://provchain.org/ontology#>
 
@@ -225,18 +238,18 @@ SELECT ?step ?activity ?agent ?timestamp ?location WHERE {
 ORDER BY ?timestamp`,
           parameters: [
             {
-              name: 'ITEM_ID',
-              type: 'literal',
-              description: 'The ID of the item to trace',
-              required: true
-            }
-          ]
+              name: "ITEM_ID",
+              type: "literal",
+              description: "The ID of the item to trace",
+              required: true,
+            },
+          ],
         },
         {
-          id: 'provenance-chain',
-          name: 'Provenance Chain',
-          description: 'Get the provenance chain showing how items are derived',
-          category: 'provenance',
+          id: "provenance-chain",
+          name: "Provenance Chain",
+          description: "Get the provenance chain showing how items are derived",
+          category: "provenance",
           query: `PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX pc: <http://provchain.org/ontology#>
 
@@ -246,13 +259,13 @@ SELECT ?source ?target ?relationship ?timestamp WHERE {
   ?activity prov:startedAtTime ?timestamp .
   ?activity a ?relationship .
 }
-ORDER BY ?timestamp`
+ORDER BY ?timestamp`,
         },
         {
-          id: 'participant-activities',
-          name: 'Participant Activities',
-          description: 'Get all activities performed by a specific participant',
-          category: 'analytics',
+          id: "participant-activities",
+          name: "Participant Activities",
+          description: "Get all activities performed by a specific participant",
+          category: "analytics",
           query: `PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX pc: <http://provchain.org/ontology#>
 
@@ -266,18 +279,18 @@ SELECT ?activity ?type ?timestamp ?item WHERE {
 ORDER BY DESC(?timestamp)`,
           parameters: [
             {
-              name: 'PARTICIPANT_ID',
-              type: 'literal',
-              description: 'The ID of the participant',
-              required: true
-            }
-          ]
+              name: "PARTICIPANT_ID",
+              type: "literal",
+              description: "The ID of the participant",
+              required: true,
+            },
+          ],
         },
         {
-          id: 'quality-compliance',
-          name: 'Quality Compliance Check',
-          description: 'Check quality compliance status for items',
-          category: 'compliance',
+          id: "quality-compliance",
+          name: "Quality Compliance Check",
+          description: "Check quality compliance status for items",
+          category: "compliance",
           query: `PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX pc: <http://provchain.org/ontology#>
 
@@ -288,13 +301,13 @@ SELECT ?item ?qualityCheck ?result ?timestamp WHERE {
   ?qualityCheck pc:hasResult ?result .
   ?qualityCheck prov:startedAtTime ?timestamp .
 }
-ORDER BY DESC(?timestamp)`
+ORDER BY DESC(?timestamp)`,
         },
         {
-          id: 'supply-chain-analytics',
-          name: 'Supply Chain Analytics',
-          description: 'Get comprehensive supply chain metrics',
-          category: 'analytics',
+          id: "supply-chain-analytics",
+          name: "Supply Chain Analytics",
+          description: "Get comprehensive supply chain metrics",
+          category: "analytics",
           query: `PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX pc: <http://provchain.org/ontology#>
 
@@ -308,13 +321,13 @@ WHERE {
   ?activity prov:generated ?item .
   ?activity prov:wasAssociatedWith ?participant .
   OPTIONAL { ?activity prov:atLocation ?location }
-}`
+}`,
         },
         {
-          id: 'recent-transactions',
-          name: 'Recent Transactions',
-          description: 'Get recent blockchain transactions',
-          category: 'traceability',
+          id: "recent-transactions",
+          name: "Recent Transactions",
+          description: "Get recent blockchain transactions",
+          category: "traceability",
           query: `PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX pc: <http://provchain.org/ontology#>
 
@@ -326,51 +339,51 @@ SELECT ?transaction ?type ?participant ?timestamp ?item WHERE {
   OPTIONAL { ?transaction prov:generated ?item }
 }
 ORDER BY DESC(?timestamp)
-LIMIT 50`
-        }
+LIMIT 50`,
+        },
       ],
       predicates: [
-        'prov:wasGeneratedBy',
-        'prov:wasDerivedFrom',
-        'prov:used',
-        'prov:wasAssociatedWith',
-        'prov:startedAtTime',
-        'prov:endedAtTime',
-        'prov:atLocation',
-        'pc:hasId',
-        'pc:hasType',
-        'pc:hasResult',
-        'pc:hasOwner',
-        'pc:hasLocation',
-        'pc:hasQuality'
+        "prov:wasGeneratedBy",
+        "prov:wasDerivedFrom",
+        "prov:used",
+        "prov:wasAssociatedWith",
+        "prov:startedAtTime",
+        "prov:endedAtTime",
+        "prov:atLocation",
+        "pc:hasId",
+        "pc:hasType",
+        "pc:hasResult",
+        "pc:hasOwner",
+        "pc:hasLocation",
+        "pc:hasQuality",
       ],
       classes: [
-        'prov:Entity',
-        'prov:Activity',
-        'prov:Agent',
-        'pc:Product',
-        'pc:RawMaterial',
-        'pc:Component',
-        'pc:Batch',
-        'pc:Shipment',
-        'pc:ProductionActivity',
-        'pc:ProcessingActivity',
-        'pc:TransportActivity',
-        'pc:QualityActivity',
-        'pc:Producer',
-        'pc:Manufacturer',
-        'pc:LogisticsProvider',
-        'pc:QualityLab',
-        'pc:Auditor',
-        'pc:Retailer'
+        "prov:Entity",
+        "prov:Activity",
+        "prov:Agent",
+        "pc:Product",
+        "pc:RawMaterial",
+        "pc:Component",
+        "pc:Batch",
+        "pc:Shipment",
+        "pc:ProductionActivity",
+        "pc:ProcessingActivity",
+        "pc:TransportActivity",
+        "pc:QualityActivity",
+        "pc:Producer",
+        "pc:Manufacturer",
+        "pc:LogisticsProvider",
+        "pc:QualityLab",
+        "pc:Auditor",
+        "pc:Retailer",
       ],
       namespaces: {
-        'prov': 'http://www.w3.org/ns/prov#',
-        'pc': 'http://provchain.org/ontology#',
-        'xsd': 'http://www.w3.org/2001/XMLSchema#',
-        'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
-        'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
-      }
+        prov: "http://www.w3.org/ns/prov#",
+        pc: "http://provchain.org/ontology#",
+        xsd: "http://www.w3.org/2001/XMLSchema#",
+        rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+        rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+      },
     };
   }
 
@@ -383,30 +396,30 @@ LIMIT 50`
     totalRows: number;
   } {
     const headers = results.head.vars;
-    const rows = results.results.bindings.map(binding => 
-      headers.map(header => {
+    const rows = results.results.bindings.map((binding) =>
+      headers.map((header) => {
         const value = binding[header];
-        if (!value) return '';
-        
+        if (!value) return "";
+
         // Format different value types
-        if (value.type === 'uri') {
+        if (value.type === "uri") {
           // Extract local name from URI
           const localName = value.value.split(/[#/]/).pop() || value.value;
           return localName;
-        } else if (value.type === 'literal') {
-          if (value.datatype === 'http://www.w3.org/2001/XMLSchema#dateTime') {
+        } else if (value.type === "literal") {
+          if (value.datatype === "http://www.w3.org/2001/XMLSchema#dateTime") {
             return new Date(value.value).toLocaleString();
           }
           return value.value;
         }
         return value.value;
-      })
+      }),
     );
 
     return {
       headers,
       rows,
-      totalRows: rows.length
+      totalRows: rows.length,
     };
   }
 }

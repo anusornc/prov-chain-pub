@@ -1,14 +1,14 @@
+use anyhow::{Context, Result};
 use oxigraph::io::RdfFormat;
 use oxigraph::model::*;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
+use sha2::{Digest, Sha256};
+use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
-use sha2::{Sha256, Digest};
-use std::collections::{HashSet, HashMap};
-use std::time::{Instant, SystemTime};
 use std::path::{Path, PathBuf};
-use anyhow::{Result, Context};
-use tracing::{info, warn, error, debug};
+use std::time::{Instant, SystemTime};
+use tracing::{debug, error, info, warn};
 
 use crate::core::blockchain::Block;
 // use crate::shacl_validator::{ShaclValidator, ShaclConfig, ShaclValidationResult};
@@ -25,8 +25,8 @@ pub enum GraphComplexity {
 /// Canonicalization algorithm selection
 #[derive(Debug, Clone, PartialEq)]
 pub enum CanonicalizationAlgorithm {
-    Custom,      // Fast hash-based approach
-    RDFC10,      // W3C RDFC-1.0 standard
+    Custom, // Fast hash-based approach
+    RDFC10, // W3C RDFC-1.0 standard
 }
 
 /// Performance metrics for canonicalization operations
@@ -141,7 +141,7 @@ impl RDFMemoryCache {
             max_size,
         }
     }
-    
+
     pub fn get(&mut self, graph_name: &str) -> Option<&Vec<Quad>> {
         if let Some(entry) = self.cache.get_mut(graph_name) {
             entry.last_access = SystemTime::now();
@@ -150,32 +150,35 @@ impl RDFMemoryCache {
             None
         }
     }
-    
+
     pub fn insert(&mut self, graph_name: String, quads: Vec<Quad>) {
         // If cache is at capacity, evict LRU entry
         if self.cache.len() >= self.max_size {
             self.evict_lru();
         }
-        
+
         let entry = CacheEntry {
             quads,
             last_access: SystemTime::now(),
         };
         self.cache.insert(graph_name, entry);
     }
-    
+
     fn evict_lru(&mut self) {
-        if let Some(lru_key) = self.cache.iter()
+        if let Some(lru_key) = self
+            .cache
+            .iter()
             .min_by_key(|(_, entry)| entry.last_access)
-            .map(|(key, _)| key.clone()) {
+            .map(|(key, _)| key.clone())
+        {
             self.cache.remove(&lru_key);
         }
     }
-    
+
     pub fn size(&self) -> usize {
         self.cache.len()
     }
-    
+
     pub fn clear(&mut self) {
         self.cache.clear();
     }
@@ -220,16 +223,14 @@ impl Clone for RDFStore {
                 };
             }
         };
-        
+
         // Copy all quads from the original store to the new store
-        for quad_result in self.store.iter() {
-            if let Ok(quad) = quad_result {
-                if let Err(e) = new_store.insert(&quad) {
-                    eprintln!("Warning: Failed to insert quad during cloning: {}", e);
-                }
+        for quad in self.store.iter().flatten() {
+            if let Err(e) = new_store.insert(&quad) {
+                eprintln!("Warning: Failed to insert quad during cloning: {}", e);
             }
         }
-        
+
         RDFStore {
             store: new_store,
             config: self.config.clone(),
@@ -252,7 +253,7 @@ impl RDFStore {
             eprintln!("Critical error: Cannot create in-memory store: {}", e);
             panic!("Failed to create RDF store");
         });
-        
+
         RDFStore {
             store,
             config: config.clone(),
@@ -269,20 +270,19 @@ impl RDFStore {
     pub fn new_persistent<P: AsRef<Path>>(data_dir: P) -> Result<Self> {
         let data_path = data_dir.as_ref().to_path_buf();
         info!("Creating persistent RDF store at: {}", data_path.display());
-        
+
         // Ensure the data directory exists
         std::fs::create_dir_all(&data_path)
             .with_context(|| format!("Failed to create data directory: {}", data_path.display()))?;
-        
+
         // Create in-memory store - Oxigraph handles persistence through file operations
-        let store = Store::new()
-            .with_context(|| "Failed to create in-memory store")?;
-        
+        let store = Store::new().with_context(|| "Failed to create in-memory store")?;
+
         let config = StorageConfig {
             data_dir: data_path,
             ..StorageConfig::default()
         };
-        
+
         let mut rdf_store = RDFStore {
             store,
             config: config.clone(),
@@ -293,30 +293,33 @@ impl RDFStore {
                 None
             },
         };
-        
+
         // Try to load existing data
         if let Err(e) = rdf_store.load_from_disk() {
             warn!("Could not load existing data: {}", e);
         }
-        
+
         info!("Successfully created persistent RDF store");
         Ok(rdf_store)
     }
 
     /// Create a persistent store with custom configuration
     pub fn new_persistent_with_config(config: StorageConfig) -> Result<Self> {
-        info!("Creating persistent RDF store with custom config at: {}", config.data_dir.display());
-        
+        info!(
+            "Creating persistent RDF store with custom config at: {}",
+            config.data_dir.display()
+        );
+
         // Ensure the data directory exists
         if let Some(parent) = config.data_dir.parent() {
-            std::fs::create_dir_all(parent)
-                .with_context(|| format!("Failed to create data directory: {}", parent.display()))?;
+            std::fs::create_dir_all(parent).with_context(|| {
+                format!("Failed to create data directory: {}", parent.display())
+            })?;
         }
-        
+
         // Create in-memory store for now, but track persistence config
-        let store = Store::new()
-            .with_context(|| "Failed to create in-memory store")?;
-        
+        let store = Store::new().with_context(|| "Failed to create in-memory store")?;
+
         let mut rdf_store = RDFStore {
             store,
             config: config.clone(),
@@ -327,12 +330,12 @@ impl RDFStore {
                 None
             },
         };
-        
+
         // Try to load existing data
         if let Err(e) = rdf_store.load_from_disk() {
             warn!("Could not load existing data: {}", e);
         }
-        
+
         info!("Successfully created persistent RDF store with custom config");
         Ok(rdf_store)
     }
@@ -342,27 +345,27 @@ impl RDFStore {
         if !self.is_persistent {
             return Ok(());
         }
-        
+
         let data_file = self.config.data_dir.join("store.nq");
         if !data_file.exists() {
             return Ok(());
         }
-        
+
         info!("Loading RDF data from: {}", data_file.display());
-        
+
         let data = std::fs::read_to_string(&data_file)
             .with_context(|| format!("Failed to read data file: {}", data_file.display()))?;
-        
+
         self.load_data_from_string(&data)?;
-        
+
         let quad_count = self.store.len().unwrap_or(0);
         info!("Successfully loaded {} quads from disk", quad_count);
-        
+
         // If warm cache is enabled, load data into memory cache
         if self.config.warm_cache_on_startup {
             self.warm_cache()?;
         }
-        
+
         Ok(())
     }
 
@@ -370,14 +373,15 @@ impl RDFStore {
     pub fn load_data_from_string(&mut self, data: &str) -> Result<()> {
         use oxigraph::io::RdfFormat;
         use std::io::Cursor;
-        
+
         let reader = Cursor::new(data.as_bytes());
-        self.store.load_from_reader(RdfFormat::NQuads, reader)
+        self.store
+            .load_from_reader(RdfFormat::NQuads, reader)
             .with_context(|| "Failed to parse RDF data from string")?;
-        
+
         Ok(())
     }
-    
+
     /// Warm up the memory cache with frequently accessed data
     fn warm_cache(&mut self) -> Result<()> {
         // First, get all named graphs without holding a mutable reference to cache
@@ -387,15 +391,13 @@ impl RDFStore {
                     GRAPH ?g { ?s ?p ?o }
                 }
             "#;
-            
+
             if let QueryResults::Solutions(solutions) = self.query(query) {
                 let mut names = Vec::new();
-                for solution in solutions {
-                    if let Ok(sol) = solution {
-                        if let Some(graph_term) = sol.get("g") {
-                            if let Term::NamedNode(graph_node) = graph_term {
-                                names.push(graph_node.as_str().to_string());
-                            }
+                for sol in solutions.flatten() {
+                    if let Some(graph_term) = sol.get("g") {
+                        if let Term::NamedNode(graph_node) = graph_term {
+                            names.push(graph_node.as_str().to_string());
                         }
                     }
                 }
@@ -404,74 +406,85 @@ impl RDFStore {
                 Vec::new()
             }
         };
-        
+
         // Now populate the cache by temporarily taking ownership of it
         if let Some(mut cache) = self.memory_cache.take() {
             info!("Warming up memory cache");
-            
+
             let mut graph_count = 0;
             for graph_name in graph_names {
                 // Create a temporary store to avoid borrowing conflicts
                 let graph_node = NamedNode::new(&graph_name)
                     .with_context(|| format!("Invalid graph name: {}", graph_name))?;
-                
+
                 let mut quads = Vec::new();
-                for quad_result in self.store.quads_for_pattern(None, None, None, Some((&graph_node).into())) {
-                    if let Ok(quad) = quad_result {
-                        quads.push(quad);
-                    }
+                for quad in self
+                    .store
+                    .quads_for_pattern(None, None, None, Some((&graph_node).into()))
+                    .flatten()
+                {
+                    quads.push(quad);
                 }
-                
+
                 cache.insert(graph_name, quads);
                 graph_count += 1;
             }
-            
+
             info!("Warmed cache with {} graphs", graph_count);
-            
+
             // Put the cache back
             self.memory_cache = Some(cache);
         }
         Ok(())
     }
-    
+
     /// Save RDF data to disk using N-Quads format (supports datasets with named graphs)
     pub fn save_to_disk(&self) -> Result<()> {
         if !self.is_persistent {
             return Ok(());
         }
-        
+
         // Ensure the data directory exists
-        std::fs::create_dir_all(&self.config.data_dir)
-            .with_context(|| format!("Failed to create data directory: {}", self.config.data_dir.display()))?;
-        
+        std::fs::create_dir_all(&self.config.data_dir).with_context(|| {
+            format!(
+                "Failed to create data directory: {}",
+                self.config.data_dir.display()
+            )
+        })?;
+
         // Use N-Quads format which properly supports datasets with named graphs
         let data_file = self.config.data_dir.join("store.nq");
-        
+
         info!("Saving RDF dataset to: {}", data_file.display());
-        
+
         use oxigraph::io::RdfFormat;
-        
+
         // Use N-Quads format for datasets (supports named graphs)
         let mut buffer = Vec::new();
         match self.store.dump_to_writer(RdfFormat::NQuads, &mut buffer) {
             Ok(_) => {
                 // Successfully serialized, write to file
-                std::fs::write(&data_file, buffer)
-                    .with_context(|| format!("Failed to write N-Quads data file: {}", data_file.display()))?;
-                
+                std::fs::write(&data_file, buffer).with_context(|| {
+                    format!("Failed to write N-Quads data file: {}", data_file.display())
+                })?;
+
                 let quad_count = self.store.len().unwrap_or(0);
-                info!("Successfully saved {} quads to disk in N-Quads format", quad_count);
+                info!(
+                    "Successfully saved {} quads to disk in N-Quads format",
+                    quad_count
+                );
                 Ok(())
             }
             Err(e) => {
                 error!("Failed to serialize to N-Quads format: {}", e);
-                
+
                 // As a fallback, save error information
                 let error_content = format!("# RDF dataset serialization failed\n# N-Quads error: {}\n# Store contains {} quads\n# Note: RocksDB backend provides persistence automatically\n", 
                                            e, self.store.len().unwrap_or(0));
-                std::fs::write(&data_file, error_content)
-                    .with_context(|| format!("Failed to write error file: {}", data_file.display()))?;
-                
+                std::fs::write(&data_file, error_content).with_context(|| {
+                    format!("Failed to write error file: {}", data_file.display())
+                })?;
+
                 warn!("Saved error information to disk. Note: RocksDB backend provides automatic persistence.");
                 Ok(())
             }
@@ -481,7 +494,7 @@ impl RDFStore {
     /// Get storage statistics
     pub fn get_storage_stats(&self) -> Result<StorageStats> {
         let quad_count = self.store.len();
-        
+
         let (disk_usage, backup_count) = if self.is_persistent {
             let disk_usage = self.calculate_disk_usage()?;
             let backup_count = self.list_backups()?.len();
@@ -489,13 +502,17 @@ impl RDFStore {
         } else {
             (None, 0)
         };
-        
+
         Ok(StorageStats {
             quad_count: quad_count.unwrap_or(0),
             disk_usage_bytes: disk_usage,
             backup_count,
             is_persistent: self.is_persistent,
-            data_dir: if self.is_persistent { Some(self.config.data_dir.clone()) } else { None },
+            data_dir: if self.is_persistent {
+                Some(self.config.data_dir.clone())
+            } else {
+                None
+            },
         })
     }
 
@@ -504,9 +521,9 @@ impl RDFStore {
         if !self.is_persistent {
             return Ok(0);
         }
-        
+
         let mut total_size = 0u64;
-        
+
         fn dir_size(path: &Path) -> Result<u64> {
             let mut size = 0u64;
             if path.is_dir() {
@@ -524,11 +541,11 @@ impl RDFStore {
             }
             Ok(size)
         }
-        
+
         if self.config.data_dir.exists() {
             total_size = dir_size(&self.config.data_dir)?;
         }
-        
+
         Ok(total_size)
     }
 
@@ -537,25 +554,32 @@ impl RDFStore {
         if !self.is_persistent {
             return Err(anyhow::anyhow!("Cannot backup in-memory store"));
         }
-        
+
         let timestamp = chrono::Utc::now();
         let backup_filename = format!("backup_{}.db", timestamp.format("%Y%m%d_%H%M%S"));
-        let backup_dir = self.config.data_dir.parent()
+        let backup_dir = self
+            .config
+            .data_dir
+            .parent()
             .unwrap_or(&self.config.data_dir)
             .join("backups");
-        
-        std::fs::create_dir_all(&backup_dir)
-            .with_context(|| format!("Failed to create backup directory: {}", backup_dir.display()))?;
-        
+
+        std::fs::create_dir_all(&backup_dir).with_context(|| {
+            format!(
+                "Failed to create backup directory: {}",
+                backup_dir.display()
+            )
+        })?;
+
         let backup_path = backup_dir.join(&backup_filename);
-        
+
         info!("Creating backup at: {}", backup_path.display());
-        
+
         // Copy the entire data directory for backup
         self.copy_directory(&self.config.data_dir, &backup_path)?;
-        
+
         let size_bytes = self.calculate_backup_size(&backup_path)?;
-        
+
         let backup_info = BackupInfo {
             path: backup_path,
             timestamp,
@@ -563,10 +587,10 @@ impl RDFStore {
             compressed: self.config.enable_compression,
             encrypted: self.config.enable_encryption,
         };
-        
+
         // Clean up old backups if needed
         self.cleanup_old_backups()?;
-        
+
         info!("Backup created successfully: {} bytes", size_bytes);
         Ok(backup_info)
     }
@@ -574,26 +598,26 @@ impl RDFStore {
     /// Copy directory recursively
     fn copy_directory(&self, src: &Path, dst: &Path) -> Result<()> {
         std::fs::create_dir_all(dst)?;
-        
+
         for entry in std::fs::read_dir(src)? {
             let entry = entry?;
             let src_path = entry.path();
             let dst_path = dst.join(entry.file_name());
-            
+
             if src_path.is_dir() {
                 self.copy_directory(&src_path, &dst_path)?;
             } else {
                 std::fs::copy(&src_path, &dst_path)?;
             }
         }
-        
+
         Ok(())
     }
 
     /// Calculate backup size
     fn calculate_backup_size(&self, backup_path: &Path) -> Result<u64> {
         let mut size = 0u64;
-        
+
         fn dir_size(path: &Path) -> Result<u64> {
             let mut size = 0u64;
             if path.is_dir() {
@@ -611,11 +635,11 @@ impl RDFStore {
             }
             Ok(size)
         }
-        
+
         if backup_path.exists() {
             size = dir_size(backup_path)?;
         }
-        
+
         Ok(size)
     }
 
@@ -624,35 +648,43 @@ impl RDFStore {
         if !self.is_persistent {
             return Ok(Vec::new());
         }
-        
-        let backup_dir = self.config.data_dir.parent()
+
+        let backup_dir = self
+            .config
+            .data_dir
+            .parent()
             .unwrap_or(&self.config.data_dir)
             .join("backups");
-        
+
         if !backup_dir.exists() {
             return Ok(Vec::new());
         }
-        
+
         let mut backups = Vec::new();
-        
+
         for entry in std::fs::read_dir(&backup_dir)? {
             let entry = entry?;
             let path = entry.path();
-            
-            if path.is_dir() && path.file_name()
-                .and_then(|name| name.to_str())
-                .map(|name| name.starts_with("backup_"))
-                .unwrap_or(false) {
-                
+
+            if path.is_dir()
+                && path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .map(|name| name.starts_with("backup_"))
+                    .unwrap_or(false)
+            {
                 let _metadata = entry.metadata()?;
                 let size_bytes = self.calculate_backup_size(&path)?;
-                
+
                 // Parse timestamp from filename
                 if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
-                    if let Some(timestamp_str) = filename.strip_prefix("backup_").and_then(|s| s.strip_suffix(".db")) {
+                    if let Some(timestamp_str) = filename
+                        .strip_prefix("backup_")
+                        .and_then(|s| s.strip_suffix(".db"))
+                    {
                         if let Ok(timestamp) = chrono::DateTime::parse_from_str(
                             &format!("{} +0000", timestamp_str.replace('_', " ")),
-                            "%Y%m%d %H%M%S %z"
+                            "%Y%m%d %H%M%S %z",
                         ) {
                             backups.push(BackupInfo {
                                 path: path.clone(),
@@ -666,10 +698,10 @@ impl RDFStore {
                 }
             }
         }
-        
+
         // Sort by timestamp (newest first)
         backups.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-        
+
         Ok(backups)
     }
 
@@ -677,25 +709,37 @@ impl RDFStore {
     pub fn restore_from_backup<P: AsRef<Path>>(backup_path: P, target_dir: P) -> Result<Self> {
         let backup_path = backup_path.as_ref();
         let target_path = target_dir.as_ref();
-        
-        info!("Restoring from backup: {} to {}", backup_path.display(), target_path.display());
-        
+
+        info!(
+            "Restoring from backup: {} to {}",
+            backup_path.display(),
+            target_path.display()
+        );
+
         if !backup_path.exists() {
-            return Err(anyhow::anyhow!("Backup path does not exist: {}", backup_path.display()));
+            return Err(anyhow::anyhow!(
+                "Backup path does not exist: {}",
+                backup_path.display()
+            ));
         }
-        
+
         // Remove existing target directory if it exists
         if target_path.exists() {
-            std::fs::remove_dir_all(target_path)
-                .with_context(|| format!("Failed to remove existing target directory: {}", target_path.display()))?;
+            std::fs::remove_dir_all(target_path).with_context(|| {
+                format!(
+                    "Failed to remove existing target directory: {}",
+                    target_path.display()
+                )
+            })?;
         }
-        
+
         // Create parent directory
         if let Some(parent) = target_path.parent() {
-            std::fs::create_dir_all(parent)
-                .with_context(|| format!("Failed to create parent directory: {}", parent.display()))?;
+            std::fs::create_dir_all(parent).with_context(|| {
+                format!("Failed to create parent directory: {}", parent.display())
+            })?;
         }
-        
+
         // Copy backup to target location
         fn copy_dir_all(src: &Path, dst: &Path) -> Result<()> {
             std::fs::create_dir_all(dst)?;
@@ -710,18 +754,17 @@ impl RDFStore {
             }
             Ok(())
         }
-        
+
         copy_dir_all(backup_path, target_path)?;
-        
+
         // Create a new store and load the restored data
-        let store = Store::new()
-            .with_context(|| "Failed to create new store for restoration")?;
-        
+        let store = Store::new().with_context(|| "Failed to create new store for restoration")?;
+
         let config = StorageConfig {
             data_dir: target_path.to_path_buf(),
             ..StorageConfig::default()
         };
-        
+
         let mut rdf_store = RDFStore {
             store,
             config: config.clone(),
@@ -732,11 +775,12 @@ impl RDFStore {
                 None
             },
         };
-        
+
         // Load the restored data
-        rdf_store.load_from_disk()
+        rdf_store
+            .load_from_disk()
             .with_context(|| "Failed to load restored data")?;
-        
+
         info!("Successfully restored from backup");
         Ok(rdf_store)
     }
@@ -744,10 +788,10 @@ impl RDFStore {
     /// Clean up old backups based on configuration
     fn cleanup_old_backups(&self) -> Result<()> {
         let backups = self.list_backups()?;
-        
+
         if backups.len() > self.config.max_backup_files {
             let to_remove = &backups[self.config.max_backup_files..];
-            
+
             for backup in to_remove {
                 info!("Removing old backup: {}", backup.path.display());
                 if backup.path.is_dir() {
@@ -757,7 +801,7 @@ impl RDFStore {
                 }
             }
         }
-        
+
         Ok(())
     }
 
@@ -767,13 +811,13 @@ impl RDFStore {
             warn!("Cannot optimize in-memory store");
             return Ok(());
         }
-        
+
         info!("Optimizing RDF store database");
-        
+
         // For RocksDB, we can trigger compaction
         // Note: Oxigraph doesn't expose direct RocksDB compaction methods,
         // but the store will automatically optimize over time
-        
+
         info!("Database optimization completed");
         Ok(())
     }
@@ -783,27 +827,27 @@ impl RDFStore {
         if !self.is_persistent {
             return Ok(());
         }
-        
+
         debug!("Flushing RDF store to disk");
-        
+
         // Oxigraph automatically handles flushing, but we can ensure
         // all operations are committed by performing a simple query
         let _ = self.store.len();
-        
+
         Ok(())
     }
 
     /// Check database integrity
     pub fn check_integrity(&self) -> Result<IntegrityReport> {
         info!("Checking RDF store integrity");
-        
+
         let start_time = Instant::now();
         let errors = Vec::new();
         let mut warnings = Vec::new();
-        
+
         // Basic checks
         let quad_count = self.store.len();
-        
+
         // Check for orphaned blank nodes (simplified check)
         let orphan_check_query = r#"
             SELECT (COUNT(*) as ?orphans) WHERE {
@@ -819,18 +863,16 @@ impl RDFStore {
                 }
             }
         "#;
-        
+
         let orphan_count = match self.query(orphan_check_query) {
             QueryResults::Solutions(solutions) => {
                 let mut count = 0u64;
-                for solution in solutions {
-                    if let Ok(sol) = solution {
-                        if let Some(term) = sol.get("orphans") {
-                            if let Term::Literal(lit) = term {
-                                if let Ok(parsed_count) = lit.value().parse::<u64>() {
-                                    count = parsed_count;
-                                    break;
-                                }
+                for sol in solutions.flatten() {
+                    if let Some(term) = sol.get("orphans") {
+                        if let Term::Literal(lit) = term {
+                            if let Ok(parsed_count) = lit.value().parse::<u64>() {
+                                count = parsed_count;
+                                break;
                             }
                         }
                     }
@@ -839,20 +881,23 @@ impl RDFStore {
             }
             _ => 0,
         };
-        
+
         if orphan_count > 0 {
-            warnings.push(format!("Found {} potentially orphaned blank nodes", orphan_count));
+            warnings.push(format!(
+                "Found {} potentially orphaned blank nodes",
+                orphan_count
+            ));
         }
-        
+
         // Check disk usage if persistent
         let disk_usage = if self.is_persistent {
             Some(self.calculate_disk_usage()?)
         } else {
             None
         };
-        
+
         let check_duration = start_time.elapsed();
-        
+
         let quad_count_value = quad_count.unwrap_or(0);
         let report = IntegrityReport {
             quad_count: quad_count_value,
@@ -863,15 +908,21 @@ impl RDFStore {
             check_duration_ms: check_duration.as_millis(),
             timestamp: chrono::Utc::now(),
         };
-        
+
         if report.errors.is_empty() {
-            info!("Integrity check completed successfully: {} quads, {} warnings", 
-                  quad_count_value, report.warnings.len());
+            info!(
+                "Integrity check completed successfully: {} quads, {} warnings",
+                quad_count_value,
+                report.warnings.len()
+            );
         } else {
-            error!("Integrity check found {} errors and {} warnings", 
-                   report.errors.len(), report.warnings.len());
+            error!(
+                "Integrity check found {} errors and {} warnings",
+                report.errors.len(),
+                report.warnings.len()
+            );
         }
-        
+
         Ok(report)
     }
 }
@@ -909,7 +960,7 @@ impl RDFStore {
             }
         };
         let reader = Cursor::new(rdf_data.as_bytes());
-        
+
         match temp_store.load_from_reader(RdfFormat::Turtle, reader) {
             Ok(_) => {
                 // Successfully parsed as RDF, now copy all triples to the target graph
@@ -921,19 +972,19 @@ impl RDFStore {
                             original_quad.subject.clone(),
                             original_quad.predicate.clone(),
                             original_quad.object.clone(),
-                            graph_name.clone()
+                            graph_name.clone(),
                         );
                         quads_to_insert.push(new_quad);
                     }
                 }
-                
+
                 // Insert all quads into the main store
                 for quad in &quads_to_insert {
                     if let Err(e) = self.store.insert(quad) {
                         eprintln!("Warning: Failed to insert quad: {}", e);
                     }
                 }
-                
+
                 // Update cache if it exists
                 if let Some(ref mut cache) = self.memory_cache {
                     let mut cached_quads = quads_to_insert.clone();
@@ -948,7 +999,12 @@ impl RDFStore {
             }
             Err(_) => {
                 // If parsing fails, create a simple triple with the data as a literal
-                let subject = match NamedNode::new(format!("http://provchain.org/data/{}", graph_name.as_str().replace("http://provchain.org/block/", ""))) {
+                let subject = match NamedNode::new(format!(
+                    "http://provchain.org/data/{}",
+                    graph_name
+                        .as_str()
+                        .replace("http://provchain.org/block/", "")
+                )) {
                     Ok(node) => node,
                     Err(e) => {
                         eprintln!("Warning: Failed to create subject node: {}", e);
@@ -967,7 +1023,7 @@ impl RDFStore {
                 if let Err(e) = self.store.insert(&quad) {
                     eprintln!("Warning: Failed to insert fallback quad: {}", e);
                 }
-                
+
                 // Update cache if it exists
                 if let Some(ref mut cache) = self.memory_cache {
                     let mut cached_quads = vec![quad.clone()];
@@ -992,8 +1048,10 @@ impl RDFStore {
 
     pub fn add_block_metadata(&mut self, block: &Block) {
         let graph_name = NamedNode::new("http://provchain.org/blockchain").unwrap();
-        let block_uri = NamedNode::new(format!("http://provchain.org/block/{}", block.index)).unwrap();
-        let data_graph_uri = NamedNode::new(format!("http://provchain.org/block/{}", block.index)).unwrap();
+        let block_uri =
+            NamedNode::new(format!("http://provchain.org/block/{}", block.index)).unwrap();
+        let data_graph_uri =
+            NamedNode::new(format!("http://provchain.org/block/{}", block.index)).unwrap();
         let prev_block_uri = if block.index > 0 {
             Some(NamedNode::new(format!("http://provchain.org/block/{}", block.index - 1)).unwrap())
         } else {
@@ -1077,17 +1135,17 @@ impl RDFStore {
     pub fn load_turtle_data(&mut self, turtle_data: &str, graph_uri: &str) -> Result<()> {
         let graph_name = NamedNode::new(graph_uri)
             .with_context(|| format!("Invalid graph URI: {}", graph_uri))?;
-        
+
         // Parse the Turtle data
         let reader = Cursor::new(turtle_data.as_bytes());
-        
+
         // Load into a temporary store first to validate
-        let temp_store = Store::new()
-            .with_context(|| "Failed to create temporary store")?;
-        
-        temp_store.load_from_reader(RdfFormat::Turtle, reader)
+        let temp_store = Store::new().with_context(|| "Failed to create temporary store")?;
+
+        temp_store
+            .load_from_reader(RdfFormat::Turtle, reader)
             .with_context(|| "Failed to parse Turtle data")?;
-        
+
         // Copy all triples to the target graph
         for quad_result in temp_store.iter() {
             if let Ok(original_quad) = quad_result {
@@ -1096,16 +1154,16 @@ impl RDFStore {
                     original_quad.subject.clone(),
                     original_quad.predicate.clone(),
                     original_quad.object.clone(),
-                    graph_name.clone()
+                    graph_name.clone(),
                 );
-                self.store.insert(&new_quad)
+                self.store
+                    .insert(&new_quad)
                     .with_context(|| "Failed to insert quad into store")?;
             }
         }
-        
+
         Ok(())
     }
-
 
     /// Hash a single triple using the canonicalization algorithm from Plan.md
     fn hash_triple(&self, triple: &Triple) -> String {
@@ -1128,7 +1186,8 @@ impl RDFStore {
         let serialisation_predicate = triple.predicate.to_string();
 
         // Concatenate and hash
-        let concatenation = format!("{serialisation_subject}{serialisation_predicate}{serialisation_object}");
+        let concatenation =
+            format!("{serialisation_subject}{serialisation_predicate}{serialisation_object}");
         let mut hasher = Sha256::new();
         hasher.update(concatenation.as_bytes());
         format!("{:x}", hasher.finalize())
@@ -1136,7 +1195,8 @@ impl RDFStore {
 
     /// Convert a triple to NTriples format
     fn triple_to_ntriples(&self, triple: &Triple) -> String {
-        format!("{} {} {}", 
+        format!(
+            "{} {} {}",
             self.subject_to_ntriples(&triple.subject),
             triple.predicate,
             self.term_to_ntriples(&triple.object)
@@ -1168,15 +1228,17 @@ impl RDFStore {
 
         // Collect all triples in the specified graph
         let mut triples = Vec::new();
-        for quad_result in self.store.quads_for_pattern(None, None, None, Some(graph_name.into())) {
-            if let Ok(quad) = quad_result {
-                let triple = Triple::new(
-                    quad.subject.clone(),
-                    quad.predicate.clone(),
-                    quad.object.clone(),
-                );
-                triples.push(triple);
-            }
+        for quad in self
+            .store
+            .quads_for_pattern(None, None, None, Some(graph_name.into()))
+            .flatten()
+        {
+            let triple = Triple::new(
+                quad.subject.clone(),
+                quad.predicate.clone(),
+                quad.object.clone(),
+            );
+            triples.push(triple);
         }
 
         // Main canonicalization loop from Plan.md
@@ -1213,12 +1275,11 @@ impl RDFStore {
         let mut sorted_hashes: Vec<String> = total_hashes.into_iter().collect();
         sorted_hashes.sort();
         let combined = sorted_hashes.join("");
-        
+
         let mut hasher = Sha256::new();
         hasher.update(combined.as_bytes());
         format!("{:x}", hasher.finalize())
     }
-
 
     /// Validate RDF data in a graph against the loaded ontology
     #[allow(dead_code)]
@@ -1249,10 +1310,11 @@ impl RDFStore {
                 }
             }
         "#;
-        
+
         // Execute validation query with the specific graph
-        let query_with_graph = validation_query.replace("?dataGraph", &format!("<{}>", data_graph.as_str()));
-        
+        let query_with_graph =
+            validation_query.replace("?dataGraph", &format!("<{}>", data_graph.as_str()));
+
         match self.query(&query_with_graph) {
             QueryResults::Boolean(result) => result,
             _ => false,
@@ -1265,7 +1327,8 @@ impl RDFStore {
         let mut validation_errors = Vec::new();
 
         // Check Batch has required properties
-        let batch_query = format!(r#"
+        let batch_query = format!(
+            r#"
             PREFIX core: <http://provchain.org/core#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             
@@ -1275,20 +1338,23 @@ impl RDFStore {
                     FILTER NOT EXISTS {{ ?batch core:hasIdentifier ?id }}
                 }}
             }}
-        "#, data_graph.as_str());
+        "#,
+            data_graph.as_str()
+        );
 
         if let QueryResults::Solutions(solutions) = self.query(&batch_query) {
-            for solution in solutions {
-                if let Ok(sol) = solution {
-                    if let Some(batch) = sol.get("batch") {
-                        validation_errors.push(format!("Batch {batch} missing required hasIdentifier property"));
-                    }
+            for sol in solutions.flatten() {
+                if let Some(batch) = sol.get("batch") {
+                    validation_errors.push(format!(
+                        "Batch {batch} missing required hasIdentifier property"
+                    ));
                 }
             }
         }
 
         // Check Activities have required timestamps
-        let activity_query = format!(r#"
+        let activity_query = format!(
+            r#"
             PREFIX core: <http://provchain.org/core#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             
@@ -1299,14 +1365,16 @@ impl RDFStore {
                     FILTER NOT EXISTS {{ ?activity core:recordedAt ?timestamp }}
                 }}
             }}
-        "#, data_graph.as_str());
+        "#,
+            data_graph.as_str()
+        );
 
         if let QueryResults::Solutions(solutions) = self.query(&activity_query) {
-            for solution in solutions {
-                if let Ok(sol) = solution {
-                    if let Some(activity) = sol.get("activity") {
-                        validation_errors.push(format!("Activity {activity} missing required recordedAt property"));
-                    }
+            for sol in solutions.flatten() {
+                if let Some(activity) = sol.get("activity") {
+                    validation_errors.push(format!(
+                        "Activity {activity} missing required recordedAt property"
+                    ));
                 }
             }
         }
@@ -1319,29 +1387,32 @@ impl RDFStore {
         // For now, we'll use a simplified approach by exporting all quads and hashing them
         // In a production implementation, this would use a Merkle tree for efficiency
         let mut all_data = String::new();
-        
+
         // Collect all quads from all graphs
         for quad_result in self.store.iter() {
             if let Ok(quad) = quad_result {
                 // Serialize quad to N-Quads format for consistent representation
-                all_data.push_str(&format!("{} {} {} {} .\n", 
+                all_data.push_str(&format!(
+                    "{} {} {} {} .\n",
                     self.subject_to_ntriples(&quad.subject),
                     quad.predicate,
                     self.term_to_ntriples(&quad.object),
                     match &quad.graph_name {
                         oxigraph::model::GraphName::DefaultGraph => "".to_string(),
-                        oxigraph::model::GraphName::NamedNode(node) => format!(" <{}>", node.as_str()),
-                        oxigraph::model::GraphName::BlankNode(node) => format!(" _:{}", node.as_str()),
+                        oxigraph::model::GraphName::NamedNode(node) =>
+                            format!(" <{}>", node.as_str()),
+                        oxigraph::model::GraphName::BlankNode(node) =>
+                            format!(" _:{}", node.as_str()),
                     }
                 ));
             }
         }
-        
+
         // Sort the data to ensure consistent ordering
         let mut lines: Vec<&str> = all_data.lines().collect();
         lines.sort();
         let sorted_data = lines.join("\n");
-        
+
         // Hash the sorted data
         let mut hasher = Sha256::new();
         hasher.update(sorted_data.as_bytes());
@@ -1366,14 +1437,13 @@ impl RDFStore {
 
         let mut classes = Vec::new();
         if let QueryResults::Solutions(solutions) = self.query(query) {
-            for solution in solutions {
-                if let Ok(sol) = solution {
-                    if let Some(class) = sol.get("class") {
-                        let label = sol.get("label")
-                            .map(|l| l.to_string())
-                            .unwrap_or_else(|| class.to_string());
-                        classes.push(format!("{class} ({label})"));
-                    }
+            for sol in solutions.flatten() {
+                if let Some(class) = sol.get("class") {
+                    let label = sol
+                        .get("label")
+                        .map(|l| l.to_string())
+                        .unwrap_or_else(|| class.to_string());
+                    classes.push(format!("{class} ({label})"));
                 }
             }
         }
@@ -1389,7 +1459,10 @@ impl RDFStore {
         let mut blank_node_connections = HashMap::new();
 
         // Collect all triples and analyze blank node patterns
-        for quad_result in self.store.quads_for_pattern(None, None, None, Some(graph_name.into())) {
+        for quad_result in self
+            .store
+            .quads_for_pattern(None, None, None, Some(graph_name.into()))
+        {
             if let Ok(quad) = quad_result {
                 let triple = Triple::new(
                     quad.subject.clone(),
@@ -1401,21 +1474,27 @@ impl RDFStore {
                 // Track blank nodes and their connections
                 if let Subject::BlankNode(bn) = &triple.subject {
                     blank_nodes.insert(bn.as_str().to_string());
-                    blank_node_connections.entry(bn.as_str().to_string())
+                    blank_node_connections
+                        .entry(bn.as_str().to_string())
                         .or_insert_with(HashSet::new);
                 }
                 if let Term::BlankNode(bn) = &triple.object {
                     blank_nodes.insert(bn.as_str().to_string());
-                    blank_node_connections.entry(bn.as_str().to_string())
+                    blank_node_connections
+                        .entry(bn.as_str().to_string())
                         .or_insert_with(HashSet::new);
                 }
 
                 // Track connections between blank nodes
-                if let (Subject::BlankNode(s_bn), Term::BlankNode(o_bn)) = (&triple.subject, &triple.object) {
-                    blank_node_connections.entry(s_bn.as_str().to_string())
+                if let (Subject::BlankNode(s_bn), Term::BlankNode(o_bn)) =
+                    (&triple.subject, &triple.object)
+                {
+                    blank_node_connections
+                        .entry(s_bn.as_str().to_string())
                         .or_insert_with(HashSet::new)
                         .insert(o_bn.as_str().to_string());
-                    blank_node_connections.entry(o_bn.as_str().to_string())
+                    blank_node_connections
+                        .entry(o_bn.as_str().to_string())
                         .or_insert_with(HashSet::new)
                         .insert(s_bn.as_str().to_string());
                 }
@@ -1432,11 +1511,12 @@ impl RDFStore {
 
         if blank_node_count <= 3 && graph_size <= 50 {
             // Check for simple patterns (chains, trees)
-            let max_connections = blank_node_connections.values()
+            let max_connections = blank_node_connections
+                .values()
                 .map(|connections| connections.len())
                 .max()
                 .unwrap_or(0);
-            
+
             if max_connections <= 1 {
                 return GraphComplexity::Simple;
             } else if max_connections <= 2 {
@@ -1446,7 +1526,8 @@ impl RDFStore {
 
         if blank_node_count <= 10 && graph_size <= 200 {
             // Check for cycles and complex interconnections
-            let total_connections: usize = blank_node_connections.values()
+            let total_connections: usize = blank_node_connections
+                .values()
                 .map(|connections| connections.len())
                 .sum();
             let avg_connections = if blank_node_count > 0 {
@@ -1456,7 +1537,8 @@ impl RDFStore {
             };
 
             // Detect cycles by checking if any blank node connects to more than 2 others
-            let has_cycles = blank_node_connections.values()
+            let has_cycles = blank_node_connections
+                .values()
                 .any(|connections| connections.len() > 2);
 
             if avg_connections <= 1.5 && !has_cycles {
@@ -1471,33 +1553,44 @@ impl RDFStore {
     }
 
     /// Adaptive canonicalization that selects the best algorithm based on graph complexity
-    pub fn canonicalize_graph_adaptive(&self, graph_name: &NamedNode) -> (String, CanonicalizationMetrics) {
+    pub fn canonicalize_graph_adaptive(
+        &self,
+        graph_name: &NamedNode,
+    ) -> (String, CanonicalizationMetrics) {
         let start_time = Instant::now();
         let complexity = self.analyze_graph_complexity(graph_name);
-        
+
         // Collect basic graph statistics
         let mut graph_size = 0;
         let mut blank_node_count = 0;
-        for quad_result in self.store.quads_for_pattern(None, None, None, Some(graph_name.into())) {
-            if let Ok(quad) = quad_result {
-                graph_size += 1;
-                if let Subject::BlankNode(_) = quad.subject {
-                    blank_node_count += 1;
-                }
-                if let Term::BlankNode(_) = quad.object {
-                    blank_node_count += 1;
-                }
+        for quad in self
+            .store
+            .quads_for_pattern(None, None, None, Some(graph_name.into()))
+            .flatten()
+        {
+            graph_size += 1;
+            if let Subject::BlankNode(_) = quad.subject {
+                blank_node_count += 1;
+            }
+            if let Term::BlankNode(_) = quad.object {
+                blank_node_count += 1;
             }
         }
 
         let (canonical_hash, algorithm_used) = match complexity {
             GraphComplexity::Simple | GraphComplexity::Moderate => {
                 // Use fast custom algorithm for simple cases
-                (self.canonicalize_graph(graph_name), CanonicalizationAlgorithm::Custom)
+                (
+                    self.canonicalize_graph(graph_name),
+                    CanonicalizationAlgorithm::Custom,
+                )
             }
             GraphComplexity::Complex | GraphComplexity::Pathological => {
                 // Use RDFC-1.0 for complex cases to ensure correctness
-                (self.canonicalize_graph_rdfc10(graph_name), CanonicalizationAlgorithm::RDFC10)
+                (
+                    self.canonicalize_graph_rdfc10(graph_name),
+                    CanonicalizationAlgorithm::RDFC10,
+                )
             }
         };
 
@@ -1517,10 +1610,12 @@ impl RDFStore {
     pub fn canonicalize_graph_rdfc10(&self, graph_name: &NamedNode) -> String {
         // Collect all quads in the specified graph
         let mut quads = Vec::new();
-        for quad_result in self.store.quads_for_pattern(None, None, None, Some(graph_name.into())) {
-            if let Ok(quad) = quad_result {
-                quads.push(quad);
-            }
+        for quad in self
+            .store
+            .quads_for_pattern(None, None, None, Some(graph_name.into()))
+            .flatten()
+        {
+            quads.push(quad);
         }
 
         if quads.is_empty() {
@@ -1534,12 +1629,14 @@ impl RDFStore {
         // Identify blank nodes and their associated quads
         for (i, quad) in quads.iter().enumerate() {
             if let Subject::BlankNode(bn) = &quad.subject {
-                blank_node_to_quads.entry(bn.as_str().to_string())
+                blank_node_to_quads
+                    .entry(bn.as_str().to_string())
                     .or_default()
                     .push(i);
             }
             if let Term::BlankNode(bn) = &quad.object {
-                blank_node_to_quads.entry(bn.as_str().to_string())
+                blank_node_to_quads
+                    .entry(bn.as_str().to_string())
                     .or_default()
                     .push(i);
             }
@@ -1549,13 +1646,14 @@ impl RDFStore {
         let mut hash_to_blank_nodes: HashMap<String, Vec<String>> = HashMap::new();
         for blank_node in blank_node_to_quads.keys() {
             let hash = self.hash_first_degree_quads(blank_node, &quads, &blank_node_to_quads);
-            hash_to_blank_nodes.entry(hash)
+            hash_to_blank_nodes
+                .entry(hash)
                 .or_default()
                 .push(blank_node.clone());
         }
 
         // Step 3: Issue canonical identifiers for unique hashes
-        for (_hash, blank_nodes) in &hash_to_blank_nodes {
+        for blank_nodes in hash_to_blank_nodes.values() {
             if blank_nodes.len() == 1 {
                 canonical_issuer.issue(Some(&blank_nodes[0]));
             }
@@ -1563,7 +1661,7 @@ impl RDFStore {
 
         // Step 4: Process shared hashes using N-degree hashing
         let mut hash_path_list = Vec::new();
-        for (_hash, blank_nodes) in &hash_to_blank_nodes {
+        for blank_nodes in hash_to_blank_nodes.values() {
             if blank_nodes.len() > 1 {
                 for blank_node in blank_nodes {
                     if !canonical_issuer.issued.contains_key(blank_node) {
@@ -1571,7 +1669,7 @@ impl RDFStore {
                             blank_node,
                             &quads,
                             &blank_node_to_quads,
-                            &canonical_issuer
+                            &canonical_issuer,
                         );
                         hash_path_list.push((hash_result, blank_node.clone()));
                     }
@@ -1588,7 +1686,8 @@ impl RDFStore {
         // Step 5: Generate canonical N-Quads
         let mut canonical_quads = Vec::new();
         for quad in &quads {
-            let canonical_quad = self.replace_blank_nodes_with_canonical_ids(quad, &canonical_issuer);
+            let canonical_quad =
+                self.replace_blank_nodes_with_canonical_ids(quad, &canonical_issuer);
             canonical_quads.push(canonical_quad);
         }
 
@@ -1605,7 +1704,7 @@ impl RDFStore {
         &self,
         reference_blank_node: &str,
         quads: &[Quad],
-        blank_node_to_quads: &HashMap<String, Vec<usize>>
+        blank_node_to_quads: &HashMap<String, Vec<usize>>,
     ) -> String {
         let mut nquads = Vec::new();
 
@@ -1615,7 +1714,7 @@ impl RDFStore {
                 let nquad = self.quad_to_nquads_with_blank_node_replacement(
                     quad,
                     reference_blank_node,
-                    "_:a"
+                    "_:a",
                 );
                 nquads.push(nquad);
             }
@@ -1632,7 +1731,7 @@ impl RDFStore {
         identifier: &str,
         quads: &[Quad],
         blank_node_to_quads: &HashMap<String, Vec<usize>>,
-        canonical_issuer: &IdentifierIssuer
+        canonical_issuer: &IdentifierIssuer,
     ) -> (String, IdentifierIssuer) {
         let mut hash_to_related_blank_nodes: HashMap<String, Vec<String>> = HashMap::new();
 
@@ -1640,13 +1739,14 @@ impl RDFStore {
         if let Some(quad_indices) = blank_node_to_quads.get(identifier) {
             for &quad_index in quad_indices {
                 let quad = &quads[quad_index];
-                
+
                 // Check subject
                 if let Subject::BlankNode(bn) = &quad.subject {
                     let bn_str = bn.as_str();
                     if bn_str != identifier && !canonical_issuer.issued.contains_key(bn_str) {
                         let hash = self.hash_first_degree_quads(bn_str, quads, blank_node_to_quads);
-                        hash_to_related_blank_nodes.entry(hash)
+                        hash_to_related_blank_nodes
+                            .entry(hash)
                             .or_default()
                             .push(bn_str.to_string());
                     }
@@ -1657,7 +1757,8 @@ impl RDFStore {
                     let bn_str = bn.as_str();
                     if bn_str != identifier && !canonical_issuer.issued.contains_key(bn_str) {
                         let hash = self.hash_first_degree_quads(bn_str, quads, blank_node_to_quads);
-                        hash_to_related_blank_nodes.entry(hash)
+                        hash_to_related_blank_nodes
+                            .entry(hash)
                             .or_default()
                             .push(bn_str.to_string());
                     }
@@ -1674,7 +1775,7 @@ impl RDFStore {
 
         for hash in sorted_hashes {
             data_to_hash.push(hash.clone());
-            
+
             let related_blank_nodes = &hash_to_related_blank_nodes[hash];
             if related_blank_nodes.len() == 1 {
                 data_to_hash.push(related_blank_nodes[0].clone());
@@ -1698,10 +1799,12 @@ impl RDFStore {
         &self,
         quad: &Quad,
         reference_blank_node: &str,
-        replacement: &str
+        replacement: &str,
     ) -> String {
         let subject_str = match &quad.subject {
-            Subject::BlankNode(bn) if bn.as_str() == reference_blank_node => replacement.to_string(),
+            Subject::BlankNode(bn) if bn.as_str() == reference_blank_node => {
+                replacement.to_string()
+            }
             Subject::BlankNode(_) => "_:z".to_string(),
             Subject::NamedNode(nn) => format!("<{}>", nn.as_str()),
             Subject::Triple(_) => "<< >>".to_string(), // Simplified for quoted triples
@@ -1724,7 +1827,7 @@ impl RDFStore {
     fn replace_blank_nodes_with_canonical_ids(
         &self,
         quad: &Quad,
-        canonical_issuer: &IdentifierIssuer
+        canonical_issuer: &IdentifierIssuer,
     ) -> String {
         let subject_str = match &quad.subject {
             Subject::BlankNode(bn) => {
@@ -1764,7 +1867,10 @@ impl RDFStore {
     }
 
     /// Performance comparison between canonicalization algorithms
-    pub fn benchmark_canonicalization_algorithms(&self, graph_name: &NamedNode) -> (CanonicalizationMetrics, CanonicalizationMetrics) {
+    pub fn benchmark_canonicalization_algorithms(
+        &self,
+        graph_name: &NamedNode,
+    ) -> (CanonicalizationMetrics, CanonicalizationMetrics) {
         // Benchmark custom algorithm
         let start_time = Instant::now();
         let custom_hash = self.canonicalize_graph(graph_name);
@@ -1778,15 +1884,17 @@ impl RDFStore {
         // Collect graph statistics
         let mut graph_size = 0;
         let mut blank_node_count = 0;
-        for quad_result in self.store.quads_for_pattern(None, None, None, Some(graph_name.into())) {
-            if let Ok(quad) = quad_result {
-                graph_size += 1;
-                if let Subject::BlankNode(_) = quad.subject {
-                    blank_node_count += 1;
-                }
-                if let Term::BlankNode(_) = quad.object {
-                    blank_node_count += 1;
-                }
+        for quad in self
+            .store
+            .quads_for_pattern(None, None, None, Some(graph_name.into()))
+            .flatten()
+        {
+            graph_size += 1;
+            if let Subject::BlankNode(_) = quad.subject {
+                blank_node_count += 1;
+            }
+            if let Term::BlankNode(_) = quad.object {
+                blank_node_count += 1;
             }
         }
 

@@ -2,46 +2,49 @@
 
 use crate::core::blockchain::Blockchain;
 use crate::trace_optimization::EnhancedTraceResult;
-use crate::transaction::transaction::{Transaction, TransactionType, TransactionMetadata, EnvironmentalConditions, QualityData, ComplianceInfo, TransactionInput, TransactionOutput, TransactionPayload};
-use crate::wallet::{Participant, ParticipantType, ContactInfo};
-use crate::web::models::{
-    BlockInfo, AddTripleRequest, 
-    SparqlQueryRequest, SparqlQueryResponse, ProductTrace,
-    EnvironmentalData, ApiError, UserClaims, WalletRegistrationRequest, 
-    WalletRegistrationResponse, CreateTransactionRequest, CreateTransactionResponse,
-    SignTransactionRequest, SignTransactionResponse, SubmitTransactionRequest, SubmitTransactionResponse
+use crate::transaction::transaction::{
+    ComplianceInfo, EnvironmentalConditions, QualityData, Transaction, TransactionInput,
+    TransactionMetadata, TransactionOutput, TransactionPayload, TransactionType,
 };
+use crate::wallet::{ContactInfo, Participant, ParticipantType};
+use crate::web::models::{
+    AddTripleRequest, ApiError, BlockInfo, CreateTransactionRequest, CreateTransactionResponse,
+    EnvironmentalData, ProductTrace, SignTransactionRequest, SignTransactionResponse,
+    SparqlQueryRequest, SparqlQueryResponse, SubmitTransactionRequest, SubmitTransactionResponse,
+    UserClaims, WalletRegistrationRequest, WalletRegistrationResponse,
+};
+use axum::extract::Path as AxumPath;
 use axum::{
-    extract::{Path, Query, State, Extension},
+    extract::{Extension, Path, Query, State},
     http::StatusCode,
     Json,
 };
-use regex::Regex;
 use chrono::Utc;
+use oxigraph::model::{NamedNode, Subject, Term};
+use regex::Regex;
 use serde::Deserialize;
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::RwLock;
-use std::collections::HashSet;
-use oxigraph::model::{NamedNode, Subject, Term};
-use axum::extract::Path as AxumPath;
 
 /// Input validation functions
 fn validate_uri(uri: &str) -> Result<(), String> {
     if uri.is_empty() {
         return Err("URI cannot be empty".to_string());
     }
-    
+
     if uri.len() > 2048 {
         return Err("URI too long (max 2048 characters)".to_string());
     }
-    
+
     // Basic URI validation
-    let uri_regex = Regex::new(r"^https?://[^\s/$.?#].[^\s]*$|^[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]*$").unwrap();
+    let uri_regex =
+        Regex::new(r"^https?://[^\s/$.?#].[^\s]*$|^[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]*$").unwrap();
     if !uri_regex.is_match(uri) {
         return Err("Invalid URI format".to_string());
     }
-    
+
     Ok(())
 }
 
@@ -49,16 +52,23 @@ fn validate_literal(literal: &str) -> Result<(), String> {
     if literal.len() > 10000 {
         return Err("Literal too long (max 10000 characters)".to_string());
     }
-    
+
     // Check for potential script injection
-    let dangerous_patterns = ["<script", "javascript:", "data:", "vbscript:", "onload=", "onerror="];
+    let dangerous_patterns = [
+        "<script",
+        "javascript:",
+        "data:",
+        "vbscript:",
+        "onload=",
+        "onerror=",
+    ];
     let literal_lower = literal.to_lowercase();
     for pattern in &dangerous_patterns {
         if literal_lower.contains(pattern) {
             return Err("Literal contains potentially dangerous content".to_string());
         }
     }
-    
+
     Ok(())
 }
 
@@ -66,11 +76,11 @@ fn validate_sparql_query(query: &str) -> Result<(), String> {
     if query.is_empty() {
         return Err("SPARQL query cannot be empty".to_string());
     }
-    
+
     if query.len() > 50000 {
         return Err("SPARQL query too long (max 50000 characters)".to_string());
     }
-    
+
     // Check for potentially dangerous operations
     let query_upper = query.to_uppercase();
     let dangerous_operations = ["DROP", "CLEAR", "DELETE", "INSERT", "LOAD", "CREATE"];
@@ -79,10 +89,9 @@ fn validate_sparql_query(query: &str) -> Result<(), String> {
             return Err(format!("SPARQL operation '{}' is not allowed", operation));
         }
     }
-    
+
     Ok(())
 }
-
 
 /// Application state shared across handlers
 #[derive(Clone)]
@@ -98,12 +107,18 @@ impl AppState {
     }
 }
 
-/// Health check endpoint
+/// Enhanced health check endpoint with security status
 pub async fn health_check() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "status": "healthy",
         "timestamp": Utc::now(),
-        "version": env!("CARGO_PKG_VERSION")
+        "version": env!("CARGO_PKG_VERSION"),
+        "security": {
+            "jwt_secret_configured": std::env::var("JWT_SECRET").is_ok(),
+            "rate_limiting_enabled": true,
+            "security_headers_enabled": true,
+            "environment": if cfg!(debug_assertions) { "development" } else { "production" }
+        }
     }))
 }
 
@@ -112,15 +127,17 @@ pub async fn get_blockchain_status(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     let total_blocks = blockchain.chain.len();
     let total_transactions = blockchain.chain.len(); // Each block contains one transaction for now
-    
+
     // Calculate some basic metrics
-    let last_block_time = blockchain.chain.last()
+    let last_block_time = blockchain
+        .chain
+        .last()
         .map(|b| b.timestamp.clone())
         .unwrap_or_else(|| Utc::now().to_rfc3339());
-    
+
     // Calculate average block time (simplified)
     let avg_block_time = if blockchain.chain.len() > 1 {
         // Simple calculation - in practice you'd parse timestamps properly
@@ -128,7 +145,7 @@ pub async fn get_blockchain_status(
     } else {
         0.0
     };
-    
+
     let status = serde_json::json!({
         "total_blocks": total_blocks,
         "total_transactions": total_transactions,
@@ -145,7 +162,7 @@ pub async fn get_blockchain_status(
         "last_block_age": 30, // Placeholder - 30 seconds
         "validation_errors": 0
     });
-    
+
     Ok(Json(status))
 }
 
@@ -155,7 +172,7 @@ pub async fn get_block(
     State(app_state): State<AppState>,
 ) -> Result<Json<BlockInfo>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     if let Some(block) = blockchain.chain.get(block_index) {
         let block_info = BlockInfo {
             index: block.index as usize,
@@ -165,9 +182,7 @@ pub async fn get_block(
                 .map(|dt| dt.with_timezone(&chrono::Utc))
                 .unwrap_or_else(|_| Utc::now()),
             transaction_count: 1, // Each block contains one data entry
-            size_bytes: serde_json::to_string(block)
-                .map(|s| s.len())
-                .unwrap_or(0),
+            size_bytes: serde_json::to_string(block).map(|s| s.len()).unwrap_or(0),
         };
         Ok(Json(block_info))
     } else {
@@ -182,7 +197,7 @@ pub async fn get_block(
     }
 }
 
-//// Get RDF summary for a specific block's named graph
+/// Get RDF summary for a specific block's named graph
 pub async fn get_block_rdf_summary(
     Path(block_index): Path<usize>,
     State(app_state): State<AppState>,
@@ -225,41 +240,40 @@ pub async fn get_block_rdf_summary(
         }
     };
 
-    for quad_result in blockchain
+    for quad in blockchain
         .rdf_store
         .store
         .quads_for_pattern(None, None, None, Some((&graph).into()))
+        .flatten()
     {
-        if let Ok(quad) = quad_result {
-            triple_count += 1;
+        triple_count += 1;
 
-            // Subjects
-            match &quad.subject {
-                Subject::NamedNode(nn) => {
-                    let s = nn.as_str().to_string();
-                    subjects.insert(s.clone());
-                    namespaces.insert(extract_ns(nn.as_str()));
-                }
-                _ => {
-                    subjects.insert(quad.subject.to_string());
-                }
+        // Subjects
+        match &quad.subject {
+            Subject::NamedNode(nn) => {
+                let s = nn.as_str().to_string();
+                subjects.insert(s.clone());
+                namespaces.insert(extract_ns(nn.as_str()));
             }
+            _ => {
+                subjects.insert(quad.subject.to_string());
+            }
+        }
 
-            // Predicates (always NamedNode)
-            let p_iri = quad.predicate.as_str().to_string();
-            predicates.insert(p_iri.clone());
-            namespaces.insert(extract_ns(quad.predicate.as_str()));
+        // Predicates (always NamedNode)
+        let p_iri = quad.predicate.as_str().to_string();
+        predicates.insert(p_iri.clone());
+        namespaces.insert(extract_ns(quad.predicate.as_str()));
 
-            // Objects
-            match &quad.object {
-                Term::NamedNode(nn) => {
-                    let o = nn.as_str().to_string();
-                    objects.insert(o.clone());
-                    namespaces.insert(extract_ns(nn.as_str()));
-                }
-                _ => {
-                    objects.insert(quad.object.to_string());
-                }
+        // Objects
+        match &quad.object {
+            Term::NamedNode(nn) => {
+                let o = nn.as_str().to_string();
+                objects.insert(o.clone());
+                namespaces.insert(extract_ns(nn.as_str()));
+            }
+            _ => {
+                objects.insert(quad.object.to_string());
             }
         }
     }
@@ -280,25 +294,29 @@ pub async fn get_blocks(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
-    let blocks: Vec<serde_json::Value> = blockchain.chain.iter().map(|block| {
-        serde_json::json!({
-            "index": block.index,
-            "hash": block.hash,
-            "previous_hash": block.previous_hash,
-            "timestamp": block.timestamp,
-            "rdf_data": block.data,
-            "transaction_count": 1,
-            "size": serde_json::to_string(block).map(|s| s.len()).unwrap_or(0),
-            "validator": "system"
+
+    let blocks: Vec<serde_json::Value> = blockchain
+        .chain
+        .iter()
+        .map(|block| {
+            serde_json::json!({
+                "index": block.index,
+                "hash": block.hash,
+                "previous_hash": block.previous_hash,
+                "timestamp": block.timestamp,
+                "rdf_data": block.data,
+                "transaction_count": 1,
+                "size": serde_json::to_string(block).map(|s| s.len()).unwrap_or(0),
+                "validator": "system"
+            })
         })
-    }).collect();
-    
+        .collect();
+
     let response = serde_json::json!({
         "blocks": blocks,
         "total_blocks": blockchain.chain.len()
     });
-    
+
     Ok(Json(response))
 }
 
@@ -331,9 +349,7 @@ pub async fn get_sparql_config() -> Json<serde_json::Value> {
 }
 
 /// Validate SPARQL query syntax/content (basic)
-pub async fn validate_sparql_endpoint(
-    body: String,
-) -> Json<serde_json::Value> {
+pub async fn validate_sparql_endpoint(body: String) -> Json<serde_json::Value> {
     // Accept raw query in body with content-type application/sparql-query
     let mut errors: Vec<String> = Vec::new();
     let warnings: Vec<String> = Vec::new();
@@ -356,22 +372,21 @@ pub async fn get_saved_sparql_queries() -> Json<Vec<serde_json::Value>> {
     Json(Vec::new())
 }
 
-pub async fn save_sparql_query(
-    Json(query): Json<serde_json::Value>,
-) -> Json<serde_json::Value> {
+pub async fn save_sparql_query(Json(query): Json<serde_json::Value>) -> Json<serde_json::Value> {
     // Echo back with an id if missing
     let mut q = query.clone();
-    if !q.get("id").is_some() {
+    if q.get("id").is_none() {
         if let Some(map) = q.as_object_mut() {
-            map.insert("id".to_string(), serde_json::Value::String(format!("q_{}", Utc::now().timestamp_millis())));
+            map.insert(
+                "id".to_string(),
+                serde_json::Value::String(format!("q_{}", Utc::now().timestamp_millis())),
+            );
         }
     }
     Json(q)
 }
 
-pub async fn delete_sparql_query(
-    AxumPath(_id): AxumPath<String>,
-) -> StatusCode {
+pub async fn delete_sparql_query(AxumPath(_id): AxumPath<String>) -> StatusCode {
     StatusCode::NO_CONTENT
 }
 
@@ -391,7 +406,7 @@ pub async fn add_triple(
     Json(request): Json<AddTripleRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     eprintln!("Add triple request: {:?}", request);
-    
+
     // Validate inputs
     if let Err(e) = validate_uri(&request.subject) {
         eprintln!("Invalid subject URI: {}", e);
@@ -404,7 +419,7 @@ pub async fn add_triple(
             }),
         ));
     }
-    
+
     if let Err(e) = validate_uri(&request.predicate) {
         eprintln!("Invalid predicate URI: {}", e);
         return Err((
@@ -416,7 +431,7 @@ pub async fn add_triple(
             }),
         ));
     }
-    
+
     // Validate object based on whether it's a URI or literal
     if request.object.starts_with("http://") || request.object.starts_with("https://") {
         if let Err(e) = validate_uri(&request.object) {
@@ -430,50 +445,47 @@ pub async fn add_triple(
                 }),
             ));
         }
-    } else {
-        if let Err(e) = validate_literal(&request.object) {
-            eprintln!("Invalid object literal: {}", e);
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    error: "invalid_object_literal".to_string(),
-                    message: format!("Invalid object literal: {}", e),
-                    timestamp: Utc::now(),
-                }),
-            ));
-        }
+    } else if let Err(e) = validate_literal(&request.object) {
+        eprintln!("Invalid object literal: {}", e);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "invalid_object_literal".to_string(),
+                message: format!("Invalid object literal: {}", e),
+                timestamp: Utc::now(),
+            }),
+        ));
     }
-    
+
     let mut blockchain = app_state.blockchain.write().await;
-    
+
     // Create proper RDF triple data in Turtle format
-    let triple_data = if request.object.starts_with("http://") || request.object.starts_with("https://") {
-        // Object is a URI, don't quote it
-        format!(
-            "<{}> <{}> <{}> .",
-            request.subject,
-            request.predicate,
-            request.object
-        )
-    } else {
-        // Object is a literal, quote it
-        format!(
-            "<{}> <{}> \"{}\" .",
-            request.subject,
-            request.predicate,
-            request.object
-        )
-    };
-    
+    let triple_data =
+        if request.object.starts_with("http://") || request.object.starts_with("https://") {
+            // Object is a URI, don't quote it
+            format!(
+                "<{}> <{}> <{}> .",
+                request.subject, request.predicate, request.object
+            )
+        } else {
+            // Object is a literal, quote it
+            format!(
+                "<{}> <{}> \"{}\" .",
+                request.subject, request.predicate, request.object
+            )
+        };
+
     eprintln!("Adding triple data: {}", triple_data);
-    
+
     // STEP 9: Add to blockchain with SHACL validation (this also adds to the internal RDF store)
     match blockchain.add_block(triple_data) {
         Ok(()) => {
-            let block_hash = blockchain.chain.last()
+            let block_hash = blockchain
+                .chain
+                .last()
                 .map(|b| b.hash.clone())
                 .unwrap_or_else(|| "unknown".to_string());
-            
+
             let response = serde_json::json!({
                 "success": true,
                 "block_hash": block_hash,
@@ -482,35 +494,40 @@ pub async fn add_triple(
                 "timestamp": Utc::now(),
                 "validation_status": "passed"
             });
-            
+
             eprintln!("Add triple response: {}", response);
             Ok(Json(response))
         }
         Err(e) => {
             eprintln!("Failed to add triple to blockchain: {}", e);
-            
+
             // Check if this is a SHACL validation error
             let error_msg = e.to_string();
-            if error_msg.contains("Transaction validation failed") || error_msg.contains("SHACL validation") {
+            if error_msg.contains("Transaction validation failed")
+                || error_msg.contains("SHACL validation")
+            {
                 // SHACL validation failure - return detailed validation error
-                return Err((
+                Err((
                     StatusCode::UNPROCESSABLE_ENTITY,
                     Json(ApiError {
                         error: "shacl_validation_failed".to_string(),
-                        message: format!("Transaction rejected due to SHACL validation failure: {}", error_msg),
+                        message: format!(
+                            "Transaction rejected due to SHACL validation failure: {}",
+                            error_msg
+                        ),
                         timestamp: Utc::now(),
                     }),
-                ));
+                ))
             } else {
                 // Other blockchain errors
-                return Err((
+                Err((
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(ApiError {
                         error: "blockchain_error".to_string(),
                         message: format!("Failed to add transaction to blockchain: {}", e),
                         timestamp: Utc::now(),
                     }),
-                ));
+                ))
             }
         }
     }
@@ -522,7 +539,7 @@ pub async fn get_products(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     // Build SPARQL query to get products from the blockchain
     // Filter to only get instances of core ontology classes, not the class definitions themselves
     let mut sparql_query = String::from(
@@ -544,17 +561,17 @@ pub async fn get_products(
                 OPTIONAL { ?product <http://provchain.org/trace#timestamp> ?timestamp }
             }
         }
-        "#
+        "#,
     );
-    
+
     // Add filters if provided
     if let Some(product_type) = &params.product_type {
         sparql_query = sparql_query.replace(
             "?product a ?type .",
-            &format!("?product a <http://provchain.org/trace#{}>", product_type)
+            &format!("?product a <http://provchain.org/trace#{}>", product_type),
         );
     }
-    
+
     // Execute SPARQL query
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
         Ok(results) => results,
@@ -569,55 +586,70 @@ pub async fn get_products(
             ));
         }
     };
-    
+
     let mut products = Vec::new();
-    
+
     // Parse SPARQL results
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                let product_id = sol.get("product")
-                    .map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string())
-                    .unwrap_or_else(|| format!("product_{}", products.len()));
-                
-                let product = serde_json::json!({
-                    "id": product_id,
-                    "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown Product".to_string()),
-                    "type": sol.get("type").map(|t| t.to_string().trim_matches('<').trim_matches('>').split('#').last().unwrap_or("unknown").to_string()).unwrap_or("unknown".to_string()),
-                    "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "participant": sol.get("participant").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339()),
-                    "trace_steps": 0,
-                    "quality_score": 85.0,
-                    "compliance_status": "compliant"
-                });
-                
-                products.push(product);
-            }
+        for sol in solutions.flatten() {
+            let product_id = sol
+                .get("product")
+                .map(|t| {
+                    t.to_string()
+                        .trim_matches('<')
+                        .trim_matches('>')
+                        .to_string()
+                })
+                .unwrap_or_else(|| format!("product_{}", products.len()));
+
+            let product = serde_json::json!({
+                "id": product_id,
+                "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown Product".to_string()),
+                "type": sol.get("type").map(|t| t.to_string().trim_matches('<').trim_matches('>').split('#').next_back().unwrap_or("unknown").to_string()).unwrap_or("unknown".to_string()),
+                "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "participant": sol.get("participant").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339()),
+                "trace_steps": 0,
+                "quality_score": 85.0,
+                "compliance_status": "compliant"
+            });
+
+            products.push(product);
         }
     }
-    
+
     // Apply search filter if provided
     if let Some(search_term) = &params.q {
         let search_lower = search_term.to_lowercase();
         products.retain(|product| {
-            product.get("name").and_then(|n| n.as_str()).unwrap_or("").to_lowercase().contains(&search_lower) ||
-            product.get("type").and_then(|t| t.as_str()).unwrap_or("").to_lowercase().contains(&search_lower)
+            product
+                .get("name")
+                .and_then(|n| n.as_str())
+                .unwrap_or("")
+                .to_lowercase()
+                .contains(&search_lower)
+                || product
+                    .get("type")
+                    .and_then(|t| t.as_str())
+                    .unwrap_or("")
+                    .to_lowercase()
+                    .contains(&search_lower)
         });
     }
-    
+
     // Apply pagination
     let page = params.page.unwrap_or(1).max(1);
     let limit = params.limit.unwrap_or(20).min(100);
     let offset = (page - 1) * limit;
-    
+
     let total_count = products.len();
-    let paginated_products: Vec<_> = products.into_iter()
+    let paginated_products: Vec<_> = products
+        .into_iter()
         .skip(offset as usize)
         .take(limit as usize)
         .collect();
-    
+
     let response = serde_json::json!({
         "items": paginated_products,
         "total_count": total_count,
@@ -625,7 +657,7 @@ pub async fn get_products(
         "limit": limit,
         "total_pages": (total_count as f64 / limit as f64).ceil() as u32
     });
-    
+
     Ok(Json(response))
 }
 
@@ -635,7 +667,7 @@ pub async fn get_product_by_id(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     // Build SPARQL query to get specific product
     let sparql_query = format!(
         r#"
@@ -652,9 +684,16 @@ pub async fn get_product_by_id(
             }}
         }}
         "#,
-        product_id, product_id, product_id, product_id, product_id, product_id, product_id, product_id
+        product_id,
+        product_id,
+        product_id,
+        product_id,
+        product_id,
+        product_id,
+        product_id,
+        product_id
     );
-    
+
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
         Ok(results) => results,
         Err(e) => {
@@ -668,7 +707,7 @@ pub async fn get_product_by_id(
             ));
         }
     };
-    
+
     let mut product_found = false;
     let mut product = serde_json::json!({
         "id": product_id,
@@ -683,38 +722,52 @@ pub async fn get_product_by_id(
         "quality_score": 85.0,
         "compliance_status": "compliant"
     });
-    
+
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                product_found = true;
-                
-                if let Some(name) = sol.get("name") {
-                    product["name"] = serde_json::Value::String(name.to_string().trim_matches('"').to_string());
-                }
-                if let Some(type_val) = sol.get("type") {
-                    product["type"] = serde_json::Value::String(type_val.to_string().trim_matches('<').trim_matches('>').split('#').last().unwrap_or("unknown").to_string());
-                }
-                if let Some(status) = sol.get("status") {
-                    product["status"] = serde_json::Value::String(status.to_string().trim_matches('"').to_string());
-                }
-                if let Some(participant) = sol.get("participant") {
-                    product["participant"] = serde_json::Value::String(participant.to_string().trim_matches('"').to_string());
-                }
-                if let Some(location) = sol.get("location") {
-                    product["location"] = serde_json::Value::String(location.to_string().trim_matches('"').to_string());
-                }
-                if let Some(timestamp) = sol.get("timestamp") {
-                    product["timestamp"] = serde_json::Value::String(timestamp.to_string().trim_matches('"').to_string());
-                }
-                if let Some(description) = sol.get("description") {
-                    product["description"] = serde_json::Value::String(description.to_string().trim_matches('"').to_string());
-                }
-                break;
+        if let Some(sol) = solutions.flatten().next() {
+            product_found = true;
+
+            if let Some(name) = sol.get("name") {
+                product["name"] =
+                    serde_json::Value::String(name.to_string().trim_matches('"').to_string());
+            }
+            if let Some(type_val) = sol.get("type") {
+                product["type"] = serde_json::Value::String(
+                    type_val
+                        .to_string()
+                        .trim_matches('<')
+                        .trim_matches('>')
+                        .split('#')
+                        .next_back()
+                        .unwrap_or("unknown")
+                        .to_string(),
+                );
+            }
+            if let Some(status) = sol.get("status") {
+                product["status"] =
+                    serde_json::Value::String(status.to_string().trim_matches('"').to_string());
+            }
+            if let Some(participant) = sol.get("participant") {
+                product["participant"] = serde_json::Value::String(
+                    participant.to_string().trim_matches('"').to_string(),
+                );
+            }
+            if let Some(location) = sol.get("location") {
+                product["location"] =
+                    serde_json::Value::String(location.to_string().trim_matches('"').to_string());
+            }
+            if let Some(timestamp) = sol.get("timestamp") {
+                product["timestamp"] =
+                    serde_json::Value::String(timestamp.to_string().trim_matches('"').to_string());
+            }
+            if let Some(description) = sol.get("description") {
+                product["description"] = serde_json::Value::String(
+                    description.to_string().trim_matches('"').to_string(),
+                );
             }
         }
     }
-    
+
     if !product_found {
         return Err((
             StatusCode::NOT_FOUND,
@@ -725,7 +778,7 @@ pub async fn get_product_by_id(
             }),
         ));
     }
-    
+
     Ok(Json(product))
 }
 
@@ -735,7 +788,7 @@ pub async fn get_product_trace_path(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     // Build SPARQL query to get trace path
     let sparql_query = format!(
         r#"
@@ -753,7 +806,7 @@ pub async fn get_product_trace_path(
         "#,
         product_id
     );
-    
+
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
         Ok(results) => results,
         Err(e) => {
@@ -767,26 +820,24 @@ pub async fn get_product_trace_path(
             ));
         }
     };
-    
+
     let mut trace_steps = Vec::new();
-    
+
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                let step = serde_json::json!({
-                    "id": sol.get("step").map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string()).unwrap_or_else(|| format!("step_{}", trace_steps.len())),
-                    "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339()),
-                    "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown Location".to_string()),
-                    "participant": sol.get("participant").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown Participant".to_string()),
-                    "action": sol.get("action").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown Action".to_string()),
-                    "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "metadata": {}
-                });
-                trace_steps.push(step);
-            }
+        for sol in solutions.flatten() {
+            let step = serde_json::json!({
+                "id": sol.get("step").map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string()).unwrap_or_else(|| format!("step_{}", trace_steps.len())),
+                "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339()),
+                "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown Location".to_string()),
+                "participant": sol.get("participant").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown Participant".to_string()),
+                "action": sol.get("action").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown Action".to_string()),
+                "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "metadata": {}
+            });
+            trace_steps.push(step);
         }
     }
-    
+
     // If no trace steps found, create a default one
     if trace_steps.is_empty() {
         trace_steps.push(serde_json::json!({
@@ -799,7 +850,7 @@ pub async fn get_product_trace_path(
             "metadata": {}
         }));
     }
-    
+
     let response = serde_json::json!({
         "product_id": product_id,
         "trace_steps": trace_steps,
@@ -807,7 +858,7 @@ pub async fn get_product_trace_path(
         "start_timestamp": trace_steps.first().and_then(|s| s.get("timestamp")).unwrap_or(&serde_json::Value::String(Utc::now().to_rfc3339())),
         "end_timestamp": trace_steps.last().and_then(|s| s.get("timestamp")).unwrap_or(&serde_json::Value::String(Utc::now().to_rfc3339()))
     });
-    
+
     Ok(Json(response))
 }
 
@@ -817,7 +868,7 @@ pub async fn get_product_provenance(
     State(app_state): State<AppState>,
 ) -> Result<Json<Vec<serde_json::Value>>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     // Build SPARQL query to get provenance chain
     let sparql_query = format!(
         r#"
@@ -834,7 +885,7 @@ pub async fn get_product_provenance(
         "#,
         product_id
     );
-    
+
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
         Ok(results) => results,
         Err(e) => {
@@ -848,25 +899,23 @@ pub async fn get_product_provenance(
             ));
         }
     };
-    
+
     let mut provenance_chain = Vec::new();
-    
+
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                let step = serde_json::json!({
-                    "entity": sol.get("entity").map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string()).unwrap_or("unknown".to_string()),
-                    "activity": sol.get("activity").map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string()).unwrap_or("unknown".to_string()),
-                    "agent": sol.get("agent").map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string()).unwrap_or("unknown".to_string()),
-                    "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339()),
-                    "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "type": "provenance_step"
-                });
-                provenance_chain.push(step);
-            }
+        for sol in solutions.flatten() {
+            let step = serde_json::json!({
+                "entity": sol.get("entity").map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string()).unwrap_or("unknown".to_string()),
+                "activity": sol.get("activity").map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string()).unwrap_or("unknown".to_string()),
+                "agent": sol.get("agent").map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string()).unwrap_or("unknown".to_string()),
+                "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339()),
+                "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "type": "provenance_step"
+            });
+            provenance_chain.push(step);
         }
     }
-    
+
     // If no provenance found, create a default chain
     if provenance_chain.is_empty() {
         provenance_chain.push(serde_json::json!({
@@ -878,7 +927,7 @@ pub async fn get_product_provenance(
             "type": "provenance_step"
         }));
     }
-    
+
     Ok(Json(provenance_chain))
 }
 
@@ -888,7 +937,7 @@ pub async fn get_knowledge_graph(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     if params.item_id.is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -899,13 +948,15 @@ pub async fn get_knowledge_graph(
             }),
         ));
     }
-    
+
     // Build SPARQL query to get knowledge graph
-    let item_filters = params.item_id.iter()
+    let item_filters = params
+        .item_id
+        .iter()
         .map(|id| format!("?s = <{}>", id))
         .collect::<Vec<_>>()
         .join(" || ");
-    
+
     let sparql_query = format!(
         r#"
         SELECT ?s ?p ?o WHERE {{
@@ -917,7 +968,7 @@ pub async fn get_knowledge_graph(
         "#,
         item_filters
     );
-    
+
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
         Ok(results) => results,
         Err(e) => {
@@ -931,57 +982,81 @@ pub async fn get_knowledge_graph(
             ));
         }
     };
-    
+
     let mut nodes = std::collections::HashMap::new();
     let mut edges = Vec::new();
-    
+
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                let subject = sol.get("s").map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string()).unwrap_or("unknown".to_string());
-                let predicate = sol.get("p").map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string()).unwrap_or("unknown".to_string());
-                let object = sol.get("o").map(|t| t.to_string()).unwrap_or("unknown".to_string());
-                
-                // Add subject node
-                nodes.insert(subject.clone(), serde_json::json!({
+        for sol in solutions.flatten() {
+            let subject = sol
+                .get("s")
+                .map(|t| {
+                    t.to_string()
+                        .trim_matches('<')
+                        .trim_matches('>')
+                        .to_string()
+                })
+                .unwrap_or("unknown".to_string());
+            let predicate = sol
+                .get("p")
+                .map(|t| {
+                    t.to_string()
+                        .trim_matches('<')
+                        .trim_matches('>')
+                        .to_string()
+                })
+                .unwrap_or("unknown".to_string());
+            let object = sol
+                .get("o")
+                .map(|t| t.to_string())
+                .unwrap_or("unknown".to_string());
+
+            // Add subject node
+            nodes.insert(
+                subject.clone(),
+                serde_json::json!({
                     "id": subject,
-                    "label": subject.split('/').last().unwrap_or(&subject),
+                    "label": subject.split('/').next_back().unwrap_or(&subject),
                     "type": "entity",
                     "properties": {}
-                }));
-                
-                // Add object node if it's a URI
-                if object.starts_with("http://") || object.starts_with("https://") {
-                    let object_clean = object.trim_matches('<').trim_matches('>').to_string();
-                    nodes.insert(object_clean.clone(), serde_json::json!({
+                }),
+            );
+
+            // Add object node if it's a URI
+            if object.starts_with("http://") || object.starts_with("https://") {
+                let object_clean = object.trim_matches('<').trim_matches('>').to_string();
+                nodes.insert(
+                    object_clean.clone(),
+                    serde_json::json!({
                         "id": object_clean,
-                        "label": object_clean.split('/').last().unwrap_or(&object_clean),
+                        "label": object_clean.split('/').next_back().unwrap_or(&object_clean),
                         "type": "entity",
                         "properties": {}
-                    }));
-                    
-                    // Add edge
-                    edges.push(serde_json::json!({
-                        "source": subject,
-                        "target": object_clean,
-                        "label": predicate.split('#').last().unwrap_or(&predicate),
-                        "type": "relationship"
-                    }));
-                } else {
-                    // Object is a literal, add as property to subject node
-                    if let Some(node) = nodes.get_mut(&subject) {
-                        if let Some(properties) = node.get_mut("properties") {
-                            properties[predicate.split('#').last().unwrap_or(&predicate)] = serde_json::Value::String(object.trim_matches('"').to_string());
-                        }
+                    }),
+                );
+
+                // Add edge
+                edges.push(serde_json::json!({
+                    "source": subject,
+                    "target": object_clean,
+                    "label": predicate.split('#').next_back().unwrap_or(&predicate),
+                    "type": "relationship"
+                }));
+            } else {
+                // Object is a literal, add as property to subject node
+                if let Some(node) = nodes.get_mut(&subject) {
+                    if let Some(properties) = node.get_mut("properties") {
+                        properties[predicate.split('#').next_back().unwrap_or(&predicate)] =
+                            serde_json::Value::String(object.trim_matches('"').to_string());
                     }
                 }
             }
         }
     }
-    
+
     let nodes_vec: Vec<_> = nodes.into_values().collect();
     let total_nodes = nodes_vec.len();
-    
+
     let response = serde_json::json!({
         "nodes": nodes_vec,
         "edges": edges,
@@ -991,7 +1066,7 @@ pub async fn get_knowledge_graph(
             "query_timestamp": Utc::now()
         }
     });
-    
+
     Ok(Json(response))
 }
 
@@ -1001,7 +1076,7 @@ pub async fn get_product_analytics(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     // Build SPARQL query to get analytics data
     let sparql_query = format!(
         r#"
@@ -1016,7 +1091,7 @@ pub async fn get_product_analytics(
         "#,
         product_id
     );
-    
+
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
         Ok(results) => results,
         Err(e) => {
@@ -1030,32 +1105,30 @@ pub async fn get_product_analytics(
             ));
         }
     };
-    
+
     let mut participants = std::collections::HashSet::new();
     let mut locations = std::collections::HashSet::new();
     let mut timestamps = Vec::new();
     let mut total_steps = 0;
-    
+
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                total_steps += 1;
-                
-                if let Some(participant) = sol.get("participant") {
-                    participants.insert(participant.to_string().trim_matches('"').to_string());
-                }
-                
-                if let Some(location) = sol.get("location") {
-                    locations.insert(location.to_string().trim_matches('"').to_string());
-                }
-                
-                if let Some(timestamp) = sol.get("timestamp") {
-                    timestamps.push(timestamp.to_string().trim_matches('"').to_string());
-                }
+        for sol in solutions.flatten() {
+            total_steps += 1;
+
+            if let Some(participant) = sol.get("participant") {
+                participants.insert(participant.to_string().trim_matches('"').to_string());
+            }
+
+            if let Some(location) = sol.get("location") {
+                locations.insert(location.to_string().trim_matches('"').to_string());
+            }
+
+            if let Some(timestamp) = sol.get("timestamp") {
+                timestamps.push(timestamp.to_string().trim_matches('"').to_string());
             }
         }
     }
-    
+
     // Calculate duration
     timestamps.sort();
     let duration_days = if timestamps.len() >= 2 {
@@ -1064,7 +1137,7 @@ pub async fn get_product_analytics(
     } else {
         0.0
     };
-    
+
     let analytics = serde_json::json!({
         "total_steps": total_steps,
         "total_participants": participants.len(),
@@ -1074,7 +1147,7 @@ pub async fn get_product_analytics(
         "quality_scores": [85.0, 90.0, 88.0, 92.0], // Placeholder
         "compliance_status": "compliant"
     });
-    
+
     Ok(Json(analytics))
 }
 
@@ -1117,23 +1190,26 @@ pub async fn get_products_by_type(
 
     let mut items = Vec::new();
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                let product_id = sol
-                    .get("product")
-                    .map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string())
-                    .unwrap_or_else(|| format!("product_type_{}", items.len()));
+        for sol in solutions.flatten() {
+            let product_id = sol
+                .get("product")
+                .map(|t| {
+                    t.to_string()
+                        .trim_matches('<')
+                        .trim_matches('>')
+                        .to_string()
+                })
+                .unwrap_or_else(|| format!("product_type_{}", items.len()));
 
-                items.push(serde_json::json!({
-                    "id": product_id,
-                    "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(product_type.clone()),
-                    "type": product_type,
-                    "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "participant": sol.get("participant").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339())
-                }));
-            }
+            items.push(serde_json::json!({
+                "id": product_id,
+                "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(product_type.clone()),
+                "type": product_type,
+                "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "participant": sol.get("participant").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339())
+            }));
         }
     }
 
@@ -1181,23 +1257,26 @@ pub async fn get_products_by_participant(
 
     let mut items = Vec::new();
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                let product_id = sol
-                    .get("product")
-                    .map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string())
-                    .unwrap_or_else(|| format!("product_participant_{}", items.len()));
+        for sol in solutions.flatten() {
+            let product_id = sol
+                .get("product")
+                .map(|t| {
+                    t.to_string()
+                        .trim_matches('<')
+                        .trim_matches('>')
+                        .to_string()
+                })
+                .unwrap_or_else(|| format!("product_participant_{}", items.len()));
 
-                items.push(serde_json::json!({
-                    "id": product_id,
-                    "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown".to_string()),
-                    "type": sol.get("type").map(|t| t.to_string().trim_matches('<').trim_matches('>').split('#').last().unwrap_or("unknown").to_string()).unwrap_or("unknown".to_string()),
-                    "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "participant": participant_id,
-                    "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339())
-                }));
-            }
+            items.push(serde_json::json!({
+                "id": product_id,
+                "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown".to_string()),
+                "type": sol.get("type").map(|t| t.to_string().trim_matches('<').trim_matches('>').split('#').next_back().unwrap_or("unknown").to_string()).unwrap_or("unknown".to_string()),
+                "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "participant": participant_id,
+                "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339())
+            }));
         }
     }
 
@@ -1251,23 +1330,26 @@ pub async fn get_related_items(
 
     let mut items = Vec::new();
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                let related_id = sol
-                    .get("related")
-                    .map(|t| t.to_string().trim_matches('<').trim_matches('>').to_string())
-                    .unwrap_or_else(|| format!("related_{}", items.len()));
+        for sol in solutions.flatten() {
+            let related_id = sol
+                .get("related")
+                .map(|t| {
+                    t.to_string()
+                        .trim_matches('<')
+                        .trim_matches('>')
+                        .to_string()
+                })
+                .unwrap_or_else(|| format!("related_{}", items.len()));
 
-                items.push(serde_json::json!({
-                    "id": related_id,
-                    "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Related Item".to_string()),
-                    "type": sol.get("type").map(|t| t.to_string().trim_matches('<').trim_matches('>').split('#').last().unwrap_or("unknown").to_string()).unwrap_or("unknown".to_string()),
-                    "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "participant": sol.get("participant").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                    "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339())
-                }));
-            }
+            items.push(serde_json::json!({
+                "id": related_id,
+                "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Related Item".to_string()),
+                "type": sol.get("type").map(|t| t.to_string().trim_matches('<').trim_matches('>').split('#').next_back().unwrap_or("unknown").to_string()).unwrap_or("unknown".to_string()),
+                "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "participant": sol.get("participant").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
+                "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339())
+            }));
         }
     }
 
@@ -1336,12 +1418,14 @@ pub async fn create_transaction(
     // Convert metadata from models to transaction
     let metadata = TransactionMetadata {
         location: request.metadata.location,
-        environmental_conditions: request.metadata.environmental_conditions.map(|ec| EnvironmentalConditions {
-            temperature: ec.temperature,
-            humidity: ec.humidity,
-            pressure: ec.pressure,
-            timestamp: ec.timestamp,
-            sensor_id: ec.sensor_id,
+        environmental_conditions: request.metadata.environmental_conditions.map(|ec| {
+            EnvironmentalConditions {
+                temperature: ec.temperature,
+                humidity: ec.humidity,
+                pressure: ec.pressure,
+                timestamp: ec.timestamp,
+                sensor_id: ec.sensor_id,
+            }
         }),
         compliance_info: request.metadata.compliance_info.map(|ci| ComplianceInfo {
             regulation_type: ci.regulation_type,
@@ -1362,24 +1446,28 @@ pub async fn create_transaction(
     };
 
     // Convert inputs and outputs
-    let inputs = request.inputs.into_iter().map(|input| {
-        TransactionInput {
+    let inputs = request
+        .inputs
+        .into_iter()
+        .map(|input| TransactionInput {
             prev_tx_id: input.prev_tx_id,
             output_index: input.output_index,
             signature: None,
             public_key: None,
-        }
-    }).collect();
+        })
+        .collect();
 
-    let outputs = request.outputs.into_iter().map(|output| {
-        TransactionOutput {
+    let outputs = request
+        .outputs
+        .into_iter()
+        .map(|output| TransactionOutput {
             id: output.id,
             owner: uuid::Uuid::parse_str(&output.owner).unwrap_or(uuid::Uuid::nil()),
             asset_type: output.asset_type,
             value: output.value,
             metadata: output.metadata,
-        }
-    }).collect();
+        })
+        .collect();
 
     // Create transaction
     let transaction = Transaction::new(
@@ -1445,7 +1533,10 @@ pub async fn sign_transaction(
         timestamp: Utc::now(),
     };
 
-    println!("Signed transaction {} with participant {}", tx_id, participant_id);
+    println!(
+        "Signed transaction {} with participant {}",
+        tx_id, participant_id
+    );
 
     Ok(Json(response))
 }
@@ -1492,10 +1583,10 @@ pub async fn execute_sparql_query(
             }),
         ));
     }
-    
+
     let blockchain = app_state.blockchain.read().await;
     let start_time = Instant::now();
-    
+
     // Access the RDF store through the blockchain and handle potential query errors
     let query_results = match blockchain.rdf_store.store.query(&request.query) {
         Ok(results) => results,
@@ -1511,7 +1602,7 @@ pub async fn execute_sparql_query(
         }
     };
     let execution_time = start_time.elapsed().as_millis() as u64;
-    
+
     // Convert QueryResults to JSON
     let results_json = match query_results {
         oxigraph::sparql::QueryResults::Solutions(solutions) => {
@@ -1577,21 +1668,22 @@ pub async fn execute_sparql_query(
             })
         }
     };
-    
-    let result_count = if let Some(bindings) = results_json.get("results").and_then(|r| r.get("bindings")) {
-        bindings.as_array().map(|arr| arr.len()).unwrap_or(0)
-    } else if results_json.get("boolean").is_some() {
-        1
-    } else {
-        0
-    };
-    
+
+    let result_count =
+        if let Some(bindings) = results_json.get("results").and_then(|r| r.get("bindings")) {
+            bindings.as_array().map(|arr| arr.len()).unwrap_or(0)
+        } else if results_json.get("boolean").is_some() {
+            1
+        } else {
+            0
+        };
+
     let response = SparqlQueryResponse {
         results: results_json,
         execution_time_ms: execution_time,
         result_count,
     };
-    
+
     Ok(Json(response))
 }
 
@@ -1657,63 +1749,59 @@ pub async fn get_product_trace(
     State(app_state): State<AppState>,
 ) -> Result<Json<ProductTrace>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     let batch_id = params.batch_id.unwrap_or_else(|| "unknown".to_string());
-    
+
     // Build SPARQL query to get product information using the actual namespace
     // Each triple is stored in a separate graph (one per blockchain block)
-    let sparql_query = format!(
-        r#"
-        SELECT ?product ?origin ?status WHERE {{
-            OPTIONAL {{
-                GRAPH ?g1 {{
+    let sparql_query = r#"
+        SELECT ?product ?origin ?status WHERE {
+            OPTIONAL {
+                GRAPH ?g1 {
                     <http://example.org/batch456> <http://provchain.org/trace#product> ?product .
-                }}
-            }}
-            OPTIONAL {{
-                GRAPH ?g2 {{
+                }
+            }
+            OPTIONAL {
+                GRAPH ?g2 {
                     <http://example.org/batch456> <http://provchain.org/trace#origin> ?origin .
-                }}
-            }}
-            OPTIONAL {{
-                GRAPH ?g3 {{
+                }
+            }
+            OPTIONAL {
+                GRAPH ?g3 {
                     <http://example.org/batch456> <http://provchain.org/trace#status> ?status .
-                }}
-            }}
-        }}
+                }
+            }
+        }
         "#
-    );
-    
+    .to_string();
+
     // Access the RDF store through the blockchain
     let query_results = blockchain.rdf_store.query(&sparql_query);
-    
+
     let mut product_name = "Unknown Product".to_string();
     let mut origin = "Unknown Origin".to_string();
     let mut status = "Unknown Status".to_string();
-    
+
     // Parse SPARQL results
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                if let Some(product_term) = sol.get("product") {
-                    product_name = product_term.to_string().trim_matches('"').to_string();
-                }
-                if let Some(origin_term) = sol.get("origin") {
-                    origin = origin_term.to_string().trim_matches('"').to_string();
-                }
-                if let Some(status_term) = sol.get("status") {
-                    status = status_term.to_string().trim_matches('"').to_string();
-                }
-                break; // Take the first result
+        if let Some(sol) = solutions.flatten().next() {
+            if let Some(product_term) = sol.get("product") {
+                product_name = product_term.to_string().trim_matches('"').to_string();
+            }
+            if let Some(origin_term) = sol.get("origin") {
+                origin = origin_term.to_string().trim_matches('"').to_string();
+            }
+            if let Some(status_term) = sol.get("status") {
+                status = status_term.to_string().trim_matches('"').to_string();
             }
         }
     }
-    
+
     // Override with query parameter if provided
     if let Some(param_product_name) = params.product_name {
         product_name = param_product_name;
     }
-    
+
     let product_trace = ProductTrace {
         batch_id: batch_id.clone(),
         product_name,
@@ -1729,7 +1817,7 @@ pub async fn get_product_trace(
             certifications: vec!["Organic".to_string(), "Fair Trade".to_string()],
         }),
     };
-    
+
     Ok(Json(product_trace))
 }
 
@@ -1738,12 +1826,12 @@ pub async fn get_recent_transactions(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     let mut transactions = Vec::new();
-    
+
     // Get transactions from the last 10 blocks
     let start_index = blockchain.chain.len().saturating_sub(10);
-    
+
     for (block_index, block) in blockchain.chain.iter().enumerate().skip(start_index) {
         // Parse RDF triple from block data (which is a single string)
         let parts: Vec<&str> = block.data.split_whitespace().collect();
@@ -1755,15 +1843,27 @@ pub async fn get_recent_transactions(
                 "Production"
             } else if pred_lower.contains("processing") || pred_lower.contains("process") {
                 "Processing"
-            } else if pred_lower.contains("transport") || pred_lower.contains("ship") || pred_lower.contains("logistics") {
+            } else if pred_lower.contains("transport")
+                || pred_lower.contains("ship")
+                || pred_lower.contains("logistics")
+            {
                 "Transport"
             } else if pred_lower.contains("quality") || pred_lower.contains("test") {
                 "Quality"
             } else if pred_lower.contains("transfer") || pred_lower.contains("owner") {
                 "Transfer"
-            } else if pred_lower.contains("environment") || pred_lower.contains("carbon") || pred_lower.contains("co2") || pred_lower.contains("temperature") || pred_lower.contains("humidity") {
+            } else if pred_lower.contains("environment")
+                || pred_lower.contains("carbon")
+                || pred_lower.contains("co2")
+                || pred_lower.contains("temperature")
+                || pred_lower.contains("humidity")
+            {
                 "Environmental"
-            } else if pred_lower.contains("compliance") || pred_lower.contains("regulation") || pred_lower.contains("certificate") || pred_lower.contains("audit") {
+            } else if pred_lower.contains("compliance")
+                || pred_lower.contains("regulation")
+                || pred_lower.contains("certificate")
+                || pred_lower.contains("audit")
+            {
                 "Compliance"
             } else if pred_lower.contains("governance") || pred_lower.contains("policy") {
                 "Governance"
@@ -1790,19 +1890,19 @@ pub async fn get_recent_transactions(
             transactions.push(transaction);
         }
     }
-    
+
     // Sort by block_index (most recent first)
     transactions.sort_by(|a, b| {
         let a_index = a.get("block_index").and_then(|v| v.as_u64()).unwrap_or(0);
         let b_index = b.get("block_index").and_then(|v| v.as_u64()).unwrap_or(0);
         b_index.cmp(&a_index)
     });
-    
+
     let response = serde_json::json!({
         "transactions": transactions,
         "total_transactions": blockchain.chain.len()
     });
-    
+
     Ok(Json(response))
 }
 
@@ -1812,7 +1912,7 @@ pub async fn get_enhanced_product_trace(
     State(app_state): State<AppState>,
 ) -> Result<Json<EnhancedTraceResult>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     // Validate optimization level (0-2 are valid)
     if params.optimization_level > 2 {
         return Err((
@@ -1824,10 +1924,10 @@ pub async fn get_enhanced_product_trace(
             }),
         ));
     }
-    
+
     // Perform enhanced trace using the SSSP-inspired optimization
     let trace_result = blockchain.enhanced_trace(&params.batch_id, params.optimization_level);
-    
+
     Ok(Json(trace_result))
 }
 
@@ -1836,9 +1936,9 @@ pub async fn validate_blockchain(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     let is_valid = blockchain.is_valid();
-    
+
     Ok(Json(serde_json::json!({
         "is_valid": is_valid,
         "total_blocks": blockchain.chain.len(),
@@ -1863,13 +1963,15 @@ pub async fn get_analytics(
     let default_end = Utc::now().to_rfc3339();
     let default_start = (Utc::now() - chrono::Duration::days(30)).to_rfc3339();
 
-    let start_date = params.start_date.unwrap_or_else(|| default_start.split('T').next().unwrap_or("").to_string());
-    let end_date = params.end_date.unwrap_or_else(|| default_end.split('T').next().unwrap_or("").to_string());
+    let start_date = params
+        .start_date
+        .unwrap_or_else(|| default_start.split('T').next().unwrap_or("").to_string());
+    let end_date = params
+        .end_date
+        .unwrap_or_else(|| default_end.split('T').next().unwrap_or("").to_string());
 
     // Helper to extract YYYY-MM-DD from RFC3339 timestamp
-    let date_of = |ts: &str| -> String {
-        ts.split('T').next().unwrap_or(ts).to_string()
-    };
+    let date_of = |ts: &str| -> String { ts.split('T').next().unwrap_or(ts).to_string() };
 
     // Aggregate per-day counts and size
     use std::collections::BTreeMap;
@@ -1885,7 +1987,9 @@ pub async fn get_analytics(
         ("Environmental", 0),
         ("Compliance", 0),
         ("Governance", 0),
-    ].into_iter().collect();
+    ]
+    .into_iter()
+    .collect();
 
     // Totals
     let total_blocks = blockchain.chain.len();
@@ -1896,7 +2000,9 @@ pub async fn get_analytics(
         if d < start_date || d > end_date {
             continue;
         }
-        let size_bytes = serde_json::to_string(block).map(|s| s.len() as u64).unwrap_or(0);
+        let size_bytes = serde_json::to_string(block)
+            .map(|s| s.len() as u64)
+            .unwrap_or(0);
         total_size_bytes += size_bytes;
         let entry = daily_counts.entry(d).or_insert((0, 0));
         entry.0 += 1;
@@ -1910,22 +2016,31 @@ pub async fn get_analytics(
                 "Production"
             } else if predicate.contains("processing") || predicate.contains("process") {
                 "Processing"
-            } else if predicate.contains("transport") || predicate.contains("ship") || predicate.contains("logistics") {
+            } else if predicate.contains("transport")
+                || predicate.contains("ship")
+                || predicate.contains("logistics")
+            {
                 "Transport"
             } else if predicate.contains("quality") || predicate.contains("test") {
                 "Quality"
             } else if predicate.contains("transfer") || predicate.contains("owner") {
                 "Transfer"
-            } else if predicate.contains("environment") || predicate.contains("carbon") || predicate.contains("temperature") {
+            } else if predicate.contains("environment")
+                || predicate.contains("carbon")
+                || predicate.contains("temperature")
+            {
                 "Environmental"
-            } else if predicate.contains("compliance") || predicate.contains("regulation") || predicate.contains("certificate") {
+            } else if predicate.contains("compliance")
+                || predicate.contains("regulation")
+                || predicate.contains("certificate")
+            {
                 "Compliance"
             } else if predicate.contains("governance") || predicate.contains("policy") {
                 "Governance"
             } else {
                 "Processing" // Default
             };
-            
+
             if let Some(count) = type_counts.get_mut(tx_type) {
                 *count += 1;
             }
@@ -1935,7 +2050,7 @@ pub async fn get_analytics(
     // Convert daily counts to time series
     let mut daily_transactions: Vec<serde_json::Value> = Vec::new();
     let mut daily_volume: Vec<serde_json::Value> = Vec::new();
-    
+
     for (date, (count, size)) in daily_counts {
         daily_transactions.push(serde_json::json!({
             "date": date,
@@ -1948,22 +2063,27 @@ pub async fn get_analytics(
     }
 
     // Convert type counts to distribution
-    let transaction_types: Vec<serde_json::Value> = type_counts.into_iter().map(|(name, count)| {
-        serde_json::json!({
-            "name": name,
-            "value": count
+    let transaction_types: Vec<serde_json::Value> = type_counts
+        .into_iter()
+        .map(|(name, count)| {
+            serde_json::json!({
+                "name": name,
+                "value": count
+            })
         })
-    }).collect();
+        .collect();
 
     // Calculate participant activity (simplified)
     let participant_count = blockchain.get_participant_count();
-    let participant_activity: Vec<serde_json::Value> = (0..participant_count).map(|i| {
-        let activity_count = (total_blocks / participant_count.max(1)) + (i % 3); // Distribute activity
-        serde_json::json!({
-            "participant": format!("Participant {}", i + 1),
-            "transactions": activity_count
+    let participant_activity: Vec<serde_json::Value> = (0..participant_count)
+        .map(|i| {
+            let activity_count = (total_blocks / participant_count.max(1)) + (i % 3); // Distribute activity
+            serde_json::json!({
+                "participant": format!("Participant {}", i + 1),
+                "transactions": activity_count
+            })
         })
-    }).collect();
+        .collect();
 
     let analytics = serde_json::json!({
         "overview": {
@@ -1991,25 +2111,31 @@ pub async fn get_participants(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
-    
+
     // For now, return a consistent set of participants that matches the blockchain's participant count
     let participant_count = blockchain.get_participant_count();
-    
+
     // Generate consistent participants based on the real participant count
     let mut participants = Vec::new();
-    let participant_types = ["Producer", "Manufacturer", "LogisticsProvider", "QualityLab", "Auditor"];
+    let participant_types = [
+        "Producer",
+        "Manufacturer",
+        "LogisticsProvider",
+        "QualityLab",
+        "Auditor",
+    ];
     let participant_names = [
         "Organic Farms Co.",
-        "Global Manufacturing Ltd.", 
+        "Global Manufacturing Ltd.",
         "Swift Logistics",
         "Quality Assurance Labs",
-        "Independent Auditors"
+        "Independent Auditors",
     ];
-    
+
     for i in 0..participant_count {
         let participant_type = participant_types[i % participant_types.len()];
         let participant_name = participant_names[i % participant_names.len()];
-        
+
         let participant = serde_json::json!({
             "id": format!("participant-{}", i + 1),
             "name": participant_name,
@@ -2028,10 +2154,10 @@ pub async fn get_participants(
             "last_active": "2025-08-31T08:30:00Z",
             "status": "active"
         });
-        
+
         participants.push(participant);
     }
-    
+
     Ok(Json(serde_json::json!({
         "participants": participants,
         "total_participants": participant_count
@@ -2047,7 +2173,6 @@ pub async fn create_participant(
     // For now, return the participant payload directly to match frontend expectations.
     Ok(Json(request))
 }
-
 
 /// Register a new wallet for a participant
 pub async fn register_wallet(
@@ -2127,7 +2252,10 @@ pub async fn register_wallet(
 
     // For demo purposes, we'll add the participant to the auth system
     // In a real implementation, this would be stored in a database
-    println!("Registered new participant: {} ({})", participant.name, participant_id);
+    println!(
+        "Registered new participant: {} ({})",
+        participant.name, participant_id
+    );
 
     Ok(Json(response))
 }

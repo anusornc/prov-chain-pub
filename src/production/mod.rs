@@ -1,19 +1,19 @@
 //! Production deployment module for enterprise-grade features
-//! 
+//!
 //! This module provides:
 //! - Container orchestration support
 //! - Monitoring and observability
 //! - Security hardening
 //! - Compliance framework
 
+pub mod compliance;
 pub mod container;
+pub mod deployment;
 pub mod monitoring;
 pub mod security;
-pub mod compliance;
-pub mod deployment;
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -88,7 +88,10 @@ impl ProductionManager {
 
     /// Initialize production environment
     pub async fn initialize(&mut self) -> Result<(), ProductionError> {
-        tracing::info!("Initializing production environment: {}", self.config.environment);
+        tracing::info!(
+            "Initializing production environment: {}",
+            self.config.environment
+        );
 
         // Initialize monitoring
         self.monitoring.start().await?;
@@ -109,7 +112,7 @@ impl ProductionManager {
     /// Get system health status
     pub async fn health_check(&self) -> HashMap<String, String> {
         let mut health = HashMap::new();
-        
+
         health.insert("environment".to_string(), self.config.environment.clone());
         health.insert("version".to_string(), self.config.version.clone());
         health.insert("monitoring".to_string(), self.monitoring.status().await);

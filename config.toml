@@ -70,7 +70,9 @@ format = "pretty"
 # Web server configuration
 host = "0.0.0.0"
 port = 8080
-jwt_secret = "your-secret-key-change-in-production"
+# JWT secret must be set via JWT_SECRET environment variable in production
+# For development, generate a secure random key or use JWT_SECRET env var
+# jwt_secret = "" # Never set secrets in configuration files
 
 [web.cors]
 # CORS (Cross-Origin Resource Sharing) configuration

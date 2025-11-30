@@ -102,6 +102,12 @@ tempfile = "3.8"
 reqwest = { version = "0.11", features = ["json", "multipart"] }
 criterion = { version = "0.5", features = ["html_reports"] }
 
+# Performance Testing Dependencies
+proptest = "1.4"              # Property-based testing for load testing
+test-case = "3.3"             # Test case generation
+statrs = "0.16"               # Statistical analysis for performance
+float-cmp = "0.9"             # Floating point comparison for metrics
+
 # End-to-End Testing Dependencies
 fantoccini = { version = "0.19", features = ["native-tls"] }
 webdriver = "0.46"
@@ -121,6 +127,10 @@ harness = false
 
 [[bench]]
 name = "owl2_benchmarks"
+harness = false
+
+[[bench]]
+name = "comprehensive_performance_benchmarks"
 harness = false
 
 [[test]]

@@ -1,13 +1,13 @@
 //! P2P message protocol for GraphChain distributed communication
-//! 
+//!
 //! This module defines all message types used for communication between
 //! GraphChain nodes, including blockchain synchronization, peer discovery,
 //! and RDF graph exchange.
 
+use crate::core::blockchain::Block;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use crate::core::blockchain::Block;
 
 /// All possible P2P messages exchanged between GraphChain nodes
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,13 +20,13 @@ pub enum P2PMessage {
         network_id: String,
         timestamp: DateTime<Utc>,
     },
-    
+
     /// Response to peer discovery with peer list
     PeerList {
         peers: Vec<PeerInfo>,
         timestamp: DateTime<Utc>,
     },
-    
+
     /// Announce a new block to the network
     BlockAnnouncement {
         block_index: u64,
@@ -35,37 +35,35 @@ pub enum P2PMessage {
         graph_uri: String,
         timestamp: DateTime<Utc>,
     },
-    
+
     /// Request a specific block by index
     BlockRequest {
         block_index: u64,
         requester_id: Uuid,
     },
-    
+
     /// Response with requested block data
     BlockResponse {
         block: Option<Block>,
         requester_id: Uuid,
     },
-    
+
     /// Request RDF graph data for a specific URI
     GraphRequest {
         graph_uri: String,
         requester_id: Uuid,
     },
-    
+
     /// Response with RDF graph data
     GraphResponse {
         graph_uri: String,
         rdf_data: Option<String>, // Turtle format, compressed and base64 encoded
         requester_id: Uuid,
     },
-    
+
     /// Request chain status (latest block info)
-    ChainStatusRequest {
-        requester_id: Uuid,
-    },
-    
+    ChainStatusRequest { requester_id: Uuid },
+
     /// Response with chain status
     ChainStatusResponse {
         latest_block_index: u64,
@@ -73,20 +71,20 @@ pub enum P2PMessage {
         chain_length: u64,
         requester_id: Uuid,
     },
-    
+
     /// Ping message for connection health check
     Ping {
         sender_id: Uuid,
         timestamp: DateTime<Utc>,
     },
-    
+
     /// Pong response to ping
     Pong {
         sender_id: Uuid,
         original_timestamp: DateTime<Utc>,
         response_timestamp: DateTime<Utc>,
     },
-    
+
     /// Error message
     Error {
         error_code: ErrorCode,
@@ -127,7 +125,7 @@ impl P2PMessage {
             timestamp: Utc::now(),
         }
     }
-    
+
     /// Create a new block announcement
     pub fn new_block_announcement(block: &Block, graph_uri: String) -> Self {
         Self::BlockAnnouncement {
@@ -138,7 +136,7 @@ impl P2PMessage {
             timestamp: Utc::now(),
         }
     }
-    
+
     /// Create a new block request
     pub fn new_block_request(block_index: u64, requester_id: Uuid) -> Self {
         Self::BlockRequest {
@@ -146,7 +144,7 @@ impl P2PMessage {
             requester_id,
         }
     }
-    
+
     /// Create a new graph request
     pub fn new_graph_request(graph_uri: String, requester_id: Uuid) -> Self {
         Self::GraphRequest {
@@ -154,7 +152,7 @@ impl P2PMessage {
             requester_id,
         }
     }
-    
+
     /// Create a new ping message
     pub fn new_ping(sender_id: Uuid) -> Self {
         Self::Ping {
@@ -162,7 +160,7 @@ impl P2PMessage {
             timestamp: Utc::now(),
         }
     }
-    
+
     /// Create a new pong response
     pub fn new_pong(sender_id: Uuid, original_timestamp: DateTime<Utc>) -> Self {
         Self::Pong {
@@ -171,7 +169,7 @@ impl P2PMessage {
             response_timestamp: Utc::now(),
         }
     }
-    
+
     /// Create a new error message
     pub fn new_error(error_code: ErrorCode, message: String) -> Self {
         Self::Error {
@@ -180,7 +178,7 @@ impl P2PMessage {
             timestamp: Utc::now(),
         }
     }
-    
+
     /// Get the message type as a string for logging
     pub fn message_type(&self) -> &'static str {
         match self {
@@ -198,20 +196,20 @@ impl P2PMessage {
             Self::Error { .. } => "Error",
         }
     }
-    
+
     /// Serialize message to JSON bytes for network transmission
     pub fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
         let json = serde_json::to_string(self)?;
         Ok(json.into_bytes())
     }
-    
+
     /// Deserialize message from JSON bytes
     pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
         let json = std::str::from_utf8(bytes)?;
         let message = serde_json::from_str(json)?;
         Ok(message)
     }
-    
+
     /// Validate message structure and content
     pub fn validate(&self) -> anyhow::Result<()> {
         match self {
@@ -255,12 +253,12 @@ impl PeerInfo {
             is_authority,
         }
     }
-    
+
     /// Update the last seen timestamp
     pub fn update_last_seen(&mut self) {
         self.last_seen = Utc::now();
     }
-    
+
     /// Get the full address (address:port)
     pub fn full_address(&self) -> String {
         format!("{}:{}", self.address, self.port)
@@ -270,31 +268,32 @@ impl PeerInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_message_serialization() {
         let node_id = Uuid::new_v4();
         let message = P2PMessage::new_peer_discovery(node_id, 8080, "test-network".to_string());
-        
+
         // Test serialization
         let bytes = message.to_bytes().unwrap();
         assert!(!bytes.is_empty());
-        
+
         // Test deserialization
         let deserialized = P2PMessage::from_bytes(&bytes).unwrap();
-        
+
         // Verify the message type matches
         assert_eq!(message.message_type(), deserialized.message_type());
     }
-    
+
     #[test]
     fn test_message_validation() {
         let node_id = Uuid::new_v4();
-        
+
         // Valid message
-        let valid_message = P2PMessage::new_peer_discovery(node_id, 8080, "test-network".to_string());
+        let valid_message =
+            P2PMessage::new_peer_discovery(node_id, 8080, "test-network".to_string());
         assert!(valid_message.validate().is_ok());
-        
+
         // Invalid message with empty network ID
         let invalid_message = P2PMessage::PeerDiscovery {
             node_id,
@@ -304,7 +303,7 @@ mod tests {
         };
         assert!(invalid_message.validate().is_err());
     }
-    
+
     #[test]
     fn test_peer_info() {
         let node_id = Uuid::new_v4();
@@ -315,9 +314,9 @@ mod tests {
             "test-network".to_string(),
             false,
         );
-        
+
         assert_eq!(peer.full_address(), "127.0.0.1:8080");
-        
+
         let original_time = peer.last_seen;
         std::thread::sleep(std::time::Duration::from_millis(1));
         peer.update_last_seen();

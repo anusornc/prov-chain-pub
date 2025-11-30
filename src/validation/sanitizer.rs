@@ -73,7 +73,7 @@ impl SanitizationConfig {
         config.normalize_whitespace = true;
         config.remove_control_chars = true;
         config.max_length = Some(20);
-        
+
         // Convert common characters to uppercase equivalents
         config.char_replacements.insert('a', "A".to_string());
         config.char_replacements.insert('b', "B".to_string());
@@ -101,7 +101,7 @@ impl SanitizationConfig {
         config.char_replacements.insert('x', "X".to_string());
         config.char_replacements.insert('y', "Y".to_string());
         config.char_replacements.insert('z', "Z".to_string());
-        
+
         config
     }
 }
@@ -160,7 +160,7 @@ impl InputSanitizer {
         // Simple HTML tag removal - in production, use a proper HTML sanitizer library
         let mut result = String::new();
         let mut in_tag = false;
-        
+
         for ch in input.chars() {
             match ch {
                 '<' => in_tag = true,
@@ -172,13 +172,14 @@ impl InputSanitizer {
                 }
             }
         }
-        
+
         result
     }
 
     /// Remove control characters
     fn remove_control_characters(&self, input: &str) -> String {
-        input.chars()
+        input
+            .chars()
             .filter(|&ch| !ch.is_control() || ch == '\n' || ch == '\r' || ch == '\t')
             .collect()
     }
@@ -186,7 +187,8 @@ impl InputSanitizer {
     /// Normalize whitespace
     fn normalize_whitespace(&self, input: &str) -> String {
         // Replace multiple whitespace with single space and trim
-        input.split_whitespace()
+        input
+            .split_whitespace()
             .collect::<Vec<&str>>()
             .join(" ")
             .trim()
@@ -195,7 +197,8 @@ impl InputSanitizer {
 
     /// Sanitize multiple fields
     pub fn sanitize_fields(&self, fields: &HashMap<String, String>) -> HashMap<String, String> {
-        fields.iter()
+        fields
+            .iter()
             .map(|(key, value)| (key.clone(), self.sanitize(value)))
             .collect()
     }
@@ -216,7 +219,7 @@ mod tests {
         let sanitizer = InputSanitizer::new(SanitizationConfig::strict());
         let input = "<script>alert('xss')</script>Hello World<br>";
         let result = sanitizer.sanitize(input);
-        
+
         assert!(!result.contains("<script>"));
         assert!(!result.contains("</script>"));
         assert!(result.contains("Hello World"));
@@ -227,7 +230,7 @@ mod tests {
         let sanitizer = InputSanitizer::new(SanitizationConfig::default());
         let input = "  Hello    World  \n\t  ";
         let result = sanitizer.sanitize(input);
-        
+
         assert_eq!(result, "Hello World");
     }
 
@@ -236,7 +239,7 @@ mod tests {
         let sanitizer = InputSanitizer::new(SanitizationConfig::strict());
         let input = "Hello\x00World\x01Test";
         let result = sanitizer.sanitize(input);
-        
+
         assert!(!result.contains('\x00'));
         assert!(!result.contains('\x01'));
         assert!(result.contains("HelloWorldTest"));
@@ -247,10 +250,10 @@ mod tests {
         let mut config = SanitizationConfig::default();
         config.max_length = Some(5);
         let sanitizer = InputSanitizer::new(config);
-        
+
         let input = "Hello World";
         let result = sanitizer.sanitize(input);
-        
+
         assert_eq!(result.len(), 5);
         assert_eq!(result, "Hello");
     }
@@ -260,7 +263,7 @@ mod tests {
         let sanitizer = InputSanitizer::new(SanitizationConfig::batch_id());
         let input = "batch123";
         let result = sanitizer.sanitize(input);
-        
+
         assert_eq!(result, "BATCH123");
     }
 
@@ -269,7 +272,7 @@ mod tests {
         let sanitizer = InputSanitizer::new(SanitizationConfig::username());
         let input = "  User_Name123  ";
         let result = sanitizer.sanitize(input);
-        
+
         assert_eq!(result, "user_name123");
     }
 }

@@ -345,7 +345,7 @@ mod tests {
     fn test_error_creation() {
         let blockchain_err = BlockchainError::InvalidBlock("test".to_string());
         let provchain_err = ProvChainError::Blockchain(blockchain_err);
-        
+
         assert!(matches!(provchain_err, ProvChainError::Blockchain(_)));
     }
 

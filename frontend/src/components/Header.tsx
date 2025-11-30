@@ -1,9 +1,15 @@
-import React from 'react';
-import './Header.css';
-import Button from './ui/Button';
-import { useTheme } from '../hooks/useTheme';
+import React from "react";
+import "./Header.css";
+import Button from "./ui/Button";
+import { useTheme } from "../hooks/useTheme";
 
-type TabType = 'ontology' | 'rdf' | 'knowledge-graph' | 'provenance' | 'queries' | 'data';
+type TabType =
+  | "ontology"
+  | "rdf"
+  | "knowledge-graph"
+  | "provenance"
+  | "queries"
+  | "data";
 
 interface HeaderProps {
   activeTab: TabType;
@@ -12,14 +18,14 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
   const { theme, toggleTheme } = useTheme();
-  
+
   const tabs = [
-    { id: 'ontology', label: 'Ontology', icon: '🏛️' },
-    { id: 'rdf', label: 'RDF', icon: '🔗' },
-    { id: 'knowledge-graph', label: 'Knowledge Graph', icon: '🧠' },
-    { id: 'provenance', label: 'Provenance', icon: '📜' },
-    { id: 'queries', label: 'Queries', icon: '🔍' },
-    { id: 'data', label: 'Data', icon: '📊' },
+    { id: "ontology", label: "Ontology", icon: "🏛️" },
+    { id: "rdf", label: "RDF", icon: "🔗" },
+    { id: "knowledge-graph", label: "Knowledge Graph", icon: "🧠" },
+    { id: "provenance", label: "Provenance", icon: "📜" },
+    { id: "queries", label: "Queries", icon: "🔍" },
+    { id: "data", label: "Data", icon: "📊" },
   ];
 
   return (
@@ -29,12 +35,12 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
           <h1>ProvChainOrg</h1>
           <span className="subtitle">Semantic Blockchain Explorer</span>
         </div>
-        
+
         <nav className="tabs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              className={`tab ${activeTab === tab.id ? 'active' : ''}`}
+              className={`tab ${activeTab === tab.id ? "active" : ""}`}
               onClick={() => onTabChange(tab.id as TabType)}
             >
               <span className="tab-icon">{tab.icon}</span>
@@ -48,13 +54,13 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
             <span className="status-dot active"></span>
             <span>Connected</span>
           </div>
-          <Button 
-            variant="secondary" 
+          <Button
+            variant="secondary"
             size="sm"
             onClick={toggleTheme}
-            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
           >
-            {theme === 'light' ? '🌙' : '☀️'}
+            {theme === "light" ? "🌙" : "☀️"}
           </Button>
           <Button variant="secondary" size="sm">
             ⚙️ Settings

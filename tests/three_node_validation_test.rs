@@ -1,10 +1,10 @@
-use std::process::{Stdio};
+use serde_json::Value;
+use std::fs::File;
+use std::io::Write;
+use std::process::Stdio;
 use std::thread;
 use std::time::Duration;
 use tempfile::tempdir;
-use std::fs::File;
-use std::io::Write;
-use serde_json::Value;
 
 #[tokio::test]
 async fn three_node_validation_test() {
@@ -37,12 +37,14 @@ data_dir = "./"
     )
     .unwrap();
 
-    let mut authority_node = std::process::Command::new("/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org")
-        .current_dir(authority_dir.path())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("Failed to start authority node");
+    let mut authority_node = std::process::Command::new(
+        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+    )
+    .current_dir(authority_dir.path())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("Failed to start authority node");
 
     // Give the authority node a moment to start
     thread::sleep(Duration::from_secs(10));
@@ -63,17 +65,18 @@ is_authority = false
 [storage]
 data_dir = "./"
 "#,
-        node2_port,
-        authority_port
+        node2_port, authority_port
     )
     .unwrap();
 
-    let mut node2 = std::process::Command::new("/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org")
-        .current_dir(node2_dir.path())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("Failed to start node 2");
+    let mut node2 = std::process::Command::new(
+        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+    )
+    .current_dir(node2_dir.path())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("Failed to start node 2");
 
     // Regular Node 3
     let node3_config_path = node3_dir.path().join("config.toml");
@@ -91,17 +94,18 @@ is_authority = false
 [storage]
 data_dir = "./"
 "#,
-        node3_port,
-        authority_port
+        node3_port, authority_port
     )
     .unwrap();
 
-    let mut node3 = std::process::Command::new("/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org")
-        .current_dir(node3_dir.path())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("Failed to start node 3");
+    let mut node3 = std::process::Command::new(
+        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+    )
+    .current_dir(node3_dir.path())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("Failed to start node 3");
 
     // Give the regular nodes a moment to start and connect
     thread::sleep(Duration::from_secs(20));
@@ -116,14 +120,13 @@ ex:subject ex:predicate ex:object ."#
     )
     .unwrap();
 
-    let add_block_output = std::process::Command::new("/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org")
-        .current_dir(authority_dir.path())
-        .args(&[
-            "add-file",
-            test_data_path.to_str().unwrap(),
-        ])
-        .output()
-        .expect("Failed to add block");
+    let add_block_output = std::process::Command::new(
+        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+    )
+    .current_dir(authority_dir.path())
+    .args(["add-file", test_data_path.to_str().unwrap()])
+    .output()
+    .expect("Failed to add block");
 
     assert!(add_block_output.status.success());
 
@@ -132,37 +135,54 @@ ex:subject ex:predicate ex:object ."#
 
     // 4. Validate Blockchain Integrity
     for dir in &[&authority_dir, &node2_dir, &node3_dir] {
-        let validate_output = std::process::Command::new("/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org")
-            .current_dir(dir.path())
-            .arg("validate")
-            .output()
-            .expect("Failed to validate node");
+        let validate_output = std::process::Command::new(
+            "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+        )
+        .current_dir(dir.path())
+        .arg("validate")
+        .output()
+        .expect("Failed to validate node");
         assert!(validate_output.status.success());
     }
 
-    let authority_dump_output = std::process::Command::new("/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org")
-        .current_dir(authority_dir.path())
-        .arg("dump")
-        .output()
-        .expect("Failed to dump authority node");
+    let authority_dump_output = std::process::Command::new(
+        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+    )
+    .current_dir(authority_dir.path())
+    .arg("dump")
+    .output()
+    .expect("Failed to dump authority node");
     let authority_dump_str = String::from_utf8_lossy(&authority_dump_output.stdout);
-    let authority_dump: Vec<Value> = authority_dump_str.split('}').filter_map(|s| serde_json::from_str(s).ok()).collect();
+    let authority_dump: Vec<Value> = authority_dump_str
+        .split('}')
+        .filter_map(|s| serde_json::from_str(s).ok())
+        .collect();
 
-    let node2_dump_output = std::process::Command::new("/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org")
-        .current_dir(node2_dir.path())
-        .arg("dump")
-        .output()
-        .expect("Failed to dump node 2");
+    let node2_dump_output = std::process::Command::new(
+        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+    )
+    .current_dir(node2_dir.path())
+    .arg("dump")
+    .output()
+    .expect("Failed to dump node 2");
     let node2_dump_str = String::from_utf8_lossy(&node2_dump_output.stdout);
-    let node2_dump: Vec<Value> = node2_dump_str.split('}').filter_map(|s| serde_json::from_str(s).ok()).collect();
+    let node2_dump: Vec<Value> = node2_dump_str
+        .split('}')
+        .filter_map(|s| serde_json::from_str(s).ok())
+        .collect();
 
-    let node3_dump_output = std::process::Command::new("/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org")
-        .current_dir(node3_dir.path())
-        .arg("dump")
-        .output()
-        .expect("Failed to dump node 3");
+    let node3_dump_output = std::process::Command::new(
+        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+    )
+    .current_dir(node3_dir.path())
+    .arg("dump")
+    .output()
+    .expect("Failed to dump node 3");
     let node3_dump_str = String::from_utf8_lossy(&node3_dump_output.stdout);
-    let node3_dump: Vec<Value> = node3_dump_str.split('}').filter_map(|s| serde_json::from_str(s).ok()).collect();
+    let node3_dump: Vec<Value> = node3_dump_str
+        .split('}')
+        .filter_map(|s| serde_json::from_str(s).ok())
+        .collect();
 
     for i in 0..authority_dump.len() {
         let authority_block = &authority_dump[i];
@@ -175,8 +195,14 @@ ex:subject ex:predicate ex:object ."#
         assert_eq!(authority_block["data"], node2_block["data"]);
         assert_eq!(authority_block["data"], node3_block["data"]);
 
-        assert_eq!(authority_block["previous_hash"], node2_block["previous_hash"]);
-        assert_eq!(authority_block["previous_hash"], node3_block["previous_hash"]);
+        assert_eq!(
+            authority_block["previous_hash"],
+            node2_block["previous_hash"]
+        );
+        assert_eq!(
+            authority_block["previous_hash"],
+            node3_block["previous_hash"]
+        );
 
         assert_eq!(authority_block["hash"], node2_block["hash"]);
         assert_eq!(authority_block["hash"], node3_block["hash"]);

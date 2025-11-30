@@ -1,5 +1,5 @@
 //! Phase 2 Test Suite: REST API and Web Interface
-//! 
+//!
 //! This comprehensive test suite validates all Phase 2 functionality including:
 //! - Web server startup and configuration
 //! - Authentication and authorization
@@ -8,35 +8,42 @@
 //! - Security features
 //! - Integration scenarios
 
-use provchain_org::web::{WebServer, models::*};
+use chrono::Utc;
 use provchain_org::core::blockchain::Blockchain;
 use provchain_org::storage::rdf_store::RDFStore;
 use provchain_org::utils::config::NodeConfig;
+use provchain_org::web::{models::*, WebServer};
 use serde_json::json;
-use chrono::Utc;
+
+use provchain_org::config::Config;
 
 /// Test helper to create a test web server instance
 fn create_test_server() -> WebServer {
     let blockchain = Blockchain::new();
-    let port = 0; // Use random available port for testing
-    
-    WebServer::new(blockchain, port)
+    let mut config = Config::default();
+    config.web.port = 0; // Use random available port for testing
+
+    WebServer::new(blockchain, config)
 }
 
 /// Test helper to get authentication token (for integration tests)
-async fn _get_auth_token(server_url: &str, username: &str, password: &str) -> Result<String, Box<dyn std::error::Error>> {
+async fn _get_auth_token(
+    server_url: &str,
+    username: &str,
+    password: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
     let auth_request = AuthRequest {
         username: username.to_string(),
         password: password.to_string(),
     };
-    
+
     let response = client
         .post(format!("{server_url}/auth/login"))
         .json(&auth_request)
         .send()
         .await?;
-    
+
     let auth_response: AuthResponse = response.json().await?;
     Ok(auth_response.token)
 }
@@ -44,7 +51,7 @@ async fn _get_auth_token(server_url: &str, username: &str, password: &str) -> Re
 #[tokio::test]
 async fn test_web_server_creation() {
     let server = create_test_server();
-    
+
     // Test that server can be created without panicking
     assert_eq!(server.port(), 0, "Server should use port 0 for testing");
 }
@@ -55,11 +62,11 @@ fn test_auth_request_serialization() {
         username: "testuser".to_string(),
         password: "testpass".to_string(),
     };
-    
+
     let json = serde_json::to_string(&auth_request).unwrap();
     assert!(json.contains("testuser"));
     assert!(json.contains("testpass"));
-    
+
     let deserialized: AuthRequest = serde_json::from_str(&json).unwrap();
     assert_eq!(deserialized.username, "testuser");
     assert_eq!(deserialized.password, "testpass");
@@ -72,11 +79,11 @@ fn test_auth_response_serialization() {
         expires_at: Utc::now(),
         user_role: "admin".to_string(),
     };
-    
+
     let json = serde_json::to_string(&auth_response).unwrap();
     assert!(json.contains("test_token_123"));
     assert!(json.contains("admin"));
-    
+
     let deserialized: AuthResponse = serde_json::from_str(&json).unwrap();
     assert_eq!(deserialized.token, "test_token_123");
     assert_eq!(deserialized.user_role, "admin");
@@ -91,10 +98,10 @@ fn test_blockchain_status_model() {
         network_peers: 3,
         last_updated: Utc::now(),
     };
-    
+
     let json = serde_json::to_string(&status).unwrap();
     let deserialized: BlockchainStatus = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.height, 10);
     assert_eq!(deserialized.latest_block_hash, "abc123");
     assert_eq!(deserialized.total_transactions, 25);
@@ -111,10 +118,10 @@ fn test_block_info_model() {
         transaction_count: 3,
         size_bytes: 1024,
     };
-    
+
     let json = serde_json::to_string(&block_info).unwrap();
     let deserialized: BlockInfo = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.index, 5);
     assert_eq!(deserialized.hash, "block_hash_123");
     assert_eq!(deserialized.previous_hash, "prev_hash_456");
@@ -130,10 +137,10 @@ fn test_add_triple_request_model() {
         object: "Farm A".to_string(),
         graph_name: Some("supply_chain".to_string()),
     };
-    
+
     let json = serde_json::to_string(&request).unwrap();
     let deserialized: AddTripleRequest = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.subject, "http://example.org/product1");
     assert_eq!(deserialized.predicate, "http://example.org/hasLocation");
     assert_eq!(deserialized.object, "Farm A");
@@ -146,10 +153,10 @@ fn test_sparql_query_request_model() {
         query: "SELECT * WHERE { ?s ?p ?o }".to_string(),
         format: Some("json".to_string()),
     };
-    
+
     let json = serde_json::to_string(&request).unwrap();
     let deserialized: SparqlQueryRequest = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.query, "SELECT * WHERE { ?s ?p ?o }");
     assert_eq!(deserialized.format, Some("json".to_string()));
 }
@@ -161,10 +168,10 @@ fn test_sparql_query_response_model() {
         execution_time_ms: 150,
         result_count: 0,
     };
-    
+
     let json = serde_json::to_string(&response).unwrap();
     let deserialized: SparqlQueryResponse = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.execution_time_ms, 150);
     assert_eq!(deserialized.result_count, 0);
 }
@@ -177,7 +184,7 @@ fn test_product_trace_model() {
         co2_footprint: Some(1.2),
         certifications: vec!["Organic".to_string(), "Fair Trade".to_string()],
     };
-    
+
     let trace_event = TraceEvent {
         timestamp: Utc::now(),
         location: "Farm A".to_string(),
@@ -186,7 +193,7 @@ fn test_product_trace_model() {
         details: "Organic tomatoes harvested".to_string(),
         block_hash: "block123".to_string(),
     };
-    
+
     let product_trace = ProductTrace {
         batch_id: "BATCH001".to_string(),
         product_name: "Organic Tomatoes".to_string(),
@@ -197,10 +204,10 @@ fn test_product_trace_model() {
         certifications: vec!["Organic".to_string()],
         environmental_data: Some(environmental_data),
     };
-    
+
     let json = serde_json::to_string(&product_trace).unwrap();
     let deserialized: ProductTrace = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.batch_id, "BATCH001");
     assert_eq!(deserialized.product_name, "Organic Tomatoes");
     assert_eq!(deserialized.origin, "Farm A");
@@ -209,7 +216,7 @@ fn test_product_trace_model() {
     assert_eq!(deserialized.timeline.len(), 1);
     assert_eq!(deserialized.certifications.len(), 1);
     assert!(deserialized.environmental_data.is_some());
-    
+
     let env_data = deserialized.environmental_data.unwrap();
     assert_eq!(env_data.temperature, Some(22.5));
     assert_eq!(env_data.humidity, Some(65.0));
@@ -224,10 +231,10 @@ fn test_api_error_model() {
         message: "Invalid input data".to_string(),
         timestamp: Utc::now(),
     };
-    
+
     let json = serde_json::to_string(&api_error).unwrap();
     let deserialized: ApiError = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.error, "ValidationError");
     assert_eq!(deserialized.message, "Invalid input data");
 }
@@ -239,10 +246,10 @@ fn test_user_claims_model() {
         role: "farmer".to_string(),
         exp: 1234567890,
     };
-    
+
     let json = serde_json::to_string(&claims).unwrap();
     let deserialized: UserClaims = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.sub, "user123");
     assert_eq!(deserialized.role, "farmer");
     assert_eq!(deserialized.exp, 1234567890);
@@ -270,7 +277,7 @@ fn test_actor_role_serialization() {
         ActorRole::Auditor,
         ActorRole::Admin,
     ];
-    
+
     for role in roles {
         let json = serde_json::to_string(&role).unwrap();
         let deserialized: ActorRole = serde_json::from_str(&json).unwrap();
@@ -287,10 +294,10 @@ fn test_transaction_info_model() {
         block_index: 5,
         timestamp: Utc::now(),
     };
-    
+
     let json = serde_json::to_string(&transaction).unwrap();
     let deserialized: TransactionInfo = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.subject, "http://example.org/product1");
     assert_eq!(deserialized.predicate, "http://example.org/hasLocation");
     assert_eq!(deserialized.object, "Farm A");
@@ -302,7 +309,7 @@ fn test_transaction_info_model() {
 fn test_models_with_blockchain_integration() {
     let mut blockchain = Blockchain::new();
     let _ = blockchain.add_block("test triple data".to_string());
-    
+
     let status = BlockchainStatus {
         height: blockchain.chain.len(),
         latest_block_hash: blockchain.chain.last().unwrap().hash.clone(),
@@ -310,7 +317,7 @@ fn test_models_with_blockchain_integration() {
         network_peers: 0,
         last_updated: Utc::now(),
     };
-    
+
     assert_eq!(status.height, 2); // Genesis + 1 block
     assert!(!status.latest_block_hash.is_empty());
     assert_eq!(status.total_transactions, 1);
@@ -326,7 +333,7 @@ fn test_model_edge_cases() {
     };
     let json = serde_json::to_string(&auth_request).unwrap();
     let _: AuthRequest = serde_json::from_str(&json).unwrap();
-    
+
     // Test None values
     let add_triple = AddTripleRequest {
         subject: "test".to_string(),
@@ -337,7 +344,7 @@ fn test_model_edge_cases() {
     let json = serde_json::to_string(&add_triple).unwrap();
     let deserialized: AddTripleRequest = serde_json::from_str(&json).unwrap();
     assert!(deserialized.graph_name.is_none());
-    
+
     // Test empty vectors
     let product_trace = ProductTrace {
         batch_id: "test".to_string(),
@@ -364,11 +371,11 @@ fn test_json_compatibility() {
         "username": "external_user",
         "password": "external_pass"
     }"#;
-    
+
     let auth_request: AuthRequest = serde_json::from_str(external_json).unwrap();
     assert_eq!(auth_request.username, "external_user");
     assert_eq!(auth_request.password, "external_pass");
-    
+
     // Test that we can produce JSON for external systems
     let sparql_response = SparqlQueryResponse {
         results: json!({
@@ -378,7 +385,7 @@ fn test_json_compatibility() {
         execution_time_ms: 100,
         result_count: 0,
     };
-    
+
     let json = serde_json::to_string_pretty(&sparql_response).unwrap();
     assert!(json.contains("head"));
     assert!(json.contains("vars"));
@@ -389,14 +396,14 @@ fn test_json_compatibility() {
 #[test]
 fn test_rdf_store_integration() {
     let rdf_store = RDFStore::new();
-    
+
     // Test that RDF store can be created for web server
     assert!(true, "RDF store should be created successfully");
-    
+
     // Test basic RDF operations that would be used by the web API
     let test_query = "SELECT * WHERE { ?s ?p ?o } LIMIT 10";
     let _results = rdf_store.query(test_query);
-    
+
     // The query should execute without panicking
     assert!(true, "SPARQL query should execute successfully");
 }
@@ -405,7 +412,7 @@ fn test_rdf_store_integration() {
 #[test]
 fn test_config_integration() {
     let config = NodeConfig::default();
-    
+
     // Test that default config has reasonable values for web server
     assert_eq!(config.network.listen_port, 8080);
     assert_eq!(config.network.bind_address, "0.0.0.0");
@@ -416,11 +423,11 @@ fn test_config_integration() {
 #[test]
 fn test_blockchain_web_integration() {
     let mut blockchain = Blockchain::new();
-    
+
     // Add some test data
     let _ = blockchain.add_block("test RDF data".to_string());
     let _ = blockchain.add_block("more test data".to_string());
-    
+
     // Test that blockchain data can be converted to web models
     let block_info = BlockInfo {
         index: blockchain.chain[1].index as usize,
@@ -430,7 +437,7 @@ fn test_blockchain_web_integration() {
         transaction_count: 1,
         size_bytes: blockchain.chain[1].data.len(),
     };
-    
+
     assert_eq!(block_info.index, 1);
     assert!(!block_info.hash.is_empty());
     assert!(!block_info.previous_hash.is_empty());
@@ -446,11 +453,11 @@ fn test_error_handling() {
         message: "The request body is malformed".to_string(),
         timestamp: Utc::now(),
     };
-    
+
     let json = serde_json::to_string(&error).unwrap();
     assert!(json.contains("InvalidRequest"));
     assert!(json.contains("malformed"));
-    
+
     // Test that error can be deserialized
     let deserialized: ApiError = serde_json::from_str(&json).unwrap();
     assert_eq!(deserialized.error, "InvalidRequest");
@@ -464,19 +471,19 @@ fn test_auth_model_validation() {
         username: "valid_user".to_string(),
         password: "secure_password123".to_string(),
     };
-    
+
     let json = serde_json::to_string(&valid_auth).unwrap();
     let deserialized: AuthRequest = serde_json::from_str(&json).unwrap();
     assert_eq!(deserialized.username, "valid_user");
     assert_eq!(deserialized.password, "secure_password123");
-    
+
     // Test user claims
     let claims = UserClaims {
         sub: "user_123".to_string(),
         role: "farmer".to_string(),
         exp: 1234567890, // Fixed timestamp for testing
     };
-    
+
     let claims_json = serde_json::to_string(&claims).unwrap();
     let deserialized_claims: UserClaims = serde_json::from_str(&claims_json).unwrap();
     assert_eq!(deserialized_claims.sub, "user_123");
@@ -493,15 +500,15 @@ fn test_supply_chain_models() {
         co2_footprint: Some(2.5),
         certifications: vec!["Organic".to_string(), "Carbon Neutral".to_string()],
     };
-    
+
     let json = serde_json::to_string(&env_data).unwrap();
     let deserialized: EnvironmentalData = serde_json::from_str(&json).unwrap();
-    
+
     assert_eq!(deserialized.temperature, Some(25.0));
     assert_eq!(deserialized.humidity, Some(60.0));
     assert_eq!(deserialized.co2_footprint, Some(2.5));
     assert_eq!(deserialized.certifications.len(), 2);
-    
+
     // Test trace event
     let event = TraceEvent {
         timestamp: Utc::now(),
@@ -511,10 +518,10 @@ fn test_supply_chain_models() {
         details: "Passed all quality standards".to_string(),
         block_hash: "abc123def456".to_string(),
     };
-    
+
     let event_json = serde_json::to_string(&event).unwrap();
     let deserialized_event: TraceEvent = serde_json::from_str(&event_json).unwrap();
-    
+
     assert_eq!(deserialized_event.location, "Processing Plant");
     assert_eq!(deserialized_event.actor, "Quality Inspector");
     assert_eq!(deserialized_event.action, "Quality Check");

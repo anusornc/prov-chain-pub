@@ -3,36 +3,59 @@
 use crate::config::{Config, CorsConfig};
 use crate::core::blockchain::Blockchain;
 use crate::web::{
-    auth::{AuthState, authenticate, auth_middleware},
+    auth::{auth_middleware, authenticate, AuthState},
     handlers::{
-        AppState, health_check, get_blockchain_status, get_block, get_blocks,
-        add_triple, execute_sparql_query, get_product_trace, get_recent_transactions,
-        validate_blockchain, get_enhanced_product_trace, register_wallet,
-        create_transaction, sign_transaction, submit_transaction,
-        get_products, get_product_by_id, get_product_trace_path, get_product_provenance,
-        get_product_analytics, get_knowledge_graph, get_participants,
-        get_products_by_type, get_products_by_participant, get_related_items, validate_item,
-        create_participant, get_block_rdf_summary,
-        // SPARQL helper endpoints
-        get_sparql_config, validate_sparql_endpoint, get_saved_sparql_queries,
-        save_sparql_query, delete_sparql_query, toggle_favorite_sparql_query,
+        add_triple,
+        create_participant,
+        create_transaction,
+        delete_sparql_query,
+        execute_sparql_query,
         get_analytics,
+        get_block,
+        get_block_rdf_summary,
+        get_blockchain_status,
+        get_blocks,
+        get_enhanced_product_trace,
+        get_knowledge_graph,
+        get_participants,
+        get_product_analytics,
+        get_product_by_id,
+        get_product_provenance,
+        get_product_trace,
+        get_product_trace_path,
+        get_products,
+        get_products_by_participant,
+        get_products_by_type,
+        get_recent_transactions,
+        get_related_items,
+        get_saved_sparql_queries,
+        // SPARQL helper endpoints
+        get_sparql_config,
+        health_check,
+        register_wallet,
+        save_sparql_query,
+        sign_transaction,
+        submit_transaction,
+        toggle_favorite_sparql_query,
+        validate_blockchain,
+        validate_item,
+        validate_sparql_endpoint,
+        AppState,
     },
-    websocket::{WebSocketState, BlockchainEventBroadcaster, websocket_handler},
+    websocket::{websocket_handler, BlockchainEventBroadcaster, WebSocketState},
 };
 use axum::{
     middleware,
-    routing::{get, post, delete},
+    routing::{delete, get, post},
     Router,
 };
-use std::{net::SocketAddr, sync::{Arc, Mutex}};
-use tower::ServiceBuilder;
-use tower_http::{
-    cors::CorsLayer,
-    services::ServeDir,
-    set_header::SetResponseHeaderLayer,
+use std::{
+    net::SocketAddr,
+    sync::{Arc, Mutex},
 };
-use tracing::{info, error};
+use tower::ServiceBuilder;
+use tower_http::{cors::CorsLayer, services::ServeDir, set_header::SetResponseHeaderLayer};
+use tracing::{error, info};
 
 /// Web server for the blockchain API
 pub struct WebServer {
@@ -49,7 +72,7 @@ impl WebServer {
         let blockchain_arc = Arc::new(Mutex::new(blockchain.clone()));
         let websocket_state = WebSocketState::new(blockchain_arc);
         let event_broadcaster = BlockchainEventBroadcaster::new(websocket_state.clone());
-        
+
         Self {
             app_state: AppState::new(blockchain),
             auth_state: AuthState::new(),
@@ -71,19 +94,22 @@ impl WebServer {
         }
 
         // Convert origins to HeaderValue vector
-        let origins: Vec<http::HeaderValue> = cors_config.allowed_origins
+        let origins: Vec<http::HeaderValue> = cors_config
+            .allowed_origins
             .iter()
             .filter_map(|origin| origin.parse().ok())
             .collect();
 
         // Convert methods to Method vector
-        let methods: Vec<http::Method> = cors_config.allowed_methods
+        let methods: Vec<http::Method> = cors_config
+            .allowed_methods
             .iter()
             .filter_map(|method| method.parse().ok())
             .collect();
 
         // Convert headers to HeaderName vector
-        let headers: Vec<http::HeaderName> = cors_config.allowed_headers
+        let headers: Vec<http::HeaderName> = cors_config
+            .allowed_headers
             .iter()
             .filter_map(|header| header.parse().ok())
             .collect();
@@ -127,7 +153,10 @@ impl WebServer {
             .route("/api/blockchain/status", get(get_blockchain_status))
             .route("/api/blockchain/blocks", get(get_blocks))
             .route("/api/blockchain/blocks/:index", get(get_block))
-            .route("/api/blockchain/blocks/:index/rdf-summary", get(get_block_rdf_summary))
+            .route(
+                "/api/blockchain/blocks/:index/rdf-summary",
+                get(get_block_rdf_summary),
+            )
             .route("/api/blockchain/validate", get(validate_blockchain))
             .route("/api/transactions/recent", get(get_recent_transactions))
             .route("/api/analytics", get(get_analytics))
@@ -137,9 +166,15 @@ impl WebServer {
             .route("/api/sparql/queries", get(get_saved_sparql_queries))
             .route("/api/sparql/queries", post(save_sparql_query))
             .route("/api/sparql/queries/:id", delete(delete_sparql_query))
-            .route("/api/sparql/queries/:id/favorite", post(toggle_favorite_sparql_query))
+            .route(
+                "/api/sparql/queries/:id/favorite",
+                post(toggle_favorite_sparql_query),
+            )
             .route("/api/products/trace", get(get_product_trace))
-            .route("/api/products/trace/enhanced", get(get_enhanced_product_trace))
+            .route(
+                "/api/products/trace/enhanced",
+                get(get_enhanced_product_trace),
+            )
             .route("/api/blockchain/add-triple", post(add_triple))
             .route("/api/wallet/register", post(register_wallet))
             .route("/api/transactions/create", post(create_transaction))
@@ -152,7 +187,10 @@ impl WebServer {
             .route("/api/products/:id/provenance", get(get_product_provenance))
             .route("/api/products/:id/analytics", get(get_product_analytics))
             .route("/api/products/by-type/:type", get(get_products_by_type))
-            .route("/api/products/by-participant/:participantId", get(get_products_by_participant))
+            .route(
+                "/api/products/by-participant/:participantId",
+                get(get_products_by_participant),
+            )
             .route("/api/products/:id/related", get(get_related_items))
             .route("/api/products/:id/validate", get(validate_item))
             .route("/api/knowledge-graph", get(get_knowledge_graph))
@@ -204,8 +242,14 @@ impl WebServer {
         let addr = SocketAddr::from(([0, 0, 0, 0], self.config.web.port));
 
         info!("Starting ProvChain web server on {}", addr);
-        info!("Web UI available at: http://localhost:{}", self.config.web.port);
-        info!("WebSocket endpoint available at: ws://localhost:{}/ws", self.config.web.port);
+        info!(
+            "Web UI available at: http://localhost:{}",
+            self.config.web.port
+        );
+        info!(
+            "WebSocket endpoint available at: ws://localhost:{}/ws",
+            self.config.web.port
+        );
         info!("API endpoints available:");
         info!("  GET  /health - Health check");
         info!("  GET  /ws - WebSocket connection for real-time updates");
@@ -227,9 +271,9 @@ impl WebServer {
 
         let listener = tokio::net::TcpListener::bind(addr).await?;
         let local_addr = listener.local_addr()?;
-        
+
         info!("Web server listening on {}", local_addr);
-        
+
         match axum::serve(listener, app).await {
             Ok(_) => {
                 info!("Web server started successfully");
@@ -255,7 +299,7 @@ pub async fn create_web_server(
 ) -> Result<WebServer, anyhow::Error> {
     let server_config = config.unwrap_or_else(|| Config::load_or_default("config.toml"));
     let server = WebServer::new(blockchain, server_config.clone());
-    
+
     info!("Web server configured on port {}", server_config.web.port);
     Ok(server)
 }

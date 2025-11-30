@@ -2,9 +2,9 @@
 //!
 //! This module contains transaction processing, validation, and blockchain integration.
 
-pub mod transaction;
 pub mod blockchain;
+pub mod transaction;
 
 // Re-exports for convenience
-pub use transaction::Transaction;
 pub use blockchain::TransactionBlockchain;
+pub use transaction::Transaction;

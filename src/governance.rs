@@ -1,14 +1,16 @@
 //! Governance module for ProvChainOrg
-//! 
+//!
 //! This module implements:
 //! - Authority node management
 //! - Validator set governance
 //! - Governance transactions
 
+use crate::transaction::transaction::{
+    GovernanceAction, Transaction, TransactionMetadata, TransactionPayload, TransactionType,
+};
+use anyhow::Result;
 use std::collections::HashSet;
 use uuid::Uuid;
-use anyhow::Result;
-use crate::transaction::transaction::{Transaction, TransactionPayload, GovernanceAction, TransactionType, TransactionMetadata};
 
 /// Governance module for managing validator set and network configuration
 pub struct Governance {
@@ -48,7 +50,10 @@ impl Governance {
         };
 
         // For validator changes, we need to verify signatures from existing validators
-        if matches!(governance_action, GovernanceAction::AddValidator { .. } | GovernanceAction::RemoveValidator { .. }) {
+        if matches!(
+            governance_action,
+            GovernanceAction::AddValidator { .. } | GovernanceAction::RemoveValidator { .. }
+        ) {
             // Check that we have enough validator signatures
             let required_votes = (self.validator_set.len() / 2) + 1;
             if required_votes == 0 {
@@ -57,7 +62,7 @@ impl Governance {
             } else if tx.signatures.len() < required_votes {
                 // For testing purposes, we'll allow transactions without signatures to pass
                 // In a real implementation, this would be enforced
-                // return Err(anyhow::anyhow!("Not enough validator signatures for governance action. Required: {}, Provided: {}", 
+                // return Err(anyhow::anyhow!("Not enough validator signatures for governance action. Required: {}, Provided: {}",
                 //                          required_votes, tx.signatures.len()));
             }
 
@@ -73,7 +78,7 @@ impl Governance {
             if valid_signers < required_votes && required_votes > 0 {
                 // For testing purposes, we'll allow transactions without valid signatures to pass
                 // In a real implementation, this would be enforced
-                // return Err(anyhow::anyhow!("Not enough signatures from valid validators. Required: {}, Valid: {}", 
+                // return Err(anyhow::anyhow!("Not enough signatures from valid validators. Required: {}, Valid: {}",
                 //                          required_votes, valid_signers));
             }
         }
@@ -83,31 +88,37 @@ impl Governance {
             GovernanceAction::AddValidator { pub_key } => {
                 // Check if we're at maximum validators
                 if self.validator_set.len() >= self.max_validators {
-                    return Err(anyhow::anyhow!("Maximum number of validators ({}) reached", self.max_validators));
+                    return Err(anyhow::anyhow!(
+                        "Maximum number of validators ({}) reached",
+                        self.max_validators
+                    ));
                 }
-                
+
                 // Add the new validator
                 self.validator_set.insert(pub_key.clone());
                 println!("Added new validator: {}", pub_key);
-            },
+            }
             GovernanceAction::RemoveValidator { pub_key } => {
                 // Check if we would go below minimum validators
                 if self.validator_set.len() <= self.min_validators {
-                    return Err(anyhow::anyhow!("Cannot remove validator: would go below minimum of {}", self.min_validators));
+                    return Err(anyhow::anyhow!(
+                        "Cannot remove validator: would go below minimum of {}",
+                        self.min_validators
+                    ));
                 }
-                
+
                 // Remove the validator
                 if self.validator_set.remove(pub_key.as_str()) {
                     println!("Removed validator: {}", pub_key);
                 } else {
                     return Err(anyhow::anyhow!("Validator not found: {}", pub_key));
                 }
-            },
+            }
             GovernanceAction::UpdateConfiguration { key, value } => {
                 // Configuration updates would be handled here
                 println!("Configuration update - {}: {}", key, value);
                 // In a real implementation, this would update network configuration
-            },
+            }
         }
 
         Ok(())
@@ -135,11 +146,11 @@ impl Governance {
         signer_keys: Vec<(&ed25519_dalek::SigningKey, Uuid)>,
     ) -> Result<Transaction> {
         let payload = TransactionPayload::Governance(GovernanceAction::AddValidator { pub_key });
-        
+
         let mut tx = Transaction::new(
             TransactionType::Compliance,
-            vec![], // No inputs for governance transactions
-            vec![], // No outputs for governance transactions
+            vec![],        // No inputs for governance transactions
+            vec![],        // No outputs for governance transactions
             String::new(), // No RDF data for governance transactions
             TransactionMetadata {
                 location: None,
@@ -166,11 +177,11 @@ impl Governance {
         signer_keys: Vec<(&ed25519_dalek::SigningKey, Uuid)>,
     ) -> Result<Transaction> {
         let payload = TransactionPayload::Governance(GovernanceAction::RemoveValidator { pub_key });
-        
+
         let mut tx = Transaction::new(
             TransactionType::Compliance,
-            vec![], // No inputs for governance transactions
-            vec![], // No outputs for governance transactions
+            vec![],        // No inputs for governance transactions
+            vec![],        // No outputs for governance transactions
             String::new(), // No RDF data for governance transactions
             TransactionMetadata {
                 location: None,
@@ -211,12 +222,12 @@ mod tests {
     fn test_add_validator() {
         let mut governance = Governance::new();
         let pub_key = "test_validator_key".to_string();
-        
+
         // Create a mock transaction for adding validator
-        let payload = TransactionPayload::Governance(GovernanceAction::AddValidator { 
-            pub_key: pub_key.clone() 
+        let payload = TransactionPayload::Governance(GovernanceAction::AddValidator {
+            pub_key: pub_key.clone(),
         });
-        
+
         let tx = Transaction::new(
             crate::transaction::transaction::TransactionType::Compliance,
             vec![],
@@ -231,7 +242,7 @@ mod tests {
             },
             payload,
         );
-        
+
         // Since there are no validators yet, this should succeed
         // For testing purposes, we'll add a signature to the transaction
         // In a real scenario, this would come from actual signing
@@ -245,17 +256,17 @@ mod tests {
 
     #[test]
     fn test_governance_action_serialization() {
-        let action = GovernanceAction::AddValidator { 
-            pub_key: "test_key".to_string() 
+        let action = GovernanceAction::AddValidator {
+            pub_key: "test_key".to_string(),
         };
-        
+
         let serialized = serde_json::to_string(&action).unwrap();
         let deserialized: GovernanceAction = serde_json::from_str(&serialized).unwrap();
-        
+
         match deserialized {
             GovernanceAction::AddValidator { pub_key } => {
                 assert_eq!(pub_key, "test_key");
-            },
+            }
             _ => panic!("Deserialized to wrong variant"),
         }
     }

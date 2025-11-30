@@ -1,13 +1,13 @@
 //! Predictive Analytics Module
-//! 
+//!
 //! This module provides demand forecasting, quality prediction models,
 //! and risk prediction algorithms for supply chain optimization.
 
-use super::{TimeSeriesPoint, TrendDirection, AnomalyDetection, AnomalyPoint};
-use crate::knowledge_graph::{KnowledgeGraph, KnowledgeEntity};
-use std::collections::HashMap;
+use super::{AnomalyDetection, AnomalyPoint, TimeSeriesPoint, TrendDirection};
+use crate::knowledge_graph::{KnowledgeEntity, KnowledgeGraph};
 use anyhow::Result;
-use chrono::{DateTime, Utc, Duration, Datelike};
+use chrono::{DateTime, Datelike, Duration, Utc};
+use std::collections::HashMap;
 
 /// Predictive analyzer for forecasting and prediction models
 pub struct PredictiveAnalyzer {
@@ -22,7 +22,7 @@ impl PredictiveAnalyzer {
             entities: knowledge_graph.entities.clone(),
             historical_data: Vec::new(),
         };
-        
+
         // Generate mock historical data for demonstration
         analyzer.generate_mock_historical_data();
         analyzer
@@ -52,15 +52,15 @@ impl PredictiveAnalyzer {
         let mut forecast_points = Vec::new();
         let base_demand = 100.0; // Base daily demand
         let growth_rate = 0.02; // 2% daily growth
-        
+
         for i in 0..days {
             let date = Utc::now() + Duration::days(i as i64);
             let seasonal_factor = self.calculate_seasonal_factor(date);
             let trend_factor = 1.0 + (growth_rate * i as f64);
             let noise_factor = 1.0 + (0.1 * ((i as f64 * 0.5).sin())); // Simulated noise
-            
+
             let predicted_demand = base_demand * trend_factor * seasonal_factor * noise_factor;
-            
+
             forecast_points.push(DemandForecastPoint {
                 date,
                 predicted_demand,
@@ -94,14 +94,17 @@ impl PredictiveAnalyzer {
         let mut predictions = Vec::new();
 
         // Analyze product batches for quality risk
-        let product_batches: Vec<_> = self.entities.values()
+        let product_batches: Vec<_> = self
+            .entities
+            .values()
             .filter(|e| e.entity_type == "ProductBatch")
             .collect();
 
         for batch in product_batches {
             let risk_score = self.calculate_quality_risk_score(batch)?;
-            
-            if risk_score > 0.3 { // Only include batches with notable risk
+
+            if risk_score > 0.3 {
+                // Only include batches with notable risk
                 predictions.push(QualityPrediction {
                     entity_id: batch.uri.clone(),
                     entity_type: "ProductBatch".to_string(),
@@ -116,13 +119,15 @@ impl PredictiveAnalyzer {
         }
 
         // Add supplier-based quality predictions
-        let suppliers: Vec<_> = self.entities.values()
+        let suppliers: Vec<_> = self
+            .entities
+            .values()
             .filter(|e| matches!(e.entity_type.as_str(), "Farmer" | "Manufacturer"))
             .collect();
 
         for supplier in suppliers {
             let supplier_risk = self.calculate_supplier_quality_risk(supplier)?;
-            
+
             if supplier_risk > 0.4 {
                 predictions.push(QualityPrediction {
                     entity_id: supplier.uri.clone(),
@@ -145,100 +150,107 @@ impl PredictiveAnalyzer {
 
     /// Predict supply chain risks
     pub fn predict_supply_chain_risks(&self) -> Result<Vec<RiskPrediction>> {
-        let mut risk_predictions = Vec::new();
-
-        // Predict transportation delays
-        risk_predictions.push(RiskPrediction {
-            risk_type: "Transportation Delay".to_string(),
-            probability: 0.25,
-            potential_impact: RiskImpact::Medium,
-            predicted_timeframe: "Next 2 weeks".to_string(),
-            affected_entities: vec!["Transport routes".to_string()],
-            mitigation_strategies: vec![
-                "Diversify transportation routes".to_string(),
-                "Increase buffer inventory".to_string(),
-            ],
-            confidence_score: 0.72,
-        });
-
-        // Predict supplier capacity issues
-        risk_predictions.push(RiskPrediction {
-            risk_type: "Supplier Capacity Constraint".to_string(),
-            probability: 0.15,
-            potential_impact: RiskImpact::High,
-            predicted_timeframe: "Next month".to_string(),
-            affected_entities: vec!["Primary suppliers".to_string()],
-            mitigation_strategies: vec![
-                "Identify alternative suppliers".to_string(),
-                "Negotiate capacity agreements".to_string(),
-            ],
-            confidence_score: 0.65,
-        });
-
-        // Predict quality control bottlenecks
-        risk_predictions.push(RiskPrediction {
-            risk_type: "Quality Control Bottleneck".to_string(),
-            probability: 0.35,
-            potential_impact: RiskImpact::Medium,
-            predicted_timeframe: "Next 10 days".to_string(),
-            affected_entities: vec!["Quality inspection stations".to_string()],
-            mitigation_strategies: vec![
-                "Optimize inspection processes".to_string(),
-                "Add additional inspection capacity".to_string(),
-            ],
-            confidence_score: 0.78,
-        });
+        let risk_predictions = vec![
+            // Predict transportation delays
+            RiskPrediction {
+                risk_type: "Transportation Delay".to_string(),
+                probability: 0.25,
+                potential_impact: RiskImpact::Medium,
+                predicted_timeframe: "Next 2 weeks".to_string(),
+                affected_entities: vec!["Transport routes".to_string()],
+                mitigation_strategies: vec![
+                    "Diversify transportation routes".to_string(),
+                    "Increase buffer inventory".to_string(),
+                ],
+                confidence_score: 0.72,
+            },
+            // Predict supplier capacity issues
+            RiskPrediction {
+                risk_type: "Supplier Capacity Constraint".to_string(),
+                probability: 0.15,
+                potential_impact: RiskImpact::High,
+                predicted_timeframe: "Next month".to_string(),
+                affected_entities: vec!["Primary suppliers".to_string()],
+                mitigation_strategies: vec![
+                    "Identify alternative suppliers".to_string(),
+                    "Negotiate capacity agreements".to_string(),
+                ],
+                confidence_score: 0.65,
+            },
+            // Predict quality control bottlenecks
+            RiskPrediction {
+                risk_type: "Quality Control Bottleneck".to_string(),
+                probability: 0.35,
+                potential_impact: RiskImpact::Medium,
+                predicted_timeframe: "Next 10 days".to_string(),
+                affected_entities: vec!["Quality inspection stations".to_string()],
+                mitigation_strategies: vec![
+                    "Optimize inspection processes".to_string(),
+                    "Add additional inspection capacity".to_string(),
+                ],
+                confidence_score: 0.78,
+            },
+        ];
 
         Ok(risk_predictions)
     }
 
     /// Generate optimization recommendations
     pub fn generate_optimization_recommendations(&self) -> Result<Vec<OptimizationRecommendation>> {
-        let mut recommendations = Vec::new();
-
-        // Inventory optimization
-        recommendations.push(OptimizationRecommendation {
-            category: "Inventory Management".to_string(),
-            recommendation: "Implement dynamic safety stock levels based on demand variability".to_string(),
-            expected_benefit: "15% reduction in inventory costs while maintaining 99% service level".to_string(),
-            implementation_effort: ImplementationEffort::Medium,
-            priority: RecommendationPriority::High,
-            estimated_savings: 50000.0, // USD
-            implementation_timeline: "3-4 months".to_string(),
-        });
-
-        // Route optimization
-        recommendations.push(OptimizationRecommendation {
-            category: "Logistics".to_string(),
-            recommendation: "Optimize delivery routes using AI-powered route planning".to_string(),
-            expected_benefit: "20% reduction in transportation costs and 25% reduction in delivery time".to_string(),
-            implementation_effort: ImplementationEffort::High,
-            priority: RecommendationPriority::Medium,
-            estimated_savings: 75000.0,
-            implementation_timeline: "6-8 months".to_string(),
-        });
-
-        // Quality process optimization
-        recommendations.push(OptimizationRecommendation {
-            category: "Quality Control".to_string(),
-            recommendation: "Implement predictive quality control using IoT sensors and ML models".to_string(),
-            expected_benefit: "30% reduction in quality issues and 40% faster defect detection".to_string(),
-            implementation_effort: ImplementationEffort::High,
-            priority: RecommendationPriority::High,
-            estimated_savings: 120000.0,
-            implementation_timeline: "8-12 months".to_string(),
-        });
-
-        // Supplier optimization
-        recommendations.push(OptimizationRecommendation {
-            category: "Supplier Management".to_string(),
-            recommendation: "Diversify supplier base and implement supplier performance scoring".to_string(),
-            expected_benefit: "25% reduction in supply risk and 10% cost savings through competition".to_string(),
-            implementation_effort: ImplementationEffort::Medium,
-            priority: RecommendationPriority::Medium,
-            estimated_savings: 35000.0,
-            implementation_timeline: "4-6 months".to_string(),
-        });
+        let recommendations = vec![
+            // Inventory optimization
+            OptimizationRecommendation {
+                category: "Inventory Management".to_string(),
+                recommendation: "Implement dynamic safety stock levels based on demand variability"
+                    .to_string(),
+                expected_benefit:
+                    "15% reduction in inventory costs while maintaining 99% service level"
+                        .to_string(),
+                implementation_effort: ImplementationEffort::Medium,
+                priority: RecommendationPriority::High,
+                estimated_savings: 50000.0, // USD
+                implementation_timeline: "3-4 months".to_string(),
+            },
+            // Route optimization
+            OptimizationRecommendation {
+                category: "Logistics".to_string(),
+                recommendation: "Optimize delivery routes using AI-powered route planning"
+                    .to_string(),
+                expected_benefit:
+                    "20% reduction in transportation costs and 25% reduction in delivery time"
+                        .to_string(),
+                implementation_effort: ImplementationEffort::High,
+                priority: RecommendationPriority::Medium,
+                estimated_savings: 75000.0,
+                implementation_timeline: "6-8 months".to_string(),
+            },
+            // Quality process optimization
+            OptimizationRecommendation {
+                category: "Quality Control".to_string(),
+                recommendation:
+                    "Implement predictive quality control using IoT sensors and ML models"
+                        .to_string(),
+                expected_benefit: "30% reduction in quality issues and 40% faster defect detection"
+                    .to_string(),
+                implementation_effort: ImplementationEffort::High,
+                priority: RecommendationPriority::High,
+                estimated_savings: 120000.0,
+                implementation_timeline: "8-12 months".to_string(),
+            },
+            // Supplier optimization
+            OptimizationRecommendation {
+                category: "Supplier Management".to_string(),
+                recommendation:
+                    "Diversify supplier base and implement supplier performance scoring".to_string(),
+                expected_benefit:
+                    "25% reduction in supply risk and 10% cost savings through competition"
+                        .to_string(),
+                implementation_effort: ImplementationEffort::Medium,
+                priority: RecommendationPriority::Medium,
+                estimated_savings: 35000.0,
+                implementation_timeline: "4-6 months".to_string(),
+            },
+        ];
 
         Ok(recommendations)
     }
@@ -251,7 +263,8 @@ impl PredictiveAnalyzer {
                 trend_direction: TrendDirection::Increasing,
                 strength: 0.8,
                 confidence: 0.85,
-                impact_on_supply_chain: "High demand for eco-friendly packaging materials".to_string(),
+                impact_on_supply_chain: "High demand for eco-friendly packaging materials"
+                    .to_string(),
                 recommended_actions: vec![
                     "Source sustainable packaging alternatives".to_string(),
                     "Partner with eco-friendly suppliers".to_string(),
@@ -262,7 +275,8 @@ impl PredictiveAnalyzer {
                 trend_direction: TrendDirection::Increasing,
                 strength: 0.9,
                 confidence: 0.92,
-                impact_on_supply_chain: "Increased regulatory and consumer demand for transparency".to_string(),
+                impact_on_supply_chain: "Increased regulatory and consumer demand for transparency"
+                    .to_string(),
                 recommended_actions: vec![
                     "Enhance digital tracking capabilities".to_string(),
                     "Implement blockchain-based traceability".to_string(),
@@ -273,7 +287,8 @@ impl PredictiveAnalyzer {
                 trend_direction: TrendDirection::Increasing,
                 strength: 0.6,
                 confidence: 0.75,
-                impact_on_supply_chain: "Growing consumer preference for locally sourced products".to_string(),
+                impact_on_supply_chain: "Growing consumer preference for locally sourced products"
+                    .to_string(),
                 recommended_actions: vec![
                     "Develop local supplier networks".to_string(),
                     "Highlight local sourcing in marketing".to_string(),
@@ -312,22 +327,21 @@ impl PredictiveAnalyzer {
 
     /// Detect anomalies in the data
     fn detect_anomalies(&self) -> Result<AnomalyDetection> {
-        let mut anomalies = Vec::new();
-
-        // Simulate anomaly detection
-        anomalies.push(AnomalyPoint {
-            timestamp: Utc::now() - Duration::days(3),
-            value: 150.0,
-            severity: 0.8,
-            description: "Unusual spike in quality check failures".to_string(),
-        });
-
-        anomalies.push(AnomalyPoint {
-            timestamp: Utc::now() - Duration::days(1),
-            value: 75.0,
-            severity: 0.6,
-            description: "Unexpected delay in transportation times".to_string(),
-        });
+        let anomalies = vec![
+            // Simulate anomaly detection
+            AnomalyPoint {
+                timestamp: Utc::now() - Duration::days(3),
+                value: 150.0,
+                severity: 0.8,
+                description: "Unusual spike in quality check failures".to_string(),
+            },
+            AnomalyPoint {
+                timestamp: Utc::now() - Duration::days(1),
+                value: 75.0,
+                severity: 0.6,
+                description: "Unexpected delay in transportation times".to_string(),
+            },
+        ];
 
         Ok(AnomalyDetection {
             anomalies,
@@ -345,7 +359,7 @@ impl PredictiveAnalyzer {
             let trend = i as f64 * 0.1;
             let seasonal = 10.0 * ((i as f64 * 0.1).sin());
             let noise = 5.0 * ((i as f64 * 0.3).cos());
-            
+
             self.historical_data.push(TimeSeriesPoint {
                 timestamp,
                 value: base_value + trend + seasonal + noise,
@@ -390,14 +404,14 @@ impl PredictiveAnalyzer {
 
     fn suggest_prevention_measures(&self, risk_score: f64) -> Vec<String> {
         let mut measures = vec!["Increase quality monitoring frequency".to_string()];
-        
+
         if risk_score > 0.5 {
             measures.push("Implement additional quality checks".to_string());
         }
         if risk_score > 0.7 {
             measures.push("Consider alternative suppliers".to_string());
         }
-        
+
         measures
     }
 
