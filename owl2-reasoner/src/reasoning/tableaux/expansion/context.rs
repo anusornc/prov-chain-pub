@@ -221,8 +221,7 @@ impl ExpansionContext {
 }
 
 /// Expansion statistics
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct ExpansionStats {
     /// Number of rules applied
     pub applied_rules_count: usize,
@@ -294,4 +293,3 @@ impl BranchPoint {
         )
     }
 }
-

@@ -119,7 +119,6 @@ impl QueryEngine {
 
     /// Execute a basic class query (get all instances of a class)
     pub fn get_class_instances(&self, class_iri: &IRI) -> OwlResult<QueryResult> {
-
         // Get class assertions
         let instances: Vec<IRI> = self
             .ontology
@@ -151,7 +150,6 @@ impl QueryEngine {
         subject_iri: &IRI,
         property_iri: &IRI,
     ) -> OwlResult<QueryResult> {
-
         // Get property assertions
         let values: Vec<super::QueryValue> = self
             .ontology
@@ -505,10 +503,10 @@ impl QueryPatternExt for QueryPattern {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::{PatternTerm, QueryPattern, TriplePattern, RDF_TYPE};
     use crate::entities::*;
     use crate::iri::IRI;
     use std::sync::Arc;
-    use super::{PatternTerm, TriplePattern, QueryPattern, RDF_TYPE};
 
     fn create_test_ontology() -> Ontology {
         let mut ontology = Ontology::new();
@@ -597,25 +595,23 @@ mod tests {
     }
 
     fn create_test_query_pattern(subject: &str, predicate: &str, object: &str) -> QueryPattern {
-        QueryPattern::BasicGraphPattern(vec![
-            TriplePattern::new(
-                if subject.starts_with('?') {
-                    PatternTerm::Variable(subject.to_string())
-                } else {
-                    PatternTerm::IRI(IRI::new(subject).expect("Valid IRI"))
-                },
-                if predicate.starts_with('?') {
-                    PatternTerm::Variable(predicate.to_string())
-                } else {
-                    PatternTerm::IRI(IRI::new(predicate).expect("Valid IRI"))
-                },
-                if object.starts_with('?') {
-                    PatternTerm::Variable(object.to_string())
-                } else {
-                    PatternTerm::IRI(IRI::new(object).expect("Valid IRI"))
-                },
-            ),
-        ])
+        QueryPattern::BasicGraphPattern(vec![TriplePattern::new(
+            if subject.starts_with('?') {
+                PatternTerm::Variable(subject.to_string())
+            } else {
+                PatternTerm::IRI(IRI::new(subject).expect("Valid IRI"))
+            },
+            if predicate.starts_with('?') {
+                PatternTerm::Variable(predicate.to_string())
+            } else {
+                PatternTerm::IRI(IRI::new(predicate).expect("Valid IRI"))
+            },
+            if object.starts_with('?') {
+                PatternTerm::Variable(object.to_string())
+            } else {
+                PatternTerm::IRI(IRI::new(object).expect("Valid IRI"))
+            },
+        )])
     }
 
     fn create_test_query_engine() -> QueryEngine {
@@ -798,8 +794,16 @@ mod tests {
         let engine = create_test_query_engine();
 
         let pattern = QueryPattern::Optional {
-            left: Box::new(create_test_query_pattern("?s", RDF_TYPE, "http://example.org/Person")),
-            right: Box::new(create_test_query_pattern("?s", "http://example.org/worksFor", "?company")),
+            left: Box::new(create_test_query_pattern(
+                "?s",
+                RDF_TYPE,
+                "http://example.org/Person",
+            )),
+            right: Box::new(create_test_query_pattern(
+                "?s",
+                "http://example.org/worksFor",
+                "?company",
+            )),
         };
 
         let result = engine.execute(&pattern);
@@ -817,8 +821,16 @@ mod tests {
         let engine = create_test_query_engine();
 
         let pattern = QueryPattern::Union {
-            left: Box::new(create_test_query_pattern("?s", RDF_TYPE, "http://example.org/Person")),
-            right: Box::new(create_test_query_pattern("?s", RDF_TYPE, "http://example.org/Company")),
+            left: Box::new(create_test_query_pattern(
+                "?s",
+                RDF_TYPE,
+                "http://example.org/Person",
+            )),
+            right: Box::new(create_test_query_pattern(
+                "?s",
+                RDF_TYPE,
+                "http://example.org/Company",
+            )),
         };
 
         let result = engine.execute(&pattern);
@@ -899,8 +911,10 @@ mod tests {
 
         // Should have recorded cache activity
         if engine.config().enable_caching {
-            assert!(stats_after2.get_cache_hits() + stats_after2.get_cache_misses() >
-                    stats_after1.get_cache_hits() + stats_after1.get_cache_misses());
+            assert!(
+                stats_after2.get_cache_hits() + stats_after2.get_cache_misses()
+                    > stats_after1.get_cache_hits() + stats_after1.get_cache_misses()
+            );
         }
     }
 
@@ -1042,8 +1056,16 @@ mod tests {
         // Test nested patterns
         let nested_pattern = QueryPattern::Filter {
             pattern: Box::new(QueryPattern::Optional {
-                left: Box::new(create_test_query_pattern("?s", RDF_TYPE, "http://example.org/Person")),
-                right: Box::new(create_test_query_pattern("?s", "http://example.org/worksFor", "?company")),
+                left: Box::new(create_test_query_pattern(
+                    "?s",
+                    RDF_TYPE,
+                    "http://example.org/Person",
+                )),
+                right: Box::new(create_test_query_pattern(
+                    "?s",
+                    "http://example.org/worksFor",
+                    "?company",
+                )),
             }),
             expression: FilterExpression::IsVariable("?s".to_string()),
         };
@@ -1147,8 +1169,10 @@ mod tests {
         let engine = create_test_query_engine();
 
         // Create a pattern that requires joining
-        let left_pattern = create_test_query_pattern("?person", RDF_TYPE, "http://example.org/Person");
-        let right_pattern = create_test_query_pattern("?person", "http://example.org/worksFor", "?company");
+        let left_pattern =
+            create_test_query_pattern("?person", RDF_TYPE, "http://example.org/Person");
+        let right_pattern =
+            create_test_query_pattern("?person", "http://example.org/worksFor", "?company");
 
         // Test join by executing patterns and then combining results
         let left_result = engine.execute(&left_pattern);

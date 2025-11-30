@@ -32,7 +32,7 @@ fn test_persistent_storage_with_cache() {
     "#;
 
     let graph_name = oxigraph::model::NamedNode::new("http://example.org/test-graph").unwrap();
-    let _ = rdf_store.add_rdf_to_graph(test_data, &graph_name);
+    rdf_store.add_rdf_to_graph(test_data, &graph_name);
 
     // Save to disk
     rdf_store.save_to_disk().unwrap();
@@ -154,7 +154,7 @@ fn test_memory_cache_functionality() {
 
         let graph_name =
             oxigraph::model::NamedNode::new(format!("http://example.org/graph{}", i)).unwrap();
-        let _ = rdf_store.add_rdf_to_graph(&test_data, &graph_name);
+        rdf_store.add_rdf_to_graph(&test_data, &graph_name);
     }
 
     // Verify cache has been populated

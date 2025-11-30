@@ -8,19 +8,19 @@
 
 use super::cache::*;
 use super::types::*;
-use crate::reasoning::tableaux::memory::*;
 use crate::axioms::*;
 use crate::error::OwlResult;
 use crate::iri::IRI;
 use crate::ontology::Ontology;
+use crate::reasoning::tableaux::memory::*;
 use crate::reasoning::Reasoner;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use std::sync::Mutex;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::num::NonZeroUsize;
 use std::sync::Arc;
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 /// High-performance query engine with integrated optimizations
@@ -192,15 +192,20 @@ impl OptimizedQueryEngine {
             if let Some(index_entry) = self.adaptive_query_index.get_or_create(pattern) {
                 // Record access for learning
                 let pattern_hash = self.compute_pattern_hash(pattern);
-                self.adaptive_query_index.record_access(&pattern_hash, Duration::from_nanos(0));
+                self.adaptive_query_index
+                    .record_access(&pattern_hash, Duration::from_nanos(0));
 
                 // Update prediction accuracy
                 if self.config.enable_prediction {
-                    let predictions = self.query_pattern_predictor
+                    let predictions = self
+                        .query_pattern_predictor
                         .predict_next_queries(&format!("pattern_{}", pattern_hash), 5);
-                    let predicted_strings: Vec<String> = predictions.iter().map(|(s, _)| s.clone()).collect();
-                    self.query_pattern_predictor
-                        .update_prediction_accuracy(&predicted_strings, &format!("pattern_{}", pattern_hash));
+                    let predicted_strings: Vec<String> =
+                        predictions.iter().map(|(s, _)| s.clone()).collect();
+                    self.query_pattern_predictor.update_prediction_accuracy(
+                        &predicted_strings,
+                        &format!("pattern_{}", pattern_hash),
+                    );
                 }
 
                 {
@@ -241,7 +246,10 @@ impl OptimizedQueryEngine {
     }
 
     /// Execute a query with optimized hash joins
-    pub fn execute_query_with_joins(&mut self, patterns: &[QueryPattern]) -> OwlResult<QueryResult> {
+    pub fn execute_query_with_joins(
+        &mut self,
+        patterns: &[QueryPattern],
+    ) -> OwlResult<QueryResult> {
         let start_time = Instant::now();
         let mut all_bindings = Vec::new();
 
@@ -278,7 +286,8 @@ impl OptimizedQueryEngine {
         // Update dynamic statistics
         if stats.queries_executed > 0 {
             stats.avg_query_time = stats.total_execution_time / stats.queries_executed as u32;
-            stats.queries_per_second = stats.queries_executed as f64 / stats.total_execution_time.as_secs_f64();
+            stats.queries_per_second =
+                stats.queries_executed as f64 / stats.total_execution_time.as_secs_f64();
         }
 
         // Get optimization component statistics
@@ -346,11 +355,13 @@ impl OptimizedQueryEngine {
         }
     }
 
-    fn execute_compiled_pattern(&mut self, compiled: &CompiledPattern, start_time: Instant) -> OwlResult<QueryResult> {
+    fn execute_compiled_pattern(
+        &mut self,
+        compiled: &CompiledPattern,
+        start_time: Instant,
+    ) -> OwlResult<QueryResult> {
         let bindings = match &compiled.execution_plan() {
-            ExecutionPlan::SingleTriple { pattern, .. } => {
-                self.match_single_pattern(pattern)?
-            }
+            ExecutionPlan::SingleTriple { pattern, .. } => self.match_single_pattern(pattern)?,
             ExecutionPlan::MultiTriple { patterns, .. } => {
                 self.match_multiple_patterns(patterns)?
             }
@@ -414,13 +425,20 @@ impl OptimizedQueryEngine {
         Ok(all_bindings)
     }
 
-    fn match_class_assertion(&self, pattern: &TriplePattern, axiom: &ClassAssertionAxiom) -> Option<QueryBinding> {
+    fn match_class_assertion(
+        &self,
+        pattern: &TriplePattern,
+        axiom: &ClassAssertionAxiom,
+    ) -> Option<QueryBinding> {
         // Simplified matching logic
         let mut binding = QueryBinding::new();
 
         // Match subject
         if let PatternTerm::Variable(var_name) = &pattern.subject {
-            binding.add_binding(var_name.clone(), QueryValue::IRI((**axiom.individual()).clone()));
+            binding.add_binding(
+                var_name.clone(),
+                QueryValue::IRI((**axiom.individual()).clone()),
+            );
         }
 
         // Match object (class)
@@ -478,16 +496,22 @@ impl OptimizedQueryEngine {
 
         let first_vars: HashSet<String> = bindings[0].variables().cloned().collect();
 
-        bindings.iter().skip(1).fold(first_vars, |common_vars, binding| {
-            let current_vars: HashSet<String> = binding.variables().cloned().collect();
-            common_vars.intersection(&current_vars).cloned().collect()
-        }).into_iter().collect()
+        bindings
+            .iter()
+            .skip(1)
+            .fold(first_vars, |common_vars, binding| {
+                let current_vars: HashSet<String> = binding.variables().cloned().collect();
+                common_vars.intersection(&current_vars).cloned().collect()
+            })
+            .into_iter()
+            .collect()
     }
 
     fn extract_join_key(&self, binding: &QueryBinding, vars: &[String]) -> Vec<QueryValue> {
         vars.iter()
             .map(|var| {
-                binding.get_value(var)
+                binding
+                    .get_value(var)
                     .cloned()
                     .unwrap_or(QueryValue::Literal("".to_string()))
             })
@@ -639,25 +663,23 @@ mod tests {
     }
 
     fn create_test_query_pattern(subject: &str, predicate: &str, object: &str) -> QueryPattern {
-        QueryPattern::BasicGraphPattern(vec![
-            TriplePattern::new(
-                if subject.starts_with('?') {
-                    PatternTerm::Variable(subject.to_string())
-                } else {
-                    PatternTerm::IRI(IRI::new(subject).expect("Valid IRI"))
-                },
-                if predicate.starts_with('?') {
-                    PatternTerm::Variable(predicate.to_string())
-                } else {
-                    PatternTerm::IRI(IRI::new(predicate).expect("Valid IRI"))
-                },
-                if object.starts_with('?') {
-                    PatternTerm::Variable(object.to_string())
-                } else {
-                    PatternTerm::IRI(IRI::new(object).expect("Valid IRI"))
-                },
-            ),
-        ])
+        QueryPattern::BasicGraphPattern(vec![TriplePattern::new(
+            if subject.starts_with('?') {
+                PatternTerm::Variable(subject.to_string())
+            } else {
+                PatternTerm::IRI(IRI::new(subject).expect("Valid IRI"))
+            },
+            if predicate.starts_with('?') {
+                PatternTerm::Variable(predicate.to_string())
+            } else {
+                PatternTerm::IRI(IRI::new(predicate).expect("Valid IRI"))
+            },
+            if object.starts_with('?') {
+                PatternTerm::Variable(object.to_string())
+            } else {
+                PatternTerm::IRI(IRI::new(object).expect("Valid IRI"))
+            },
+        )])
     }
 
     #[test]
@@ -735,7 +757,11 @@ mod tests {
         let mut engine = OptimizedQueryEngine::new(ontology);
 
         // Query for all instances of Person class
-        let pattern = create_test_query_pattern("?s", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://example.org/Person");
+        let pattern = create_test_query_pattern(
+            "?s",
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+            "http://example.org/Person",
+        );
         let result = engine.execute_query(&pattern);
 
         assert!(result.is_ok());
@@ -753,7 +779,11 @@ mod tests {
 
         let patterns = vec![
             create_test_query_pattern("?s", "http://example.org/worksFor", "?o"),
-            create_test_query_pattern("?s", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://example.org/Person"),
+            create_test_query_pattern(
+                "?s",
+                "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                "http://example.org/Person",
+            ),
         ];
 
         let result = engine.execute_query_with_joins(&patterns);
@@ -1027,7 +1057,11 @@ mod tests {
 
         let patterns = vec![
             create_test_query_pattern("?s", "?p", "?o"),
-            create_test_query_pattern("?s", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://example.org/Person"),
+            create_test_query_pattern(
+                "?s",
+                "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                "http://example.org/Person",
+            ),
         ];
 
         // Execute queries with multiple patterns to test all optimizations

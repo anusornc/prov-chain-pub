@@ -77,7 +77,7 @@ fn test_blockchain_persistence() {
     let loaded_blockchain = Blockchain::new_persistent(&storage_path).unwrap();
 
     // Verify state was restored (at least 1 block loaded)
-    assert!(loaded_blockchain.chain.len() >= 1);
+    assert!(!loaded_blockchain.chain.is_empty());
 }
 
 #[test]

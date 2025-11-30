@@ -5,13 +5,13 @@
 //! 2. LockFreeMemoryManager for thread-local arena allocation
 //! 3. AdaptiveQueryIndex for intelligent query caching
 
+use owl2_reasoner::iri::IRI;
 use owl2_reasoner::reasoning::query::cache::*;
 use owl2_reasoner::reasoning::query::types::*;
-use owl2_reasoner::reasoning::tableaux::memory::*;
 use owl2_reasoner::reasoning::tableaux::core::NodeId;
-use owl2_reasoner::iri::IRI;
-use std::hash::{Hash, Hasher};
+use owl2_reasoner::reasoning::tableaux::memory::*;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -47,8 +47,11 @@ fn demo_join_hash_table_pool() -> Result<(), Box<dyn std::error::Error>> {
     let right_bindings = create_sample_bindings(1000);
     let common_vars = vec_string(&["?x", "?y"]);
 
-    println!("   Created {} left bindings and {} right bindings",
-             left_bindings.len(), right_bindings.len());
+    println!(
+        "   Created {} left bindings and {} right bindings",
+        left_bindings.len(),
+        right_bindings.len()
+    );
 
     // Baseline: Traditional approach
     let start = Instant::now();
@@ -98,9 +101,11 @@ fn demo_join_hash_table_pool() -> Result<(), Box<dyn std::error::Error>> {
     let stats = pool.stats();
 
     println!("   📈 Baseline time: {:?}", baseline_time);
-    println!("   ⚡ Optimized time: {:?} ({:.1}% faster)",
-             optimized_time,
-             (baseline_time.as_nanos() as f64 / optimized_time.as_nanos() as f64 - 1.0) * 100.0);
+    println!(
+        "   ⚡ Optimized time: {:?} ({:.1}% faster)",
+        optimized_time,
+        (baseline_time.as_nanos() as f64 / optimized_time.as_nanos() as f64 - 1.0) * 100.0
+    );
     println!("   🎯 Pool hit rate: {:.1}%", stats.hit_rate);
     println!("   📦 Pool size: {} tables", stats.pool_size);
     println!("   ✅ Memory savings: {} table allocations\n", stats.hits);
@@ -116,21 +121,23 @@ fn demo_lock_free_memory_manager() -> Result<(), Box<dyn std::error::Error>> {
     let traditional_manager = MemoryManager::new();
     let lockfree_manager = LockFreeMemoryManager::new();
 
-    println!("   Performing concurrent allocations across {} threads...", num_cpus::get());
+    println!(
+        "   Performing concurrent allocations across {} threads...",
+        num_cpus::get()
+    );
 
     // Baseline: Traditional mutex-based allocation
     let start = Instant::now();
     let mut traditional_handles = Vec::new();
 
     for thread_id in 0..num_cpus::get() {
-        let manager = &traditional_manager;
+        let _manager = &traditional_manager;
         let handle = thread::spawn(move || {
             let mut allocated = 0;
             for i in 0..1000 {
                 let _node_id = NodeId::new(thread_id * 1000 + i);
                 let _node = _node_id; // Placeholder for node allocation
-                    allocated += 1;
-                }
+                allocated += 1;
             }
             allocated
         });
@@ -148,14 +155,13 @@ fn demo_lock_free_memory_manager() -> Result<(), Box<dyn std::error::Error>> {
     let mut lockfree_handles = Vec::new();
 
     for thread_id in 0..num_cpus::get() {
-        let manager = &lockfree_manager;
+        let _manager = &lockfree_manager;
         let handle = thread::spawn(move || {
             let mut allocated = 0;
             for i in 0..1000 {
                 let _node_id = NodeId::new(thread_id * 1000 + i);
                 let _node = _node_id; // Placeholder for node allocation
-                    allocated += 1;
-                }
+                allocated += 1;
             }
             allocated
         });
@@ -171,12 +177,21 @@ fn demo_lock_free_memory_manager() -> Result<(), Box<dyn std::error::Error>> {
     let stats = lockfree_manager.get_stats();
     let efficiency_ratio = lockfree_manager.get_memory_efficiency_ratio();
 
-    println!("   📈 Traditional time: {:?} (allocated: {})", traditional_time, traditional_allocated);
-    println!("   ⚡ Lock-free time: {:?} (allocated: {}) ({:.1}% faster)",
-             lockfree_time, lockfree_allocated,
-             (traditional_time.as_nanos() as f64 / lockfree_time.as_nanos() as f64 - 1.0) * 100.0);
+    println!(
+        "   📈 Traditional time: {:?} (allocated: {})",
+        traditional_time, traditional_allocated
+    );
+    println!(
+        "   ⚡ Lock-free time: {:?} (allocated: {}) ({:.1}% faster)",
+        lockfree_time,
+        lockfree_allocated,
+        (traditional_time.as_nanos() as f64 / lockfree_time.as_nanos() as f64 - 1.0) * 100.0
+    );
     println!("   🎯 Memory efficiency ratio: {:.2}x", efficiency_ratio);
-    println!("   📦 Total bytes allocated: {}", stats.total_bytes_allocated);
+    println!(
+        "   📦 Total bytes allocated: {}",
+        stats.total_bytes_allocated
+    );
     println!("   🔗 Active arenas: {}", stats.arena_count);
     println!("   ✅ Memory savings: {} bytes\n", stats.memory_savings());
 
@@ -191,7 +206,10 @@ fn demo_adaptive_query_index() -> Result<(), Box<dyn std::error::Error>> {
     let index = AdaptiveQueryIndex::new();
     let queries = create_sample_queries(1000);
 
-    println!("   Creating adaptive index for {} queries...", queries.len());
+    println!(
+        "   Creating adaptive index for {} queries...",
+        queries.len()
+    );
 
     // Warm up the index with some queries
     for query in queries.iter().take(100) {
@@ -217,10 +235,16 @@ fn demo_adaptive_query_index() -> Result<(), Box<dyn std::error::Error>> {
     let hot_patterns = index.get_hot_patterns();
 
     println!("   📈 Lookup time: {:?}", lookup_time);
-    println!("   🎯 Cache hits: {} ({:.1}% hit rate)",
-             hits, (hits as f64 / (hits + misses) as f64) * 100.0);
+    println!(
+        "   🎯 Cache hits: {} ({:.1}% hit rate)",
+        hits,
+        (hits as f64 / (hits + misses) as f64) * 100.0
+    );
     println!("   📊 Total accesses: {}", stats.total_accesses);
-    println!("   🔥 Hot patterns: {} (with frequency > 2.0)", hot_patterns.len());
+    println!(
+        "   🔥 Hot patterns: {} (with frequency > 2.0)",
+        hot_patterns.len()
+    );
     println!("   💾 Memory usage: {} bytes", stats.memory_usage);
     println!("   ⏱️ Average lookup time: {:?}", stats.avg_lookup_time);
 
@@ -232,7 +256,10 @@ fn demo_adaptive_query_index() -> Result<(), Box<dyn std::error::Error>> {
 
     let predictions = predictor.predict_next_queries("pattern_0", 3);
     println!("   🔮 Predicted next queries: {:?}", predictions);
-    println!("   📈 Prediction accuracy: {:.1}%\n", predictor.get_stats().accuracy * 100.0);
+    println!(
+        "   📈 Prediction accuracy: {:.1}%\n",
+        predictor.get_stats().accuracy * 100.0
+    );
 
     Ok(())
 }
@@ -266,7 +293,6 @@ fn demo_combined_optimizations() -> Result<(), Box<dyn std::error::Error>> {
             let _node_id = NodeId::new(batch * 100 + i);
             let _node = _node_id; // Placeholder for node allocation
             total_allocations += 1;
-        }
         }
 
         // Perform hash joins using JoinHashTablePool
@@ -306,13 +332,21 @@ fn demo_combined_optimizations() -> Result<(), Box<dyn std::error::Error>> {
     println!("   🔢 Total allocations: {}", total_allocations);
     println!("   🔗 Total joins: {}", total_joins);
     println!("   🔍 Total lookups: {}", total_lookups);
-    println!("   📈 Operations per second: {:.0}",
-             (total_allocations + total_joins + total_lookups) as f64 / total_time.as_secs_f64());
+    println!(
+        "   📈 Operations per second: {:.0}",
+        (total_allocations + total_joins + total_lookups) as f64 / total_time.as_secs_f64()
+    );
 
     println!("\n   🎯 Component Performance:");
     println!("   📦 Join pool hit rate: {:.1}%", join_stats.hit_rate);
-    println!("   💾 Memory efficiency: {:.2}x", memory_manager.get_memory_efficiency_ratio());
-    println!("   🧠 Query cache memory: {} bytes", query_stats.memory_usage);
+    println!(
+        "   💾 Memory efficiency: {:.2}x",
+        memory_manager.get_memory_efficiency_ratio()
+    );
+    println!(
+        "   🧠 Query cache memory: {} bytes",
+        query_stats.memory_usage
+    );
 
     println!("\n   ✅ Combined optimizations working seamlessly!");
 
@@ -344,13 +378,11 @@ fn create_sample_queries(count: usize) -> Vec<QueryPattern> {
     let mut queries = Vec::with_capacity(count);
 
     for i in 0..count {
-        let pattern = QueryPattern::BasicGraphPattern(vec![
-            TriplePattern::new(
-                PatternTerm::Variable("?s".to_string()),
-                PatternTerm::IRI(IRI::new(&format!("http://example.org/predicate{}", i % 5)).unwrap()),
-                PatternTerm::Variable("?o".to_string()),
-            ),
-        ]);
+        let pattern = QueryPattern::BasicGraphPattern(vec![TriplePattern::new(
+            PatternTerm::Variable("?s".to_string()),
+            PatternTerm::IRI(IRI::new(&format!("http://example.org/predicate{}", i % 5)).unwrap()),
+            PatternTerm::Variable("?o".to_string()),
+        )]);
         queries.push(pattern);
     }
 
@@ -360,7 +392,8 @@ fn create_sample_queries(count: usize) -> Vec<QueryPattern> {
 fn extract_join_key(binding: &QueryBinding, vars: &[String]) -> Vec<QueryValue> {
     vars.iter()
         .map(|var| {
-            binding.get_value(var)
+            binding
+                .get_value(var)
                 .cloned()
                 .unwrap_or(QueryValue::Literal("".to_string()))
         })

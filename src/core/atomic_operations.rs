@@ -576,14 +576,12 @@ mod security_tests {
         let results = rdf_store.query(query);
 
         let mut state_string = String::new();
-        if let QueryResults::Solutions(mut solutions) = results {
-            for solution in solutions {
-                if let Ok(solution) = solution {
-                    let s = solution.get("s").map(|v| v.to_string()).unwrap_or_default();
-                    let p = solution.get("p").map(|v| v.to_string()).unwrap_or_default();
-                    let o = solution.get("o").map(|v| v.to_string()).unwrap_or_default();
-                    state_string.push_str(&format!("{} {} {} .\n", s, p, o));
-                }
+        if let QueryResults::Solutions(solutions) = results {
+            for solution in solutions.flatten() {
+                let s = solution.get("s").map(|v| v.to_string()).unwrap_or_default();
+                let p = solution.get("p").map(|v| v.to_string()).unwrap_or_default();
+                let o = solution.get("o").map(|v| v.to_string()).unwrap_or_default();
+                state_string.push_str(&format!("{} {} {} .\n", s, p, o));
             }
         }
 

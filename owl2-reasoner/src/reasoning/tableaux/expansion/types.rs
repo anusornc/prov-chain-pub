@@ -3,7 +3,6 @@
 //! Contains the core data structures for representing expansion rules,
 //! tasks, and related metadata.
 
-
 /// Types of expansion rules
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ExpansionRule {

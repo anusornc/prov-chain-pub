@@ -23,13 +23,10 @@ mod tests {
         config.enable_qualified_cardinality_validation = true;
 
         let reasoner = OwlReasoner::new(config)?;
-        assert_eq!(reasoner.config.process_owl2_features, true);
-        assert_eq!(reasoner.config.enable_has_key_validation, true);
-        assert_eq!(reasoner.config.enable_property_chain_inference, true);
-        assert_eq!(
-            reasoner.config.enable_qualified_cardinality_validation,
-            true
-        );
+        assert!(reasoner.config.process_owl2_features);
+        assert!(reasoner.config.enable_has_key_validation);
+        assert!(reasoner.config.enable_property_chain_inference);
+        assert!(reasoner.config.enable_qualified_cardinality_validation);
 
         Ok(())
     }

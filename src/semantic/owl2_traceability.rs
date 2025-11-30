@@ -8,9 +8,7 @@ use crate::core::entity::{EntityType, PropertyValue, TraceableEntity};
 use crate::trace_optimization::{EnhancedTraceResult, EnhancedTraceabilitySystem, TraceEvent};
 use anyhow::Result;
 use chrono::Utc;
-use owl2_reasoner::{
-    Class, ClassAssertionAxiom, ClassExpression, DataProperty, Ontology, IRI,
-};
+use owl2_reasoner::{Class, ClassAssertionAxiom, ClassExpression, DataProperty, Ontology, IRI};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -78,9 +76,10 @@ impl Owl2EnhancedTraceability {
             ontology.add_class_assertion(class_assertion)?;
 
             // Add properties from the entity
-            for (prop_name, _prop_value) in &entity.properties {
+            for prop_name in entity.properties.keys() {
                 // Create data property for tracking
-                let _data_prop = DataProperty::new(format!("http://provchain.org/traceability#{}", prop_name));
+                let _data_prop =
+                    DataProperty::new(format!("http://provchain.org/traceability#{}", prop_name));
                 // In a full implementation, we would add data property assertions
                 // For now, we just acknowledge the property exists
             }

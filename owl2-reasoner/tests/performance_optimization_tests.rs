@@ -11,11 +11,11 @@
 #[cfg(test)]
 mod performance_optimization_tests {
     use owl2_reasoner::reasoning::query::cache::*;
-    use owl2_reasoner::reasoning::tableaux::memory::*;
     use owl2_reasoner::reasoning::tableaux::core::NodeId;
+    use owl2_reasoner::reasoning::tableaux::memory::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::thread;
     use std::time::{Duration, Instant};
-    use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
     fn test_join_hash_table_pool_basic_functionality() {
@@ -103,8 +103,10 @@ mod performance_optimization_tests {
 
         let stats = manager.get_stats();
         println!("✅ LockFreeMemoryManager concurrent access test passed");
-        println!("   📊 Final stats: {} arenas, {} bytes allocated",
-                stats.arena_count, stats.total_bytes_allocated);
+        println!(
+            "   📊 Final stats: {} arenas, {} bytes allocated",
+            stats.arena_count, stats.total_bytes_allocated
+        );
     }
 
     #[test]
@@ -205,8 +207,11 @@ mod performance_optimization_tests {
         let elapsed = start_time.elapsed();
 
         // Verify all components performed well
-        assert!(elapsed < Duration::from_secs(1),
-               "Performance test completed in {:?}", elapsed);
+        assert!(
+            elapsed < Duration::from_secs(1),
+            "Performance test completed in {:?}",
+            elapsed
+        );
 
         // Check final statistics
         let join_stats = join_pool.stats();
@@ -215,12 +220,18 @@ mod performance_optimization_tests {
 
         println!("📊 Integration Test Results:");
         println!("   ⏱️  Total time: {:?}", elapsed);
-        println!("   📦 Join pool: {} tables, {:.1}% hit rate",
-                join_stats.pool_size, join_stats.hit_rate);
-        println!("   💾 Memory: {:.2}x efficiency ratio",
-                memory_manager.get_memory_efficiency_ratio());
-        println!("   🧠 Query index: {} accesses recorded",
-                query_stats.total_accesses);
+        println!(
+            "   📦 Join pool: {} tables, {:.1}% hit rate",
+            join_stats.pool_size, join_stats.hit_rate
+        );
+        println!(
+            "   💾 Memory: {:.2}x efficiency ratio",
+            memory_manager.get_memory_efficiency_ratio()
+        );
+        println!(
+            "   🧠 Query index: {} accesses recorded",
+            query_stats.total_accesses
+        );
 
         println!("✅ Performance optimization integration test passed");
     }
@@ -253,8 +264,10 @@ mod performance_optimization_tests {
                         let _node_id = NodeId::new(thread_id * 100 + i);
 
                         // Test concurrent query tracking
-                        index.record_access((thread_id * 1000 + i) as u64,
-                                          Duration::from_micros(100 + i));
+                        index.record_access(
+                            (thread_id * 1000 + i) as u64,
+                            Duration::from_micros(100 + i),
+                        );
 
                         counter.fetch_add(1, Ordering::Relaxed);
                     }
@@ -279,8 +292,10 @@ mod performance_optimization_tests {
         println!("📊 Concurrent Test Results:");
         println!("   🔢 Total operations: {}", total_operations);
         println!("   📦 Join pool hit rate: {:.1}%", join_stats.hit_rate);
-        println!("   💾 Memory efficiency: {:.2}x",
-                memory_stats.get_memory_efficiency_ratio());
+        println!(
+            "   💾 Memory efficiency: {:.2}x",
+            memory_stats.get_memory_efficiency_ratio()
+        );
         println!("   🧠 Query accesses: {}", query_stats.total_accesses);
 
         println!("✅ Concurrent optimization components test passed");
@@ -349,12 +364,21 @@ mod performance_optimization_tests {
         let query_time = start.elapsed();
 
         // Performance assertions (these should be very fast)
-        assert!(hash_time < Duration::from_millis(100),
-               "Hash table operations too slow: {:?}", hash_time);
-        assert!(memory_time < Duration::from_millis(10),
-               "Memory operations too slow: {:?}", memory_time);
-        assert!(query_time < Duration::from_millis(50),
-               "Query tracking too slow: {:?}", query_time);
+        assert!(
+            hash_time < Duration::from_millis(100),
+            "Hash table operations too slow: {:?}",
+            hash_time
+        );
+        assert!(
+            memory_time < Duration::from_millis(10),
+            "Memory operations too slow: {:?}",
+            memory_time
+        );
+        assert!(
+            query_time < Duration::from_millis(50),
+            "Query tracking too slow: {:?}",
+            query_time
+        );
 
         println!("📊 Performance Regression Results:");
         println!("   📦 Hash table ops: {:?} (1000 ops)", hash_time);

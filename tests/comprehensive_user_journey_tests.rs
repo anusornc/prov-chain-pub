@@ -95,7 +95,7 @@ async fn test_complex_supply_chain_traceability() -> Result<()> {
 
     // First authenticate to get a token
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "admin123"
@@ -127,7 +127,7 @@ async fn test_complex_supply_chain_traceability() -> Result<()> {
     "#;
 
     let response = client
-        .post(&format!("{}/api/sparql/query", base_url))
+        .post(format!("{}/api/sparql/query", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&json!({
             "query": query,
@@ -177,7 +177,7 @@ async fn test_performance_benchmark() -> Result<()> {
 
     // First authenticate to get a token
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "admin123"
@@ -209,7 +209,7 @@ async fn test_performance_benchmark() -> Result<()> {
     "#;
 
     let response = client
-        .post(&format!("{}/api/sparql/query", base_url))
+        .post(format!("{}/api/sparql/query", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&json!({
             "query": complex_query,
@@ -241,7 +241,7 @@ async fn test_edge_cases() -> Result<()> {
 
     // First authenticate to get a token
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "admin123"
@@ -259,7 +259,7 @@ async fn test_edge_cases() -> Result<()> {
     // Test invalid SPARQL query with authentication
     let invalid_query = "INVALID SPARQL SYNTAX";
     let response = client
-        .post(&format!("{}/api/sparql/query", base_url))
+        .post(format!("{}/api/sparql/query", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&json!({
             "query": invalid_query,

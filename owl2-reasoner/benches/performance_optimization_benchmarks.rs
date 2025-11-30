@@ -6,12 +6,12 @@
 //! - AdaptiveQueryIndex for intelligent query caching
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use owl2_reasoner::reasoning::query::cache::*;
-use owl2_reasoner::reasoning::query::types::*;
-use owl2_reasoner::reasoning::tableaux::memory::*;
 use owl2_reasoner::axioms::*;
 use owl2_reasoner::entities::*;
 use owl2_reasoner::iri::IRI;
+use owl2_reasoner::reasoning::query::cache::*;
+use owl2_reasoner::reasoning::query::types::*;
+use owl2_reasoner::reasoning::tableaux::memory::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -25,60 +25,52 @@ fn benchmark_join_hash_table_pool(c: &mut Criterion) {
         group.throughput(Throughput::Elements(*size as u64));
 
         // Baseline: Create new HashMap each time
-        group.bench_with_input(
-            BenchmarkId::new("baseline", size),
-            size,
-            |b, &size| {
-                let bindings = create_test_bindings(size);
-                let common_vars = vec_string(&["?x".to_string(), "?y".to_string()]);
+        group.bench_with_input(BenchmarkId::new("baseline", size), size, |b, &size| {
+            let bindings = create_test_bindings(size);
+            let common_vars = vec_string(&["?x".to_string(), "?y".to_string()]);
 
-                b.iter(|| {
-                    // Traditional approach: create new HashMap each time
-                    let mut hash_table: HashMap<Vec<QueryValue>, Vec<usize>> = HashMap::new();
-                    for (idx, binding) in bindings.iter().enumerate() {
-                        let key = extract_join_key(binding, &common_vars);
-                        hash_table.entry(key).or_default().push(idx);
-                    }
+            b.iter(|| {
+                // Traditional approach: create new HashMap each time
+                let mut hash_table: HashMap<Vec<QueryValue>, Vec<usize>> = HashMap::new();
+                for (idx, binding) in bindings.iter().enumerate() {
+                    let key = extract_join_key(binding, &common_vars);
+                    hash_table.entry(key).or_default().push(idx);
+                }
 
-                    // Simulate probe phase
-                    let mut results = 0;
-                    for binding in &bindings {
-                        let key = extract_join_key(binding, &common_vars);
-                        if let Some(indices) = hash_table.get(&key) {
-                            results += indices.len();
-                        }
+                // Simulate probe phase
+                let mut results = 0;
+                for binding in &bindings {
+                    let key = extract_join_key(binding, &common_vars);
+                    if let Some(indices) = hash_table.get(&key) {
+                        results += indices.len();
                     }
-                    black_box(results);
-                });
-            },
-        );
+                }
+                black_box(results);
+            });
+        });
 
         // Optimized: Use JoinHashTablePool
-        group.bench_with_input(
-            BenchmarkId::new("optimized", size),
-            size,
-            |b, &size| {
-                let bindings = create_test_bindings(size);
-                let common_vars = vec_string(&["?x".to_string(), "?y".to_string()]);
-                let pool = JoinHashTablePool::new();
-                pool.pre_warm(5); // Pre-warm pool
+        group.bench_with_input(BenchmarkId::new("optimized", size), size, |b, &size| {
+            let bindings = create_test_bindings(size);
+            let common_vars = vec_string(&["?x".to_string(), "?y".to_string()]);
+            let pool = JoinHashTablePool::new();
+            pool.pre_warm(5); // Pre-warm pool
 
-                b.iter(|| {
-                    let mut hash_table = pool.get_table(size);
-                    hash_table.build_from_bindings(&bindings, &common_vars);
+            b.iter(|| {
+                let mut hash_table = pool.get_table(size);
+                hash_table.build_from_bindings(&bindings, &common_vars);
 
-                    // Simulate probe phase
-                    let mut results = 0;
-                    for binding in &bindings {
-                        let key = extract_join_key(binding, &common_vars);
-                        if let Some(indices) = hash_table.get_indices(&key) {
-                            results += indices.len();
-                        }
+                // Simulate probe phase
+                let mut results = 0;
+                for binding in &bindings {
+                    let key = extract_join_key(binding, &common_vars);
+                    if let Some(indices) = hash_table.get_indices(&key) {
+                        results += indices.len();
                     }
-                    black_box(results);
-                });
-            },
-        );
+                }
+                black_box(results);
+            });
+        });
     }
 
     group.finish();
@@ -93,74 +85,66 @@ fn benchmark_lock_free_memory_manager(c: &mut Criterion) {
         group.throughput(Throughput::Elements(*count as u64));
 
         // Baseline: Traditional mutex-based memory manager
-        group.bench_with_input(
-            BenchmarkId::new("baseline", count),
-            count,
-            |b, &count| {
-                let memory_manager = MemoryManager::new();
-                let nodes = create_test_nodes(count);
+        group.bench_with_input(BenchmarkId::new("baseline", count), count, |b, &count| {
+            let memory_manager = MemoryManager::new();
+            let nodes = create_test_nodes(count);
 
-                b.iter(|| {
-                    let mut handles = Vec::new();
-                    for chunk in nodes.chunks(100) {
-                        let manager = &memory_manager;
-                        let chunk = chunk.to_vec();
+            b.iter(|| {
+                let mut handles = Vec::new();
+                for chunk in nodes.chunks(100) {
+                    let manager = &memory_manager;
+                    let chunk = chunk.to_vec();
 
-                        let handle = std::thread::spawn(move || {
-                            let mut results = 0;
-                            for node in chunk {
-                                if manager.allocate_node(node.clone()).is_ok() {
-                                    results += 1;
-                                }
+                    let handle = std::thread::spawn(move || {
+                        let mut results = 0;
+                        for node in chunk {
+                            if manager.allocate_node(node.clone()).is_ok() {
+                                results += 1;
                             }
-                            results
-                        });
-                        handles.push(handle);
-                    }
+                        }
+                        results
+                    });
+                    handles.push(handle);
+                }
 
-                    let mut total = 0;
-                    for handle in handles {
-                        total += handle.join().unwrap();
-                    }
-                    black_box(total);
-                });
-            },
-        );
+                let mut total = 0;
+                for handle in handles {
+                    total += handle.join().unwrap();
+                }
+                black_box(total);
+            });
+        });
 
         // Optimized: Lock-free memory manager
-        group.bench_with_input(
-            BenchmarkId::new("optimized", count),
-            count,
-            |b, &count| {
-                let memory_manager = LockFreeMemoryManager::new();
-                let nodes = create_test_nodes(count);
+        group.bench_with_input(BenchmarkId::new("optimized", count), count, |b, &count| {
+            let memory_manager = LockFreeMemoryManager::new();
+            let nodes = create_test_nodes(count);
 
-                b.iter(|| {
-                    let mut handles = Vec::new();
-                    for chunk in nodes.chunks(100) {
-                        let manager = &memory_manager;
-                        let chunk = chunk.to_vec();
+            b.iter(|| {
+                let mut handles = Vec::new();
+                for chunk in nodes.chunks(100) {
+                    let manager = &memory_manager;
+                    let chunk = chunk.to_vec();
 
-                        let handle = std::thread::spawn(move || {
-                            let mut results = 0;
-                            for node in chunk {
-                                if manager.allocate_node(node.clone()).is_ok() {
-                                    results += 1;
-                                }
+                    let handle = std::thread::spawn(move || {
+                        let mut results = 0;
+                        for node in chunk {
+                            if manager.allocate_node(node.clone()).is_ok() {
+                                results += 1;
                             }
-                            results
-                        });
-                        handles.push(handle);
-                    }
+                        }
+                        results
+                    });
+                    handles.push(handle);
+                }
 
-                    let mut total = 0;
-                    for handle in handles {
-                        total += handle.join().unwrap();
-                    }
-                    black_box(total);
-                });
-            },
-        );
+                let mut total = 0;
+                for handle in handles {
+                    total += handle.join().unwrap();
+                }
+                black_box(total);
+            });
+        });
     }
 
     group.finish();
@@ -377,7 +361,8 @@ fn create_test_bindings(count: usize) -> Vec<QueryBinding> {
 fn extract_join_key(binding: &QueryBinding, vars: &[String]) -> Vec<QueryValue> {
     vars.iter()
         .map(|var| {
-            binding.get_value(var)
+            binding
+                .get_value(var)
                 .cloned()
                 .unwrap_or(QueryValue::Literal("".to_string()))
         })
@@ -393,13 +378,11 @@ fn create_test_nodes(count: usize) -> Vec<TableauxNode> {
 fn create_test_queries(count: usize) -> Vec<QueryPattern> {
     (0..count)
         .map(|i| {
-            QueryPattern::BasicGraphPattern(vec![
-                TriplePattern::new(
-                    PatternTerm::Variable(format!("?s{}", i)),
-                    PatternTerm::IRI(IRI::new("http://example.org/predicate").unwrap()),
-                    PatternTerm::Variable(format!("?o{}", i)),
-                ),
-            ])
+            QueryPattern::BasicGraphPattern(vec![TriplePattern::new(
+                PatternTerm::Variable(format!("?s{}", i)),
+                PatternTerm::IRI(IRI::new("http://example.org/predicate").unwrap()),
+                PatternTerm::Variable(format!("?o{}", i)),
+            )])
         })
         .collect()
 }

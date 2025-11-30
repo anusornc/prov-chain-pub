@@ -68,8 +68,8 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::mem;
 use std::ptr::NonNull;
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Mutex;
 
 /// Helper function to safely lock mutexes with proper error handling
 fn safe_lock<'a, T>(
@@ -905,26 +905,27 @@ impl LockFreeMemoryManager {
 
         // Update atomic counters
         self.allocated_nodes.fetch_add(1, Ordering::Relaxed);
-        self.total_bytes_allocated.fetch_add(node_size, Ordering::Relaxed);
+        self.total_bytes_allocated
+            .fetch_add(node_size, Ordering::Relaxed);
 
         // Allocate in thread-local arena
-        Ok(LOCAL_ARENA.with(|arena| {
-            LockFreeArenaNode::new(node, &mut arena.borrow_mut())
-        }))
+        Ok(LOCAL_ARENA.with(|arena| LockFreeArenaNode::new(node, &mut arena.borrow_mut())))
     }
 
     /// Allocate a ClassExpression in the thread-local arena
-    pub fn allocate_expression(&self, expr: ClassExpression) -> OwlResult<LockFreeArenaNode<ClassExpression>> {
+    pub fn allocate_expression(
+        &self,
+        expr: ClassExpression,
+    ) -> OwlResult<LockFreeArenaNode<ClassExpression>> {
         let expr_size = mem::size_of::<ClassExpression>();
 
         // Update atomic counters
         self.allocated_expressions.fetch_add(1, Ordering::Relaxed);
-        self.total_bytes_allocated.fetch_add(expr_size, Ordering::Relaxed);
+        self.total_bytes_allocated
+            .fetch_add(expr_size, Ordering::Relaxed);
 
         // Allocate in thread-local arena
-        Ok(LOCAL_ARENA.with(|arena| {
-            LockFreeArenaNode::new(expr, &mut arena.borrow_mut())
-        }))
+        Ok(LOCAL_ARENA.with(|arena| LockFreeArenaNode::new(expr, &mut arena.borrow_mut())))
     }
 
     /// Allocate any constraint type in the thread-local arena
@@ -933,12 +934,11 @@ impl LockFreeMemoryManager {
 
         // Update atomic counters
         self.allocated_constraints.fetch_add(1, Ordering::Relaxed);
-        self.total_bytes_allocated.fetch_add(constraint_size, Ordering::Relaxed);
+        self.total_bytes_allocated
+            .fetch_add(constraint_size, Ordering::Relaxed);
 
         // Allocate in thread-local arena
-        Ok(LOCAL_ARENA.with(|arena| {
-            LockFreeArenaNode::new(constraint, &mut arena.borrow_mut())
-        }))
+        Ok(LOCAL_ARENA.with(|arena| LockFreeArenaNode::new(constraint, &mut arena.borrow_mut())))
     }
 
     /// Intern a string with global deduplication
@@ -951,11 +951,14 @@ impl LockFreeMemoryManager {
 
         // Check global interner first
         {
-            let interner = self.string_interner.lock().map_err(|_| OwlError::LockError {
-                lock_type: "string_interner".to_string(),
-                timeout_ms: 0,
-                message: "Failed to acquire string interner lock".to_string(),
-            })?;
+            let interner = self
+                .string_interner
+                .lock()
+                .map_err(|_| OwlError::LockError {
+                    lock_type: "string_interner".to_string(),
+                    timeout_ms: 0,
+                    message: "Failed to acquire string interner lock".to_string(),
+                })?;
 
             if let Some(&_interned_str) = interner.get(&s_hash) {
                 // For now, just create a new arena string - we can optimize this later
@@ -965,9 +968,8 @@ impl LockFreeMemoryManager {
         }
 
         // Create arena-allocated string
-        let arena_str = LOCAL_ARENA.with(|arena| {
-            LockFreeArenaNode::new_string(s, &mut arena.borrow_mut())
-        })?;
+        let arena_str =
+            LOCAL_ARENA.with(|arena| LockFreeArenaNode::new_string(s, &mut arena.borrow_mut()))?;
 
         Ok(arena_str)
     }
@@ -980,9 +982,7 @@ impl LockFreeMemoryManager {
             allocated_constraints: self.allocated_constraints.load(Ordering::Relaxed),
             total_bytes_allocated: self.total_bytes_allocated.load(Ordering::Relaxed),
             arena_count: LOCAL_ARENA_COUNT.load(Ordering::Relaxed),
-            string_intern_count: self.string_interner.lock()
-                .map(|i| i.len())
-                .unwrap_or(0),
+            string_intern_count: self.string_interner.lock().map(|i| i.len()).unwrap_or(0),
         }
     }
 
@@ -996,11 +996,14 @@ impl LockFreeMemoryManager {
 
         // Clear string interner
         {
-            let mut interner = self.string_interner.lock().map_err(|_| OwlError::LockError {
-                lock_type: "string_interner".to_string(),
-                timeout_ms: 0,
-                message: "Failed to acquire string interner lock".to_string(),
-            })?;
+            let mut interner = self
+                .string_interner
+                .lock()
+                .map_err(|_| OwlError::LockError {
+                    lock_type: "string_interner".to_string(),
+                    timeout_ms: 0,
+                    message: "Failed to acquire string interner lock".to_string(),
+                })?;
             interner.clear();
         }
 
@@ -1023,9 +1026,8 @@ impl LockFreeMemoryManager {
         if traditional_allocations == 0 {
             1.0
         } else {
-            let total_allocations = stats.allocated_nodes +
-                                 stats.allocated_expressions +
-                                 stats.allocated_constraints;
+            let total_allocations =
+                stats.allocated_nodes + stats.allocated_expressions + stats.allocated_constraints;
             traditional_allocations as f64 / total_allocations.max(1) as f64
         }
     }
@@ -1686,7 +1688,9 @@ mod tests {
         let manager = LockFreeMemoryManager::new();
         let node = TableauxNode::new(NodeId::new(1));
 
-        let arena_node = manager.allocate_node(node).expect("Should allocate node successfully");
+        let arena_node = manager
+            .allocate_node(node)
+            .expect("Should allocate node successfully");
 
         let stats = manager.get_stats();
         assert_eq!(stats.allocated_nodes, 1);
@@ -1703,7 +1707,9 @@ mod tests {
         let class = Class::new("http://example.org/Test");
         let expr = ClassExpression::Class(class);
 
-        let arena_node = manager.allocate_expression(expr).expect("Should allocate expression successfully");
+        let arena_node = manager
+            .allocate_expression(expr)
+            .expect("Should allocate expression successfully");
 
         let stats = manager.get_stats();
         assert_eq!(stats.allocated_expressions, 1);
@@ -1724,7 +1730,9 @@ mod tests {
         let manager = LockFreeMemoryManager::new();
         let constraint = "test_constraint";
 
-        let arena_node = manager.allocate_constraint(constraint).expect("Should allocate constraint successfully");
+        let arena_node = manager
+            .allocate_constraint(constraint)
+            .expect("Should allocate constraint successfully");
 
         let stats = manager.get_stats();
         assert_eq!(stats.allocated_constraints, 1);
@@ -1740,7 +1748,9 @@ mod tests {
         let manager = LockFreeMemoryManager::new();
         let test_string = "http://example.org/TestString";
 
-        let arena_node = manager.intern_string(test_string).expect("Should intern string successfully");
+        let arena_node = manager
+            .intern_string(test_string)
+            .expect("Should intern string successfully");
 
         let interned_str = arena_node.get();
         assert_eq!(interned_str, test_string);
@@ -1760,13 +1770,17 @@ mod tests {
         for i in 0..3 {
             let class = Class::new(format!("http://example.org/Class{}", i));
             let expr = ClassExpression::Class(class);
-            let _arena_node = manager.allocate_expression(expr).expect("Should allocate expression");
+            let _arena_node = manager
+                .allocate_expression(expr)
+                .expect("Should allocate expression");
         }
 
         // Allocate constraints
         for i in 0..2 {
             let constraint = format!("constraint_{}", i);
-            let _arena_node = manager.allocate_constraint(constraint).expect("Should allocate constraint");
+            let _arena_node = manager
+                .allocate_constraint(constraint)
+                .expect("Should allocate constraint");
         }
 
         let stats = manager.get_stats();
@@ -1807,10 +1821,14 @@ mod tests {
 
         let class = Class::new("http://example.org/Test");
         let expr = ClassExpression::Class(class);
-        manager.allocate_expression(expr).expect("Should allocate expression");
+        manager
+            .allocate_expression(expr)
+            .expect("Should allocate expression");
 
         let constraint = "test";
-        manager.allocate_constraint(constraint).expect("Should allocate constraint");
+        manager
+            .allocate_constraint(constraint)
+            .expect("Should allocate constraint");
 
         let stats_after = manager.get_stats();
         assert_eq!(stats_after.total_allocations(), 3);
@@ -1859,7 +1877,9 @@ mod tests {
         let node = TableauxNode::new(NodeId::new(1));
         manager.allocate_node(node).expect("Should allocate node");
 
-        manager.intern_string("test_string").expect("Should intern string");
+        manager
+            .intern_string("test_string")
+            .expect("Should intern string");
 
         // Verify items were allocated
         let stats_before = manager.get_stats();
@@ -1922,7 +1942,8 @@ mod tests {
             let handle = thread::spawn(move || {
                 for i in 0..10 {
                     let node = TableauxNode::new(NodeId::new(thread_id * 10 + i));
-                    let _arena_node = manager_clone.allocate_node(node)
+                    let _arena_node = manager_clone
+                        .allocate_node(node)
                         .expect("Should allocate node concurrently");
                 }
             });
@@ -1951,7 +1972,8 @@ mod tests {
         let alloc_thread = thread::spawn(move || {
             for i in 0..100 {
                 let node = TableauxNode::new(NodeId::new(i));
-                let _arena_node = manager_for_alloc.allocate_node(node)
+                let _arena_node = manager_for_alloc
+                    .allocate_node(node)
                     .expect("Should allocate node");
             }
         });
@@ -1963,7 +1985,9 @@ mod tests {
             thread::sleep(Duration::from_micros(100));
         }
 
-        alloc_thread.join().expect("Allocation thread should complete");
+        alloc_thread
+            .join()
+            .expect("Allocation thread should complete");
 
         let final_stats = manager.get_stats();
         assert_eq!(final_stats.allocated_nodes, 100);
@@ -1974,7 +1998,9 @@ mod tests {
         let manager = LockFreeMemoryManager::new();
         let test_str = "test_string_for_arena";
 
-        let arena_node = manager.intern_string(test_str).expect("Should intern string");
+        let arena_node = manager
+            .intern_string(test_str)
+            .expect("Should intern string");
 
         let retrieved_str = arena_node.get();
         assert_eq!(retrieved_str, test_str);
@@ -1987,7 +2013,9 @@ mod tests {
         // Create a large string (1KB)
         let large_string = "x".repeat(1024);
 
-        let arena_node = manager.intern_string(&large_string).expect("Should intern large string");
+        let arena_node = manager
+            .intern_string(&large_string)
+            .expect("Should intern large string");
 
         let retrieved_str = arena_node.get();
         assert_eq!(*retrieved_str, large_string);
@@ -2003,11 +2031,14 @@ mod tests {
         let number_constraint = 42i32;
         let tuple_constraint = (true, 3.14);
 
-        let _arena_str = manager.allocate_constraint(string_constraint)
+        let _arena_str = manager
+            .allocate_constraint(string_constraint)
             .expect("Should allocate string constraint");
-        let _arena_num = manager.allocate_constraint(number_constraint)
+        let _arena_num = manager
+            .allocate_constraint(number_constraint)
             .expect("Should allocate number constraint");
-        let _arena_tuple = manager.allocate_constraint(tuple_constraint)
+        let _arena_tuple = manager
+            .allocate_constraint(tuple_constraint)
             .expect("Should allocate tuple constraint");
 
         let stats = manager.get_stats();
@@ -2027,12 +2058,16 @@ mod tests {
         for i in 0..3 {
             let class = Class::new(format!("http://example.org/Class{}", i));
             let expr = ClassExpression::Class(class);
-            manager.allocate_expression(expr).expect("Should allocate expression");
+            manager
+                .allocate_expression(expr)
+                .expect("Should allocate expression");
         }
 
         for i in 0..2 {
             let constraint = format!("constraint_{}", i);
-            manager.allocate_constraint(constraint).expect("Should allocate constraint");
+            manager
+                .allocate_constraint(constraint)
+                .expect("Should allocate constraint");
         }
 
         let efficiency = manager.get_memory_efficiency_ratio();
@@ -2051,7 +2086,9 @@ mod tests {
         // Intern multiple strings
         for i in 0..10 {
             let test_string = format!("test_string_{}", i);
-            manager.intern_string(&test_string).expect("Should intern string");
+            manager
+                .intern_string(&test_string)
+                .expect("Should intern string");
         }
 
         let stats = manager.get_stats();
@@ -2074,7 +2111,8 @@ mod tests {
             let handle = thread::spawn(move || {
                 for i in 0..5 {
                     let test_string = format!("thread_{}_string_{}", thread_id, i);
-                    let _arena_node = manager_clone.intern_string(&test_string)
+                    let _arena_node = manager_clone
+                        .intern_string(&test_string)
                         .expect("Should intern string concurrently");
                 }
             });
@@ -2082,7 +2120,9 @@ mod tests {
         }
 
         for handle in handles {
-            handle.join().expect("String interning thread should complete");
+            handle
+                .join()
+                .expect("String interning thread should complete");
         }
 
         let stats = manager.get_stats();

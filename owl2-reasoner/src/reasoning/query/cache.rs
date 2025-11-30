@@ -98,7 +98,8 @@ impl JoinHashTablePool {
         // Only return tables that aren't excessively large to prevent memory bloat
         if table.capacity() <= self.bucket_capacity(bucket_idx) * 2 {
             if let Some(mut pool) = self.pools[bucket_idx].try_write() {
-                if pool.len() < 10 { // Limit pool size per bucket
+                if pool.len() < 10 {
+                    // Limit pool size per bucket
                     table.clear();
                     table.shrink_to_fit(); // Optimize memory usage
                     pool.push(table);
@@ -111,12 +112,12 @@ impl JoinHashTablePool {
     /// Determine which bucket to use based on estimated size
     fn capacity_bucket(&self, size: usize) -> usize {
         match size {
-            0..=32 => 0,   // 16 capacity
-            33..=128 => 1, // 64 capacity
-            129..=512 => 2, // 256 capacity
-            513..=2048 => 3, // 1024 capacity
+            0..=32 => 0,      // 16 capacity
+            33..=128 => 1,    // 64 capacity
+            129..=512 => 2,   // 256 capacity
+            513..=2048 => 3,  // 1024 capacity
             2049..=8192 => 4, // 4096 capacity
-            _ => 5, // 16384 capacity
+            _ => 5,           // 16384 capacity
         }
     }
 
@@ -141,7 +142,11 @@ impl JoinHashTablePool {
             hit_rate: {
                 let hits = self.hits.load(Ordering::Relaxed) as f64;
                 let total = hits + self.misses.load(Ordering::Relaxed) as f64;
-                if total > 0.0 { hits / total * 100.0 } else { 0.0 }
+                if total > 0.0 {
+                    hits / total * 100.0
+                } else {
+                    0.0
+                }
             },
         }
     }
@@ -189,7 +194,8 @@ impl<'a> PooledHashTable<'a> {
             let key: Vec<QueryValue> = common_vars
                 .iter()
                 .map(|var| {
-                    binding.get_value(var)
+                    binding
+                        .get_value(var)
                         .cloned()
                         .unwrap_or(QueryValue::Literal("".to_string()))
                 })
@@ -242,7 +248,8 @@ impl<'a> PooledHashTable<'a> {
             let key: Vec<QueryValue> = common_vars
                 .iter()
                 .map(|var| {
-                    left_binding.get_value(var)
+                    left_binding
+                        .get_value(var)
                         .cloned()
                         .unwrap_or(QueryValue::Literal("".to_string()))
                 })
@@ -264,10 +271,7 @@ impl<'a> PooledHashTable<'a> {
 impl<'a> Drop for PooledHashTable<'a> {
     fn drop(&mut self) {
         // Return the table to the pool when dropped
-        let table = std::mem::replace(
-            &mut self.table,
-            HashMap::new()
-        );
+        let table = std::mem::replace(&mut self.table, HashMap::new());
         self.pool.return_table(table, self.bucket_idx);
     }
 }
@@ -408,14 +412,17 @@ impl AdaptiveQueryIndex {
         let frequency_key = self.extract_frequency_key(pattern);
         let should_promote = {
             let freq_index = self.frequency_index.read();
-            freq_index.get(&frequency_key)
+            freq_index
+                .get(&frequency_key)
                 .map(|patterns| patterns.len() >= self.config.frequency_threshold)
                 .unwrap_or(false)
         };
 
         if should_promote {
             self.promote_to_primary(pattern);
-            self.primary_index.get(&pattern_hash).map(|entry| entry.clone())
+            self.primary_index
+                .get(&pattern_hash)
+                .map(|entry| entry.clone())
         } else {
             self.update_frequency_index(&frequency_key, pattern_hash);
             None
@@ -436,7 +443,9 @@ impl AdaptiveQueryIndex {
             let new_avg = if *avg_time == Duration::ZERO {
                 execution_time
             } else {
-                Duration::from_nanos((avg_time.as_nanos() as u64 + execution_time.as_nanos() as u64) / 2)
+                Duration::from_nanos(
+                    (avg_time.as_nanos() as u64 + execution_time.as_nanos() as u64) / 2,
+                )
             };
             *avg_time = new_avg;
 
@@ -490,7 +499,8 @@ impl AdaptiveQueryIndex {
 
     /// Get frequently accessed query patterns for cache warming
     pub fn get_hot_patterns(&self) -> Vec<(u64, usize)> {
-        self.primary_index.iter()
+        self.primary_index
+            .iter()
             .map(|entry| {
                 let count = entry.access_count.load(Ordering::Relaxed);
                 (*entry.key(), count)
@@ -506,8 +516,8 @@ impl AdaptiveQueryIndex {
 
         // Remove old entries from primary index
         self.primary_index.retain(|_, entry| {
-            *entry.last_access.read() > cutoff ||
-            entry.access_count.load(Ordering::Relaxed) >= self.config.frequency_threshold
+            *entry.last_access.read() > cutoff
+                || entry.access_count.load(Ordering::Relaxed) >= self.config.frequency_threshold
         });
 
         // Clean up access patterns
@@ -517,9 +527,9 @@ impl AdaptiveQueryIndex {
         // Clean up frequency index
         let mut freq_index = self.frequency_index.write();
         freq_index.retain(|_, hashes| {
-            hashes.iter().any(|&hash| {
-                self.primary_index.contains_key(&hash)
-            })
+            hashes
+                .iter()
+                .any(|&hash| self.primary_index.contains_key(&hash))
         });
     }
 
@@ -560,7 +570,10 @@ impl AdaptiveQueryIndex {
 
     fn update_frequency_index(&self, key: &str, pattern_hash: u64) {
         let mut freq_index = self.frequency_index.write();
-        freq_index.entry(key.to_string()).or_default().push(pattern_hash);
+        freq_index
+            .entry(key.to_string())
+            .or_default()
+            .push(pattern_hash);
     }
 
     fn promote_to_primary(&self, pattern: &QueryPattern) {
@@ -623,12 +636,14 @@ impl AdaptiveQueryIndex {
         let patterns = self.access_patterns.read();
 
         // Calculate recency and frequency score
-        let recent_accesses = patterns.iter()
+        let recent_accesses = patterns
+            .iter()
             .filter(|access| access.pattern_hash == *pattern_hash)
             .count();
 
         let recency_score = if recent_accesses > 0 {
-            let latest_access = patterns.iter()
+            let latest_access = patterns
+                .iter()
                 .filter(|access| access.pattern_hash == *pattern_hash)
                 .max_by_key(|access| access.access_time);
 
@@ -807,8 +822,7 @@ impl QueryPatternPredictor {
                 for j in (i.saturating_sub(lookback))..i {
                     let prev_pattern = &sequence[j];
                     if prev_pattern != current_pattern {
-                        let entry = correlations.entry(prev_pattern.clone())
-                            .or_default();
+                        let entry = correlations.entry(prev_pattern.clone()).or_default();
                         *entry.entry(current_pattern.to_string()).or_insert(0.0) += 1.0;
                     }
                 }
@@ -819,7 +833,12 @@ impl QueryPatternPredictor {
 
     fn calculate_recency_bonus(&self, pattern: &str, sequence: &[String]) -> f64 {
         // Find the most recent occurrence of this pattern
-        if let Some((index, _)) = sequence.iter().rev().enumerate().find(|(_, p)| *p == pattern) {
+        if let Some((index, _)) = sequence
+            .iter()
+            .rev()
+            .enumerate()
+            .find(|(_, p)| *p == pattern)
+        {
             let recency_factor = (index as f64 + 1.0) / sequence.len() as f64;
             recency_factor * 0.5 // Scale down to avoid overwhelming frequency
         } else {
@@ -1258,12 +1277,14 @@ mod tests {
     }
 
     fn create_test_bindings(count: usize) -> Vec<QueryBinding> {
-        (0..count).map(|i| {
-            create_test_binding(vec![
-                ("x", &format!("http://example.org/x{}", i)),
-                ("y", &format!("http://example.org/y{}", i)),
-            ])
-        }).collect()
+        (0..count)
+            .map(|i| {
+                create_test_binding(vec![
+                    ("x", &format!("http://example.org/x{}", i)),
+                    ("y", &format!("http://example.org/y{}", i)),
+                ])
+            })
+            .collect()
     }
 
     #[test]
@@ -1290,10 +1311,10 @@ mod tests {
     fn test_capacity_bucket_selection() {
         let pool = JoinHashTablePool::new();
 
-        assert_eq!(pool.capacity_bucket(0), 0);   // 0..=32 -> bucket 0 (16)
-        assert_eq!(pool.capacity_bucket(16), 0);  // 0..=32 -> bucket 0 (16)
-        assert_eq!(pool.capacity_bucket(32), 0);  // 0..=32 -> bucket 0 (16)
-        assert_eq!(pool.capacity_bucket(33), 1);  // 33..=128 -> bucket 1 (64)
+        assert_eq!(pool.capacity_bucket(0), 0); // 0..=32 -> bucket 0 (16)
+        assert_eq!(pool.capacity_bucket(16), 0); // 0..=32 -> bucket 0 (16)
+        assert_eq!(pool.capacity_bucket(32), 0); // 0..=32 -> bucket 0 (16)
+        assert_eq!(pool.capacity_bucket(33), 1); // 33..=128 -> bucket 1 (64)
         assert_eq!(pool.capacity_bucket(128), 1); // 33..=128 -> bucket 1 (64)
         assert_eq!(pool.capacity_bucket(129), 2); // 129..=512 -> bucket 2 (256)
         assert_eq!(pool.capacity_bucket(512), 2); // 129..=512 -> bucket 2 (256)
@@ -1332,7 +1353,10 @@ mod tests {
         let pool = JoinHashTablePool::new();
         let mut table = pool.get_table(10);
 
-        let key = vec![create_test_query_value("test1"), create_test_query_value("test2")];
+        let key = vec![
+            create_test_query_value("test1"),
+            create_test_query_value("test2"),
+        ];
         let binding_index = 42;
 
         // Test insert
@@ -1360,8 +1384,14 @@ mod tests {
 
         // Check that we can find each binding by its key
         for (i, binding) in bindings.iter().enumerate() {
-            let key: Vec<QueryValue> = common_vars.iter()
-                .map(|var| binding.get_value(var).cloned().unwrap_or(QueryValue::Literal("".to_string())))
+            let key: Vec<QueryValue> = common_vars
+                .iter()
+                .map(|var| {
+                    binding
+                        .get_value(var)
+                        .cloned()
+                        .unwrap_or(QueryValue::Literal("".to_string()))
+                })
                 .collect();
 
             let indices = table.get_indices(&key);
@@ -1546,21 +1576,17 @@ mod tests {
     fn test_adaptive_query_pattern_hash() {
         let index = AdaptiveQueryIndex::new();
 
-        let pattern1 = QueryPattern::BasicGraphPattern(vec![
-            TriplePattern::new(
-                PatternTerm::Variable("?s".to_string()),
-                PatternTerm::IRI(create_test_iri("http://example.org/type")),
-                PatternTerm::IRI(create_test_iri("http://example.org/Class1")),
-            ),
-        ]);
+        let pattern1 = QueryPattern::BasicGraphPattern(vec![TriplePattern::new(
+            PatternTerm::Variable("?s".to_string()),
+            PatternTerm::IRI(create_test_iri("http://example.org/type")),
+            PatternTerm::IRI(create_test_iri("http://example.org/Class1")),
+        )]);
 
-        let pattern2 = QueryPattern::BasicGraphPattern(vec![
-            TriplePattern::new(
-                PatternTerm::Variable("?s".to_string()),
-                PatternTerm::IRI(create_test_iri("http://example.org/type")),
-                PatternTerm::IRI(create_test_iri("http://example.org/Class2")),
-            ),
-        ]);
+        let pattern2 = QueryPattern::BasicGraphPattern(vec![TriplePattern::new(
+            PatternTerm::Variable("?s".to_string()),
+            PatternTerm::IRI(create_test_iri("http://example.org/type")),
+            PatternTerm::IRI(create_test_iri("http://example.org/Class2")),
+        )]);
 
         let hash1 = index.compute_pattern_hash(&pattern1);
         let hash2 = index.compute_pattern_hash(&pattern2);
@@ -1601,13 +1627,11 @@ mod tests {
         let index = AdaptiveQueryIndex::new();
 
         // Add some hot patterns directly to primary index
-        let pattern = QueryPattern::BasicGraphPattern(vec![
-            TriplePattern::new(
-                PatternTerm::Variable("?s".to_string()),
-                PatternTerm::IRI(create_test_iri("http://example.org/type")),
-                PatternTerm::IRI(create_test_iri("http://example.org/HotClass")),
-            ),
-        ]);
+        let pattern = QueryPattern::BasicGraphPattern(vec![TriplePattern::new(
+            PatternTerm::Variable("?s".to_string()),
+            PatternTerm::IRI(create_test_iri("http://example.org/type")),
+            PatternTerm::IRI(create_test_iri("http://example.org/HotClass")),
+        )]);
 
         // Force promotion by creating index entry
         if let Some(_entry) = index.get_or_create(&pattern) {
@@ -1776,13 +1800,11 @@ mod tests {
 
     #[test]
     fn test_compiled_pattern_creation() {
-        let pattern = QueryPattern::BasicGraphPattern(vec![
-            TriplePattern::new(
-                PatternTerm::Variable("?s".to_string()),
-                PatternTerm::IRI(create_test_iri("http://example.org/type")),
-                PatternTerm::IRI(create_test_iri("http://example.org/Class1")),
-            ),
-        ]);
+        let pattern = QueryPattern::BasicGraphPattern(vec![TriplePattern::new(
+            PatternTerm::Variable("?s".to_string()),
+            PatternTerm::IRI(create_test_iri("http://example.org/type")),
+            PatternTerm::IRI(create_test_iri("http://example.org/Class1")),
+        )]);
 
         let execution_plan = ExecutionPlan::SingleTriple {
             query_type: QueryType::TypeQuery,
@@ -1800,13 +1822,11 @@ mod tests {
 
     #[test]
     fn test_compiled_pattern_variable_extraction() {
-        let pattern = QueryPattern::BasicGraphPattern(vec![
-            TriplePattern::new(
-                PatternTerm::Variable("?s".to_string()),
-                PatternTerm::Variable("?p".to_string()),
-                PatternTerm::Variable("?o".to_string()),
-            ),
-        ]);
+        let pattern = QueryPattern::BasicGraphPattern(vec![TriplePattern::new(
+            PatternTerm::Variable("?s".to_string()),
+            PatternTerm::Variable("?p".to_string()),
+            PatternTerm::Variable("?o".to_string()),
+        )]);
 
         let execution_plan = ExecutionPlan::SingleTriple {
             query_type: QueryType::VariablePredicate,
@@ -1845,7 +1865,10 @@ mod tests {
 
         // Add some data to the binding
         let mut binding = binding;
-        binding.add_binding("test".to_string(), create_test_query_value("http://example.org/test"));
+        binding.add_binding(
+            "test".to_string(),
+            create_test_query_value("http://example.org/test"),
+        );
 
         // Return it to the pool
         pool.return_binding(binding);
@@ -1889,7 +1912,9 @@ mod tests {
 
         let key = QueryCacheKey::new(123, 456);
         let mut result = QueryResult::new();
-        result.bindings.push(create_test_binding(vec![("x", "http://example.org/test")]));
+        result
+            .bindings
+            .push(create_test_binding(vec![("x", "http://example.org/test")]));
 
         // Test put and get
         cache.put(key.clone(), result.clone());

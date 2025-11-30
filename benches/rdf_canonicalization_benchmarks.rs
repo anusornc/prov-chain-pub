@@ -252,13 +252,12 @@ ex:named{} ex:hasComplexity "high" .
 fn generate_pathological_rdf_graphs(count: usize) -> Vec<String> {
     (0..count)
         .map(|i| {
-            let mut graph = format!(
-                r#"
+            let mut graph = r#"
 @prefix ex: <http://example.org/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
 "#
-            );
+            .to_string();
 
             // Create a highly interconnected graph with many blank nodes
             for j in 0..10 {

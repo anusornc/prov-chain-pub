@@ -7,10 +7,7 @@ use crate::error::OwlResult;
 use crate::iri::IRI;
 use crate::ontology::Ontology;
 
-use super::{
-    PatternTerm, QueryBinding, QueryType, QueryValue,
-    TriplePattern, RDF_TYPE,
-};
+use super::{PatternTerm, QueryBinding, QueryType, QueryValue, TriplePattern, RDF_TYPE};
 
 use dashmap::DashMap;
 use rayon::prelude::*;
@@ -39,7 +36,6 @@ impl<'a> ThreadQueryContext<'a> {
 
     /// Find all instances of a specific type
     pub fn find_instances_of_type(&self, type_iri: &IRI) -> Vec<IRI> {
-
         self.ontology
             .class_assertions()
             .par_iter()
@@ -50,7 +46,6 @@ impl<'a> ThreadQueryContext<'a> {
 
     /// Find all property values for a subject and property
     pub fn find_property_values(&self, subject_iri: &IRI, property_iri: &IRI) -> Vec<QueryValue> {
-
         self.ontology
             .property_assertions()
             .par_iter()

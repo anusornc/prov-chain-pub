@@ -7,9 +7,9 @@
 //!
 //! Run with: cargo run --example validate_optimizations
 
-use std::time::Duration;
 use owl2_reasoner::reasoning::query::cache::*;
 use owl2_reasoner::reasoning::tableaux::memory::*;
+use std::time::Duration;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 **OWL2 Reasoner Performance Optimization Validation**");
@@ -72,8 +72,10 @@ fn test_join_hash_table_pool() -> Result<(), Box<dyn std::error::Error>> {
     drop(table3);
 
     let final_stats = pool.stats();
-    println!("   📊 Pool performance: {:.1}% hit rate, {} tables available",
-             final_stats.hit_rate, final_stats.pool_size);
+    println!(
+        "   📊 Pool performance: {:.1}% hit rate, {} tables available",
+        final_stats.hit_rate, final_stats.pool_size
+    );
 
     Ok(())
 }
@@ -97,7 +99,10 @@ fn test_adaptive_query_index() -> Result<(), Box<dyn std::error::Error>> {
 
     let updated_stats = index.stats();
     assert_eq!(updated_stats.total_accesses, 3);
-    println!("   ✓ Recorded {} pattern accesses", updated_stats.total_accesses);
+    println!(
+        "   ✓ Recorded {} pattern accesses",
+        updated_stats.total_accesses
+    );
 
     // Test hot pattern identification
     // Access first pattern multiple times to make it "hot"
@@ -115,8 +120,10 @@ fn test_adaptive_query_index() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let final_stats = index.stats();
-    println!("   🧠 Index performance: {} accesses, {} bytes memory",
-             final_stats.total_accesses, final_stats.memory_usage);
+    println!(
+        "   🧠 Index performance: {} accesses, {} bytes memory",
+        final_stats.total_accesses, final_stats.memory_usage
+    );
 
     Ok(())
 }
@@ -146,9 +153,15 @@ fn test_lock_free_memory_manager() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let final_stats = manager.get_stats();
-    println!("   💾 Memory performance: {:.2}x efficiency ratio, {} arenas",
-             manager.get_memory_efficiency_ratio(), final_stats.arena_count);
-    println!("   💰 Memory savings: {} bytes", final_stats.memory_savings());
+    println!(
+        "   💾 Memory performance: {:.2}x efficiency ratio, {} arenas",
+        manager.get_memory_efficiency_ratio(),
+        final_stats.arena_count
+    );
+    println!(
+        "   💰 Memory savings: {} bytes",
+        final_stats.memory_savings()
+    );
 
     Ok(())
 }
@@ -187,8 +200,11 @@ fn test_integration_performance() -> Result<(), Box<dyn std::error::Error>> {
     let elapsed = start_time.elapsed();
 
     // Verify performance is reasonable
-    assert!(elapsed < Duration::from_millis(100),
-           "Integration test should complete quickly, took {:?}", elapsed);
+    assert!(
+        elapsed < Duration::from_millis(100),
+        "Integration test should complete quickly, took {:?}",
+        elapsed
+    );
 
     // Get final statistics
     let join_stats = join_pool.stats();
@@ -196,11 +212,18 @@ fn test_integration_performance() -> Result<(), Box<dyn std::error::Error>> {
     let query_stats = query_index.stats();
 
     println!("   ⏱️  Integrated workload completed in {:?}", elapsed);
-    println!("   📦 Join pool: {:.1}% hit rate, {} tables",
-             join_stats.hit_rate, join_stats.pool_size);
-    println!("   💾 Memory manager: {:.2}x efficiency",
-             memory_manager.get_memory_efficiency_ratio());
-    println!("   🧠 Query index: {} accesses tracked", query_stats.total_accesses);
+    println!(
+        "   📦 Join pool: {:.1}% hit rate, {} tables",
+        join_stats.hit_rate, join_stats.pool_size
+    );
+    println!(
+        "   💾 Memory manager: {:.2}x efficiency",
+        memory_manager.get_memory_efficiency_ratio()
+    );
+    println!(
+        "   🧠 Query index: {} accesses tracked",
+        query_stats.total_accesses
+    );
 
     Ok(())
 }

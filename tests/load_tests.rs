@@ -535,7 +535,7 @@ async fn run_supply_chain_load_test() -> Result<LoadTestResults> {
             let start_time = Instant::now();
             let mut workflow_results = Vec::new();
 
-            for (_step_id, step_data) in workflow_steps_clone.iter().enumerate() {
+            for step_data in workflow_steps_clone.iter() {
                 let request_start = Instant::now();
 
                 // Execute workflow step
