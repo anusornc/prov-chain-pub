@@ -6,7 +6,7 @@ ProvChainOrg is designed as a **permissioned blockchain for traceability** that 
 
 ## Overview
 
-ProvChainOrg is a production-ready implementation of the GraphChain concept from the research paper "GraphChain – A Distributed Database with Explicit Semantics and Chained RDF Graphs" by Sopek et al. (2018). It combines blockchain security with semantic web technologies to create a **distributed ledger for supply chain traceability** with **formal ontology support**.
+ProvChainOrg is a **comprehensive research implementation** of the GraphChain concept from the research paper "GraphChain – A Distributed Database with Explicit Semantics and Chained RDF Graphs" by Sopek et al. (2018). It combines blockchain security with semantic web technologies to create a **distributed ledger for supply chain traceability** with **formal ontology support**.
 
 The system is designed as a **permissioned blockchain** that can be configured for different traceability domains using domain-specific ontologies. Users select and configure the appropriate ontology at deployment time, and the system operates as a dedicated traceability infrastructure for that domain.
 
@@ -17,7 +17,7 @@ The system is designed as a **permissioned blockchain** that can be configured f
 - **Ontology Integration**: Automatic loading and validation using configurable traceability ontology
 - **Domain-Flexible Design**: Pre-configured ontologies for supply chain, healthcare, pharmaceutical, and other domains
 - **RDF Canonicalization**: Advanced canonicalization algorithm for semantic equivalence
-- **Distributed P2P Network**: WebSocket-based peer communication and discovery (foundation)
+- **Distributed P2P Network**: WebSocket-based peer communication and discovery (Experimental/Foundational)
 - **Supply Chain Traceability**: Track products from origin to consumer with environmental monitoring
 - **Modern Rust Implementation**: High performance with memory safety and comprehensive testing
 
@@ -29,7 +29,7 @@ The system is designed as a **permissioned blockchain** that can be configured f
 - **Ontology System**: Flexible loading and validation of traceability ontology
 - **Ontology Manager**: Runtime configuration and management of ontologies
 - **Canonicalization**: Deterministic RDF graph hashing with blank node handling
-- **Network Layer**: P2P messaging protocol and peer discovery (foundation)
+- **Network Layer**: P2P messaging protocol and peer discovery (Experimental/Foundational)
 - **Configuration**: Comprehensive node configuration management
 
 ### Data Model
@@ -100,7 +100,7 @@ cargo run -- --ontology-config config/my_ontology.toml demo
 cargo run -- list-ontologies
 ```
 
-### Distributed Network (Foundation)
+### Distributed Network (Experimental)
 ```bash
 # Node 1 (Authority)
 PROVCHAIN_PORT=8080 PROVCHAIN_AUTHORITY=true cargo run
@@ -497,7 +497,7 @@ cargo test --lib
 - SPARQL query capabilities
 - Supply chain traceability demo
 - Configuration management
-- P2P networking foundation
+- P2P networking foundation (Experimental)
 
 ### 🚧 In Development
 - Full P2P network implementation

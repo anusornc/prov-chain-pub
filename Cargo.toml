@@ -138,9 +138,6 @@ name = "enhanced_traceability_demo"
 path = "tests/enhanced_traceability_demo.rs"
 harness = false
 
-[[bin]]
-name = "demo_ui"
-path = "demo_ui.rs"
 
 [[test]]
 name = "three_node_validation_test"
