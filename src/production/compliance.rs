@@ -1,8 +1,8 @@
 //! Compliance framework for production deployment
 
+use crate::production::ProductionError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::production::ProductionError;
 
 /// Compliance configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -96,10 +96,7 @@ impl Default for ComplianceConfig {
                 DataClassificationRule {
                     name: "public_data".to_string(),
                     classification: DataClassification::Public,
-                    patterns: vec![
-                        "product_info".to_string(),
-                        "certification".to_string(),
-                    ],
+                    patterns: vec!["product_info".to_string(), "certification".to_string()],
                     retention_days: 7300, // 20 years
                     anonymization_required: false,
                 },
@@ -243,7 +240,11 @@ impl ComplianceManager {
     async fn validate_compliance_policies(&self) -> Result<(), ProductionError> {
         for policy in &self.config.compliance_policies {
             if policy.enabled {
-                tracing::debug!("Validating compliance policy: {} ({:?})", policy.name, policy.regulation);
+                tracing::debug!(
+                    "Validating compliance policy: {} ({:?})",
+                    policy.name,
+                    policy.regulation
+                );
                 // In a real implementation, we would validate policy requirements
             }
         }
@@ -252,12 +253,19 @@ impl ComplianceManager {
 
     /// Initialize data classification
     async fn initialize_data_classification(&self) -> Result<(), ProductionError> {
-        tracing::info!("Initializing data classification with {} rules", self.config.data_classification.len());
-        
+        tracing::info!(
+            "Initializing data classification with {} rules",
+            self.config.data_classification.len()
+        );
+
         for rule in &self.config.data_classification {
-            tracing::debug!("Data classification rule: {} ({:?})", rule.name, rule.classification);
+            tracing::debug!(
+                "Data classification rule: {} ({:?})",
+                rule.name,
+                rule.classification
+            );
         }
-        
+
         Ok(())
     }
 
@@ -265,26 +273,26 @@ impl ComplianceManager {
     async fn start_compliance_monitoring(&self) -> Result<(), ProductionError> {
         let data_inventory = std::sync::Arc::clone(&self.data_inventory);
         let config = self.config.clone();
-        
+
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(
-                std::time::Duration::from_secs(config.reporting_interval_hours * 3600)
-            );
-            
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(
+                config.reporting_interval_hours * 3600,
+            ));
+
             loop {
                 interval.tick().await;
-                
+
                 // Check for data retention expiry
                 let now = chrono::Utc::now();
                 let mut inventory = data_inventory.write().await;
                 let mut expired_items = Vec::new();
-                
+
                 for (id, item) in inventory.iter() {
                     if item.retention_until < now {
                         expired_items.push(id.clone());
                     }
                 }
-                
+
                 // Remove expired items
                 for id in expired_items {
                     inventory.remove(&id);
@@ -292,24 +300,31 @@ impl ComplianceManager {
                 }
             }
         });
-        
+
         Ok(())
     }
 
     /// Log compliance audit event
-    pub async fn log_compliance_event(&self, event: ComplianceAuditEvent) -> Result<(), ProductionError> {
+    pub async fn log_compliance_event(
+        &self,
+        event: ComplianceAuditEvent,
+    ) -> Result<(), ProductionError> {
         // Add to audit events
         {
             let mut events = self.audit_events.write().await;
             events.push(event.clone());
-            
+
             // Keep only last 50000 events in memory
             if events.len() > 50000 {
                 events.remove(0);
             }
         }
 
-        tracing::info!("Compliance event logged: {:?} - {:?}", event.event_type, event.compliance_status);
+        tracing::info!(
+            "Compliance event logged: {:?} - {:?}",
+            event.event_type,
+            event.compliance_status
+        );
         Ok(())
     }
 
@@ -321,23 +336,28 @@ impl ComplianceManager {
     }
 
     /// Handle GDPR data subject request
-    pub async fn handle_gdpr_request(&self, request_type: GdprRequestType, subject_id: &str) -> Result<GdprResponse, ProductionError> {
+    pub async fn handle_gdpr_request(
+        &self,
+        request_type: GdprRequestType,
+        subject_id: &str,
+    ) -> Result<GdprResponse, ProductionError> {
         match request_type {
             GdprRequestType::DataAccess => {
                 // Collect all data for the subject
                 let inventory = self.data_inventory.read().await;
-                let subject_data: Vec<_> = inventory.values()
+                let subject_data: Vec<_> = inventory
+                    .values()
                     .filter(|item| item.id.contains(subject_id))
                     .cloned()
                     .collect();
-                
+
                 Ok(GdprResponse::DataAccess { data: subject_data })
-            },
+            }
             GdprRequestType::DataDeletion => {
                 // Mark data for deletion
                 let mut inventory = self.data_inventory.write().await;
                 let mut deleted_count = 0;
-                
+
                 inventory.retain(|_, item| {
                     if item.id.contains(subject_id) {
                         deleted_count += 1;
@@ -346,22 +366,26 @@ impl ComplianceManager {
                         true
                     }
                 });
-                
-                Ok(GdprResponse::DataDeletion { deleted_items: deleted_count })
-            },
+
+                Ok(GdprResponse::DataDeletion {
+                    deleted_items: deleted_count,
+                })
+            }
             GdprRequestType::DataPortability => {
                 // Export data in portable format
                 let inventory = self.data_inventory.read().await;
-                let subject_data: Vec<_> = inventory.values()
+                let subject_data: Vec<_> = inventory
+                    .values()
                     .filter(|item| item.id.contains(subject_id))
                     .cloned()
                     .collect();
-                
-                let export_data = serde_json::to_string(&subject_data)
-                    .map_err(|e| ProductionError::Compliance(format!("Failed to export data: {e}")))?;
-                
+
+                let export_data = serde_json::to_string(&subject_data).map_err(|e| {
+                    ProductionError::Compliance(format!("Failed to export data: {e}"))
+                })?;
+
                 Ok(GdprResponse::DataPortability { export_data })
-            },
+            }
         }
     }
 
@@ -369,11 +393,19 @@ impl ComplianceManager {
     pub async fn status(&self) -> String {
         let events_count = self.audit_events.read().await.len();
         let inventory_count = self.data_inventory.read().await.len();
-        
+
         format!(
             "GDPR: {}, FDA: {}, Events: {}, Data Items: {}",
-            if self.config.gdpr_enabled { "Enabled" } else { "Disabled" },
-            if self.config.fda_enabled { "Enabled" } else { "Disabled" },
+            if self.config.gdpr_enabled {
+                "Enabled"
+            } else {
+                "Disabled"
+            },
+            if self.config.fda_enabled {
+                "Enabled"
+            } else {
+                "Disabled"
+            },
             events_count,
             inventory_count
         )
@@ -383,21 +415,27 @@ impl ComplianceManager {
     pub async fn generate_compliance_report(&self) -> String {
         let events = self.audit_events.read().await;
         let inventory = self.data_inventory.read().await;
-        
+
         let mut regulation_counts = HashMap::new();
         let mut status_counts = HashMap::new();
-        
+
         for event in events.iter() {
-            *regulation_counts.entry(format!("{:?}", event.regulation)).or_insert(0) += 1;
-            *status_counts.entry(format!("{:?}", event.compliance_status)).or_insert(0) += 1;
+            *regulation_counts
+                .entry(format!("{:?}", event.regulation))
+                .or_insert(0) += 1;
+            *status_counts
+                .entry(format!("{:?}", event.compliance_status))
+                .or_insert(0) += 1;
         }
-        
+
         let mut classification_counts = HashMap::new();
         let mut expired_count = 0;
         let now = chrono::Utc::now();
-        
+
         for item in inventory.values() {
-            *classification_counts.entry(format!("{:?}", item.data_type)).or_insert(0) += 1;
+            *classification_counts
+                .entry(format!("{:?}", item.data_type))
+                .or_insert(0) += 1;
             if item.retention_until < now {
                 expired_count += 1;
             }
@@ -437,30 +475,48 @@ Generated: {}
 - Implement automated compliance monitoring
 "#,
             chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC"),
-            if self.config.gdpr_enabled { "Yes" } else { "No" },
+            if self.config.gdpr_enabled {
+                "Yes"
+            } else {
+                "No"
+            },
             if self.config.fda_enabled { "Yes" } else { "No" },
-            if self.config.eu_regulations_enabled { "Yes" } else { "No" },
+            if self.config.eu_regulations_enabled {
+                "Yes"
+            } else {
+                "No"
+            },
             self.config.data_retention_days,
-            if self.config.data_anonymization_enabled { "Yes" } else { "No" },
+            if self.config.data_anonymization_enabled {
+                "Yes"
+            } else {
+                "No"
+            },
             events.len(),
-            regulation_counts.iter()
+            regulation_counts
+                .iter()
                 .map(|(k, v)| format!("- {k}: {v}"))
                 .collect::<Vec<_>>()
                 .join("\n"),
-            status_counts.iter()
+            status_counts
+                .iter()
                 .map(|(k, v)| format!("- {k}: {v}"))
                 .collect::<Vec<_>>()
                 .join("\n"),
             inventory.len(),
             expired_count,
-            classification_counts.iter()
+            classification_counts
+                .iter()
                 .map(|(k, v)| format!("- {k}: {v}"))
                 .collect::<Vec<_>>()
                 .join("\n"),
-            self.config.compliance_policies.iter()
+            self.config
+                .compliance_policies
+                .iter()
                 .filter(|p| p.enabled)
-                .map(|p| format!("- {} ({:?}): {} requirements", 
-                    p.name, 
+                .map(|p| format!(
+                    "- {} ({:?}): {} requirements",
+                    p.name,
                     p.regulation,
                     p.requirements.len()
                 ))
@@ -529,11 +585,11 @@ ProvChain: ________________ Date: _________
     /// Shutdown compliance systems
     pub async fn shutdown(&mut self) -> Result<(), ProductionError> {
         tracing::info!("Shutting down compliance systems");
-        
+
         // Generate final compliance report
         let _report = self.generate_compliance_report().await;
         tracing::info!("Final compliance report generated");
-        
+
         Ok(())
     }
 }
@@ -565,7 +621,11 @@ impl ComplianceChecker {
     }
 
     /// Check if data operation is compliant
-    pub fn check_data_operation(&self, operation: &str, data_type: &DataClassification) -> Result<bool, ProductionError> {
+    pub fn check_data_operation(
+        &self,
+        operation: &str,
+        data_type: &DataClassification,
+    ) -> Result<bool, ProductionError> {
         // Check if operation is allowed for this data type
         match data_type {
             DataClassification::Personal => {
@@ -579,7 +639,7 @@ impl ComplianceChecker {
                 } else {
                     Ok(true)
                 }
-            },
+            }
             DataClassification::Confidential | DataClassification::Restricted => {
                 // Stricter controls for sensitive data
                 match operation {
@@ -588,7 +648,7 @@ impl ComplianceChecker {
                     "export" => Ok(false), // Generally not allowed
                     _ => Ok(false),
                 }
-            },
+            }
             _ => Ok(true), // Less restrictive for other data types
         }
     }

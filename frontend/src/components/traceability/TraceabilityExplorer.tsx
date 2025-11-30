@@ -1,19 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { useTraceability } from '../../hooks/useTraceability';
-import { Search, Filter, RefreshCw, Package, MapPin, User, Calendar, ChevronRight, AlertCircle, CheckCircle, Clock } from 'lucide-react';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
-import Card from '../ui/Card';
-import Badge from '../ui/Badge';
-import LoadingSpinner from '../ui/LoadingSpinner';
-import Alert from '../ui/Alert';
-import type { TraceabilityItem, SearchQuery } from '../../types';
+import React, { useState, useEffect } from "react";
+import { useTraceability } from "../../hooks/useTraceability";
+import {
+  Search,
+  Filter,
+  RefreshCw,
+  Package,
+  MapPin,
+  User,
+  Calendar,
+  ChevronRight,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import Card from "../ui/Card";
+import Badge from "../ui/Badge";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import Alert from "../ui/Alert";
+import type { TraceabilityItem, SearchQuery } from "../../types";
 
 interface TraceabilityExplorerProps {
   onItemSelect?: (item: TraceabilityItem) => void;
 }
 
-const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelect }) => {
+const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({
+  onItemSelect,
+}) => {
   const {
     items,
     searchResults,
@@ -24,12 +38,12 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
     searchItems,
     loadItems,
     refresh,
-    clearSearch
+    clearSearch,
   } = useTraceability();
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState<SearchQuery['filters']>({});
+  const [filters, setFilters] = useState<SearchQuery["filters"]>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
 
@@ -41,7 +55,9 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
   // Pagination
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedItems = searchResults ? currentItems : currentItems.slice(startIndex, endIndex);
+  const paginatedItems = searchResults
+    ? currentItems
+    : currentItems.slice(startIndex, endIndex);
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const handleSearch = async () => {
@@ -55,7 +71,7 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
   };
 
   const handleClearSearch = () => {
-    setSearchTerm('');
+    setSearchTerm("");
     clearSearch();
     setCurrentPage(1);
   };
@@ -63,15 +79,15 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
   const handleFilterChange = (key: string, value: string) => {
     const newFilters = { ...filters };
     if (value) {
-      if (key === 'type') newFilters.type = value;
-      else if (key === 'location') newFilters.location = value;
-      else if (key === 'participant') newFilters.participant = value;
-      else if (key === 'status') newFilters.status = value;
+      if (key === "type") newFilters.type = value;
+      else if (key === "location") newFilters.location = value;
+      else if (key === "participant") newFilters.participant = value;
+      else if (key === "status") newFilters.status = value;
     } else {
-      if (key === 'type') delete newFilters.type;
-      else if (key === 'location') delete newFilters.location;
-      else if (key === 'participant') delete newFilters.participant;
-      else if (key === 'status') delete newFilters.status;
+      if (key === "type") delete newFilters.type;
+      else if (key === "location") delete newFilters.location;
+      else if (key === "participant") delete newFilters.participant;
+      else if (key === "status") delete newFilters.status;
     }
     setFilters(newFilters);
   };
@@ -90,34 +106,40 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
     }
   };
 
-  const getStatusColor = (item: TraceabilityItem | any): 'success' | 'info' | 'warning' | 'default' => {
+  const getStatusColor = (
+    item: TraceabilityItem,
+  ): "success" | "info" | "warning" | "default" => {
     // Determine status based on item properties
     const hasLocation = !!item.location;
-    const hasOwner = !!(item.current_owner || item.participant);
-    const timestamp = item.created_at || item.timestamp;
-    const isRecent = timestamp ? new Date(timestamp) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) : false;
+    const hasOwner = !!item.current_owner;
+    const timestamp = item.created_at;
+    const isRecent = timestamp
+      ? new Date(timestamp) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      : false;
 
-    if (hasLocation && hasOwner && isRecent) return 'success';
-    if (hasLocation && hasOwner) return 'info';
-    if (hasOwner) return 'warning';
-    return 'default';
+    if (hasLocation && hasOwner && isRecent) return "success";
+    if (hasLocation && hasOwner) return "info";
+    if (hasOwner) return "warning";
+    return "default";
   };
 
   const getStatusIcon = (item: TraceabilityItem) => {
     const color = getStatusColor(item);
-    if (color === 'success') return <CheckCircle className="w-4 h-4 text-green-500" />;
-    if (color === 'info') return <Clock className="w-4 h-4 text-blue-500" />;
-    if (color === 'warning') return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+    if (color === "success")
+      return <CheckCircle className="w-4 h-4 text-green-500" />;
+    if (color === "info") return <Clock className="w-4 h-4 text-blue-500" />;
+    if (color === "warning")
+      return <AlertCircle className="w-4 h-4 text-yellow-500" />;
     return <AlertCircle className="w-4 h-4 text-gray-400" />;
   };
 
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -146,7 +168,9 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
               disabled={loading || searchLoading}
               className="flex items-center gap-2"
             >
-              <RefreshCw className={`w-4 h-4 ${loading || searchLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${loading || searchLoading ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
           </div>
@@ -162,12 +186,12 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
                     placeholder="Search items by name, ID, or properties..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                     className="pl-10"
                   />
                 </div>
                 <Button onClick={handleSearch} disabled={searchLoading}>
-                  {searchLoading ? <LoadingSpinner size="sm" /> : 'Search'}
+                  {searchLoading ? <LoadingSpinner size="sm" /> : "Search"}
                 </Button>
                 {(searchTerm || searchResults) && (
                   <Button variant="outline" onClick={handleClearSearch}>
@@ -194,8 +218,10 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
                       Type
                     </label>
                     <select
-                      value={filters.type || ''}
-                      onChange={(e) => handleFilterChange('type', e.target.value)}
+                      value={filters.type || ""}
+                      onChange={(e) =>
+                        handleFilterChange("type", e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     >
                       <option value="">All Types</option>
@@ -213,8 +239,10 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
                     <Input
                       type="text"
                       placeholder="Filter by location..."
-                      value={filters.location || ''}
-                      onChange={(e) => handleFilterChange('location', e.target.value)}
+                      value={filters.location || ""}
+                      onChange={(e) =>
+                        handleFilterChange("location", e.target.value)
+                      }
                     />
                   </div>
                   <div>
@@ -224,8 +252,10 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
                     <Input
                       type="text"
                       placeholder="Filter by participant..."
-                      value={filters.participant || ''}
-                      onChange={(e) => handleFilterChange('participant', e.target.value)}
+                      value={filters.participant || ""}
+                      onChange={(e) =>
+                        handleFilterChange("participant", e.target.value)
+                      }
                     />
                   </div>
                 </div>
@@ -239,7 +269,7 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
           <div className="mb-6">
             <Alert
               variant="error"
-              message={error || searchError || 'An error occurred'}
+              message={error || searchError || "An error occurred"}
             />
           </div>
         )}
@@ -257,9 +287,7 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
                 `Showing ${startIndex + 1}-${Math.min(endIndex, totalItems)} of ${totalItems} items`
               )}
             </div>
-            {hasMore && (
-              <Badge variant="info">More results available</Badge>
-            )}
+            {hasMore && <Badge variant="info">More results available</Badge>}
           </div>
         )}
 
@@ -272,13 +300,12 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
           <Card className="p-12 text-center">
             <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              {searchResults ? 'No items found' : 'No items available'}
+              {searchResults ? "No items found" : "No items available"}
             </h3>
             <p className="text-gray-600 dark:text-gray-300">
-              {searchResults 
-                ? 'Try adjusting your search terms or filters'
-                : 'Items will appear here once they are added to the blockchain'
-              }
+              {searchResults
+                ? "Try adjusting your search terms or filters"
+                : "Items will appear here once they are added to the blockchain"}
             </p>
           </Card>
         ) : (
@@ -304,24 +331,24 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
                     <Package className="w-4 h-4" />
                     <span className="truncate">{item.type}</span>
                   </div>
-                  
-                  {(item.current_owner || (item as any).participant) && (
+
+                  {item.current_owner && (
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                       <User className="w-4 h-4" />
-                      <span className="truncate">{item.current_owner || (item as any).participant}</span>
+                      <span className="truncate">{item.current_owner}</span>
                     </div>
                   )}
-                  
+
                   {item.location && (
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                       <MapPin className="w-4 h-4" />
                       <span className="truncate">{item.location}</span>
                     </div>
                   )}
-                  
+
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                     <Calendar className="w-4 h-4" />
-                    <span>{formatDate(item.created_at || (item as any).timestamp || new Date().toISOString())}</span>
+                    <span>{formatDate(item.created_at)}</span>
                   </div>
                 </div>
 
@@ -348,16 +375,16 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
             >
               Previous
             </Button>
-            
+
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 const page = i + Math.max(1, currentPage - 2);
                 if (page > totalPages) return null;
-                
+
                 return (
                   <Button
                     key={page}
-                    variant={page === currentPage ? 'primary' : 'outline'}
+                    variant={page === currentPage ? "primary" : "outline"}
                     onClick={() => setCurrentPage(page)}
                     className="w-10 h-10 p-0"
                   >
@@ -366,10 +393,12 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({ onItemSelec
                 );
               })}
             </div>
-            
+
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              onClick={() =>
+                setCurrentPage(Math.min(totalPages, currentPage + 1))
+              }
               disabled={currentPage === totalPages}
             >
               Next

@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import { traceabilityService } from '../services/traceability';
-import { useWebSocket } from './useWebSocket';
-import type { 
-  TraceabilityItem, 
-  TraceabilityResponse, 
-  SearchQuery, 
+import { useState, useEffect, useCallback } from "react";
+import { traceabilityService } from "../services/traceability";
+import { useWebSocket } from "./useWebSocket";
+import type {
+  TraceabilityItem,
+  TraceabilityResponse,
+  SearchQuery,
   SearchResults,
-  KnowledgeGraph
-} from '../types';
+  KnowledgeGraph,
+} from "../types";
 
 export interface UseTraceabilityReturn {
   // Data state
@@ -16,22 +16,25 @@ export interface UseTraceabilityReturn {
   traceData: TraceabilityResponse | null;
   searchResults: SearchResults<TraceabilityItem> | null;
   knowledgeGraph: KnowledgeGraph | null;
-  
+
   // Loading states
   loading: boolean;
   searchLoading: boolean;
   traceLoading: boolean;
   graphLoading: boolean;
-  
+
   // Error states
   error: string | null;
   searchError: string | null;
   traceError: string | null;
   graphError: string | null;
-  
+
   // Actions
   loadItems: (query?: SearchQuery) => Promise<void>;
-  searchItems: (searchTerm: string, filters?: SearchQuery['filters']) => Promise<void>;
+  searchItems: (
+    searchTerm: string,
+    filters?: SearchQuery["filters"],
+  ) => Promise<void>;
   selectItem: (itemId: string) => Promise<void>;
   loadItemTrace: (itemId: string) => Promise<void>;
   loadKnowledgeGraph: (itemIds: string[]) => Promise<void>;
@@ -54,23 +57,28 @@ export interface UseTraceabilityReturn {
 export const useTraceability = (): UseTraceabilityReturn => {
   // Data state
   const [items, setItems] = useState<TraceabilityItem[]>([]);
-  const [selectedItem, setSelectedItem] = useState<TraceabilityItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<TraceabilityItem | null>(
+    null,
+  );
   const [traceData, setTraceData] = useState<TraceabilityResponse | null>(null);
-  const [searchResults, setSearchResults] = useState<SearchResults<TraceabilityItem> | null>(null);
-  const [knowledgeGraph, setKnowledgeGraph] = useState<KnowledgeGraph | null>(null);
-  
+  const [searchResults, setSearchResults] =
+    useState<SearchResults<TraceabilityItem> | null>(null);
+  const [knowledgeGraph, setKnowledgeGraph] = useState<KnowledgeGraph | null>(
+    null,
+  );
+
   // Loading states
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [traceLoading, setTraceLoading] = useState(false);
   const [graphLoading, setGraphLoading] = useState(false);
-  
+
   // Error states
   const [error, setError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [traceError, setTraceError] = useState<string | null>(null);
   const [graphError, setGraphError] = useState<string | null>(null);
-  
+
   // WebSocket integration
   const { onItemUpdate, isConnected } = useWebSocket();
 
@@ -78,56 +86,65 @@ export const useTraceability = (): UseTraceabilityReturn => {
   const loadItems = useCallback(async (query?: SearchQuery) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const result = await traceabilityService.getItems(query);
       setItems(result.items);
-      
+
       // If this was a search query, also update search results
       if (query?.query) {
         setSearchResults(result);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load items';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load items";
       setError(errorMessage);
-      console.error('Error loading items:', err);
+      console.error("Error loading items:", err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   // Search items
-  const searchItems = useCallback(async (searchTerm: string, filters?: SearchQuery['filters']) => {
-    setSearchLoading(true);
-    setSearchError(null);
-    
-    try {
-      const result = await traceabilityService.searchItems(searchTerm, filters);
-      setSearchResults(result);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Search failed';
-      setSearchError(errorMessage);
-      console.error('Error searching items:', err);
-    } finally {
-      setSearchLoading(false);
-    }
-  }, []);
+  const searchItems = useCallback(
+    async (searchTerm: string, filters?: SearchQuery["filters"]) => {
+      setSearchLoading(true);
+      setSearchError(null);
+
+      try {
+        const result = await traceabilityService.searchItems(
+          searchTerm,
+          filters,
+        );
+        setSearchResults(result);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Search failed";
+        setSearchError(errorMessage);
+        console.error("Error searching items:", err);
+      } finally {
+        setSearchLoading(false);
+      }
+    },
+    [],
+  );
 
   // Select and load detailed item information
   const selectItem = useCallback(async (itemId: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const item = await traceabilityService.getItem(itemId);
       setSelectedItem(item);
-      
+
       // Automatically load trace data for selected item
       await loadItemTrace(itemId);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load item';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load item";
       setError(errorMessage);
-      console.error('Error selecting item:', err);
+      console.error("Error selecting item:", err);
     } finally {
       setLoading(false);
     }
@@ -137,14 +154,15 @@ export const useTraceability = (): UseTraceabilityReturn => {
   const loadItemTrace = useCallback(async (itemId: string) => {
     setTraceLoading(true);
     setTraceError(null);
-    
+
     try {
       const trace = await traceabilityService.getItemTrace(itemId);
       setTraceData(trace);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load trace data';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load trace data";
       setTraceError(errorMessage);
-      console.error('Error loading trace data:', err);
+      console.error("Error loading trace data:", err);
     } finally {
       setTraceLoading(false);
     }
@@ -154,14 +172,15 @@ export const useTraceability = (): UseTraceabilityReturn => {
   const loadKnowledgeGraph = useCallback(async (itemIds: string[]) => {
     setGraphLoading(true);
     setGraphError(null);
-    
+
     try {
       const graph = await traceabilityService.getKnowledgeGraph(itemIds);
       setKnowledgeGraph(graph);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load knowledge graph';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load knowledge graph";
       setGraphError(errorMessage);
-      console.error('Error loading knowledge graph:', err);
+      console.error("Error loading knowledge graph:", err);
     } finally {
       setGraphLoading(false);
     }
@@ -172,7 +191,7 @@ export const useTraceability = (): UseTraceabilityReturn => {
     try {
       return await traceabilityService.validateItem(itemId);
     } catch (err) {
-      console.error('Error validating item:', err);
+      console.error("Error validating item:", err);
       throw err;
     }
   }, []);
@@ -203,36 +222,38 @@ export const useTraceability = (): UseTraceabilityReturn => {
   useEffect(() => {
     if (!isConnected) return;
 
-    const unsubscribeItemUpdate = onItemUpdate((updatedItem: TraceabilityItem) => {
-      // Update items list if the updated item is in current items
-      setItems(prevItems => 
-        prevItems.map(item => 
-          item.id === updatedItem.id ? updatedItem : item
-        )
-      );
+    const unsubscribeItemUpdate = onItemUpdate(
+      (updatedItem: TraceabilityItem) => {
+        // Update items list if the updated item is in current items
+        setItems((prevItems) =>
+          prevItems.map((item) =>
+            item.id === updatedItem.id ? updatedItem : item,
+          ),
+        );
 
-      // Update search results if applicable
-      setSearchResults(prevResults => {
-        if (!prevResults) return prevResults;
-        
-        return {
-          ...prevResults,
-          items: prevResults.items.map(item => 
-            item.id === updatedItem.id ? updatedItem : item
-          )
-        };
-      });
+        // Update search results if applicable
+        setSearchResults((prevResults) => {
+          if (!prevResults) return prevResults;
 
-      // Update selected item if it matches
-      setSelectedItem(prevSelected => 
-        prevSelected?.id === updatedItem.id ? updatedItem : prevSelected
-      );
+          return {
+            ...prevResults,
+            items: prevResults.items.map((item) =>
+              item.id === updatedItem.id ? updatedItem : item,
+            ),
+          };
+        });
 
-      // If this item is currently being traced, reload trace data
-      if (selectedItem?.id === updatedItem.id) {
-        loadItemTrace(updatedItem.id);
-      }
-    });
+        // Update selected item if it matches
+        setSelectedItem((prevSelected) =>
+          prevSelected?.id === updatedItem.id ? updatedItem : prevSelected,
+        );
+
+        // If this item is currently being traced, reload trace data
+        if (selectedItem?.id === updatedItem.id) {
+          loadItemTrace(updatedItem.id);
+        }
+      },
+    );
 
     return () => {
       unsubscribeItemUpdate();
@@ -251,19 +272,19 @@ export const useTraceability = (): UseTraceabilityReturn => {
     traceData,
     searchResults,
     knowledgeGraph,
-    
+
     // Loading states
     loading,
     searchLoading,
     traceLoading,
     graphLoading,
-    
+
     // Error states
     error,
     searchError,
     traceError,
     graphError,
-    
+
     // Actions
     loadItems,
     searchItems,
@@ -273,6 +294,6 @@ export const useTraceability = (): UseTraceabilityReturn => {
     validateItem,
     refresh,
     clearSelection,
-    clearSearch
+    clearSearch,
   };
 };

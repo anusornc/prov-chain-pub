@@ -11,31 +11,31 @@ use std::collections::HashMap;
 pub trait DomainPlugin: Send + Sync {
     /// Unique identifier for the domain
     fn domain_id(&self) -> &str;
-    
+
     /// Human readable name
     fn name(&self) -> &str;
-    
+
     /// Description of the domain
     fn description(&self) -> &str;
-    
+
     /// Check if an entity type is valid for this domain
     fn is_valid_entity_type(&self, entity_type: &str) -> bool;
-    
+
     /// Get domain-specific validation rules
     fn validation_rules(&self) -> &HashMap<String, String>;
-    
+
     /// Get domain-specific properties
     fn domain_properties(&self) -> &Vec<String>;
-    
+
     /// Initialize the domain with configuration
     fn initialize(&mut self, config: &DomainConfig) -> Result<()>;
-    
+
     /// Shutdown and cleanup
     fn shutdown(&mut self) -> Result<()>;
-    
+
     /// Validate entity data for this domain
     fn validate_entity(&self, entity_data: &EntityData) -> Result<ValidationResult>;
-    
+
     /// Process entity data for this domain
     fn process_entity(&self, entity_data: &EntityData) -> Result<ProcessedEntity>;
 }
@@ -106,7 +106,12 @@ pub struct EntityData {
 
 impl EntityData {
     /// Create a new entity data
-    pub fn new(entity_id: String, entity_type: String, data: String, properties: HashMap<String, String>) -> Self {
+    pub fn new(
+        entity_id: String,
+        entity_type: String,
+        data: String,
+        properties: HashMap<String, String>,
+    ) -> Self {
         EntityData {
             entity_id,
             entity_type,

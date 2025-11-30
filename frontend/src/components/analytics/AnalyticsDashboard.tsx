@@ -1,18 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Users, Activity, Package, Filter, Download, RefreshCw, PieChart, LineChart, AlertTriangle } from 'lucide-react';
-import LoadingSpinner from '../ui/LoadingSpinner';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
-import type { DashboardMetrics } from '../../types';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  BarChart3,
+  TrendingUp,
+  Users,
+  Activity,
+  Package,
+  Filter,
+  Download,
+  RefreshCw,
+  PieChart,
+  LineChart,
+  AlertTriangle,
+} from "lucide-react";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import Card from "../ui/Card";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import type { DashboardMetrics } from "../../types";
+import { API_ENDPOINTS } from "../../config/api";
 
 interface AnalyticsData {
   metrics: DashboardMetrics;
   transactionTrends: Array<{ date: string; count: number; volume: number }>;
-  participantActivity: Array<{ participant: string; transactions: number; lastActive: string }>;
+  participantActivity: Array<{
+    participant: string;
+    transactions: number;
+    lastActive: string;
+  }>;
   blockchainGrowth: Array<{ date: string; blocks: number; size: number }>;
   traceabilityStats: Array<{ type: string; count: number; percentage: number }>;
-  performanceMetrics: Array<{ metric: string; value: number; unit: string; trend: 'up' | 'down' | 'stable' }>;
+  performanceMetrics: Array<{
+    metric: string;
+    value: number;
+    unit: string;
+    trend: "up" | "down" | "stable";
+  }>;
 }
 
 interface AnalyticsFilters {
@@ -22,46 +44,53 @@ interface AnalyticsFilters {
   };
   participantType: string;
   transactionType: string;
-  timeGranularity: 'hour' | 'day' | 'week' | 'month';
+  timeGranularity: "hour" | "day" | "week" | "month";
 }
 
 const AnalyticsDashboard: React.FC = () => {
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<AnalyticsFilters>({
     dateRange: {
-      start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-      end: new Date().toISOString().split('T')[0] // today
+      start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0], // 30 days ago
+      end: new Date().toISOString().split("T")[0], // today
     },
-    participantType: 'all',
-    transactionType: 'all',
-    timeGranularity: 'day'
+    participantType: "all",
+    transactionType: "all",
+    timeGranularity: "day",
   });
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   useEffect(() => {
     loadAnalyticsData();
-  }, [filters]);
+  }, [filters, loadAnalyticsData]);
 
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      
+      const token = localStorage.getItem("authToken");
+
       // Try to load real analytics data from API
       try {
-        const response = await fetch(`http://localhost:8080/api/analytics?${new URLSearchParams({
-          start_date: filters.dateRange.start,
-          end_date: filters.dateRange.end,
-          participant_type: filters.participantType,
-          transaction_type: filters.transactionType,
-          granularity: filters.timeGranularity
-        })}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await fetch(
+          `${API_ENDPOINTS.API}/analytics?${new URLSearchParams({
+            start_date: filters.dateRange.start,
+            end_date: filters.dateRange.end,
+            participant_type: filters.participantType,
+            transaction_type: filters.transactionType,
+            granularity: filters.timeGranularity,
+          })}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
 
         if (response.ok) {
           const data: AnalyticsData = await response.json();
@@ -71,16 +100,16 @@ const AnalyticsDashboard: React.FC = () => {
           loadMockAnalyticsData();
         }
       } catch (error) {
-        console.warn('Analytics API not available, using mock data:', error);
+        console.warn("Analytics API not available, using mock data:", error);
         loadMockAnalyticsData();
       }
     } catch (error) {
-      console.error('Error loading analytics data:', error);
+      console.error("Error loading analytics data:", error);
       loadMockAnalyticsData();
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filters, loadMockAnalyticsData]);
 
   const loadMockAnalyticsData = () => {
     const mockData: AnalyticsData = {
@@ -89,36 +118,66 @@ const AnalyticsDashboard: React.FC = () => {
         total_transactions: 8934,
         total_items: 3456,
         active_participants: 23,
-        network_status: 'healthy',
+        network_status: "healthy",
         last_block_time: new Date(Date.now() - 2 * 60 * 1000).toISOString(), // 2 minutes ago
         avg_block_time: 12.5,
         transactions_per_second: 2.3,
-        network_hash_rate: 1250000
+        network_hash_rate: 1250000,
       },
       transactionTrends: generateMockTrendData(30),
       participantActivity: [
-        { participant: 'Organic Farms Co.', transactions: 234, lastActive: '2 hours ago' },
-        { participant: 'Global Manufacturing Ltd.', transactions: 189, lastActive: '1 hour ago' },
-        { participant: 'Swift Logistics', transactions: 156, lastActive: '30 minutes ago' },
-        { participant: 'Quality Assurance Labs', transactions: 143, lastActive: '45 minutes ago' },
-        { participant: 'Retail Chain Corp', transactions: 98, lastActive: '3 hours ago' }
+        {
+          participant: "Organic Farms Co.",
+          transactions: 234,
+          lastActive: "2 hours ago",
+        },
+        {
+          participant: "Global Manufacturing Ltd.",
+          transactions: 189,
+          lastActive: "1 hour ago",
+        },
+        {
+          participant: "Swift Logistics",
+          transactions: 156,
+          lastActive: "30 minutes ago",
+        },
+        {
+          participant: "Quality Assurance Labs",
+          transactions: 143,
+          lastActive: "45 minutes ago",
+        },
+        {
+          participant: "Retail Chain Corp",
+          transactions: 98,
+          lastActive: "3 hours ago",
+        },
       ],
       blockchainGrowth: generateMockGrowthData(30),
       traceabilityStats: [
-        { type: 'Production', count: 1234, percentage: 35.7 },
-        { type: 'Processing', count: 987, percentage: 28.5 },
-        { type: 'Transport', count: 654, percentage: 18.9 },
-        { type: 'Quality', count: 432, percentage: 12.5 },
-        { type: 'Other', count: 149, percentage: 4.4 }
+        { type: "Production", count: 1234, percentage: 35.7 },
+        { type: "Processing", count: 987, percentage: 28.5 },
+        { type: "Transport", count: 654, percentage: 18.9 },
+        { type: "Quality", count: 432, percentage: 12.5 },
+        { type: "Other", count: 149, percentage: 4.4 },
       ],
       performanceMetrics: [
-        { metric: 'Average Block Time', value: 12.5, unit: 'seconds', trend: 'stable' },
-        { metric: 'Transaction Throughput', value: 2.3, unit: 'TPS', trend: 'up' },
-        { metric: 'Network Hash Rate', value: 1.25, unit: 'MH/s', trend: 'up' },
-        { metric: 'Storage Usage', value: 2.4, unit: 'GB', trend: 'up' },
-        { metric: 'Active Nodes', value: 12, unit: 'nodes', trend: 'stable' },
-        { metric: 'Validation Time', value: 45, unit: 'ms', trend: 'down' }
-      ]
+        {
+          metric: "Average Block Time",
+          value: 12.5,
+          unit: "seconds",
+          trend: "stable",
+        },
+        {
+          metric: "Transaction Throughput",
+          value: 2.3,
+          unit: "TPS",
+          trend: "up",
+        },
+        { metric: "Network Hash Rate", value: 1.25, unit: "MH/s", trend: "up" },
+        { metric: "Storage Usage", value: 2.4, unit: "GB", trend: "up" },
+        { metric: "Active Nodes", value: 12, unit: "nodes", trend: "stable" },
+        { metric: "Validation Time", value: 45, unit: "ms", trend: "down" },
+      ],
     };
     setAnalyticsData(mockData);
   };
@@ -128,9 +187,9 @@ const AnalyticsDashboard: React.FC = () => {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
       data.push({
-        date: date.toISOString().split('T')[0],
+        date: date.toISOString().split("T")[0],
         count: Math.floor(Math.random() * 50) + 20,
-        volume: Math.floor(Math.random() * 1000) + 500
+        volume: Math.floor(Math.random() * 1000) + 500,
       });
     }
     return data;
@@ -140,44 +199,49 @@ const AnalyticsDashboard: React.FC = () => {
     const data = [];
     let cumulativeBlocks = 1000;
     let cumulativeSize = 1.5;
-    
+
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
       const dailyBlocks = Math.floor(Math.random() * 20) + 5;
       const dailySize = Math.random() * 0.1 + 0.05;
-      
+
       cumulativeBlocks += dailyBlocks;
       cumulativeSize += dailySize;
-      
+
       data.push({
-        date: date.toISOString().split('T')[0],
+        date: date.toISOString().split("T")[0],
         blocks: cumulativeBlocks,
-        size: parseFloat(cumulativeSize.toFixed(2))
+        size: parseFloat(cumulativeSize.toFixed(2)),
       });
     }
     return data;
   };
 
-  const handleFilterChange = (key: keyof AnalyticsFilters, value: string | { start: string; end: string }) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const handleFilterChange = (
+    key: keyof AnalyticsFilters,
+    value: string | { start: string; end: string },
+  ) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const exportData = () => {
     if (!analyticsData) return;
-    
+
     const dataToExport = {
       metrics: analyticsData.metrics,
       transactionTrends: analyticsData.transactionTrends,
       participantActivity: analyticsData.participantActivity,
       exportedAt: new Date().toISOString(),
-      filters: filters
+      filters: filters,
     };
-    
-    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `provchain-analytics-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `provchain-analytics-${new Date().toISOString().split("T")[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -185,25 +249,32 @@ const AnalyticsDashboard: React.FC = () => {
   };
 
   const formatNumber = (num: number): string => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1) + "K";
     return num.toString();
   };
 
-  const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
+  const getTrendIcon = (trend: "up" | "down" | "stable") => {
     switch (trend) {
-      case 'up': return <TrendingUp className="w-4 h-4 text-green-500" />;
-      case 'down': return <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />;
-      case 'stable': return <Activity className="w-4 h-4 text-gray-500" />;
+      case "up":
+        return <TrendingUp className="w-4 h-4 text-green-500" />;
+      case "down":
+        return <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />;
+      case "stable":
+        return <Activity className="w-4 h-4 text-gray-500" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'healthy': return 'text-green-500';
-      case 'warning': return 'text-yellow-500';
-      case 'error': return 'text-red-500';
-      default: return 'text-gray-500';
+      case "healthy":
+        return "text-green-500";
+      case "warning":
+        return "text-yellow-500";
+      case "error":
+        return "text-red-500";
+      default:
+        return "text-gray-500";
     }
   };
 
@@ -292,13 +363,23 @@ const AnalyticsDashboard: React.FC = () => {
                   <Input
                     type="date"
                     value={filters.dateRange.start}
-                    onChange={(e) => handleFilterChange('dateRange', { ...filters.dateRange, start: e.target.value })}
+                    onChange={(e) =>
+                      handleFilterChange("dateRange", {
+                        ...filters.dateRange,
+                        start: e.target.value,
+                      })
+                    }
                     className="text-sm"
                   />
                   <Input
                     type="date"
                     value={filters.dateRange.end}
-                    onChange={(e) => handleFilterChange('dateRange', { ...filters.dateRange, end: e.target.value })}
+                    onChange={(e) =>
+                      handleFilterChange("dateRange", {
+                        ...filters.dateRange,
+                        end: e.target.value,
+                      })
+                    }
                     className="text-sm"
                   />
                 </div>
@@ -310,7 +391,9 @@ const AnalyticsDashboard: React.FC = () => {
                 </label>
                 <select
                   value={filters.participantType}
-                  onChange={(e) => handleFilterChange('participantType', e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("participantType", e.target.value)
+                  }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 >
                   <option value="all">All Types</option>
@@ -329,7 +412,9 @@ const AnalyticsDashboard: React.FC = () => {
                 </label>
                 <select
                   value={filters.transactionType}
-                  onChange={(e) => handleFilterChange('transactionType', e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("transactionType", e.target.value)
+                  }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 >
                   <option value="all">All Types</option>
@@ -347,7 +432,12 @@ const AnalyticsDashboard: React.FC = () => {
                 </label>
                 <select
                   value={filters.timeGranularity}
-                  onChange={(e) => handleFilterChange('timeGranularity', e.target.value as 'hour' | 'day' | 'week' | 'month')}
+                  onChange={(e) =>
+                    handleFilterChange(
+                      "timeGranularity",
+                      e.target.value as "hour" | "day" | "week" | "month",
+                    )
+                  }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 >
                   <option value="hour">Hourly</option>
@@ -365,7 +455,9 @@ const AnalyticsDashboard: React.FC = () => {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Blocks</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Total Blocks
+                </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {formatNumber(analyticsData.metrics.total_blocks)}
                 </p>
@@ -379,7 +471,9 @@ const AnalyticsDashboard: React.FC = () => {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Transactions</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Total Transactions
+                </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {formatNumber(analyticsData.metrics.total_transactions)}
                 </p>
@@ -393,7 +487,9 @@ const AnalyticsDashboard: React.FC = () => {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Participants</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Active Participants
+                </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {analyticsData.metrics.active_participants}
                 </p>
@@ -407,12 +503,18 @@ const AnalyticsDashboard: React.FC = () => {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Network Status</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Network Status
+                </p>
                 <div className="flex items-center gap-2">
-                  <p className={`text-2xl font-bold capitalize ${getStatusColor(analyticsData.metrics.network_status)}`}>
+                  <p
+                    className={`text-2xl font-bold capitalize ${getStatusColor(analyticsData.metrics.network_status)}`}
+                  >
                     {analyticsData.metrics.network_status}
                   </p>
-                  <div className={`w-3 h-3 rounded-full ${analyticsData.metrics.network_status === 'healthy' ? 'bg-green-500' : analyticsData.metrics.network_status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                  <div
+                    className={`w-3 h-3 rounded-full ${analyticsData.metrics.network_status === "healthy" ? "bg-green-500" : analyticsData.metrics.network_status === "warning" ? "bg-yellow-500" : "bg-red-500"}`}
+                  ></div>
                 </div>
               </div>
               <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
@@ -426,7 +528,9 @@ const AnalyticsDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Performance Metrics</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Performance Metrics
+              </h3>
               <PieChart className="w-5 h-5 text-gray-500" />
             </div>
             <div className="space-y-4">
@@ -442,7 +546,9 @@ const AnalyticsDashboard: React.FC = () => {
                     <span className="text-lg font-semibold text-gray-900 dark:text-white">
                       {metric.value}
                     </span>
-                    <span className="text-sm text-gray-500 ml-1">{metric.unit}</span>
+                    <span className="text-sm text-gray-500 ml-1">
+                      {metric.unit}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -451,14 +557,18 @@ const AnalyticsDashboard: React.FC = () => {
 
           <Card>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Traceability Distribution</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Traceability Distribution
+              </h3>
               <PieChart className="w-5 h-5 text-gray-500" />
             </div>
             <div className="space-y-3">
               {analyticsData.traceabilityStats.map((stat, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full bg-${['blue', 'green', 'yellow', 'purple', 'gray'][index % 5]}-500`}></div>
+                    <div
+                      className={`w-3 h-3 rounded-full bg-${["blue", "green", "yellow", "purple", "gray"][index % 5]}-500`}
+                    ></div>
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {stat.type}
                     </span>
@@ -480,19 +590,26 @@ const AnalyticsDashboard: React.FC = () => {
         {/* Transaction Trends */}
         <Card className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Transaction Trends</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Transaction Trends
+            </h3>
             <LineChart className="w-5 h-5 text-gray-500" />
           </div>
           <div className="h-64 flex items-end justify-between gap-2">
             {analyticsData.transactionTrends.slice(-14).map((trend, index) => (
               <div key={index} className="flex flex-col items-center flex-1">
-                <div 
+                <div
                   className="w-full bg-blue-500 rounded-t-sm min-h-[4px] transition-all duration-300 hover:bg-blue-600"
-                  style={{ height: `${(trend.count / Math.max(...analyticsData.transactionTrends.map(t => t.count))) * 200}px` }}
+                  style={{
+                    height: `${(trend.count / Math.max(...analyticsData.transactionTrends.map((t) => t.count))) * 200}px`,
+                  }}
                   title={`${trend.count} transactions on ${trend.date}`}
                 ></div>
                 <span className="text-xs text-gray-500 mt-2 transform -rotate-45 origin-left">
-                  {new Date(trend.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {new Date(trend.date).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </span>
               </div>
             ))}
@@ -502,12 +619,17 @@ const AnalyticsDashboard: React.FC = () => {
         {/* Participant Activity */}
         <Card>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Top Participant Activity</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Top Participant Activity
+            </h3>
             <Users className="w-5 h-5 text-gray-500" />
           </div>
           <div className="space-y-4">
             {analyticsData.participantActivity.map((participant, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
                     {participant.participant.charAt(0)}

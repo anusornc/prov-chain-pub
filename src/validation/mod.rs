@@ -7,5 +7,5 @@ pub mod input_validator;
 pub mod sanitizer;
 
 // Re-exports for convenience
-pub use input_validator::{InputValidator, ValidationRule, ValidationContext};
+pub use input_validator::{InputValidator, ValidationContext, ValidationRule};
 pub use sanitizer::{InputSanitizer, SanitizationConfig};

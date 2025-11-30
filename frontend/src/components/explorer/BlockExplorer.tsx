@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Filter, 
-  RefreshCw, 
-  ChevronRight, 
-  Clock, 
+import React, { useState, useEffect } from "react";
+import {
+  Search,
+  Filter,
+  RefreshCw,
+  ChevronRight,
+  Clock,
   Database,
   Activity,
   AlertCircle,
-  CheckCircle
-} from 'lucide-react';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
-import Card from '../ui/Card';
-import Badge from '../ui/Badge';
-import LoadingSpinner from '../ui/LoadingSpinner';
-import useBlockchain from '../../hooks/useBlockchain';
-import type { Block, SearchFilters } from '../../types';
+  CheckCircle,
+} from "lucide-react";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import Card from "../ui/Card";
+import Badge from "../ui/Badge";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import useBlockchain from "../../hooks/useBlockchain";
+import type { Block, SearchFilters } from "../../types";
 
 interface BlockListItemProps {
   block: Block;
@@ -33,7 +33,10 @@ const BlockListItem: React.FC<BlockListItemProps> = ({ block, onClick }) => {
   };
 
   return (
-    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => onClick(block)}>
+    <Card
+      className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => onClick(block)}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center justify-center w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-lg">
@@ -53,7 +56,7 @@ const BlockListItem: React.FC<BlockListItemProps> = ({ block, onClick }) => {
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <div className="text-right">
             <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -77,7 +80,7 @@ interface SearchBarProps {
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch, loading = false }) => {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -99,7 +102,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, loading = false }) => {
           />
         </div>
         <Button type="submit" disabled={loading}>
-          {loading ? <LoadingSpinner size="sm" /> : 'Search'}
+          {loading ? <LoadingSpinner size="sm" /> : "Search"}
         </Button>
         <Button
           type="button"
@@ -133,7 +136,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, loading = false }) => {
             </div>
           </div>
           <div className="flex justify-end space-x-2 mt-4">
-            <Button variant="outline" size="sm" onClick={() => setShowFilters(false)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(false)}
+            >
               Cancel
             </Button>
             <Button size="sm">Apply Filters</Button>
@@ -149,16 +156,10 @@ interface BlockExplorerProps {
 }
 
 const BlockExplorer: React.FC<BlockExplorerProps> = ({ onBlockSelect }) => {
-  const { 
-    blocks, 
-    loading, 
-    blocksLoading, 
-    error, 
-    refresh 
-  } = useBlockchain();
+  const { blocks, loading, blocksLoading, error, refresh } = useBlockchain();
 
   const [filteredBlocks, setFilteredBlocks] = useState<Block[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
@@ -177,7 +178,7 @@ const BlockExplorer: React.FC<BlockExplorerProps> = ({ onBlockSelect }) => {
       return;
     }
 
-    const filtered = blocks.filter(block => {
+    const filtered = blocks.filter((block) => {
       const queryLower = query.toLowerCase();
       return (
         block.index.toString().includes(queryLower) ||
@@ -192,7 +193,7 @@ const BlockExplorer: React.FC<BlockExplorerProps> = ({ onBlockSelect }) => {
   // Handle filter changes
   const handleFilterChange = (filters: SearchFilters) => {
     // TODO: Implement filtering logic
-    console.log('Filters changed:', filters);
+    console.log("Filters changed:", filters);
   };
 
   // Handle block selection
@@ -216,7 +217,9 @@ const BlockExplorer: React.FC<BlockExplorerProps> = ({ onBlockSelect }) => {
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner size="lg" />
-        <span className="ml-2 text-gray-600 dark:text-gray-400">Loading blockchain data...</span>
+        <span className="ml-2 text-gray-600 dark:text-gray-400">
+          Loading blockchain data...
+        </span>
       </div>
     );
   }
@@ -234,12 +237,10 @@ const BlockExplorer: React.FC<BlockExplorerProps> = ({ onBlockSelect }) => {
           </p>
         </div>
         <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            onClick={refresh}
-            disabled={blocksLoading}
-          >
-            <RefreshCw className={`w-4 h-4 ${blocksLoading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" onClick={refresh} disabled={blocksLoading}>
+            <RefreshCw
+              className={`w-4 h-4 ${blocksLoading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
         </div>
@@ -268,43 +269,53 @@ const BlockExplorer: React.FC<BlockExplorerProps> = ({ onBlockSelect }) => {
           <div className="flex items-center space-x-2">
             <Database className="w-5 h-5 text-blue-500" />
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Blocks</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Total Blocks
+              </p>
               <p className="text-xl font-semibold text-gray-900 dark:text-white">
                 {blocks.length.toLocaleString()}
               </p>
             </div>
           </div>
         </Card>
-        
+
         <Card className="p-4">
           <div className="flex items-center space-x-2">
             <Activity className="w-5 h-5 text-green-500" />
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Transactions</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Total Transactions
+              </p>
               <p className="text-xl font-semibold text-gray-900 dark:text-white">
-                {blocks.reduce((sum, block) => sum + block.transaction_count, 0).toLocaleString()}
+                {blocks
+                  .reduce((sum, block) => sum + block.transaction_count, 0)
+                  .toLocaleString()}
               </p>
             </div>
           </div>
         </Card>
-        
+
         <Card className="p-4">
           <div className="flex items-center space-x-2">
             <Clock className="w-5 h-5 text-yellow-500" />
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Latest Block</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Latest Block
+              </p>
               <p className="text-xl font-semibold text-gray-900 dark:text-white">
                 #{blocks[0]?.index || 0}
               </p>
             </div>
           </div>
         </Card>
-        
+
         <Card className="p-4">
           <div className="flex items-center space-x-2">
             <CheckCircle className="w-5 h-5 text-purple-500" />
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Search Results</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Search Results
+              </p>
               <p className="text-xl font-semibold text-gray-900 dark:text-white">
                 {filteredBlocks.length.toLocaleString()}
               </p>
@@ -322,7 +333,9 @@ const BlockExplorer: React.FC<BlockExplorerProps> = ({ onBlockSelect }) => {
               No blocks found
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              {searchQuery ? 'Try adjusting your search criteria.' : 'No blocks available yet.'}
+              {searchQuery
+                ? "Try adjusting your search criteria."
+                : "No blocks available yet."}
             </p>
           </Card>
         ) : (
@@ -340,7 +353,8 @@ const BlockExplorer: React.FC<BlockExplorerProps> = ({ onBlockSelect }) => {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {startIndex + 1} to {Math.min(endIndex, filteredBlocks.length)} of{' '}
+            Showing {startIndex + 1} to{" "}
+            {Math.min(endIndex, filteredBlocks.length)} of{" "}
             {filteredBlocks.length} blocks
           </p>
           <div className="flex space-x-1">
@@ -357,7 +371,7 @@ const BlockExplorer: React.FC<BlockExplorerProps> = ({ onBlockSelect }) => {
               return (
                 <Button
                   key={page}
-                  variant={currentPage === page ? 'primary' : 'outline'}
+                  variant={currentPage === page ? "primary" : "outline"}
                   size="sm"
                   onClick={() => handlePageChange(page)}
                 >

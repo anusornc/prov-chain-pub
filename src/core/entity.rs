@@ -1,30 +1,30 @@
 //! Generic entity model for universal traceability platform
 
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// A traceable entity that can represent anything across domains
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TraceableEntity {
     /// Unique identifier for the entity
     pub id: String,
-    
+
     /// Type of entity (domain-specific)
     pub entity_type: EntityType,
-    
+
     /// Domain this entity belongs to
     pub domain: DomainType,
-    
+
     /// Key-value properties of the entity
     pub properties: HashMap<String, PropertyValue>,
-    
+
     /// Relationships to other entities
     pub relationships: Vec<EntityRelationship>,
-    
+
     /// Metadata about the entity
     pub metadata: EntityMetadata,
-    
+
     /// Provenance information
     pub provenance: ProvenanceInfo,
 }
@@ -34,37 +34,37 @@ pub struct TraceableEntity {
 pub enum EntityType {
     /// Physical products or materials
     Product,
-    
+
     /// Components or parts
     Component,
-    
+
     /// Processes or activities
     Process,
-    
+
     /// People involved in the trace
     Person,
-    
+
     /// Organizations or companies
     Organization,
-    
+
     /// Documents or records
     Document,
-    
+
     /// Digital assets (files, NFTs, etc.)
     DigitalAsset,
-    
+
     /// Services provided
     Service,
-    
+
     /// Events in the trace
     Event,
-    
+
     /// Geographic locations
     Location,
-    
+
     /// Equipment or machinery
     Equipment,
-    
+
     /// Domain-specific entity types
     DomainSpecific(String),
 }
@@ -74,19 +74,19 @@ pub enum EntityType {
 pub enum DomainType {
     /// Supply chain and manufacturing
     SupplyChain,
-    
+
     /// Healthcare and medical
     Healthcare,
-    
+
     /// Pharmaceutical industry
     Pharmaceutical,
-    
+
     /// Automotive industry
     Automotive,
-    
+
     /// Digital assets and NFTs
     DigitalAssets,
-    
+
     /// Custom domain types
     Custom(String),
 }
@@ -108,22 +108,22 @@ pub enum PropertyValue {
 pub struct EntityRelationship {
     /// Subject entity ID
     pub subject: String,
-    
+
     /// Predicate/relationship type
     pub predicate: RelationshipType,
-    
+
     /// Object entity ID
     pub object: String,
-    
+
     /// Domain context for this relationship
     pub domain_context: Option<DomainType>,
-    
+
     /// Temporal information
     pub temporal_info: Option<TemporalInfo>,
-    
+
     /// Confidence score (0.0 to 1.0)
     pub confidence_score: f64,
-    
+
     /// Additional metadata
     pub metadata: HashMap<String, String>,
 }
@@ -138,10 +138,10 @@ pub enum RelationshipType {
     WasAttributedTo,
     WasDerivedFrom,
     WasInformedBy,
-    
+
     /// Domain-specific relationships
     DomainSpecific(String),
-    
+
     /// Cross-domain relationships
     RelatedTo,
     Influenced,
@@ -153,10 +153,10 @@ pub enum RelationshipType {
 pub struct TemporalInfo {
     /// Start time
     pub start_time: Option<DateTime<Utc>>,
-    
+
     /// End time
     pub end_time: Option<DateTime<Utc>>,
-    
+
     /// Timestamp of the relationship
     pub timestamp: DateTime<Utc>,
 }
@@ -166,16 +166,16 @@ pub struct TemporalInfo {
 pub struct EntityMetadata {
     /// Creation timestamp
     pub created_at: DateTime<Utc>,
-    
+
     /// Last updated timestamp
     pub updated_at: DateTime<Utc>,
-    
+
     /// Version of the entity
     pub version: u32,
-    
+
     /// Tags or labels
     pub tags: Vec<String>,
-    
+
     /// Additional custom metadata
     pub custom_fields: HashMap<String, String>,
 }
@@ -185,13 +185,13 @@ pub struct EntityMetadata {
 pub struct ProvenanceInfo {
     /// Creator of the entity
     pub creator: String,
-    
+
     /// Sources of the entity data
     pub sources: Vec<String>,
-    
+
     /// Chain of custody
     pub custody_chain: Vec<CustodyRecord>,
-    
+
     /// Digital signatures
     pub signatures: Vec<DigitalSignature>,
 }
@@ -201,13 +201,13 @@ pub struct ProvenanceInfo {
 pub struct CustodyRecord {
     /// Entity or person who had custody
     pub custodian: String,
-    
+
     /// When custody started
     pub start_time: DateTime<Utc>,
-    
+
     /// When custody ended
     pub end_time: Option<DateTime<Utc>>,
-    
+
     /// Location of custody
     pub location: Option<String>,
 }
@@ -217,13 +217,13 @@ pub struct CustodyRecord {
 pub struct DigitalSignature {
     /// Public key of signer
     pub public_key: String,
-    
+
     /// Signature value
     pub signature: String,
-    
+
     /// Timestamp of signing
     pub timestamp: DateTime<Utc>,
-    
+
     /// Algorithm used
     pub algorithm: String,
 }
@@ -280,7 +280,7 @@ trace:{} a trace:{} ;
     trace:domain \"{:?}\" ;
     trace:version {} .
 ",
-            self.id, 
+            self.id,
             match &self.entity_type {
                 EntityType::Product => "Product".to_string(),
                 EntityType::Component => "Component".to_string(),
@@ -312,16 +312,16 @@ trace:{} a trace:{} ;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::entity::{EntityType, DomainType};
+    use crate::core::entity::{DomainType, EntityType};
 
     #[test]
     fn test_entity_creation() {
         let entity = TraceableEntity::new(
             "test_entity_001".to_string(),
             EntityType::Product,
-            DomainType::SupplyChain
+            DomainType::SupplyChain,
         );
-        
+
         assert_eq!(entity.id, "test_entity_001");
         assert_eq!(entity.entity_type, EntityType::Product);
         assert_eq!(entity.domain, DomainType::SupplyChain);
@@ -334,9 +334,9 @@ mod tests {
         let entity = TraceableEntity::new(
             "test_entity_001".to_string(),
             EntityType::Product,
-            DomainType::SupplyChain
+            DomainType::SupplyChain,
         );
-        
+
         let rdf = entity.to_rdf();
         assert!(rdf.contains("test_entity_001"));
         assert!(rdf.contains("Product"));

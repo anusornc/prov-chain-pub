@@ -1,6 +1,6 @@
 //! Domain-specific ontology loading and management
 
-use crate::ontology::error::{OntologyError, ConsistencyError, ValidationError};
+use crate::ontology::error::{ConsistencyError, OntologyError, ValidationError};
 use crate::ontology::{OntologyConfig, ShaclValidator};
 use oxigraph::store::Store;
 use std::collections::HashMap;
@@ -45,7 +45,8 @@ impl DomainConfig {
 
     /// Check if a transaction type is supported
     pub fn supports_transaction_type(&self, transaction_type: &str) -> bool {
-        self.supported_transaction_types.contains(&transaction_type.to_string())
+        self.supported_transaction_types
+            .contains(&transaction_type.to_string())
     }
 }
 
@@ -75,9 +76,9 @@ impl std::fmt::Debug for OntologyManager {
 impl Clone for OntologyManager {
     fn clone(&self) -> Self {
         // Since Store doesn't implement Clone, we need to recreate it
-        let ontology_store = Self::load_ontology_store(&self.config)
-            .unwrap_or_else(|_| Store::new().unwrap());
-        
+        let ontology_store =
+            Self::load_ontology_store(&self.config).unwrap_or_else(|_| Store::new().unwrap());
+
         OntologyManager {
             config: self.config.clone(),
             domain_config: self.domain_config.clone(),
@@ -92,13 +93,14 @@ impl OntologyManager {
     pub fn new(config: OntologyConfig) -> Result<Self, OntologyError> {
         // Load domain configuration
         let domain_config = Self::load_domain_config(&config)?;
-        
+
         // Create SHACL validator
         let validator = ShaclValidator::new(
             &config.core_shacl_path,
             &config.domain_shacl_path,
             config.ontology_hash.clone(),
-        ).map_err(|e| OntologyError::OntologyLoadError {
+        )
+        .map_err(|e| OntologyError::OntologyLoadError {
             path: "SHACL validator".to_string(),
             source: Box::new(e),
         })?;
@@ -117,7 +119,7 @@ impl OntologyManager {
     /// Load domain configuration from ontology
     fn load_domain_config(config: &OntologyConfig) -> Result<DomainConfig, OntologyError> {
         let domain_name = config.domain_name()?;
-        
+
         // Create domain configuration based on the ontology
         let mut domain_config = DomainConfig::new(
             domain_name.clone(),
@@ -156,7 +158,7 @@ impl OntologyManager {
     ) -> Result<(), OntologyError> {
         // Look for domain-specific annotations in the ontology
         // This is a simplified implementation - in practice, you'd parse RDF properly
-        
+
         // Extract description from rdfs:comment
         if let Some(comment_start) = ontology_content.find("rdfs:comment") {
             if let Some(quote_start) = ontology_content[comment_start..].find('"') {
@@ -175,7 +177,7 @@ impl OntologyManager {
                     domain_config.add_transaction_type(tx_type.trim().to_string());
                 }
             }
-            
+
             // Look for validation rules
             if line.contains("# Validation rule:") {
                 if let Some(rule_part) = line.split("# Validation rule:").nth(1) {
@@ -194,72 +196,76 @@ impl OntologyManager {
 
     /// Load ontology into an RDF store
     fn load_ontology_store(config: &OntologyConfig) -> Result<Store, OntologyError> {
-        let store = Store::new()
-            .map_err(|e| OntologyError::OntologyLoadError {
-                path: "RDF store creation".to_string(),
-                source: Box::new(e),
-            })?;
+        let store = Store::new().map_err(|e| OntologyError::OntologyLoadError {
+            path: "RDF store creation".to_string(),
+            source: Box::new(e),
+        })?;
 
         // Load core ontology
         if Path::new(&config.core_ontology_path).exists() {
-            let core_content = fs::read_to_string(&config.core_ontology_path)
-                .map_err(|e| OntologyError::OntologyLoadError {
+            let core_content = fs::read_to_string(&config.core_ontology_path).map_err(|e| {
+                OntologyError::OntologyLoadError {
                     path: config.core_ontology_path.clone(),
                     source: Box::new(e),
-                })?;
+                }
+            })?;
 
             let format = Self::detect_rdf_format(&core_content, &config.core_ontology_path)?;
             use std::io::Cursor;
             let reader = Cursor::new(core_content.as_bytes());
-            store.load_from_reader(
-                format,
-                reader,
-            ).map_err(|e| OntologyError::OntologyParseError {
-                path: config.core_ontology_path.clone(),
-                message: format!("Failed to parse core ontology: {}", e),
+            store.load_from_reader(format, reader).map_err(|e| {
+                OntologyError::OntologyParseError {
+                    path: config.core_ontology_path.clone(),
+                    message: format!("Failed to parse core ontology: {}", e),
+                }
             })?;
         }
 
         // Load domain ontology
-        let domain_content = fs::read_to_string(&config.domain_ontology_path)
-            .map_err(|e| OntologyError::OntologyLoadError {
+        let domain_content = fs::read_to_string(&config.domain_ontology_path).map_err(|e| {
+            OntologyError::OntologyLoadError {
                 path: config.domain_ontology_path.clone(),
                 source: Box::new(e),
-            })?;
+            }
+        })?;
 
         let format = Self::detect_rdf_format(&domain_content, &config.domain_ontology_path)?;
         use std::io::Cursor;
         let reader = Cursor::new(domain_content.as_bytes());
-        store.load_from_reader(
-            format,
-            reader,
-        ).map_err(|e| OntologyError::OntologyParseError {
-            path: config.domain_ontology_path.clone(),
-            message: format!("Failed to parse domain ontology: {}", e),
-        })?;
+        store
+            .load_from_reader(format, reader)
+            .map_err(|e| OntologyError::OntologyParseError {
+                path: config.domain_ontology_path.clone(),
+                message: format!("Failed to parse domain ontology: {}", e),
+            })?;
 
         Ok(store)
     }
 
     /// Detect RDF format from content and file extension
-    fn detect_rdf_format(content: &str, file_path: &str) -> Result<oxigraph::io::RdfFormat, OntologyError> {
+    fn detect_rdf_format(
+        content: &str,
+        file_path: &str,
+    ) -> Result<oxigraph::io::RdfFormat, OntologyError> {
         // First, try to detect from content
         let trimmed_content = content.trim();
-        
+
         // Check for Turtle format indicators
-        if trimmed_content.starts_with("@prefix") || 
-           trimmed_content.starts_with("@base") ||
-           content.contains("@prefix") {
+        if trimmed_content.starts_with("@prefix")
+            || trimmed_content.starts_with("@base")
+            || content.contains("@prefix")
+        {
             return Ok(oxigraph::io::RdfFormat::Turtle);
         }
-        
+
         // Check for RDF/XML format indicators
-        if trimmed_content.starts_with("<?xml") ||
-           trimmed_content.starts_with("<rdf:RDF") ||
-           content.contains("<rdf:RDF") {
+        if trimmed_content.starts_with("<?xml")
+            || trimmed_content.starts_with("<rdf:RDF")
+            || content.contains("<rdf:RDF")
+        {
             return Ok(oxigraph::io::RdfFormat::RdfXml);
         }
-        
+
         // Check for N-Triples format indicators
         if content.lines().all(|line| {
             let line = line.trim();
@@ -267,7 +273,7 @@ impl OntologyManager {
         }) {
             return Ok(oxigraph::io::RdfFormat::NTriples);
         }
-        
+
         // Fall back to file extension detection
         let path = Path::new(file_path);
         if let Some(extension) = path.extension().and_then(|ext| ext.to_str()) {
@@ -281,7 +287,7 @@ impl OntologyManager {
                     } else {
                         Ok(oxigraph::io::RdfFormat::Turtle)
                     }
-                },
+                }
                 "nt" => Ok(oxigraph::io::RdfFormat::NTriples),
                 "nq" => Ok(oxigraph::io::RdfFormat::NQuads),
                 _ => Ok(oxigraph::io::RdfFormat::Turtle), // Default to Turtle
@@ -307,10 +313,7 @@ impl OntologyManager {
     }
 
     /// Check ontology consistency across network participants
-    pub fn check_ontology_consistency(
-        &self,
-        network_hash: &str,
-    ) -> Result<(), ConsistencyError> {
+    pub fn check_ontology_consistency(&self, network_hash: &str) -> Result<(), ConsistencyError> {
         if self.config.ontology_hash != network_hash {
             return Err(ConsistencyError::new(
                 self.config.ontology_hash.clone(),
@@ -325,7 +328,10 @@ impl OntologyManager {
     }
 
     /// Validate transaction data using SHACL
-    pub fn validate_transaction(&self, rdf_data: &str) -> Result<crate::ontology::error::ValidationResult, ValidationError> {
+    pub fn validate_transaction(
+        &self,
+        rdf_data: &str,
+    ) -> Result<crate::ontology::error::ValidationResult, ValidationError> {
         self.validator.validate_transaction(rdf_data)
     }
 
@@ -347,12 +353,13 @@ impl OntologyManager {
     /// Query the ontology store
     pub fn query_ontology(&self, sparql_query: &str) -> Result<String, OntologyError> {
         use oxigraph::sparql::QueryResults;
-        
-        let results = self.ontology_store.query(sparql_query)
-            .map_err(|e| OntologyError::OntologyLoadError {
+
+        let results = self.ontology_store.query(sparql_query).map_err(|e| {
+            OntologyError::OntologyLoadError {
                 path: "SPARQL query".to_string(),
                 source: Box::new(e),
-            })?;
+            }
+        })?;
 
         // Convert query results to string representation
         match results {
@@ -378,9 +385,7 @@ impl OntologyManager {
                 }
                 Ok(result_string)
             }
-            QueryResults::Boolean(boolean) => {
-                Ok(boolean.to_string())
-            }
+            QueryResults::Boolean(boolean) => Ok(boolean.to_string()),
         }
     }
 
@@ -394,7 +399,7 @@ impl OntologyManager {
                 ?class a <http://www.w3.org/2002/07/owl#Class> .
             }
         "#;
-        
+
         if let Ok(result) = self.query_ontology(class_query) {
             // Parse count from result (simplified)
             if let Some(count_str) = result.lines().next() {
@@ -411,7 +416,7 @@ impl OntologyManager {
                 { ?property a <http://www.w3.org/2002/07/owl#DatatypeProperty> }
             }
         "#;
-        
+
         if let Ok(result) = self.query_ontology(property_query) {
             if let Some(count_str) = result.lines().next() {
                 if let Ok(count) = count_str.trim().parse::<u32>() {
@@ -427,7 +432,7 @@ impl OntologyManager {
                 ?class a <http://www.w3.org/2002/07/owl#Class> .
             }
         "#;
-        
+
         if let Ok(result) = self.query_ontology(individual_query) {
             if let Some(count_str) = result.lines().next() {
                 if let Ok(count) = count_str.trim().parse::<u32>() {
@@ -443,13 +448,14 @@ impl OntologyManager {
     pub fn reload(&mut self) -> Result<(), OntologyError> {
         // Reload domain configuration
         self.domain_config = Self::load_domain_config(&self.config)?;
-        
+
         // Recreate SHACL validator
         self.validator = ShaclValidator::new(
             &self.config.core_shacl_path,
             &self.config.domain_shacl_path,
             self.config.ontology_hash.clone(),
-        ).map_err(|e| OntologyError::OntologyLoadError {
+        )
+        .map_err(|e| OntologyError::OntologyLoadError {
             path: "SHACL validator reload".to_string(),
             source: Box::new(e),
         })?;
@@ -488,7 +494,6 @@ impl OntologyStats {
 mod tests {
     use super::*;
     use std::fs;
-    use std::io::Write;
     use tempfile::TempDir;
 
     #[test]
@@ -509,23 +514,26 @@ mod tests {
 
     #[test]
     fn test_domain_config_validation_rules() {
-        let mut config = DomainConfig::new(
-            "test_domain".to_string(),
-            "Test domain".to_string(),
-        );
+        let mut config = DomainConfig::new("test_domain".to_string(), "Test domain".to_string());
 
         config.add_validation_rule("min_temperature".to_string(), "0".to_string());
         config.add_validation_rule("max_temperature".to_string(), "100".to_string());
 
-        assert_eq!(config.validation_rules.get("min_temperature"), Some(&"0".to_string()));
-        assert_eq!(config.validation_rules.get("max_temperature"), Some(&"100".to_string()));
+        assert_eq!(
+            config.validation_rules.get("min_temperature"),
+            Some(&"0".to_string())
+        );
+        assert_eq!(
+            config.validation_rules.get("max_temperature"),
+            Some(&"100".to_string())
+        );
     }
 
     #[test]
     fn test_load_domain_ontology() {
         let temp_dir = TempDir::new().unwrap();
         let ontology_path = temp_dir.path().join("test_ontology.owl");
-        
+
         // Create a minimal OWL ontology file
         let owl_content = r#"<?xml version="1.0"?>
 <rdf:RDF xmlns="http://example.org/test#"
@@ -537,12 +545,12 @@ mod tests {
         <rdfs:comment>Test ontology for domain management</rdfs:comment>
     </owl:Ontology>
 </rdf:RDF>"#;
-        
+
         fs::write(&ontology_path, owl_content).unwrap();
-        
+
         let result = OntologyManager::load_domain_ontology(&ontology_path.to_string_lossy());
         assert!(result.is_ok());
-        
+
         let config = result.unwrap();
         assert_eq!(config.domain_ontology_path, ontology_path.to_string_lossy());
     }
@@ -551,7 +559,7 @@ mod tests {
     fn test_ontology_not_found() {
         let result = OntologyManager::load_domain_ontology("nonexistent/ontology.owl");
         assert!(result.is_err());
-        
+
         match result.unwrap_err() {
             OntologyError::OntologyNotFound { path } => {
                 assert_eq!(path, "nonexistent/ontology.owl");

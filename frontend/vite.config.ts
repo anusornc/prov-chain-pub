@@ -1,23 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Base API URL for proxy configuration
+const API_BASE_URL = process.env.VITE_API_BASE_URL || 'http://localhost:8080'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: API_BASE_URL,
         changeOrigin: true,
         secure: false,
       },
       '/auth': {
-        target: 'http://localhost:8080',
+        target: API_BASE_URL,
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'ws://localhost:8080',
+        target: API_BASE_URL.replace('http', 'ws'),
         ws: true,
         changeOrigin: true,
       }

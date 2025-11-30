@@ -1,10 +1,10 @@
-import React from 'react';
+import React from "react";
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string;
   subtitle?: string;
   actions?: React.ReactNode;
-  variant?: 'default' | 'primary' | 'secondary';
+  variant?: "default" | "primary" | "secondary";
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
@@ -14,22 +14,22 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       title,
       subtitle,
       actions,
-      variant = 'default',
-      className = '',
+      variant = "default",
+      className = "",
       ...props
     },
-    ref
+    ref,
   ) => {
-    const baseClasses = 'rounded-lg border bg-white shadow-sm';
-    
+    const baseClasses = "rounded-lg border bg-white shadow-sm";
+
     const variantClasses = {
-      default: 'border-gray-200',
-      primary: 'border-blue-200 bg-blue-50',
-      secondary: 'border-gray-200 bg-gray-50'
+      default: "border-gray-200",
+      primary: "border-blue-200 bg-blue-50",
+      secondary: "border-gray-200 bg-gray-50",
     };
-    
+
     const classes = `${baseClasses} ${variantClasses[variant]} ${className}`;
-    
+
     return (
       <div ref={ref} className={classes} {...props}>
         {(title || subtitle || actions) && (
@@ -37,7 +37,9 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
             <div className="flex items-center justify-between">
               <div>
                 {title && (
-                  <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {title}
+                  </h3>
                 )}
                 {subtitle && (
                   <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
@@ -47,14 +49,12 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
             </div>
           </div>
         )}
-        <div className="p-6">
-          {children}
-        </div>
+        <div className="p-6">{children}</div>
       </div>
     );
-  }
+  },
 );
 
-Card.displayName = 'Card';
+Card.displayName = "Card";
 
 export default Card;

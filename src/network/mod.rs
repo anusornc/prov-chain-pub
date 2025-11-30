@@ -1,26 +1,26 @@
 //! Network module for distributed ProvChainOrg implementation
-//! 
+//!
 //! This module provides P2P networking capabilities including:
 //! - Peer discovery and connection management
 //! - Message protocol for blockchain synchronization
 //! - WebSocket-based communication between nodes
 //! - Blockchain synchronization and consensus
 
-pub mod peer;
-pub mod messages;
-pub mod discovery;
-pub mod sync;
 pub mod consensus;
+pub mod discovery;
+pub mod messages;
+pub mod peer;
+pub mod sync;
 
+use anyhow::Result;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use anyhow::Result;
 
-use crate::utils::config::NodeConfig;
-use self::peer::PeerConnection;
 use self::messages::{P2PMessage, PeerInfo};
+use self::peer::PeerConnection;
+use crate::utils::config::NodeConfig;
 
 /// Network manager for handling all P2P operations
 pub struct NetworkManager {
@@ -53,20 +53,23 @@ impl NetworkManager {
     /// Start the network manager (listen for connections and connect to peers)
     pub async fn start(&mut self) -> Result<()> {
         tracing::info!("Starting network manager for node {}", self.node_id);
-        
+
         // Start WebSocket server for incoming connections
         self.start_server().await?;
-        
+
         // Connect to known peers
         self.connect_to_known_peers().await?;
-        
+
         Ok(())
     }
 
     /// Start WebSocket server for incoming peer connections
     async fn start_server(&self) -> Result<()> {
         // Implementation will be added in peer.rs
-        tracing::info!("WebSocket server starting on port {}", self.config.network.listen_port);
+        tracing::info!(
+            "WebSocket server starting on port {}",
+            self.config.network.listen_port
+        );
         Ok(())
     }
 
@@ -115,13 +118,13 @@ impl NetworkManager {
     /// Handle incoming message from a peer
     pub async fn handle_incoming_message(&self, peer_id: Uuid, message: P2PMessage) -> Result<()> {
         tracing::debug!("Received message from peer {}: {:?}", peer_id, message);
-        
+
         for handler in &self.message_handlers {
             if let Some(response) = handler.handle_message(peer_id, message.clone())? {
                 self.send_to_peer(peer_id, response).await?;
             }
         }
-        
+
         Ok(())
     }
 }

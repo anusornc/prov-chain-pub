@@ -1,9 +1,9 @@
 //! Security hardening and compliance for production deployment
 
+use crate::production::ProductionError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use crate::production::ProductionError;
 
 /// Security configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,7 +75,7 @@ impl Default for SecurityConfig {
                     policy_type: PolicyType::Session,
                     rules: vec![
                         "max_session_duration:86400".to_string(), // 24 hours
-                        "idle_timeout:3600".to_string(), // 1 hour
+                        "idle_timeout:3600".to_string(),          // 1 hour
                         "concurrent_sessions:3".to_string(),
                     ],
                     enabled: true,
@@ -187,12 +187,18 @@ impl SecurityManager {
 
     /// Validate TLS configuration
     async fn validate_tls_config(&self) -> Result<(), ProductionError> {
-        if let (Some(cert_path), Some(key_path)) = (&self.config.tls_cert_path, &self.config.tls_key_path) {
+        if let (Some(cert_path), Some(key_path)) =
+            (&self.config.tls_cert_path, &self.config.tls_key_path)
+        {
             // In a real implementation, we would validate the certificate and key files
-            tracing::info!("TLS configuration validated: cert={}, key={}", cert_path, key_path);
+            tracing::info!(
+                "TLS configuration validated: cert={}, key={}",
+                cert_path,
+                key_path
+            );
         } else {
             return Err(ProductionError::Security(
-                "TLS enabled but certificate or key path not specified".to_string()
+                "TLS enabled but certificate or key path not specified".to_string(),
             ));
         }
         Ok(())
@@ -203,8 +209,9 @@ impl SecurityManager {
         // Create audit log directory if it doesn't exist
         let log_path = PathBuf::from(&self.config.audit_log_path);
         if let Some(parent) = log_path.parent() {
-            tokio::fs::create_dir_all(parent).await
-                .map_err(|e| ProductionError::Security(format!("Failed to create audit log directory: {e}")))?;
+            tokio::fs::create_dir_all(parent).await.map_err(|e| {
+                ProductionError::Security(format!("Failed to create audit log directory: {e}"))
+            })?;
         }
 
         tracing::info!("Audit logging initialized: {}", self.config.audit_log_path);
@@ -228,7 +235,7 @@ impl SecurityManager {
         {
             let mut events = self.audit_events.write().await;
             events.push(event.clone());
-            
+
             // Keep only last 10000 events in memory
             if events.len() > 10000 {
                 events.remove(0);
@@ -237,9 +244,10 @@ impl SecurityManager {
 
         // Write to audit log file if enabled
         if self.config.audit_logging_enabled {
-            let log_entry = serde_json::to_string(&event)
-                .map_err(|e| ProductionError::Security(format!("Failed to serialize audit event: {e}")))?;
-            
+            let log_entry = serde_json::to_string(&event).map_err(|e| {
+                ProductionError::Security(format!("Failed to serialize audit event: {e}"))
+            })?;
+
             // In a real implementation, we would write to the actual log file
             tracing::info!("Audit event: {}", log_entry);
         }
@@ -252,8 +260,16 @@ impl SecurityManager {
         let events_count = self.audit_events.read().await.len();
         format!(
             "TLS: {}, Rate Limiting: {}, Audit Events: {}",
-            if self.config.tls_enabled { "Enabled" } else { "Disabled" },
-            if self.config.rate_limiting_enabled { "Enabled" } else { "Disabled" },
+            if self.config.tls_enabled {
+                "Enabled"
+            } else {
+                "Disabled"
+            },
+            if self.config.rate_limiting_enabled {
+                "Enabled"
+            } else {
+                "Disabled"
+            },
             events_count
         )
     }
@@ -261,7 +277,11 @@ impl SecurityManager {
     /// Get recent audit events
     pub async fn get_recent_audit_events(&self, limit: usize) -> Vec<SecurityAuditEvent> {
         let events = self.audit_events.read().await;
-        let start = if events.len() > limit { events.len() - limit } else { 0 };
+        let start = if events.len() > limit {
+            events.len() - limit
+        } else {
+            0
+        };
         events[start..].to_vec()
     }
 
@@ -347,8 +367,14 @@ server {{
     }}
 }}
 "#,
-            self.config.tls_cert_path.as_ref().unwrap_or(&"/etc/ssl/certs/provchain.crt".to_string()),
-            self.config.tls_key_path.as_ref().unwrap_or(&"/etc/ssl/private/provchain.key".to_string()),
+            self.config
+                .tls_cert_path
+                .as_ref()
+                .unwrap_or(&"/etc/ssl/certs/provchain.crt".to_string()),
+            self.config
+                .tls_key_path
+                .as_ref()
+                .unwrap_or(&"/etc/ssl/private/provchain.key".to_string()),
             self.config.rate_limit_per_minute
         )
     }
@@ -411,20 +437,25 @@ iptables -A INPUT -m limit --limit 5/min -j LOG --log-prefix "iptables denied: "
 iptables-save > /etc/iptables/rules.v4
 
 echo "Firewall rules applied successfully"
-"#.to_string()
+"#
+        .to_string()
     }
 
     /// Generate security audit report
     pub async fn generate_security_report(&self) -> String {
         let events = self.audit_events.read().await;
         let total_events = events.len();
-        
+
         let mut event_counts = HashMap::new();
         let mut result_counts = HashMap::new();
-        
+
         for event in events.iter() {
-            *event_counts.entry(format!("{:?}", event.event_type)).or_insert(0) += 1;
-            *result_counts.entry(format!("{:?}", event.result)).or_insert(0) += 1;
+            *event_counts
+                .entry(format!("{:?}", event.event_type))
+                .or_insert(0) += 1;
+            *result_counts
+                .entry(format!("{:?}", event.result))
+                .or_insert(0) += 1;
         }
 
         format!(
@@ -456,19 +487,32 @@ Generated: {}
             chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC"),
             total_events,
             if self.config.tls_enabled { "Yes" } else { "No" },
-            if self.config.rate_limiting_enabled { "Yes" } else { "No" },
-            if self.config.audit_logging_enabled { "Yes" } else { "No" },
-            event_counts.iter()
+            if self.config.rate_limiting_enabled {
+                "Yes"
+            } else {
+                "No"
+            },
+            if self.config.audit_logging_enabled {
+                "Yes"
+            } else {
+                "No"
+            },
+            event_counts
+                .iter()
                 .map(|(k, v)| format!("- {k}: {v}"))
                 .collect::<Vec<_>>()
                 .join("\n"),
-            result_counts.iter()
+            result_counts
+                .iter()
                 .map(|(k, v)| format!("- {k}: {v}"))
                 .collect::<Vec<_>>()
                 .join("\n"),
-            self.config.security_policies.iter()
-                .map(|p| format!("- {} ({}): {} rules", 
-                    p.name, 
+            self.config
+                .security_policies
+                .iter()
+                .map(|p| format!(
+                    "- {} ({}): {} rules",
+                    p.name,
                     if p.enabled { "Enabled" } else { "Disabled" },
                     p.rules.len()
                 ))
@@ -480,11 +524,11 @@ Generated: {}
     /// Shutdown security systems
     pub async fn shutdown(&mut self) -> Result<(), ProductionError> {
         tracing::info!("Shutting down security systems");
-        
+
         // Generate final security report
         let _report = self.generate_security_report().await;
         tracing::info!("Final security report generated");
-        
+
         Ok(())
     }
 }
@@ -500,7 +544,10 @@ impl SecurityMiddleware {
     }
 
     /// Validate request headers
-    pub fn validate_request_headers(&self, _headers: &HashMap<String, String>) -> Result<(), ProductionError> {
+    pub fn validate_request_headers(
+        &self,
+        _headers: &HashMap<String, String>,
+    ) -> Result<(), ProductionError> {
         // Check for required security headers
         if self.config.security_headers_enabled {
             // In a real implementation, we would validate security headers

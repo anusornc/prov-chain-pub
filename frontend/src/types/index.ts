@@ -19,18 +19,18 @@ export interface Transaction {
   block_index: number;
   signature: string;
   data: Record<string, unknown>;
-  status: 'pending' | 'confirmed' | 'failed';
+  status: "pending" | "confirmed" | "failed";
 }
 
-export type TransactionType = 
-  | 'Production'
-  | 'Processing'
-  | 'Transport'
-  | 'Quality'
-  | 'Transfer'
-  | 'Environmental'
-  | 'Compliance'
-  | 'Governance';
+export type TransactionType =
+  | "Production"
+  | "Processing"
+  | "Transport"
+  | "Quality"
+  | "Transfer"
+  | "Environmental"
+  | "Compliance"
+  | "Governance";
 
 // Traceability types
 export interface TraceabilityItem {
@@ -45,7 +45,12 @@ export interface TraceabilityItem {
 }
 
 export interface TraceabilityRelationship {
-  type: 'produced_from' | 'processed_into' | 'transported_by' | 'quality_tested' | 'transferred_to';
+  type:
+    | "produced_from"
+    | "processed_into"
+    | "transported_by"
+    | "quality_tested"
+    | "transferred_to";
   target_item: string;
   timestamp: string;
   transaction_id: string;
@@ -66,7 +71,7 @@ export interface TraceStep {
 export interface KnowledgeGraphNode {
   id: string;
   label: string;
-  type: 'item' | 'participant' | 'location' | 'process';
+  type: "item" | "participant" | "location" | "process";
   properties: Record<string, unknown>;
   x?: number;
   y?: number;
@@ -117,7 +122,7 @@ export interface SearchQuery {
   page: number;
   limit: number;
   sort_by?: string;
-  sort_order?: 'asc' | 'desc';
+  sort_order?: "asc" | "desc";
 }
 
 export interface SearchResults<T> {
@@ -134,7 +139,7 @@ export interface DashboardMetrics {
   total_transactions: number;
   total_items: number;
   active_participants: number;
-  network_status: 'healthy' | 'warning' | 'error';
+  network_status: "healthy" | "warning" | "error";
   last_block_time: string;
   avg_block_time: number;
   transactions_per_second: number;
@@ -142,10 +147,10 @@ export interface DashboardMetrics {
 }
 
 export interface NetworkHealth {
-  status: 'healthy' | 'warning' | 'error';
+  status: "healthy" | "warning" | "error";
   uptime: number;
   peer_count: number;
-  sync_status: 'synced' | 'syncing' | 'behind';
+  sync_status: "synced" | "syncing" | "behind";
   last_block_age: number;
   validation_errors: number;
 }
@@ -187,12 +192,12 @@ export interface WebSocketMessage {
   timestamp: string;
 }
 
-export type MessageType = 
-  | 'NewBlock'
-  | 'NewTransaction'
-  | 'ItemUpdate'
-  | 'NetworkStatus'
-  | 'ValidationAlert';
+export type MessageType =
+  | "NewBlock"
+  | "NewTransaction"
+  | "ItemUpdate"
+  | "NetworkStatus"
+  | "ValidationAlert";
 
 // UI Component types
 export interface TabConfig {
@@ -228,7 +233,7 @@ export interface TimeSeriesData {
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'number' | 'select' | 'date' | 'textarea' | 'checkbox';
+  type: "text" | "number" | "select" | "date" | "textarea" | "checkbox";
   required?: boolean;
   options?: { value: string; label: string }[];
   validation?: {
@@ -249,24 +254,19 @@ export interface Participant {
   permissions: Permission[];
   created_at: string;
   last_active: string;
-  status: 'active' | 'inactive' | 'suspended';
+  status: "active" | "inactive" | "suspended";
 }
 
-export type ParticipantType = 
-  | 'Producer'
-  | 'Manufacturer'
-  | 'LogisticsProvider'
-  | 'QualityLab'
-  | 'Auditor'
-  | 'Retailer'
-  | 'Administrator';
+export type ParticipantType =
+  | "Producer"
+  | "Manufacturer"
+  | "LogisticsProvider"
+  | "QualityLab"
+  | "Auditor"
+  | "Retailer"
+  | "Administrator";
 
-export type Permission = 
-  | 'read'
-  | 'write'
-  | 'validate'
-  | 'admin'
-  | 'audit';
+export type Permission = "read" | "write" | "validate" | "admin" | "audit";
 
 // SPARQL types
 export interface SPARQLQuery {
@@ -285,12 +285,15 @@ export interface SPARQLResult {
     vars: string[];
   };
   results: {
-    bindings: Record<string, {
-      type: string;
-      value: string;
-      datatype?: string;
-      'xml:lang'?: string;
-    }>[];
+    bindings: Record<
+      string,
+      {
+        type: string;
+        value: string;
+        datatype?: string;
+        "xml:lang"?: string;
+      }
+    >[];
   };
 }
 
@@ -314,9 +317,9 @@ export interface PaginationInfo {
 
 // Theme types
 export interface ThemeConfig {
-  mode: 'light' | 'dark' | 'system';
+  mode: "light" | "dark" | "system";
   primaryColor: string;
   accentColor: string;
-  fontSize: 'small' | 'medium' | 'large';
+  fontSize: "small" | "medium" | "large";
   compactMode: boolean;
 }

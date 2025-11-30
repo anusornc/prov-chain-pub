@@ -1,72 +1,71 @@
 //! Simple Criterion.rs benchmarks for consensus algorithms
-//! 
+//!
 //! This provides basic statistical benchmarking for ProvChain consensus performance
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use provchain_org::core::blockchain::Blockchain;
 use std::time::Duration;
 
 /// Benchmark basic block creation performance
 fn bench_block_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("block_creation");
-    
+
     // Test different block sizes
     for size in [1, 5, 10, 25, 50].iter() {
         let test_data = generate_test_rdf_data(*size);
-        
+
         group.throughput(Throughput::Elements(*size as u64));
-        group.bench_with_input(
-            BenchmarkId::new("provchain_poa", size),
-            size,
-            |b, _| {
-                b.iter_batched(
-                    || {
-                        let blockchain = Blockchain::new();
-                        (blockchain, test_data.clone())
-                    },
-                    |(mut blockchain, data)| {
-                        for block_data in data {
-                            let _ = blockchain.add_block(black_box(block_data));
-                        }
-                        black_box(blockchain)
-                    },
-                    criterion::BatchSize::SmallInput,
-                );
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("provchain_poa", size), size, |b, _| {
+            b.iter_batched(
+                || {
+                    let blockchain = Blockchain::new();
+                    (blockchain, test_data.clone())
+                },
+                |(mut blockchain, data)| {
+                    for block_data in data {
+                        let _ = blockchain.add_block(black_box(block_data));
+                    }
+                    black_box(blockchain)
+                },
+                criterion::BatchSize::SmallInput,
+            );
+        });
     }
-    
+
     group.finish();
 }
 
 /// Benchmark SPARQL query performance
 fn bench_sparql_queries(c: &mut Criterion) {
     let mut group = c.benchmark_group("sparql_queries");
-    
+
     // Setup blockchain with test data
     let mut blockchain = Blockchain::new();
     let test_data = generate_supply_chain_data(20);
     for block_data in test_data {
         let _ = blockchain.add_block(block_data);
     }
-    
+
     let queries = vec![
-        ("simple_select", "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10"),
-        ("count_query", "SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o }"),
+        (
+            "simple_select",
+            "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10",
+        ),
+        (
+            "count_query",
+            "SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o }",
+        ),
     ];
-    
+
     for (query_name, query) in queries {
-        group.bench_function(
-            BenchmarkId::new("query", query_name),
-            |b| {
-                b.iter(|| {
-                    let results = blockchain.rdf_store.query(black_box(query));
-                    black_box(results)
-                });
-            },
-        );
+        group.bench_function(BenchmarkId::new("query", query_name), |b| {
+            b.iter(|| {
+                let results = blockchain.rdf_store.query(black_box(query));
+                black_box(results)
+            });
+        });
     }
-    
+
     group.finish();
 }
 
@@ -74,7 +73,7 @@ fn bench_sparql_queries(c: &mut Criterion) {
 fn bench_blockchain_scaling(c: &mut Criterion) {
     let mut group = c.benchmark_group("blockchain_scaling");
     group.measurement_time(Duration::from_secs(10));
-    
+
     // Test scaling with different chain lengths
     for chain_length in [10, 25, 50, 100].iter() {
         group.throughput(Throughput::Elements(*chain_length as u64));
@@ -99,14 +98,14 @@ fn bench_blockchain_scaling(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
 /// Benchmark blockchain validation performance
 fn bench_validation_performance(c: &mut Criterion) {
     let mut group = c.benchmark_group("validation_performance");
-    
+
     // Test validation on chains of different lengths
     for chain_length in [10, 25, 50].iter() {
         group.bench_with_input(
@@ -119,7 +118,7 @@ fn bench_validation_performance(c: &mut Criterion) {
                 for block_data in test_data {
                     let _ = blockchain.add_block(block_data);
                 }
-                
+
                 b.iter(|| {
                     let is_valid = blockchain.is_valid();
                     black_box(is_valid)
@@ -127,28 +126,35 @@ fn bench_validation_performance(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
 // Data generation functions
 
 fn generate_test_rdf_data(size: usize) -> Vec<String> {
-    (0..size).map(|i| {
-        format!(r#"
+    (0..size)
+        .map(|i| {
+            format!(
+                r#"
 @prefix ex: <http://example.org/> .
 @prefix trace: <http://provchain.org/trace#> .
 
 ex:batch{} a trace:ProductBatch ;
     trace:hasBatchID "BATCH{}" ;
     trace:productType "Coffee" .
-"#, i, i)
-    }).collect()
+"#,
+                i, i
+            )
+        })
+        .collect()
 }
 
 fn generate_supply_chain_data(size: usize) -> Vec<String> {
-    (0..size).map(|i| {
-        format!(r#"
+    (0..size)
+        .map(|i| {
+            format!(
+                r#"
 @prefix trace: <http://provchain.org/trace#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 
@@ -158,8 +164,14 @@ trace:batch{} a trace:ProductBatch ;
     prov:wasAttributedTo trace:farmer{} .
 
 trace:farmer{} a trace:Farmer .
-"#, i, i, i % 10, i % 10)
-    }).collect()
+"#,
+                i,
+                i,
+                i % 10,
+                i % 10
+            )
+        })
+        .collect()
 }
 
 criterion_group!(

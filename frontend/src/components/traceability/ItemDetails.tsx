@@ -1,26 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ArrowLeft, 
-  Package, 
-  User, 
-  MapPin, 
-  Calendar, 
-  Shield, 
-  AlertCircle, 
-  CheckCircle, 
+import React, { useState, useEffect } from "react";
+import {
+  ArrowLeft,
+  Package,
+  User,
+  MapPin,
+  Calendar,
+  Shield,
+  AlertCircle,
+  CheckCircle,
   ExternalLink,
   Copy,
   RefreshCw,
   Activity,
   Link,
-  FileText
-} from 'lucide-react';
-import Button from '../ui/Button';
-import Card from '../ui/Card';
-import Badge from '../ui/Badge';
-import LoadingSpinner from '../ui/LoadingSpinner';
-import Alert from '../ui/Alert';
-import { useTraceability } from '../../hooks/useTraceability';
+  FileText,
+} from "lucide-react";
+import Button from "../ui/Button";
+import Card from "../ui/Card";
+import Badge from "../ui/Badge";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import Alert from "../ui/Alert";
+import { useTraceability } from "../../hooks/useTraceability";
 
 interface ItemDetailsProps {
   itemId: string;
@@ -40,10 +40,10 @@ interface ValidationResult {
   validation_time_ms: number;
 }
 
-const ItemDetails: React.FC<ItemDetailsProps> = ({ 
-  itemId, 
-  onBack, 
-  onRelatedItemSelect 
+const ItemDetails: React.FC<ItemDetailsProps> = ({
+  itemId,
+  onBack,
+  onRelatedItemSelect,
 }) => {
   const {
     selectedItem,
@@ -52,13 +52,16 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
     traceError,
     selectItem,
     validateItem,
-    refresh
+    refresh,
   } = useTraceability();
 
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationResult, setValidationResult] =
+    useState<ValidationResult | null>(null);
   const [validationLoading, setValidationLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'provenance' | 'relationships' | 'transactions'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "provenance" | "relationships" | "transactions"
+  >("overview");
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Load item data when component mounts or itemId changes
@@ -79,7 +82,8 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
       const result = await validateItem(selectedItem.id);
       setValidationResult(result);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Validation failed';
+      const errorMessage =
+        err instanceof Error ? err.message : "Validation failed";
       setValidationError(errorMessage);
     } finally {
       setValidationLoading(false);
@@ -93,34 +97,36 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   // Format date
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
   };
 
   // Get validation status color
-  const getValidationColor = (result: ValidationResult): 'success' | 'warning' | 'danger' => {
-    if (result.integrity_score >= 0.9) return 'success';
-    if (result.integrity_score >= 0.7) return 'warning';
-    return 'danger';
+  const getValidationColor = (
+    result: ValidationResult,
+  ): "success" | "warning" | "danger" => {
+    if (result.integrity_score >= 0.9) return "success";
+    if (result.integrity_score >= 0.7) return "warning";
+    return "danger";
   };
 
   // Get validation status text
   const getValidationText = (result: ValidationResult): string => {
-    if (result.integrity_score >= 0.9) return 'Highly Trusted';
-    if (result.integrity_score >= 0.7) return 'Moderately Trusted';
-    return 'Low Trust';
+    if (result.integrity_score >= 0.9) return "Highly Trusted";
+    if (result.integrity_score >= 0.7) return "Moderately Trusted";
+    return "Low Trust";
   };
 
   if (traceLoading && !selectedItem) {
@@ -135,10 +141,7 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
         <div className="max-w-4xl mx-auto">
-          <Alert
-            variant="error"
-            message={traceError}
-          />
+          <Alert variant="error" message={traceError} />
           {onBack && (
             <Button onClick={onBack} className="flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
@@ -173,10 +176,10 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
   }
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: Package },
-    { id: 'provenance', label: 'Provenance Chain', icon: Activity },
-    { id: 'relationships', label: 'Relationships', icon: Link },
-    { id: 'transactions', label: 'Transactions', icon: FileText }
+    { id: "overview", label: "Overview", icon: Package },
+    { id: "provenance", label: "Provenance Chain", icon: Activity },
+    { id: "relationships", label: "Relationships", icon: Link },
+    { id: "transactions", label: "Transactions", icon: FileText },
   ];
 
   return (
@@ -212,15 +215,19 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                 className="flex items-center gap-2"
                 variant="outline"
               >
-                <Shield className={`w-4 h-4 ${validationLoading ? 'animate-pulse' : ''}`} />
-                {validationLoading ? 'Validating...' : 'Validate'}
+                <Shield
+                  className={`w-4 h-4 ${validationLoading ? "animate-pulse" : ""}`}
+                />
+                {validationLoading ? "Validating..." : "Validate"}
               </Button>
               <Button
                 onClick={refresh}
                 disabled={traceLoading}
                 className="flex items-center gap-2"
               >
-                <RefreshCw className={`w-4 h-4 ${traceLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${traceLoading ? "animate-spin" : ""}`}
+                />
                 Refresh
               </Button>
             </div>
@@ -234,8 +241,12 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                   <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Type</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{selectedItem.type}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Type
+                  </p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {selectedItem.type}
+                  </p>
                 </div>
               </div>
 
@@ -244,8 +255,12 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                   <User className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Current Owner</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{selectedItem.current_owner}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Current Owner
+                  </p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {selectedItem.current_owner}
+                  </p>
                 </div>
               </div>
 
@@ -255,8 +270,12 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                     <MapPin className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Location</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">{selectedItem.location}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Location
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {selectedItem.location}
+                    </p>
                   </div>
                 </div>
               )}
@@ -266,7 +285,9 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                   <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Created</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Created
+                  </p>
                   <p className="font-semibold text-gray-900 dark:text-white">
                     {formatDate(selectedItem.created_at)}
                   </p>
@@ -278,17 +299,21 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Item ID</p>
-                  <p className="font-mono text-sm text-gray-900 dark:text-white">{selectedItem.id}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Item ID
+                  </p>
+                  <p className="font-mono text-sm text-gray-900 dark:text-white">
+                    {selectedItem.id}
+                  </p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleCopy(selectedItem.id, 'id')}
+                  onClick={() => handleCopy(selectedItem.id, "id")}
                   className="flex items-center gap-2"
                 >
                   <Copy className="w-4 h-4" />
-                  {copiedField === 'id' ? 'Copied!' : 'Copy'}
+                  {copiedField === "id" ? "Copied!" : "Copy"}
                 </Button>
               </div>
             </div>
@@ -354,7 +379,8 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
 
               <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
                 <span>
-                  Integrity Score: {Math.round(validationResult.integrity_score * 100)}%
+                  Integrity Score:{" "}
+                  {Math.round(validationResult.integrity_score * 100)}%
                 </span>
                 <span>
                   Validation Time: {validationResult.validation_time_ms}ms
@@ -364,10 +390,7 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
           )}
 
           {validationError && (
-            <Alert
-              variant="error"
-              message={validationError}
-            />
+            <Alert variant="error" message={validationError} />
           )}
         </div>
 
@@ -378,16 +401,17 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
-                
+
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as typeof activeTab)}
                     className={`
                       flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm
-                      ${isActive
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                      ${
+                        isActive
+                          ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                       }
                     `}
                   >
@@ -402,7 +426,7 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
 
         {/* Tab Content */}
         <div className="space-y-6">
-          {activeTab === 'overview' && (
+          {activeTab === "overview" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Properties */}
               <Card className="p-6">
@@ -411,16 +435,23 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                 </h3>
                 {Object.keys(selectedItem.properties).length > 0 ? (
                   <div className="space-y-3">
-                    {Object.entries(selectedItem.properties).map(([key, value]) => (
-                      <div key={key} className="flex justify-between items-start">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300 capitalize">
-                          {key.replace(/_/g, ' ')}:
-                        </span>
-                        <span className="text-sm text-gray-900 dark:text-white text-right max-w-xs">
-                          {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                        </span>
-                      </div>
-                    ))}
+                    {Object.entries(selectedItem.properties).map(
+                      ([key, value]) => (
+                        <div
+                          key={key}
+                          className="flex justify-between items-start"
+                        >
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-300 capitalize">
+                            {key.replace(/_/g, " ")}:
+                          </span>
+                          <span className="text-sm text-gray-900 dark:text-white text-right max-w-xs">
+                            {typeof value === "object"
+                              ? JSON.stringify(value)
+                              : String(value)}
+                          </span>
+                        </div>
+                      ),
+                    )}
                   </div>
                 ) : (
                   <p className="text-gray-500 dark:text-gray-400 text-sm">
@@ -436,25 +467,41 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Relationships</span>
-                    <Badge variant="info">{selectedItem.relationships.length}</Badge>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      Relationships
+                    </span>
+                    <Badge variant="info">
+                      {selectedItem.relationships.length}
+                    </Badge>
                   </div>
-                  
+
                   {traceData && (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Provenance Steps</span>
-                        <Badge variant="info">{traceData.trace_path.length}</Badge>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          Provenance Steps
+                        </span>
+                        <Badge variant="info">
+                          {traceData.trace_path.length}
+                        </Badge>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Related Transactions</span>
-                        <Badge variant="info">{traceData.related_transactions.length}</Badge>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          Related Transactions
+                        </span>
+                        <Badge variant="info">
+                          {traceData.related_transactions.length}
+                        </Badge>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Knowledge Graph Nodes</span>
-                        <Badge variant="info">{traceData.knowledge_graph.nodes.length}</Badge>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">
+                          Knowledge Graph Nodes
+                        </span>
+                        <Badge variant="info">
+                          {traceData.knowledge_graph.nodes.length}
+                        </Badge>
                       </div>
                     </>
                   )}
@@ -463,15 +510,18 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
             </div>
           )}
 
-          {activeTab === 'provenance' && (
+          {activeTab === "provenance" && (
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
                 Provenance Chain
               </h3>
-              
+
               {traceLoading ? (
                 <div className="flex justify-center py-8">
-                  <LoadingSpinner size="md" message="Loading provenance data..." />
+                  <LoadingSpinner
+                    size="md"
+                    message="Loading provenance data..."
+                  />
                 </div>
               ) : traceData?.trace_path.length ? (
                 <div className="space-y-4">
@@ -480,14 +530,14 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                       {index < traceData.trace_path.length - 1 && (
                         <div className="absolute left-6 top-12 w-0.5 h-8 bg-gray-300 dark:bg-gray-600" />
                       )}
-                      
+
                       <div className="flex items-start gap-4">
                         <div className="flex-shrink-0 w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                           <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                             {step.step_number}
                           </span>
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -497,18 +547,20 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                               {formatDate(step.timestamp)}
                             </span>
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-300">
                             <div>
-                              <span className="font-medium">Participant:</span> {step.participant}
+                              <span className="font-medium">Participant:</span>{" "}
+                              {step.participant}
                             </div>
                             {step.location && (
                               <div>
-                                <span className="font-medium">Location:</span> {step.location}
+                                <span className="font-medium">Location:</span>{" "}
+                                {step.location}
                               </div>
                             )}
                           </div>
-                          
+
                           {Object.keys(step.metadata).length > 0 && (
                             <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs">
                               <details>
@@ -534,12 +586,12 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
             </Card>
           )}
 
-          {activeTab === 'relationships' && (
+          {activeTab === "relationships" && (
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
                 Item Relationships
               </h3>
-              
+
               {selectedItem.relationships.length > 0 ? (
                 <div className="space-y-4">
                   {selectedItem.relationships.map((relationship, index) => (
@@ -549,7 +601,9 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <Badge variant="info">{relationship.type.replace(/_/g, ' ')}</Badge>
+                          <Badge variant="info">
+                            {relationship.type.replace(/_/g, " ")}
+                          </Badge>
                           <span className="text-sm text-gray-600 dark:text-gray-300">
                             → {relationship.target_item}
                           </span>
@@ -558,7 +612,9 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => onRelatedItemSelect(relationship.target_item)}
+                            onClick={() =>
+                              onRelatedItemSelect(relationship.target_item)
+                            }
                             className="flex items-center gap-1"
                           >
                             <ExternalLink className="w-3 h-3" />
@@ -566,23 +622,25 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                           </Button>
                         )}
                       </div>
-                      
+
                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatDate(relationship.timestamp)} • Transaction: {relationship.transaction_id}
+                        {formatDate(relationship.timestamp)} • Transaction:{" "}
+                        {relationship.transaction_id}
                       </div>
-                      
-                      {relationship.metadata && Object.keys(relationship.metadata).length > 0 && (
-                        <div className="mt-2 text-xs">
-                          <details>
-                            <summary className="cursor-pointer text-gray-600 dark:text-gray-400">
-                              View metadata
-                            </summary>
-                            <pre className="mt-1 text-gray-500 dark:text-gray-500 whitespace-pre-wrap">
-                              {JSON.stringify(relationship.metadata, null, 2)}
-                            </pre>
-                          </details>
-                        </div>
-                      )}
+
+                      {relationship.metadata &&
+                        Object.keys(relationship.metadata).length > 0 && (
+                          <div className="mt-2 text-xs">
+                            <details>
+                              <summary className="cursor-pointer text-gray-600 dark:text-gray-400">
+                                View metadata
+                              </summary>
+                              <pre className="mt-1 text-gray-500 dark:text-gray-500 whitespace-pre-wrap">
+                                {JSON.stringify(relationship.metadata, null, 2)}
+                              </pre>
+                            </details>
+                          </div>
+                        )}
                     </div>
                   ))}
                 </div>
@@ -594,15 +652,18 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
             </Card>
           )}
 
-          {activeTab === 'transactions' && (
+          {activeTab === "transactions" && (
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
                 Related Transactions
               </h3>
-              
+
               {traceLoading ? (
                 <div className="flex justify-center py-8">
-                  <LoadingSpinner size="md" message="Loading transaction data..." />
+                  <LoadingSpinner
+                    size="md"
+                    message="Loading transaction data..."
+                  />
                 </div>
               ) : traceData?.related_transactions.length ? (
                 <div className="space-y-4">
@@ -614,10 +675,13 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <Badge variant="info">{transaction.type}</Badge>
-                          <Badge 
+                          <Badge
                             variant={
-                              transaction.status === 'confirmed' ? 'success' : 
-                              transaction.status === 'failed' ? 'danger' : 'warning'
+                              transaction.status === "confirmed"
+                                ? "success"
+                                : transaction.status === "failed"
+                                  ? "danger"
+                                  : "warning"
                             }
                           >
                             {transaction.status}
@@ -627,18 +691,20 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                           Block #{transaction.block_index}
                         </span>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                         <div>
-                          <span className="font-medium">From:</span> {transaction.from}
+                          <span className="font-medium">From:</span>{" "}
+                          {transaction.from}
                         </div>
                         {transaction.to && (
                           <div>
-                            <span className="font-medium">To:</span> {transaction.to}
+                            <span className="font-medium">To:</span>{" "}
+                            {transaction.to}
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                         <span>{formatDate(transaction.timestamp)}</span>
                         <div className="flex items-center gap-2">
@@ -646,7 +712,9 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleCopy(transaction.id, `tx-${transaction.id}`)}
+                            onClick={() =>
+                              handleCopy(transaction.id, `tx-${transaction.id}`)
+                            }
                             className="p-1"
                           >
                             <Copy className="w-3 h-3" />

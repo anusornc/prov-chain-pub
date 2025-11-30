@@ -1,13 +1,13 @@
 //! Concurrent Operations Optimization Module
-//! 
+//!
 //! This module provides thread-safe concurrent operations optimization
 //! for ProvChain, including worker thread pools and async task management.
 
+use std::collections::VecDeque;
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 use std::time::{Duration, Instant};
-use std::collections::VecDeque;
-use std::sync::mpsc::{self, Receiver, Sender};
 
 /// Task to be executed by worker threads
 #[derive(Debug)]
@@ -50,21 +50,33 @@ impl Worker {
                 };
 
                 match task {
-                    Ok(Task::Canonicalization { id, rdf_content: _, result_sender }) => {
+                    Ok(Task::Canonicalization {
+                        id,
+                        rdf_content: _,
+                        result_sender,
+                    }) => {
                         // Simulate RDF canonicalization work
                         let start = Instant::now();
                         thread::sleep(Duration::from_millis(10)); // Simulate work
                         let hash = format!("canon_hash_{}_{:?}", id, start.elapsed());
                         let _ = result_sender.send((id, hash));
                     }
-                    Ok(Task::QueryExecution { id, query, result_sender }) => {
+                    Ok(Task::QueryExecution {
+                        id,
+                        query,
+                        result_sender,
+                    }) => {
                         // Simulate SPARQL query execution
                         let _start = Instant::now();
                         thread::sleep(Duration::from_millis(20)); // Simulate work
                         let results = format!("query_results_{}_{}", id, query.len());
                         let _ = result_sender.send((id, results));
                     }
-                    Ok(Task::BlockValidation { id, block_data, result_sender }) => {
+                    Ok(Task::BlockValidation {
+                        id,
+                        block_data,
+                        result_sender,
+                    }) => {
                         // Simulate block validation
                         let _start = Instant::now();
                         thread::sleep(Duration::from_millis(5)); // Simulate work
@@ -245,7 +257,8 @@ impl ConcurrentManager {
 
         // Sort results by task ID to maintain order
         results.sort_by_key(|(id, _)| *id);
-        let validation_results: Vec<bool> = results.into_iter().map(|(_, is_valid)| is_valid).collect();
+        let validation_results: Vec<bool> =
+            results.into_iter().map(|(_, is_valid)| is_valid).collect();
 
         // Update throughput tracking
         {
@@ -301,7 +314,7 @@ impl ConcurrentManager {
     /// Benchmark concurrent performance
     pub fn benchmark_performance(&self, num_tasks: usize) -> ConcurrentBenchmarkResult {
         let start_time = Instant::now();
-        
+
         // Generate test data
         let test_rdf: Vec<String> = (0..num_tasks)
             .map(|i| format!("@prefix ex: <http://example.org/> . ex:test{i} ex:value {i} ."))
@@ -375,7 +388,7 @@ impl ThroughputTracker {
     fn record_operations(&mut self, count: u64) {
         let now = Instant::now();
         self.operations.push_back((now, count));
-        
+
         // Remove old entries outside the window
         while let Some(&(timestamp, _)) = self.operations.front() {
             if now.duration_since(timestamp) > self.window_duration {
@@ -393,7 +406,7 @@ impl ThroughputTracker {
 
         let total_operations: u64 = self.operations.iter().map(|(_, count)| count).sum();
         let window_duration_secs = self.window_duration.as_secs_f64();
-        
+
         total_operations as f64 / window_duration_secs
     }
 }
@@ -410,7 +423,10 @@ pub struct WorkerStats {
 impl WorkerStats {
     pub fn print_summary(&self) {
         println!("\n=== Concurrent Operations Statistics ===");
-        println!("Active workers: {}/{}", self.active_workers, self.max_workers);
+        println!(
+            "Active workers: {}/{}",
+            self.active_workers, self.max_workers
+        );
         println!("Total tasks processed: {}", self.total_tasks_processed);
         println!("Current throughput: {:.2} ops/sec", self.current_throughput);
         println!("========================================\n");
@@ -436,12 +452,18 @@ impl ConcurrentBenchmarkResult {
     pub fn print_summary(&self) {
         println!("\n=== Concurrent Performance Benchmark ===");
         println!("Tasks: {}, Workers: {}", self.num_tasks, self.num_workers);
-        println!("Canonicalization: {:?} ({:.2} ops/sec)", 
-                 self.canonicalization_duration, self.canonicalization_throughput);
-        println!("Query execution: {:?} ({:.2} ops/sec)", 
-                 self.query_duration, self.query_throughput);
-        println!("Block validation: {:?} ({:.2} ops/sec)", 
-                 self.validation_duration, self.validation_throughput);
+        println!(
+            "Canonicalization: {:?} ({:.2} ops/sec)",
+            self.canonicalization_duration, self.canonicalization_throughput
+        );
+        println!(
+            "Query execution: {:?} ({:.2} ops/sec)",
+            self.query_duration, self.query_throughput
+        );
+        println!(
+            "Block validation: {:?} ({:.2} ops/sec)",
+            self.validation_duration, self.validation_throughput
+        );
         println!("Total duration: {:?}", self.total_duration);
         println!("Overall throughput: {:.2} ops/sec", self.overall_throughput);
         println!("=========================================\n");
@@ -467,7 +489,7 @@ mod tests {
     fn test_concurrent_manager_creation() {
         let manager = ConcurrentManager::new(4);
         let stats = manager.get_worker_stats();
-        
+
         assert_eq!(stats.active_workers, 4);
         assert_eq!(stats.max_workers, 4);
         assert_eq!(stats.total_tasks_processed, 0);
@@ -476,17 +498,17 @@ mod tests {
     #[test]
     fn test_concurrent_canonicalization() {
         let manager = ConcurrentManager::new(2);
-        
+
         let rdf_contents = vec![
             "@prefix ex: <http://example.org/> . ex:test1 ex:value 1 .".to_string(),
             "@prefix ex: <http://example.org/> . ex:test2 ex:value 2 .".to_string(),
             "@prefix ex: <http://example.org/> . ex:test3 ex:value 3 .".to_string(),
         ];
-        
+
         let results = manager.canonicalize_concurrent(rdf_contents.clone());
-        
+
         assert_eq!(results.len(), rdf_contents.len());
-        
+
         // Results should be in the same order as input
         for (i, result) in results.iter().enumerate() {
             assert!(result.contains(&format!("canon_hash_{}", i + 1)));
@@ -496,16 +518,16 @@ mod tests {
     #[test]
     fn test_concurrent_query_execution() {
         let manager = ConcurrentManager::new(2);
-        
+
         let queries = vec![
             "SELECT ?s WHERE { ?s ex:value 1 }".to_string(),
             "SELECT ?s WHERE { ?s ex:value 2 }".to_string(),
         ];
-        
+
         let results = manager.execute_queries_concurrent(queries.clone());
-        
+
         assert_eq!(results.len(), queries.len());
-        
+
         for result in &results {
             assert!(result.contains("query_results_"));
         }
@@ -514,30 +536,30 @@ mod tests {
     #[test]
     fn test_concurrent_block_validation() {
         let manager = ConcurrentManager::new(2);
-        
+
         let block_data = vec![
             "valid block data with sufficient length".to_string(),
             "short".to_string(), // Should be invalid
             "another valid block with enough content".to_string(),
         ];
-        
+
         let results = manager.validate_blocks_concurrent(block_data);
-        
+
         assert_eq!(results.len(), 3);
-        assert!(results[0]);  // Valid
+        assert!(results[0]); // Valid
         assert!(!results[1]); // Invalid (too short)
-        assert!(results[2]);  // Valid
+        assert!(results[2]); // Valid
     }
 
     #[test]
     fn test_throughput_tracking() {
         let mut tracker = ThroughputTracker::new();
-        
+
         // Record some operations
         tracker.record_operations(10);
         tracker.record_operations(20);
         tracker.record_operations(15);
-        
+
         let throughput = tracker.get_current_throughput();
         assert!(throughput > 0.0);
     }
@@ -545,11 +567,11 @@ mod tests {
     #[test]
     fn test_task_id_generation() {
         let manager = ConcurrentManager::new(2);
-        
+
         let id1 = manager.get_next_task_id();
         let id2 = manager.get_next_task_id();
         let id3 = manager.get_next_task_id();
-        
+
         assert_eq!(id1, 1);
         assert_eq!(id2, 2);
         assert_eq!(id3, 3);
@@ -559,7 +581,7 @@ mod tests {
     fn test_memory_usage_estimation() {
         let manager = ConcurrentManager::new(4);
         let memory_usage = manager.estimate_memory_usage();
-        
+
         // Should estimate memory for 4 workers plus overhead
         assert!(memory_usage > 4 * 8 * 1024 * 1024); // At least 32MB for 4 workers
     }
@@ -568,7 +590,7 @@ mod tests {
     fn test_benchmark_performance() {
         let manager = ConcurrentManager::new(2);
         let result = manager.benchmark_performance(10);
-        
+
         assert_eq!(result.num_tasks, 10);
         assert_eq!(result.num_workers, 2);
         assert!(result.canonicalization_throughput > 0.0);
@@ -591,11 +613,11 @@ mod tests {
             validation_throughput: 2000.0,
             overall_throughput: 857.0,
         };
-        
+
         let sequential_duration = Duration::from_millis(1400); // 4x slower
         let speedup = result.calculate_speedup(sequential_duration);
         let efficiency = result.calculate_efficiency(sequential_duration);
-        
+
         assert!(speedup > 3.0); // Should be close to 4x speedup
         assert!(efficiency > 0.75); // Should be reasonably efficient
     }
@@ -603,11 +625,11 @@ mod tests {
     #[test]
     fn test_worker_stats() {
         let manager = ConcurrentManager::new(3);
-        
+
         // Process some tasks to update stats
         let rdf_contents = vec!["test".to_string()];
         let _results = manager.canonicalize_concurrent(rdf_contents);
-        
+
         let stats = manager.get_worker_stats();
         assert_eq!(stats.active_workers, 3);
         assert_eq!(stats.max_workers, 3);

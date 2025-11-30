@@ -1,33 +1,33 @@
 //! Data Integrity Validation and Correction System
-//! 
+//!
 //! This module provides comprehensive integrity validation for ProvChainOrg's blockchain,
 //! transaction counting, SPARQL queries, and RDF canonicalization mechanisms.
 
 use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub mod validator;
 pub mod blockchain_validator;
-pub mod transaction_counter;
-pub mod sparql_validator;
 pub mod canonicalization_validator;
-pub mod repair;
 pub mod monitor;
 pub mod performance;
+pub mod repair;
+pub mod sparql_validator;
+pub mod transaction_counter;
+pub mod validator;
 
 // Re-export main types for convenience
-pub use validator::IntegrityValidator;
 pub use blockchain_validator::BlockchainIntegrityValidator;
-pub use transaction_counter::TransactionCountValidator;
-pub use sparql_validator::SparqlConsistencyValidator;
 pub use canonicalization_validator::CanonicalizationValidator;
-pub use repair::IntegrityRepairEngine;
 pub use monitor::IntegrityMonitor;
 pub use performance::{
-    OptimizedIntegrityValidator, BackgroundIntegrityService, 
-    PerformanceConfig, ValidationLevel, ProductionConfig
+    BackgroundIntegrityService, OptimizedIntegrityValidator, PerformanceConfig, ProductionConfig,
+    ValidationLevel,
 };
+pub use repair::IntegrityRepairEngine;
+pub use sparql_validator::SparqlConsistencyValidator;
+pub use transaction_counter::TransactionCountValidator;
+pub use validator::IntegrityValidator;
 
 /// Core integrity validation types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -144,9 +144,10 @@ impl IntegrityValidationReport {
         let mut has_warning = false;
 
         // Check blockchain integrity
-        if !self.blockchain_integrity.missing_blocks.is_empty() 
-            || !self.blockchain_integrity.corrupted_blocks.is_empty() 
-            || !self.blockchain_integrity.hash_validation_errors.is_empty() {
+        if !self.blockchain_integrity.missing_blocks.is_empty()
+            || !self.blockchain_integrity.corrupted_blocks.is_empty()
+            || !self.blockchain_integrity.hash_validation_errors.is_empty()
+        {
             has_critical = true;
         }
 
@@ -155,13 +156,29 @@ impl IntegrityValidationReport {
         }
 
         // Check transaction count integrity
-        if !self.transaction_count_integrity.counting_discrepancies.is_empty() {
+        if !self
+            .transaction_count_integrity
+            .counting_discrepancies
+            .is_empty()
+        {
             has_warning = true;
         }
 
-        let total_discrepancy = self.transaction_count_integrity.reported_total_transactions
-            .abs_diff(self.transaction_count_integrity.actual_rdf_triple_count);
-        
+        // Special case: When there are no transactions, ontology triples shouldn't count as discrepancy
+        let effective_triple_count =
+            if self.transaction_count_integrity.reported_total_transactions == 0 {
+                // When no transactions exist, expect 0 transaction-related triples
+                0
+            } else {
+                // When transactions exist, compare against actual RDF triple count
+                self.transaction_count_integrity.actual_rdf_triple_count
+            };
+
+        let total_discrepancy = self
+            .transaction_count_integrity
+            .reported_total_transactions
+            .abs_diff(effective_triple_count);
+
         if total_discrepancy > 0 {
             if total_discrepancy > 10 {
                 has_critical = true;
@@ -171,8 +188,15 @@ impl IntegrityValidationReport {
         }
 
         // Check SPARQL integrity
-        if !self.sparql_query_integrity.graph_accessibility_issues.is_empty() 
-            || !self.sparql_query_integrity.canonicalization_query_mismatches.is_empty() {
+        if !self
+            .sparql_query_integrity
+            .graph_accessibility_issues
+            .is_empty()
+            || !self
+                .sparql_query_integrity
+                .canonicalization_query_mismatches
+                .is_empty()
+        {
             has_warning = true;
         }
 
@@ -186,15 +210,26 @@ impl IntegrityValidationReport {
         }
 
         // Check canonicalization integrity
-        if !self.rdf_canonicalization_integrity.hash_validation_failures.is_empty() {
+        if !self
+            .rdf_canonicalization_integrity
+            .hash_validation_failures
+            .is_empty()
+        {
             has_critical = true;
         }
 
-        if !self.rdf_canonicalization_integrity.blank_node_handling_issues.is_empty() {
+        if !self
+            .rdf_canonicalization_integrity
+            .blank_node_handling_issues
+            .is_empty()
+        {
             has_warning = true;
         }
 
-        for check in &self.rdf_canonicalization_integrity.algorithm_consistency_checks {
+        for check in &self
+            .rdf_canonicalization_integrity
+            .algorithm_consistency_checks
+        {
             if !check.hashes_match {
                 has_critical = true;
             }
@@ -232,27 +267,47 @@ impl IntegrityValidationReport {
             + self.blockchain_integrity.corrupted_blocks.len()
             + self.blockchain_integrity.hash_validation_errors.len()
             + self.blockchain_integrity.reconstruction_errors.len()
-            + self.transaction_count_integrity.counting_discrepancies.len()
+            + self
+                .transaction_count_integrity
+                .counting_discrepancies
+                .len()
             + self.sparql_query_integrity.graph_accessibility_issues.len()
-            + self.sparql_query_integrity.canonicalization_query_mismatches.len()
-            + self.rdf_canonicalization_integrity.hash_validation_failures.len()
-            + self.rdf_canonicalization_integrity.blank_node_handling_issues.len()
+            + self
+                .sparql_query_integrity
+                .canonicalization_query_mismatches
+                .len()
+            + self
+                .rdf_canonicalization_integrity
+                .hash_validation_failures
+                .len()
+            + self
+                .rdf_canonicalization_integrity
+                .blank_node_handling_issues
+                .len()
     }
 
     fn count_critical_issues(&self) -> usize {
-        self.recommendations.iter()
-            .filter(|r| matches!(r.severity, RecommendationSeverity::Critical | RecommendationSeverity::Emergency))
+        self.recommendations
+            .iter()
+            .filter(|r| {
+                matches!(
+                    r.severity,
+                    RecommendationSeverity::Critical | RecommendationSeverity::Emergency
+                )
+            })
             .count()
     }
 
     fn count_warning_issues(&self) -> usize {
-        self.recommendations.iter()
+        self.recommendations
+            .iter()
             .filter(|r| matches!(r.severity, RecommendationSeverity::Warning))
             .count()
     }
 
     fn count_auto_fixable_issues(&self) -> usize {
-        self.recommendations.iter()
+        self.recommendations
+            .iter()
             .filter(|r| r.auto_fixable)
             .count()
     }
@@ -337,7 +392,10 @@ impl CanonicalizationIntegrityStatus {
     pub fn is_healthy(&self) -> bool {
         self.blank_node_handling_issues.is_empty()
             && self.hash_validation_failures.is_empty()
-            && self.algorithm_consistency_checks.iter().all(|check| check.hashes_match)
+            && self
+                .algorithm_consistency_checks
+                .iter()
+                .all(|check| check.hashes_match)
     }
 }
 

@@ -1,13 +1,13 @@
 //! Supply Chain Analytics Module
-//! 
+//!
 //! This module provides risk assessment algorithms, supplier performance analytics,
 //! quality prediction models, and compliance monitoring capabilities.
 
-use super::{RiskLevel, QualityScore, ComplianceStatus, TrendAnalysis};
-use crate::knowledge_graph::{KnowledgeGraph, KnowledgeEntity, KnowledgeRelationship};
-use std::collections::HashMap;
+use super::{ComplianceStatus, QualityScore, RiskLevel, TrendAnalysis};
+use crate::knowledge_graph::{KnowledgeEntity, KnowledgeGraph, KnowledgeRelationship};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 
 /// Supply chain analyzer for risk assessment and performance analytics
 pub struct SupplyChainAnalyzer {
@@ -46,9 +46,13 @@ impl SupplyChainAnalyzer {
     /// Assess risk for a specific batch
     pub fn assess_batch_risk(&self, batch_id: &str) -> Result<RiskAssessment> {
         // Find the batch entity
-        let batch_entity = self.entities.values()
-            .find(|e| e.entity_type == "ProductBatch" && 
-                     e.properties.get("batchId").is_some_and(|id| id == batch_id))
+        let batch_entity = self
+            .entities
+            .values()
+            .find(|e| {
+                e.entity_type == "ProductBatch"
+                    && e.properties.get("batchId").is_some_and(|id| id == batch_id)
+            })
             .ok_or_else(|| anyhow::anyhow!("Batch not found: {}", batch_id))?;
 
         let mut risk_factors = Vec::new();
@@ -60,7 +64,11 @@ impl SupplyChainAnalyzer {
             category: "Supplier".to_string(),
             description: "Supplier reliability and history".to_string(),
             score: supplier_risk,
-            impact: if supplier_risk > 0.7 { "High".to_string() } else { "Medium".to_string() },
+            impact: if supplier_risk > 0.7 {
+                "High".to_string()
+            } else {
+                "Medium".to_string()
+            },
         });
         total_risk_score += supplier_risk * 0.3;
 
@@ -70,7 +78,11 @@ impl SupplyChainAnalyzer {
             category: "Transportation".to_string(),
             description: "Transportation conditions and delays".to_string(),
             score: transport_risk,
-            impact: if transport_risk > 0.6 { "High".to_string() } else { "Low".to_string() },
+            impact: if transport_risk > 0.6 {
+                "High".to_string()
+            } else {
+                "Low".to_string()
+            },
         });
         total_risk_score += transport_risk * 0.2;
 
@@ -80,7 +92,11 @@ impl SupplyChainAnalyzer {
             category: "Quality".to_string(),
             description: "Quality control and testing results".to_string(),
             score: quality_risk,
-            impact: if quality_risk > 0.5 { "High".to_string() } else { "Low".to_string() },
+            impact: if quality_risk > 0.5 {
+                "High".to_string()
+            } else {
+                "Low".to_string()
+            },
         });
         total_risk_score += quality_risk * 0.3;
 
@@ -90,12 +106,16 @@ impl SupplyChainAnalyzer {
             category: "Environmental".to_string(),
             description: "Environmental conditions during production and transport".to_string(),
             score: environmental_risk,
-            impact: if environmental_risk > 0.4 { "Medium".to_string() } else { "Low".to_string() },
+            impact: if environmental_risk > 0.4 {
+                "Medium".to_string()
+            } else {
+                "Low".to_string()
+            },
         });
         total_risk_score += environmental_risk * 0.2;
 
         let recommendations = self.generate_risk_recommendations(total_risk_score, &risk_factors);
-        
+
         Ok(RiskAssessment {
             entity_id: batch_entity.uri.clone(),
             overall_risk_score: total_risk_score,
@@ -111,8 +131,15 @@ impl SupplyChainAnalyzer {
         let mut supplier_performance = Vec::new();
 
         // Get all supplier entities
-        let suppliers: Vec<_> = self.entities.values()
-            .filter(|e| matches!(e.entity_type.as_str(), "Farmer" | "Manufacturer" | "LogisticsProvider"))
+        let suppliers: Vec<_> = self
+            .entities
+            .values()
+            .filter(|e| {
+                matches!(
+                    e.entity_type.as_str(),
+                    "Farmer" | "Manufacturer" | "LogisticsProvider"
+                )
+            })
             .collect();
 
         for supplier in suppliers {
@@ -128,7 +155,9 @@ impl SupplyChainAnalyzer {
 
     /// Calculate quality metrics across the supply chain
     pub fn calculate_quality_metrics(&self) -> Result<QualityMetrics> {
-        let quality_checks: Vec<_> = self.entities.values()
+        let quality_checks: Vec<_> = self
+            .entities
+            .values()
             .filter(|e| e.entity_type == "QualityCheck")
             .collect();
 
@@ -140,7 +169,7 @@ impl SupplyChainAnalyzer {
             // Simulate quality check results (in real system would parse from properties)
             let score = self.extract_quality_score(check);
             quality_scores.push(score);
-            
+
             if score >= 0.7 {
                 passed_checks += 1;
             }
@@ -175,7 +204,9 @@ impl SupplyChainAnalyzer {
         let mut total_checks = 0;
 
         // Check certificate compliance
-        let certificates: Vec<_> = self.entities.values()
+        let certificates: Vec<_> = self
+            .entities
+            .values()
             .filter(|e| e.entity_type == "Certificate")
             .collect();
 
@@ -189,15 +220,26 @@ impl SupplyChainAnalyzer {
             compliance_checks.push(ComplianceCheck {
                 check_type: "Certificate".to_string(),
                 entity_id: cert.uri.clone(),
-                status: if is_compliant { ComplianceStatus::Compliant } else { ComplianceStatus::NonCompliant },
+                status: if is_compliant {
+                    ComplianceStatus::Compliant
+                } else {
+                    ComplianceStatus::NonCompliant
+                },
                 details: "Certificate validity check".to_string(),
                 last_checked: Utc::now(),
             });
         }
 
         // Check regulatory compliance for activities
-        let activities: Vec<_> = self.entities.values()
-            .filter(|e| matches!(e.entity_type.as_str(), "ProcessingActivity" | "TransportActivity"))
+        let activities: Vec<_> = self
+            .entities
+            .values()
+            .filter(|e| {
+                matches!(
+                    e.entity_type.as_str(),
+                    "ProcessingActivity" | "TransportActivity"
+                )
+            })
             .collect();
 
         for activity in activities {
@@ -210,7 +252,11 @@ impl SupplyChainAnalyzer {
             compliance_checks.push(ComplianceCheck {
                 check_type: "Activity".to_string(),
                 entity_id: activity.uri.clone(),
-                status: if is_compliant { ComplianceStatus::Compliant } else { ComplianceStatus::NonCompliant },
+                status: if is_compliant {
+                    ComplianceStatus::Compliant
+                } else {
+                    ComplianceStatus::NonCompliant
+                },
                 details: "Regulatory compliance check".to_string(),
                 last_checked: Utc::now(),
             });
@@ -234,7 +280,9 @@ impl SupplyChainAnalyzer {
 
     /// Calculate traceability coverage
     pub fn calculate_traceability_coverage(&self) -> Result<TraceabilityCoverage> {
-        let product_batches: Vec<_> = self.entities.values()
+        let product_batches: Vec<_> = self
+            .entities
+            .values()
             .filter(|e| e.entity_type == "ProductBatch")
             .collect();
 
@@ -255,7 +303,11 @@ impl SupplyChainAnalyzer {
 
         let total_batches = product_batches.len();
         let overall_coverage = if total_batches > 0 {
-            coverage_details.iter().map(|c| c.coverage_percentage).sum::<f64>() / total_batches as f64
+            coverage_details
+                .iter()
+                .map(|c| c.coverage_percentage)
+                .sum::<f64>()
+                / total_batches as f64
         } else {
             1.0
         };
@@ -271,8 +323,15 @@ impl SupplyChainAnalyzer {
 
     /// Calculate efficiency metrics
     fn calculate_efficiency_metrics(&self) -> Result<EfficiencyMetrics> {
-        let activities: Vec<_> = self.entities.values()
-            .filter(|e| matches!(e.entity_type.as_str(), "ProcessingActivity" | "TransportActivity"))
+        let activities: Vec<_> = self
+            .entities
+            .values()
+            .filter(|e| {
+                matches!(
+                    e.entity_type.as_str(),
+                    "ProcessingActivity" | "TransportActivity"
+                )
+            })
             .collect();
 
         let mut processing_times = Vec::new();
@@ -282,7 +341,7 @@ impl SupplyChainAnalyzer {
             if let Some(_recorded_at) = activity.properties.get("recordedAt") {
                 // Simulate processing/transport time calculation
                 let duration = self.calculate_activity_duration(activity);
-                
+
                 match activity.entity_type.as_str() {
                     "ProcessingActivity" => processing_times.push(duration),
                     "TransportActivity" => transport_times.push(duration),
@@ -307,7 +366,8 @@ impl SupplyChainAnalyzer {
             average_processing_time_hours: avg_processing_time,
             average_transport_time_hours: avg_transport_time,
             total_cycle_time_hours: avg_processing_time + avg_transport_time,
-            efficiency_score: self.calculate_efficiency_score(avg_processing_time, avg_transport_time),
+            efficiency_score: self
+                .calculate_efficiency_score(avg_processing_time, avg_transport_time),
             bottlenecks: self.identify_bottlenecks()?,
         })
     }
@@ -316,7 +376,7 @@ impl SupplyChainAnalyzer {
     fn calculate_visibility_score(&self) -> Result<f64> {
         let total_entities = self.entities.len();
         let total_relationships = self.relationships.len();
-        
+
         // Score based on data completeness and connectivity
         let completeness_score = self.calculate_data_completeness();
         let connectivity_score = if total_entities > 0 {
@@ -326,8 +386,9 @@ impl SupplyChainAnalyzer {
         };
 
         // Normalize and combine scores
-        let visibility_score = (completeness_score * 0.6 + connectivity_score.min(1.0) * 0.4).min(1.0);
-        
+        let visibility_score =
+            (completeness_score * 0.6 + connectivity_score.min(1.0) * 0.4).min(1.0);
+
         Ok(visibility_score)
     }
 
@@ -352,7 +413,11 @@ impl SupplyChainAnalyzer {
         Ok(0.25) // Low risk
     }
 
-    fn generate_risk_recommendations(&self, risk_score: f64, risk_factors: &[RiskFactor]) -> Vec<String> {
+    fn generate_risk_recommendations(
+        &self,
+        risk_score: f64,
+        risk_factors: &[RiskFactor],
+    ) -> Vec<String> {
         let mut recommendations = Vec::new();
 
         if risk_score > 0.7 {
@@ -361,7 +426,10 @@ impl SupplyChainAnalyzer {
 
         for factor in risk_factors {
             if factor.score > 0.6 {
-                recommendations.push(format!("Address {} risk: {}", factor.category, factor.description));
+                recommendations.push(format!(
+                    "Address {} risk: {}",
+                    factor.category, factor.description
+                ));
             }
         }
 
@@ -408,7 +476,7 @@ impl SupplyChainAnalyzer {
         total_risk += compliance_risk * 0.3;
 
         let recommendations = self.generate_risk_recommendations(total_risk, &risk_factors);
-        
+
         Ok(RiskAssessment {
             entity_id: "supply_chain_overall".to_string(),
             overall_risk_score: total_risk,
@@ -419,7 +487,10 @@ impl SupplyChainAnalyzer {
         })
     }
 
-    fn calculate_supplier_metrics(&self, supplier: &KnowledgeEntity) -> Result<SupplierPerformance> {
+    fn calculate_supplier_metrics(
+        &self,
+        supplier: &KnowledgeEntity,
+    ) -> Result<SupplierPerformance> {
         // Simplified supplier performance calculation
         let quality_score = 0.85;
         let delivery_score = 0.9;
@@ -428,7 +499,10 @@ impl SupplyChainAnalyzer {
 
         Ok(SupplierPerformance {
             supplier_id: supplier.uri.clone(),
-            supplier_name: supplier.label.clone().unwrap_or_else(|| "Unknown".to_string()),
+            supplier_name: supplier
+                .label
+                .clone()
+                .unwrap_or_else(|| "Unknown".to_string()),
             supplier_type: supplier.entity_type.clone(),
             overall_score,
             quality_score,
@@ -474,7 +548,11 @@ impl SupplyChainAnalyzer {
     fn calculate_batch_traceability(&self, batch: &KnowledgeEntity) -> Result<BatchTraceability> {
         // Simplified traceability calculation
         Ok(BatchTraceability {
-            batch_id: batch.properties.get("batchId").cloned().unwrap_or_else(|| "unknown".to_string()),
+            batch_id: batch
+                .properties
+                .get("batchId")
+                .cloned()
+                .unwrap_or_else(|| "unknown".to_string()),
             coverage_percentage: 0.95,
             missing_data_points: vec!["Environmental sensor data".to_string()],
             trace_completeness: "High".to_string(),
@@ -490,7 +568,7 @@ impl SupplyChainAnalyzer {
         // Simplified efficiency score calculation
         let total_time = processing_time + transport_time;
         let optimal_time = 48.0; // 48 hours optimal
-        
+
         if total_time <= optimal_time {
             1.0
         } else {
@@ -506,7 +584,7 @@ impl SupplyChainAnalyzer {
     fn calculate_data_completeness(&self) -> f64 {
         // Calculate percentage of entities with complete data
         let mut complete_entities = 0;
-        
+
         for entity in self.entities.values() {
             if !entity.properties.is_empty() {
                 complete_entities += 1;

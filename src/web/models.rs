@@ -1,7 +1,7 @@
 //! Data models for web API responses and requests
 
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 /// Response model for blockchain status
 #[derive(Debug, Serialize, Deserialize)]
@@ -123,7 +123,7 @@ pub struct UserClaims {
 }
 
 /// Supply chain actor roles
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ActorRole {
     Farmer,
     Processor,

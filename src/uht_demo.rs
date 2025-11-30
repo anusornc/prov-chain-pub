@@ -1,16 +1,16 @@
 //! UHT Manufacturing Supply Chain Demo
-//! 
+//!
 //! This module demonstrates a complete UHT milk manufacturing supply chain
 //! with multiple participants, transactions, and traceability features.
 
-use std::collections::HashMap;
-use chrono::{Utc, Duration};
-use uuid::Uuid;
 use anyhow::Result;
+use chrono::{Duration, Utc};
+use std::collections::HashMap;
+use uuid::Uuid;
 
 use crate::transaction::blockchain::TransactionBlockchain;
-use crate::wallet::{Participant, Certificate, CertificateStatus};
 use crate::transaction::transaction::EnvironmentalConditions;
+use crate::wallet::{Certificate, CertificateStatus, Participant};
 
 /// UHT Manufacturing Demo
 pub struct UHTDemo {
@@ -35,10 +35,10 @@ impl UHTDemo {
     /// Create a new UHT manufacturing demo
     pub fn new(data_dir: &str) -> Result<Self> {
         let mut blockchain = TransactionBlockchain::new(data_dir)?;
-        
+
         // Register all participants
         let participants = Self::setup_participants(&mut blockchain)?;
-        
+
         Ok(Self {
             blockchain,
             participants,
@@ -54,7 +54,7 @@ impl UHTDemo {
             "John's Organic Dairy Farm".to_string(),
             "Vermont, USA".to_string(),
         );
-        
+
         // Add organic certification
         farmer_john.certificates.push(Certificate {
             id: "USDA-ORG-2025-001".to_string(),
@@ -67,7 +67,10 @@ impl UHTDemo {
         });
 
         let farmer_john_id = blockchain.register_participant(farmer_john)?;
-        println!("✅ Registered Farmer John (Organic Dairy) - ID: {}", farmer_john_id);
+        println!(
+            "✅ Registered Farmer John (Organic Dairy) - ID: {}",
+            farmer_john_id
+        );
 
         // Create Farmer Mary
         let farmer_mary = Participant::new_farmer(
@@ -75,14 +78,17 @@ impl UHTDemo {
             "Wisconsin, USA".to_string(),
         );
         let farmer_mary_id = blockchain.register_participant(farmer_mary)?;
-        println!("✅ Registered Farmer Mary (Premium Dairy) - ID: {}", farmer_mary_id);
+        println!(
+            "✅ Registered Farmer Mary (Premium Dairy) - ID: {}",
+            farmer_mary_id
+        );
 
         // Create UHT Processor
         let mut uht_processor = Participant::new_uht_manufacturer(
             "Alpine UHT Processing Corp".to_string(),
             "Wisconsin, USA".to_string(),
         );
-        
+
         // Add FDA certification
         uht_processor.certificates.push(Certificate {
             id: "FDA-DAIRY-2025-042".to_string(),
@@ -95,14 +101,17 @@ impl UHTDemo {
         });
 
         let uht_processor_id = blockchain.register_participant(uht_processor)?;
-        println!("✅ Registered UHT Processor (Alpine Corp) - ID: {}", uht_processor_id);
+        println!(
+            "✅ Registered UHT Processor (Alpine Corp) - ID: {}",
+            uht_processor_id
+        );
 
         // Create Quality Lab
         let mut quality_lab = Participant::new_quality_lab(
             "Midwest Dairy Testing Laboratory".to_string(),
             "Illinois, USA".to_string(),
         );
-        
+
         // Add ISO certification
         quality_lab.certificates.push(Certificate {
             id: "ISO-17025-2025-078".to_string(),
@@ -115,7 +124,10 @@ impl UHTDemo {
         });
 
         let quality_lab_id = blockchain.register_participant(quality_lab)?;
-        println!("✅ Registered Quality Lab (Midwest Testing) - ID: {}", quality_lab_id);
+        println!(
+            "✅ Registered Quality Lab (Midwest Testing) - ID: {}",
+            quality_lab_id
+        );
 
         // Create Logistics Provider
         let logistics_provider = Participant::new_logistics_provider(
@@ -123,7 +135,10 @@ impl UHTDemo {
             "Illinois, USA".to_string(),
         );
         let logistics_provider_id = blockchain.register_participant(logistics_provider)?;
-        println!("✅ Registered Logistics Provider (ColdChain Express) - ID: {}", logistics_provider_id);
+        println!(
+            "✅ Registered Logistics Provider (ColdChain Express) - ID: {}",
+            logistics_provider_id
+        );
 
         // Create Retailer
         let retailer = Participant::new_retailer(
@@ -150,25 +165,25 @@ impl UHTDemo {
 
         // Step 1: Milk Production
         self.demo_milk_production()?;
-        
+
         // Step 2: Quality Testing
         self.demo_quality_testing()?;
-        
+
         // Step 3: UHT Processing
         self.demo_uht_processing()?;
-        
+
         // Step 4: Post-Processing Quality Control
         self.demo_post_processing_quality()?;
-        
+
         // Step 5: Transport to Distribution Center
         self.demo_transport_to_distribution()?;
-        
+
         // Step 6: Final Distribution to Retailer
         self.demo_final_distribution()?;
-        
+
         // Step 7: Create blocks and finalize
         self.finalize_transactions()?;
-        
+
         // Step 8: Display results
         self.display_results()?;
 
@@ -198,7 +213,10 @@ impl UHTDemo {
         )?;
 
         let tx1_id = self.blockchain.submit_transaction(tx1)?;
-        println!("✅ Farmer John produced 2000L organic milk - TX: {}", tx1_id);
+        println!(
+            "✅ Farmer John produced 2000L organic milk - TX: {}",
+            tx1_id
+        );
 
         // Farmer Mary produces premium milk
         let env_conditions_mary = EnvironmentalConditions {
@@ -218,7 +236,10 @@ impl UHTDemo {
         )?;
 
         let tx2_id = self.blockchain.submit_transaction(tx2)?;
-        println!("✅ Farmer Mary produced 1500L premium milk - TX: {}", tx2_id);
+        println!(
+            "✅ Farmer Mary produced 1500L premium milk - TX: {}",
+            tx2_id
+        );
 
         Ok(())
     }
@@ -238,7 +259,10 @@ impl UHTDemo {
         )?;
 
         let tx3_id = self.blockchain.submit_transaction(tx3)?;
-        println!("✅ Quality test for organic milk batch - PASSED - TX: {}", tx3_id);
+        println!(
+            "✅ Quality test for organic milk batch - PASSED - TX: {}",
+            tx3_id
+        );
 
         // Test premium milk batch
         let tx4 = self.blockchain.create_quality_transaction(
@@ -250,7 +274,10 @@ impl UHTDemo {
         )?;
 
         let tx4_id = self.blockchain.submit_transaction(tx4)?;
-        println!("✅ Quality test for premium milk batch - PASSED - TX: {}", tx4_id);
+        println!(
+            "✅ Quality test for premium milk batch - PASSED - TX: {}",
+            tx4_id
+        );
 
         Ok(())
     }
@@ -282,7 +309,10 @@ impl UHTDemo {
         )?;
 
         let tx5_id = self.blockchain.submit_transaction(tx5)?;
-        println!("✅ UHT processing completed - 3500L processed - TX: {}", tx5_id);
+        println!(
+            "✅ UHT processing completed - 3500L processed - TX: {}",
+            tx5_id
+        );
 
         Ok(())
     }
@@ -314,7 +344,10 @@ impl UHTDemo {
         )?;
 
         let tx7_id = self.blockchain.submit_transaction(tx7)?;
-        println!("✅ Nutritional analysis - PASSED (3.2% fat) - TX: {}", tx7_id);
+        println!(
+            "✅ Nutritional analysis - PASSED (3.2% fat) - TX: {}",
+            tx7_id
+        );
 
         Ok(())
     }
@@ -342,7 +375,10 @@ impl UHTDemo {
         )?;
 
         let tx8_id = self.blockchain.submit_transaction(tx8)?;
-        println!("✅ Transport to distribution center - Cold chain maintained - TX: {}", tx8_id);
+        println!(
+            "✅ Transport to distribution center - Cold chain maintained - TX: {}",
+            tx8_id
+        );
 
         Ok(())
     }
@@ -382,10 +418,10 @@ impl UHTDemo {
 
         // Create blocks with all pending transactions
         self.blockchain.create_block(10)?; // Process up to 10 transactions per block
-        
+
         // Save to disk
         self.blockchain.save_to_disk()?;
-        
+
         println!("✅ All transactions finalized and saved to blockchain");
 
         Ok(())
@@ -397,7 +433,7 @@ impl UHTDemo {
         println!("{}", "=".repeat(40));
 
         let stats = self.blockchain.get_statistics();
-        
+
         println!("Blockchain Statistics:");
         println!("  📦 Total Blocks: {}", stats.total_blocks);
         println!("  ⏳ Pending Transactions: {}", stats.pending_transactions);
@@ -441,9 +477,15 @@ impl UHTDemo {
             if let Some(wallet) = self.blockchain.get_participant_wallet(id) {
                 println!("  {} ({})", name, id);
                 println!("    Type: {:?}", wallet.participant.participant_type);
-                println!("    Location: {}", wallet.participant.location.as_deref().unwrap_or("N/A"));
-                println!("    Certificates: {}", wallet.participant.certificates.len());
-                
+                println!(
+                    "    Location: {}",
+                    wallet.participant.location.as_deref().unwrap_or("N/A")
+                );
+                println!(
+                    "    Certificates: {}",
+                    wallet.participant.certificates.len()
+                );
+
                 for cert in &wallet.participant.certificates {
                     println!("      - {} ({:?})", cert.cert_type, cert.status);
                 }
@@ -461,7 +503,10 @@ impl UHTDemo {
         // In a full implementation, this would query the RDF store
         // For now, we'll show a simplified trace
         println!("Traceability information would be queried from the RDF store");
-        println!("showing the complete journey of batch {} from farm to shelf.", batch_id);
+        println!(
+            "showing the complete journey of batch {} from farm to shelf.",
+            batch_id
+        );
 
         Ok(())
     }
@@ -501,7 +546,7 @@ mod tests {
     fn test_uht_demo_setup() {
         let temp_dir = tempdir().unwrap();
         let demo = UHTDemo::new(temp_dir.path().to_str().unwrap()).unwrap();
-        
+
         let stats = demo.blockchain.get_statistics();
         assert_eq!(stats.total_participants, 6);
         assert!(demo.validate_blockchain());
@@ -511,9 +556,9 @@ mod tests {
     fn test_milk_production() {
         let temp_dir = tempdir().unwrap();
         let mut demo = UHTDemo::new(temp_dir.path().to_str().unwrap()).unwrap();
-        
+
         assert!(demo.demo_milk_production().is_ok());
-        
+
         let stats = demo.blockchain.get_statistics();
         assert_eq!(stats.pending_transactions, 2);
     }

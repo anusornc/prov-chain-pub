@@ -14,12 +14,12 @@ pub struct ObjectPool<T> {
     max_size: usize,
 }
 
-impl<T> ObjectPool<T> 
-where 
+impl<T> ObjectPool<T>
+where
     T: Send + 'static,
 {
     /// Create a new object pool
-    pub fn new<F>(factory: F, max_size: usize) -> Self 
+    pub fn new<F>(factory: F, max_size: usize) -> Self
     where
         F: Fn() -> T + Send + Sync + 'static,
     {
@@ -34,7 +34,7 @@ where
     pub fn get(&self) -> PooledObject<T> {
         let mut objects = self.objects.lock().unwrap();
         let object = objects.pop().unwrap_or_else(|| (self.factory)());
-        
+
         PooledObject {
             object: Some(object),
             pool: Arc::clone(&self.objects),
@@ -185,7 +185,7 @@ impl StringInterner {
     /// Intern a string, returning a shared reference
     pub fn intern(&self, s: &str) -> Arc<str> {
         let mut strings = self.strings.lock().unwrap();
-        
+
         if let Some(interned) = strings.get(s) {
             return Arc::clone(interned);
         }
@@ -232,13 +232,15 @@ impl BufferPool {
     /// Get a buffer from the pool
     pub fn get_buffer(&self) -> Vec<u8> {
         let mut buffers = self.buffers.lock().unwrap();
-        buffers.pop().unwrap_or_else(|| Vec::with_capacity(self.buffer_size))
+        buffers
+            .pop()
+            .unwrap_or_else(|| Vec::with_capacity(self.buffer_size))
     }
 
     /// Return a buffer to the pool
     pub fn return_buffer(&self, mut buffer: Vec<u8>) {
         buffer.clear();
-        
+
         let mut buffers = self.buffers.lock().unwrap();
         if buffers.len() < self.max_buffers {
             buffers.push(buffer);
@@ -272,24 +274,23 @@ impl MemoryOptimizer {
     /// Create a memory-efficient clone strategy
     pub fn efficient_clone<T: Clone>(data: &T, threshold_size: usize) -> T {
         let size = Self::estimate_size(data);
-        
+
         if size > threshold_size {
             // For large objects, consider using Arc or other shared ownership
             eprintln!("Warning: Cloning large object ({} bytes)", size);
         }
-        
+
         data.clone()
     }
 
     /// Memory usage report
     pub fn memory_report() -> String {
         // In a real implementation, you might use system calls to get actual memory usage
-        format!(
-            "Memory Report:\n\
+        "Memory Report:\n\
              - Process memory usage: Not available in safe Rust\n\
              - Heap allocations: Tracked by custom allocator if available\n\
              - Recommendation: Use memory profiling tools like valgrind or heaptrack"
-        )
+            .to_string()
     }
 }
 
@@ -299,21 +300,21 @@ mod tests {
 
     #[test]
     fn test_object_pool() {
-        let pool = ObjectPool::new(|| Vec::<u8>::new(), 5);
-        
+        let pool = ObjectPool::new(Vec::<u8>::new, 5);
+
         // Get an object
         let mut obj1 = pool.get();
         obj1.get_mut().push(1);
-        
+
         // Pool should be empty
         assert_eq!(pool.size(), 0);
-        
+
         // Drop the object (returns to pool)
         drop(obj1);
-        
+
         // Pool should have one object
         assert_eq!(pool.size(), 1);
-        
+
         // Get another object (should reuse the returned one)
         let obj2 = pool.get();
         // Note: The returned object still contains the data from before
@@ -324,14 +325,14 @@ mod tests {
     #[test]
     fn test_memory_tracker() {
         let tracker = MemoryTracker::new();
-        
+
         tracker.record_allocation(100);
         tracker.record_allocation(200);
-        
+
         let stats = tracker.get_stats();
         assert_eq!(stats.allocated_bytes, 300);
         assert_eq!(stats.allocation_count, 2);
-        
+
         tracker.record_deallocation(100);
         let stats = tracker.get_stats();
         assert_eq!(stats.allocated_bytes, 200);
@@ -341,10 +342,10 @@ mod tests {
     #[test]
     fn test_string_interner() {
         let interner = StringInterner::new(100);
-        
+
         let s1 = interner.intern("hello");
         let s2 = interner.intern("hello");
-        
+
         // Should be the same Arc
         assert!(Arc::ptr_eq(&s1, &s2));
         assert_eq!(interner.size(), 1);
@@ -353,12 +354,12 @@ mod tests {
     #[test]
     fn test_buffer_pool() {
         let pool = BufferPool::new(1024, 5);
-        
+
         let buffer1 = pool.get_buffer();
         assert_eq!(buffer1.capacity(), 1024);
-        
+
         pool.return_buffer(buffer1);
-        
+
         let (pool_size, buffer_size, max_buffers) = pool.stats();
         assert_eq!(pool_size, 1);
         assert_eq!(buffer_size, 1024);
@@ -370,10 +371,10 @@ mod tests {
         let data = vec![1, 2, 3, 4, 5];
         let size = MemoryOptimizer::estimate_size(&data);
         assert!(size > 0);
-        
+
         let cloned = MemoryOptimizer::efficient_clone(&data, 1000);
         assert_eq!(data, cloned);
-        
+
         let report = MemoryOptimizer::memory_report();
         assert!(report.contains("Memory Report"));
     }

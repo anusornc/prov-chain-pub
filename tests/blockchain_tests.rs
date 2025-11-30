@@ -6,7 +6,10 @@ fn test_blockchain_add_and_validate() {
     let _ = bc.add_block("test data".into());
     let _ = bc.add_block("more test data".into());
 
-    assert!(bc.is_valid(), "Blockchain should be valid after adding blocks");
+    assert!(
+        bc.is_valid(),
+        "Blockchain should be valid after adding blocks"
+    );
 }
 
 #[test]
@@ -18,7 +21,10 @@ fn test_blockchain_detect_tampering() {
     // Tamper with a block's data
     bc.chain[1].data = "tampered".into();
 
-    assert!(!bc.is_valid(), "Blockchain should be invalid after tampering with data");
+    assert!(
+        !bc.is_valid(),
+        "Blockchain should be invalid after tampering with data"
+    );
 }
 
 #[test]
@@ -41,5 +47,8 @@ fn test_hash_is_different_for_different_data() {
     let mut bc2 = Blockchain::new();
     let _ = bc2.add_block("data2".into());
 
-    assert_ne!(bc1.chain[1].hash, bc2.chain[1].hash, "Hashes should be different for different data");
+    assert_ne!(
+        bc1.chain[1].hash, bc2.chain[1].hash,
+        "Hashes should be different for different data"
+    );
 }

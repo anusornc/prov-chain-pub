@@ -1,15 +1,15 @@
+use oxigraph::model::NamedNode;
 use provchain_org::core::blockchain::Blockchain;
 use provchain_org::storage::rdf_store::RDFStore;
-use oxigraph::model::NamedNode;
 
 #[test]
 fn test_ontology_loading() {
     let bc = Blockchain::new();
-    
+
     // Check that ontology classes are loaded
     let classes = bc.rdf_store.get_ontology_classes();
     println!("Loaded ontology classes: {classes:?}");
-    
+
     // Should contain our main ontology classes
     let class_strings = classes.join(" ");
     assert!(class_strings.contains("Batch"));
@@ -21,7 +21,7 @@ fn test_ontology_loading() {
 #[test]
 fn test_ontology_validation() {
     let mut bc = Blockchain::new();
-    
+
     // Add valid ontology-based data
     let valid_data = r#"
         @prefix ex: <http://example.org/> .
@@ -41,32 +41,36 @@ fn test_ontology_validation() {
         ex:testAgent a core:Manufacturer ;
             rdfs:label "Test Manufacturer" .
     "#;
-    
+
     let _ = bc.add_block(valid_data.into());
-    
+
     // Validate the last block's data
     let last_block_index = bc.chain.len() - 1;
-    let graph_name = NamedNode::new(format!("http://provchain.org/block/{last_block_index}")).unwrap();
-    
+    let graph_name =
+        NamedNode::new(format!("http://provchain.org/block/{last_block_index}")).unwrap();
+
     // Test ontology validation
     let is_valid = bc.rdf_store.validate_against_ontology(&graph_name);
     assert!(is_valid, "Valid ontology data should pass validation");
-    
+
     // Test required properties validation
     let validation_errors = bc.rdf_store.validate_required_properties(&graph_name);
-    assert!(validation_errors.is_empty(), "Valid data should have no validation errors: {validation_errors:?}");
+    assert!(
+        validation_errors.is_empty(),
+        "Valid data should have no validation errors: {validation_errors:?}"
+    );
 }
 
 #[test]
 fn test_ontology_validation_failures() {
     let mut rdf_store = RDFStore::new();
-    
+
     // Load ontology first
     if let Ok(ontology_data) = std::fs::read_to_string("ontologies/generic_core.owl") {
         let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
         rdf_store.load_ontology(&ontology_data, &ontology_graph);
     }
-    
+
     // Add invalid data (Batch without required hasIdentifier)
     let invalid_data = r#"
         @prefix ex: <http://example.org/> .
@@ -80,24 +84,33 @@ fn test_ontology_validation_failures() {
         ex:invalidActivity a core:ManufacturingProcess ;
             prov:wasAssociatedWith ex:testAgent .
     "#;
-    
+
     let graph_name = NamedNode::new("http://provchain.org/test").unwrap();
     rdf_store.add_rdf_to_graph(invalid_data, &graph_name);
-    
+
     // Test validation should find errors
     let validation_errors = rdf_store.validate_required_properties(&graph_name);
-    assert!(!validation_errors.is_empty(), "Invalid data should have validation errors");
-    
+    assert!(
+        !validation_errors.is_empty(),
+        "Invalid data should have validation errors"
+    );
+
     // Should find missing hasIdentifier and recordedAt
     let error_text = validation_errors.join(" ");
-    assert!(error_text.contains("hasIdentifier"), "Should detect missing hasIdentifier");
-    assert!(error_text.contains("recordedAt"), "Should detect missing recordedAt");
+    assert!(
+        error_text.contains("hasIdentifier"),
+        "Should detect missing hasIdentifier"
+    );
+    assert!(
+        error_text.contains("recordedAt"),
+        "Should detect missing recordedAt"
+    );
 }
 
 #[test]
 fn test_environmental_conditions_integration() {
     let mut bc = Blockchain::new();
-    
+
     // Add data with environmental conditions
     let env_data = r#"
         @prefix ex: <http://example.org/> .
@@ -114,9 +127,9 @@ fn test_environmental_conditions_integration() {
             core:hasHumidity "70.0"^^xsd:decimal ;
             core:hasConditionTimestamp "2025-08-08T14:00:00Z"^^xsd:dateTime .
     "#;
-    
+
     let _ = bc.add_block(env_data.into());
-    
+
     // Query for environmental conditions across all graphs
     let env_query = r#"
         PREFIX core: <http://provchain.org/core#>
@@ -130,7 +143,7 @@ fn test_environmental_conditions_integration() {
             }
         }
     "#;
-    
+
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = bc.rdf_store.query(env_query) {
         let mut found_conditions = false;
         for solution in solutions {
@@ -141,7 +154,10 @@ fn test_environmental_conditions_integration() {
                 }
             }
         }
-        assert!(found_conditions, "Should find environmental conditions in the data");
+        assert!(
+            found_conditions,
+            "Should find environmental conditions in the data"
+        );
     } else {
         // Fallback: check if the data was stored at all
         let simple_query = r#"
@@ -154,15 +170,20 @@ fn test_environmental_conditions_integration() {
                 }
             }
         "#;
-        
-        if let oxigraph::sparql::QueryResults::Solutions(solutions) = bc.rdf_store.query(simple_query) {
+
+        if let oxigraph::sparql::QueryResults::Solutions(solutions) =
+            bc.rdf_store.query(simple_query)
+        {
             let mut count = 0;
             for solution in solutions {
                 if let Ok(_sol) = solution {
                     count += 1;
                 }
             }
-            assert!(count > 0, "Should find at least some environmental data properties");
+            assert!(
+                count > 0,
+                "Should find at least some environmental data properties"
+            );
         }
     }
 }
@@ -170,7 +191,7 @@ fn test_environmental_conditions_integration() {
 #[test]
 fn test_supply_chain_traceability() {
     let mut bc = Blockchain::new();
-    
+
     // Add complete supply chain data using ontology
     let farmer_data = r#"
         @prefix ex: <http://example.org/> .
@@ -188,7 +209,7 @@ fn test_supply_chain_traceability() {
             rdfs:label "Green Valley Dairy Farm" .
     "#;
     let _ = bc.add_block(farmer_data.into());
-    
+
     let processing_data = r#"
         @prefix ex: <http://example.org/> .
         @prefix core: <http://provchain.org/core#> .
@@ -211,7 +232,7 @@ fn test_supply_chain_traceability() {
             rdfs:label "UHT Processing Co." .
     "#;
     let _ = bc.add_block(processing_data.into());
-    
+
     // Query for complete traceability chain across all graphs
     let trace_query = r#"
         PREFIX core: <http://provchain.org/core#>
@@ -235,7 +256,7 @@ fn test_supply_chain_traceability() {
         }
         ORDER BY ?batchId
     "#;
-    
+
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = bc.rdf_store.query(trace_query) {
         let mut batch_count = 0;
         for solution in solutions {
@@ -246,7 +267,10 @@ fn test_supply_chain_traceability() {
                 }
             }
         }
-        assert!(batch_count >= 2, "Should find at least 2 batches in the supply chain");
+        assert!(
+            batch_count >= 2,
+            "Should find at least 2 batches in the supply chain"
+        );
     } else {
         // Fallback: check if any Batch data exists
         let simple_query = r#"
@@ -259,8 +283,10 @@ fn test_supply_chain_traceability() {
                 }
             }
         "#;
-        
-        if let oxigraph::sparql::QueryResults::Solutions(solutions) = bc.rdf_store.query(simple_query) {
+
+        if let oxigraph::sparql::QueryResults::Solutions(solutions) =
+            bc.rdf_store.query(simple_query)
+        {
             let mut count = 0;
             for solution in solutions {
                 if let Ok(sol) = solution {
@@ -270,7 +296,10 @@ fn test_supply_chain_traceability() {
                     }
                 }
             }
-            assert!(count >= 2, "Should find at least 2 batches in the supply chain (fallback check)");
+            assert!(
+                count >= 2,
+                "Should find at least 2 batches in the supply chain (fallback check)"
+            );
         }
     }
 }

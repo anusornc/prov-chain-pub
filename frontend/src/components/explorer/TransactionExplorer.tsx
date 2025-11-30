@@ -1,33 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { Activity, Clock, User, Hash, ArrowRight, Filter, Search, CheckCircle } from 'lucide-react';
-import LoadingSpinner from '../ui/LoadingSpinner';
-import type { Transaction, TransactionType } from '../../types';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Activity,
+  Clock,
+  User,
+  Hash,
+  ArrowRight,
+  Filter,
+  Search,
+  CheckCircle,
+} from "lucide-react";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import type { Transaction, TransactionType } from "../../types";
 
 interface TransactionExplorerProps {
   onTransactionSelect?: (transaction: Transaction) => void;
 }
 
-const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransactionSelect }) => {
+const TransactionExplorer: React.FC<TransactionExplorerProps> = ({
+  onTransactionSelect,
+}) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'pending' | 'confirmed'>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "pending" | "confirmed">(
+    "all",
+  );
 
   useEffect(() => {
     fetchTransactions();
-  }, []);
+  }, [fetchTransactions]);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('http://localhost:8080/api/transactions/recent', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+      const token = localStorage.getItem("authToken");
+      const response = await fetch(
+        "http://localhost:8080/api/transactions/recent",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -36,32 +52,57 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
       const data = await response.json();
       setTransactions(data.transactions || []);
     } catch (err) {
-      console.error('Error fetching transactions:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch transactions');
+      console.error("Error fetching transactions:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch transactions",
+      );
       // Fallback to mock data for development
       setTransactions(generateMockTransactions());
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const generateMockTransactions = (): Transaction[] => {
     const mockTransactions: Transaction[] = [];
-    const types: TransactionType[] = ['Production', 'Processing', 'Transport', 'Quality', 'Transfer', 'Environmental', 'Compliance', 'Governance'];
-    const statuses: ('confirmed' | 'pending' | 'failed')[] = ['confirmed', 'pending', 'failed'];
-    const participants = ['Producer_A', 'Manufacturer_B', 'LogisticsProvider_C', 'QualityLab_D', 'Retailer_E'];
-    
+    const types: TransactionType[] = [
+      "Production",
+      "Processing",
+      "Transport",
+      "Quality",
+      "Transfer",
+      "Environmental",
+      "Compliance",
+      "Governance",
+    ];
+    const statuses: ("confirmed" | "pending" | "failed")[] = [
+      "confirmed",
+      "pending",
+      "failed",
+    ];
+    const participants = [
+      "Producer_A",
+      "Manufacturer_B",
+      "LogisticsProvider_C",
+      "QualityLab_D",
+      "Retailer_E",
+    ];
+
     for (let i = 0; i < 20; i++) {
       const type = types[Math.floor(Math.random() * types.length)];
-      const fromParticipant = participants[Math.floor(Math.random() * participants.length)];
-      const toParticipant = participants[Math.floor(Math.random() * participants.length)];
-      
+      const fromParticipant =
+        participants[Math.floor(Math.random() * participants.length)];
+      const toParticipant =
+        participants[Math.floor(Math.random() * participants.length)];
+
       mockTransactions.push({
-        id: `tx_${i.toString().padStart(3, '0')}`,
+        id: `tx_${i.toString().padStart(3, "0")}`,
         type,
         from: fromParticipant,
         to: Math.random() > 0.3 ? toParticipant : undefined,
-        timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+        timestamp: new Date(
+          Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
         block_index: Math.floor(Math.random() * 1000) + 1000,
         signature: `sig_${Math.random().toString(36).substr(2, 16)}`,
         status: statuses[Math.floor(Math.random() * statuses.length)],
@@ -74,59 +115,69 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
           description: `${type} transaction for batch ${i}`,
           location: `Location_${Math.floor(Math.random() * 5) + 1}`,
           metadata: {
-            temperature: type === 'Transport' ? `${Math.floor(Math.random() * 10) + 15}°C` : undefined,
-            quality_score: type === 'Quality' ? Math.floor(Math.random() * 100) + 1 : undefined,
-            quantity: Math.floor(Math.random() * 1000) + 100
-          }
+            temperature:
+              type === "Transport"
+                ? `${Math.floor(Math.random() * 10) + 15}°C`
+                : undefined,
+            quality_score:
+              type === "Quality"
+                ? Math.floor(Math.random() * 100) + 1
+                : undefined,
+            quantity: Math.floor(Math.random() * 1000) + 100,
+          },
         },
       });
     }
-    
-    return mockTransactions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return mockTransactions.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    );
   };
 
-  const filteredTransactions = transactions.filter(tx => {
-    const matchesSearch = searchTerm === '' || 
+  const filteredTransactions = transactions.filter((tx) => {
+    const matchesSearch =
+      searchTerm === "" ||
       tx.signature.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tx.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (tx.to && tx.to.toLowerCase().includes(searchTerm.toLowerCase())) ||
       tx.id.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterType === 'all' || tx.status === filterType;
-    
+
+    const matchesFilter = filterType === "all" || tx.status === filterType;
+
     return matchesSearch && matchesFilter;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed':
-        return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
-      case 'pending':
-        return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
-      case 'failed':
-        return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
+      case "confirmed":
+        return "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30";
+      case "pending":
+        return "text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30";
+      case "failed":
+        return "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30";
       default:
-        return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/30';
+        return "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/30";
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'Production':
+      case "Production":
         return <Activity className="w-4 h-4" />;
-      case 'Processing':
+      case "Processing":
         return <Hash className="w-4 h-4" />;
-      case 'Transport':
+      case "Transport":
         return <ArrowRight className="w-4 h-4" />;
-      case 'Quality':
+      case "Quality":
         return <CheckCircle className="w-4 h-4" />;
-      case 'Transfer':
+      case "Transfer":
         return <ArrowRight className="w-4 h-4" />;
-      case 'Environmental':
+      case "Environmental":
         return <Activity className="w-4 h-4" />;
-      case 'Compliance':
+      case "Compliance":
         return <Hash className="w-4 h-4" />;
-      case 'Governance':
+      case "Governance":
         return <User className="w-4 h-4" />;
       default:
         return <Hash className="w-4 h-4" />;
@@ -156,7 +207,9 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Transaction Explorer</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Transaction Explorer
+              </h1>
               <p className="text-gray-600 dark:text-gray-300 mt-2">
                 Browse and analyze blockchain transactions
               </p>
@@ -196,7 +249,11 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
               <Filter className="w-5 h-5 text-gray-400" />
               <select
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value as 'all' | 'pending' | 'confirmed')}
+                onChange={(e) =>
+                  setFilterType(
+                    e.target.value as "all" | "pending" | "confirmed",
+                  )
+                }
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="all">All Status</option>
@@ -216,9 +273,15 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
                 <Activity className="w-5 h-5" />
               </div>
               <div className="ml-3">
-                <p className="text-red-800 dark:text-red-200 font-medium">Error loading transactions</p>
-                <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
-                <p className="text-red-600 dark:text-red-400 text-sm">Showing mock data for development.</p>
+                <p className="text-red-800 dark:text-red-200 font-medium">
+                  Error loading transactions
+                </p>
+                <p className="text-red-600 dark:text-red-400 text-sm">
+                  {error}
+                </p>
+                <p className="text-red-600 dark:text-red-400 text-sm">
+                  Showing mock data for development.
+                </p>
               </div>
             </div>
           </div>
@@ -295,15 +358,22 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
                         <div className="text-gray-900 dark:text-white">
-                          {((transaction.data as Record<string, unknown>)?.triple_count as number) || 0} triples
+                          {((transaction.data as Record<string, unknown>)
+                            ?.triple_count as number) || 0}{" "}
+                          triples
                         </div>
                         <div className="text-gray-500 dark:text-gray-400 truncate max-w-xs">
-                          {String((transaction.data as Record<string, unknown>)?.subject || 'N/A')}
+                          {String(
+                            (transaction.data as Record<string, unknown>)
+                              ?.subject || "N/A",
+                          )}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(transaction.status)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(transaction.status)}`}
+                      >
                         {transaction.status}
                       </span>
                     </td>
@@ -322,12 +392,13 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({ onTransaction
           {filteredTransactions.length === 0 && (
             <div className="text-center py-12">
               <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No transactions found</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No transactions found
+              </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                {searchTerm || filterType !== 'all' 
-                  ? 'Try adjusting your search or filter criteria.'
-                  : 'No transactions available at the moment.'
-                }
+                {searchTerm || filterType !== "all"
+                  ? "Try adjusting your search or filter criteria."
+                  : "No transactions available at the moment."}
               </p>
             </div>
           )}

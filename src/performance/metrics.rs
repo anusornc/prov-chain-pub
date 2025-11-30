@@ -1,5 +1,5 @@
 //! Performance Metrics Collection Module
-//! 
+//!
 //! This module provides comprehensive performance metrics collection,
 //! monitoring, and reporting capabilities for ProvChain.
 
@@ -39,7 +39,7 @@ impl MetricsCollector {
     pub fn record_operation(&mut self, duration: Duration) {
         self.total_operations += 1;
         self.operation_timings.push_back((Instant::now(), duration));
-        
+
         // Keep only recent timings (last hour)
         let cutoff = Instant::now() - Duration::from_secs(3600);
         while let Some(&(timestamp, _)) = self.operation_timings.front() {
@@ -54,7 +54,7 @@ impl MetricsCollector {
     /// Record memory usage
     pub fn record_memory_usage(&mut self, memory_mb: u64) {
         self.memory_samples.push_back((Instant::now(), memory_mb));
-        
+
         // Keep only recent samples (last hour)
         let cutoff = Instant::now() - Duration::from_secs(3600);
         while let Some(&(timestamp, _)) = self.memory_samples.front() {
@@ -81,7 +81,11 @@ impl MetricsCollector {
         if self.operation_timings.is_empty() {
             Duration::from_secs(0)
         } else {
-            let total: Duration = self.operation_timings.iter().map(|(_, duration)| *duration).sum();
+            let total: Duration = self
+                .operation_timings
+                .iter()
+                .map(|(_, duration)| *duration)
+                .sum();
             total / self.operation_timings.len() as u32
         }
     }
@@ -93,17 +97,22 @@ impl MetricsCollector {
         } else {
             let window_duration = Duration::from_secs(60); // 1 minute window
             let cutoff = Instant::now() - window_duration;
-            let recent_ops = self.operation_timings.iter()
+            let recent_ops = self
+                .operation_timings
+                .iter()
                 .filter(|(timestamp, _)| *timestamp >= cutoff)
                 .count();
-            
+
             recent_ops as f64 / window_duration.as_secs_f64()
         }
     }
 
     /// Get current memory usage
     pub fn get_current_memory_usage(&self) -> u64 {
-        self.memory_samples.back().map(|(_, memory)| *memory).unwrap_or(0)
+        self.memory_samples
+            .back()
+            .map(|(_, memory)| *memory)
+            .unwrap_or(0)
     }
 
     /// Get average memory usage
@@ -156,7 +165,7 @@ impl MetricsReport {
         println!("Average operation time: {:?}", self.average_operation_time);
         println!("Current memory usage: {} MB", self.current_memory_usage);
         println!("Average memory usage: {} MB", self.average_memory_usage);
-        
+
         if !self.custom_metrics.is_empty() {
             println!("Custom metrics:");
             for (name, value) in &self.custom_metrics {
@@ -175,29 +184,35 @@ mod tests {
     fn test_metrics_collector_creation() {
         let collector = MetricsCollector::new(Duration::from_secs(60));
         assert_eq!(collector.get_total_operations(), 0);
-        assert_eq!(collector.get_average_operation_time(), Duration::from_secs(0));
+        assert_eq!(
+            collector.get_average_operation_time(),
+            Duration::from_secs(0)
+        );
         assert_eq!(collector.get_operations_per_second(), 0.0);
     }
 
     #[test]
     fn test_operation_recording() {
         let mut collector = MetricsCollector::new(Duration::from_secs(60));
-        
+
         collector.record_operation(Duration::from_millis(100));
         collector.record_operation(Duration::from_millis(200));
-        
+
         assert_eq!(collector.get_total_operations(), 2);
-        assert_eq!(collector.get_average_operation_time(), Duration::from_millis(150));
+        assert_eq!(
+            collector.get_average_operation_time(),
+            Duration::from_millis(150)
+        );
     }
 
     #[test]
     fn test_memory_recording() {
         let mut collector = MetricsCollector::new(Duration::from_secs(60));
-        
+
         collector.record_memory_usage(100);
         collector.record_memory_usage(150);
         collector.record_memory_usage(200);
-        
+
         assert_eq!(collector.get_current_memory_usage(), 200);
         assert_eq!(collector.get_average_memory_usage(), 150);
     }
@@ -205,10 +220,10 @@ mod tests {
     #[test]
     fn test_custom_metrics() {
         let mut collector = MetricsCollector::new(Duration::from_secs(60));
-        
+
         collector.set_custom_metric("cache_hit_rate".to_string(), 0.85);
         collector.set_custom_metric("error_rate".to_string(), 0.02);
-        
+
         let report = collector.generate_report();
         assert_eq!(report.custom_metrics.get("cache_hit_rate"), Some(&0.85));
         assert_eq!(report.custom_metrics.get("error_rate"), Some(&0.02));
@@ -218,7 +233,7 @@ mod tests {
     fn test_uptime_calculation() {
         let collector = MetricsCollector::new(Duration::from_secs(60));
         let uptime = collector.get_uptime();
-        
+
         // Should be a very small duration since we just created it
         assert!(uptime < Duration::from_secs(1));
     }
@@ -226,13 +241,13 @@ mod tests {
     #[test]
     fn test_metrics_report_generation() {
         let mut collector = MetricsCollector::new(Duration::from_secs(60));
-        
+
         collector.record_operation(Duration::from_millis(50));
         collector.record_memory_usage(128);
         collector.set_custom_metric("test_metric".to_string(), 42.0);
-        
+
         let report = collector.generate_report();
-        
+
         assert_eq!(report.total_operations, 1);
         assert_eq!(report.average_operation_time, Duration::from_millis(50));
         assert_eq!(report.current_memory_usage, 128);

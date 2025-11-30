@@ -1,24 +1,24 @@
 //! Proof-of-Authority consensus mechanism for ProvChainOrg
-//! 
+//!
 //! This module implements:
 //! - Ed25519 signature-based authority validation
 //! - Authority node management and rotation
 //! - Byzantine fault tolerance considerations
 //! - Block creation and validation rules
 
+use anyhow::Result;
+use chrono::{DateTime, Duration, Utc};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tracing::{debug, error, info, warn};
 use uuid::Uuid;
-use anyhow::Result;
-use tracing::{info, warn, debug, error};
-use chrono::{DateTime, Utc, Duration};
-use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
 
-use crate::core::blockchain::{Blockchain, Block};
-use crate::utils::config::ConsensusConfig;
 use super::messages::P2PMessage;
 use super::NetworkManager;
+use crate::core::blockchain::{Block, Blockchain};
+use crate::utils::config::ConsensusConfig;
 
 /// Proof-of-Authority consensus manager
 pub struct ConsensusManager {
@@ -93,14 +93,17 @@ impl ConsensusManager {
         };
 
         let authority_keys = Arc::new(RwLock::new(HashMap::new()));
-        
+
         // Load known authority keys
         for key_str in &config.authority_keys {
             if let Ok(key_bytes) = hex::decode(key_str) {
                 if key_bytes.len() == 32 {
-                    if let Ok(public_key) = VerifyingKey::from_bytes(&key_bytes.try_into().unwrap()) {
+                    if let Ok(public_key) = VerifyingKey::from_bytes(&key_bytes.try_into().unwrap())
+                    {
                         let authority_id = Uuid::new_v4(); // In practice, this would be derived from the key
-                        authority_keys.blocking_write().insert(authority_id, public_key);
+                        authority_keys
+                            .blocking_write()
+                            .insert(authority_id, public_key);
                     }
                 }
             }
@@ -137,7 +140,7 @@ impl ConsensusManager {
                     return Ok(keypair);
                 }
             }
-            
+
             // Generate new keypair and save it
             let keypair = SigningKey::from_bytes(&rand::random::<[u8; 32]>());
             std::fs::write(file_path, keypair.to_bytes())?;
@@ -152,7 +155,7 @@ impl ConsensusManager {
     /// Start the consensus mechanism
     pub async fn start(&self) -> Result<()> {
         info!("Starting Proof-of-Authority consensus");
-        
+
         if self.config.is_authority {
             info!("This node is configured as an authority");
             self.start_authority_duties().await?;
@@ -162,40 +165,40 @@ impl ConsensusManager {
 
         // Start authority monitoring
         self.start_authority_monitoring().await;
-        
+
         Ok(())
     }
 
     /// Start authority duties (block creation)
     async fn start_authority_duties(&self) -> Result<()> {
         let consensus_manager = Arc::new(self.clone());
-        
+
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(
-                tokio::time::Duration::from_secs(consensus_manager.config.block_interval)
-            );
-            
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(
+                consensus_manager.config.block_interval,
+            ));
+
             loop {
                 interval.tick().await;
-                
+
                 if let Err(e) = consensus_manager.try_create_block().await {
                     error!("Failed to create block: {}", e);
                 }
             }
         });
-        
+
         Ok(())
     }
 
     /// Try to create a new block (if it's our turn)
     async fn try_create_block(&self) -> Result<()> {
         let should_create = self.should_create_block().await?;
-        
+
         if should_create {
             debug!("It's our turn to create a block");
             self.create_and_propose_block().await?;
         }
-        
+
         Ok(())
     }
 
@@ -203,7 +206,7 @@ impl ConsensusManager {
     async fn should_create_block(&self) -> Result<bool> {
         let authority_state = self.authority_state.read().await;
         let now = Utc::now();
-        
+
         // Check if enough time has passed since the last block
         let time_since_last = now.signed_duration_since(authority_state.last_block_time);
         if time_since_last < Duration::seconds(self.config.block_interval as i64) {
@@ -222,13 +225,15 @@ impl ConsensusManager {
             // For now, we'll use a placeholder approach
             let public_key = keypair.verifying_key();
             // Find our ID in the authority keys
-            authority_keys.iter().find_map(|(id, key)| {
-                if key == &public_key {
-                    Some(*id)
-                } else {
-                    None
-                }
-            })
+            authority_keys.iter().find_map(
+                |(id, key)| {
+                    if key == &public_key {
+                        Some(*id)
+                    } else {
+                        None
+                    }
+                },
+            )
         } else {
             None
         };
@@ -254,17 +259,19 @@ impl ConsensusManager {
     /// Create and propose a new block
     async fn create_and_propose_block(&self) -> Result<()> {
         info!("Creating new block");
-        
-        let keypair = self.authority_keypair.as_ref()
+
+        let keypair = self
+            .authority_keypair
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No authority keypair available"))?;
 
         // Create the block
         let block = self.create_block().await?;
-        
+
         // Sign the block
         let block_data = self.serialize_block_for_signing(&block)?;
         let signature = keypair.sign(&block_data);
-        
+
         let proposal = BlockProposal {
             block: block.clone(),
             signature,
@@ -280,27 +287,35 @@ impl ConsensusManager {
 
         // Broadcast the block to the network
         self.broadcast_block_proposal(proposal).await?;
-        
+
         // Update authority state for round-robin rotation
         {
             let mut authority_state = self.authority_state.write().await;
             authority_state.last_block_time = Utc::now();
             authority_state.current_round += 1;
-            
+
             // Update round-robin rotation
             if !authority_state.authority_rotation_order.is_empty() {
-                authority_state.current_authority_index = 
-                    (authority_state.current_authority_index + 1) % authority_state.authority_rotation_order.len();
-                
-                if authority_state.current_authority_index < authority_state.authority_rotation_order.len() {
-                    authority_state.current_authority = 
-                        Some(authority_state.authority_rotation_order[authority_state.current_authority_index]);
+                authority_state.current_authority_index = (authority_state.current_authority_index
+                    + 1)
+                    % authority_state.authority_rotation_order.len();
+
+                if authority_state.current_authority_index
+                    < authority_state.authority_rotation_order.len()
+                {
+                    authority_state.current_authority = Some(
+                        authority_state.authority_rotation_order
+                            [authority_state.current_authority_index],
+                    );
                 }
             }
-            
+
             // Update performance metrics
             if let Some(current_authority) = authority_state.current_authority {
-                if let Some(performance) = authority_state.authority_performance.get_mut(&current_authority) {
+                if let Some(performance) = authority_state
+                    .authority_performance
+                    .get_mut(&current_authority)
+                {
                     performance.blocks_created += 1;
                     performance.last_activity = Utc::now();
                 }
@@ -315,7 +330,7 @@ impl ConsensusManager {
     async fn create_block(&self) -> Result<Block> {
         let blockchain = self.blockchain.read().await;
         let previous_block = blockchain.chain.last();
-        
+
         let (previous_hash, index) = if let Some(prev) = previous_block {
             (prev.hash.clone(), prev.index + 1)
         } else {
@@ -325,8 +340,13 @@ impl ConsensusManager {
         // For now, create a block with some sample RDF data
         // In a real implementation, this would collect pending transactions
         // Calculate state root before creating the block
-        let state_root = self.blockchain.read().await.rdf_store.calculate_state_root();
-        
+        let state_root = self
+            .blockchain
+            .read()
+            .await
+            .rdf_store
+            .calculate_state_root();
+
         let rdf_data = format!(
             "<http://provchain.org/block/{}> <http://provchain.org/timestamp> \"{}\" .\n<http://provchain.org/block/{}> <http://provchain.org/authority> \"{}\" .",
             index,
@@ -342,10 +362,7 @@ impl ConsensusManager {
     fn serialize_block_for_signing(&self, block: &Block) -> Result<Vec<u8>> {
         let data = format!(
             "{}|{}|{}|{}",
-            block.index,
-            block.timestamp,
-            block.previous_hash,
-            block.data
+            block.index, block.timestamp, block.previous_hash, block.data
         );
         Ok(data.into_bytes())
     }
@@ -354,21 +371,26 @@ impl ConsensusManager {
     async fn broadcast_block_proposal(&self, proposal: BlockProposal) -> Result<()> {
         let announcement = P2PMessage::new_block_announcement(
             &proposal.block,
-            format!("http://provchain.org/block/{}", proposal.block.index)
+            format!("http://provchain.org/block/{}", proposal.block.index),
         );
-        
+
         self.network.broadcast_message(announcement).await?;
         Ok(())
     }
 
     /// Validate a block proposal from another authority
     pub async fn validate_block_proposal(&self, proposal: &BlockProposal) -> Result<bool> {
-        debug!("Validating block proposal for block {}", proposal.block.index);
+        debug!(
+            "Validating block proposal for block {}",
+            proposal.block.index
+        );
 
         // Check if the authority is known and authorized
         let authority_keys = self.authority_keys.read().await;
-        let is_known_authority = authority_keys.values().any(|key| *key == proposal.authority_key);
-        
+        let is_known_authority = authority_keys
+            .values()
+            .any(|key| *key == proposal.authority_key);
+
         if !is_known_authority {
             warn!("Block proposal from unknown authority");
             return Ok(false);
@@ -376,14 +398,21 @@ impl ConsensusManager {
 
         // Verify the signature
         let block_data = self.serialize_block_for_signing(&proposal.block)?;
-        if proposal.authority_key.verify(&block_data, &proposal.signature).is_err() {
+        if proposal
+            .authority_key
+            .verify(&block_data, &proposal.signature)
+            .is_err()
+        {
             warn!("Invalid signature on block proposal");
             return Ok(false);
         }
 
         // Validate block structure and content
         let blockchain = self.blockchain.read().await;
-        if !self.validate_block_structure(&proposal.block, &blockchain).await? {
+        if !self
+            .validate_block_structure(&proposal.block, &blockchain)
+            .await?
+        {
             warn!("Invalid block structure");
             return Ok(false);
         }
@@ -399,7 +428,11 @@ impl ConsensusManager {
     }
 
     /// Validate block structure and content
-    async fn validate_block_structure(&self, block: &Block, blockchain: &Blockchain) -> Result<bool> {
+    async fn validate_block_structure(
+        &self,
+        block: &Block,
+        blockchain: &Blockchain,
+    ) -> Result<bool> {
         // Check block index
         let expected_index = blockchain.chain.len() as u64;
         if block.index != expected_index {
@@ -427,14 +460,14 @@ impl ConsensusManager {
     /// Validate block timing constraints
     async fn validate_block_timing(&self, proposal: &BlockProposal) -> Result<bool> {
         let authority_state = self.authority_state.read().await;
-        
+
         // Parse the timestamp from the block
         let block_time = chrono::DateTime::parse_from_rfc3339(&proposal.block.timestamp)
             .map_err(|_| anyhow::anyhow!("Invalid timestamp format"))?
             .with_timezone(&Utc);
-        
+
         let now = Utc::now();
-        
+
         // Check if the block is not too far in the future
         let time_diff = block_time.signed_duration_since(now);
         if time_diff > Duration::seconds(30) {
@@ -453,13 +486,13 @@ impl ConsensusManager {
     /// Start monitoring authority performance
     async fn start_authority_monitoring(&self) {
         let consensus_manager = Arc::new(self.clone());
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
-            
+
             loop {
                 interval.tick().await;
-                
+
                 if let Err(e) = consensus_manager.update_authority_performance().await {
                     error!("Failed to update authority performance: {}", e);
                 }
@@ -470,14 +503,15 @@ impl ConsensusManager {
     /// Update authority performance metrics
     async fn update_authority_performance(&self) -> Result<()> {
         debug!("Updating authority performance metrics");
-        
+
         let mut authority_state = self.authority_state.write().await;
         let now = Utc::now();
-        
+
         // Update performance for all known authorities
         let authority_keys = self.authority_keys.read().await;
         for authority_id in authority_keys.keys() {
-            let performance = authority_state.authority_performance
+            let performance = authority_state
+                .authority_performance
                 .entry(*authority_id)
                 .or_insert_with(|| AuthorityPerformance {
                     blocks_created: 0,
@@ -485,14 +519,14 @@ impl ConsensusManager {
                     last_activity: now,
                     reputation: 1.0,
                 });
-            
+
             // Calculate reputation based on performance
             let total_slots = performance.blocks_created + performance.missed_slots;
             if total_slots > 0 {
                 performance.reputation = performance.blocks_created as f64 / total_slots as f64;
             }
         }
-        
+
         Ok(())
     }
 
@@ -500,7 +534,7 @@ impl ConsensusManager {
     pub async fn get_consensus_stats(&self) -> ConsensusStats {
         let authority_state = self.authority_state.read().await;
         let authority_keys = self.authority_keys.read().await;
-        
+
         ConsensusStats {
             is_authority: self.config.is_authority,
             current_round: authority_state.current_round,
@@ -514,31 +548,34 @@ impl ConsensusManager {
     /// Add a new authority to the network
     pub async fn add_authority(&self, authority_id: Uuid, public_key: VerifyingKey) -> Result<()> {
         info!("Adding new authority: {}", authority_id);
-        
+
         let mut authority_keys = self.authority_keys.write().await;
         authority_keys.insert(authority_id, public_key);
-        
+
         let mut authority_state = self.authority_state.write().await;
-        authority_state.authority_performance.insert(authority_id, AuthorityPerformance {
-            blocks_created: 0,
-            missed_slots: 0,
-            last_activity: Utc::now(),
-            reputation: 1.0,
-        });
-        
+        authority_state.authority_performance.insert(
+            authority_id,
+            AuthorityPerformance {
+                blocks_created: 0,
+                missed_slots: 0,
+                last_activity: Utc::now(),
+                reputation: 1.0,
+            },
+        );
+
         Ok(())
     }
 
     /// Remove an authority from the network
     pub async fn remove_authority(&self, authority_id: Uuid) -> Result<()> {
         info!("Removing authority: {}", authority_id);
-        
+
         let mut authority_keys = self.authority_keys.write().await;
         authority_keys.remove(&authority_id);
-        
+
         let mut authority_state = self.authority_state.write().await;
         authority_state.authority_performance.remove(&authority_id);
-        
+
         Ok(())
     }
 }
@@ -572,43 +609,43 @@ pub struct ConsensusStats {
 mod tests {
     use super::*;
     use crate::utils::config::NodeConfig;
-    
+
     #[tokio::test]
     async fn test_consensus_manager_creation() {
         let config = ConsensusConfig::default();
         let node_config = NodeConfig::default();
         let network = Arc::new(NetworkManager::new(node_config));
         let blockchain = Arc::new(RwLock::new(Blockchain::new()));
-        
+
         let consensus = ConsensusManager::new(config, network, blockchain).unwrap();
         let stats = consensus.get_consensus_stats().await;
-        
+
         assert!(!stats.is_authority);
         assert_eq!(stats.current_round, 0);
         assert_eq!(stats.total_authorities, 0);
     }
-    
+
     #[tokio::test]
     async fn test_block_creation() {
         let mut config = ConsensusConfig::default();
         config.is_authority = true;
-        
+
         let node_config = NodeConfig::default();
         let network = Arc::new(NetworkManager::new(node_config));
         let blockchain = Arc::new(RwLock::new(Blockchain::new()));
-        
+
         let consensus = ConsensusManager::new(config, network, blockchain.clone()).unwrap();
         let block = consensus.create_block().await.unwrap();
-        
+
         assert_eq!(block.index, 1); // Should be 1 since blockchain starts with genesis block
         assert!(!block.data.is_empty());
         assert!(!block.hash.is_empty());
     }
-    
+
     #[test]
     fn test_keypair_generation() {
         let keypair = ConsensusManager::load_or_generate_keypair(&None).unwrap();
-        
+
         // Test signing and verification
         let message = b"test message";
         let signature = keypair.sign(message);

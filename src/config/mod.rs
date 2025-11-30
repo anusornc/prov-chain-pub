@@ -144,7 +144,7 @@ impl Default for Config {
             web: WebConfig {
                 host: "0.0.0.0".to_string(),
                 port: 8080,
-                jwt_secret: "your-secret-key".to_string(),
+                jwt_secret: "".to_string(), // Must be set via JWT_SECRET environment variable
                 cors: CorsConfig {
                     enabled: true,
                     allowed_origins: default_origins,
@@ -180,7 +180,10 @@ impl Config {
         match Self::from_file(path) {
             Ok(config) => config,
             Err(e) => {
-                eprintln!("Warning: Failed to load config file: {}. Using defaults.", e);
+                eprintln!(
+                    "Warning: Failed to load config file: {}. Using defaults.",
+                    e
+                );
                 Self::default()
             }
         }
@@ -208,11 +211,7 @@ impl Config {
             CorsConfig {
                 enabled: true,
                 allowed_origins,
-                allowed_methods: vec![
-                    "GET".to_string(),
-                    "POST".to_string(),
-                    "OPTIONS".to_string(),
-                ],
+                allowed_methods: vec!["GET".to_string(), "POST".to_string(), "OPTIONS".to_string()],
                 allowed_headers: vec![
                     "Authorization".to_string(),
                     "Content-Type".to_string(),
@@ -234,8 +233,12 @@ mod tests {
     fn test_default_config() {
         let config = Config::default();
         assert_eq!(config.network.listen_port, 8080);
-        assert_eq!(config.web.cors.enabled, true);
-        assert!(config.web.cors.allowed_origins.contains(&"http://localhost:5173".to_string()));
+        assert!(config.web.cors.enabled);
+        assert!(config
+            .web
+            .cors
+            .allowed_origins
+            .contains(&"http://localhost:5173".to_string()));
     }
 
     #[test]
@@ -250,19 +253,25 @@ mod tests {
     fn test_config_file_operations() {
         let config = Config::default();
         let temp_file = NamedTempFile::new().unwrap();
-        
+
         // Save config
         config.save_to_file(temp_file.path()).unwrap();
-        
+
         // Load config
         let loaded_config = Config::from_file(temp_file.path()).unwrap();
-        assert_eq!(config.network.listen_port, loaded_config.network.listen_port);
+        assert_eq!(
+            config.network.listen_port,
+            loaded_config.network.listen_port
+        );
     }
 
     #[test]
     fn test_ontology_config_default() {
         let ontology_config = OntologyConfigFile::default();
-        assert_eq!(ontology_config.domain_ontology_path, "ontologies/generic_core.owl");
+        assert_eq!(
+            ontology_config.domain_ontology_path,
+            "ontologies/generic_core.owl"
+        );
         assert_eq!(ontology_config.validation_enabled, Some(true));
     }
 }

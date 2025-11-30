@@ -1,12 +1,12 @@
 //! Sustainability Tracking Module
-//! 
+//!
 //! This module provides carbon footprint calculation, environmental impact assessment,
 //! and ESG (Environmental, Social, Governance) reporting capabilities.
 
-use crate::knowledge_graph::{KnowledgeGraph, KnowledgeEntity};
-use std::collections::HashMap;
+use crate::knowledge_graph::{KnowledgeEntity, KnowledgeGraph};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 
 /// Sustainability tracker for environmental impact analysis
 pub struct SustainabilityTracker {
@@ -41,9 +41,13 @@ impl SustainabilityTracker {
 
     /// Calculate carbon footprint for a specific batch
     pub fn calculate_batch_carbon_footprint(&self, batch_id: &str) -> Result<CarbonFootprint> {
-        let batch_entity = self.entities.values()
-            .find(|e| e.entity_type == "ProductBatch" && 
-                     e.properties.get("batchId").is_some_and(|id| id == batch_id))
+        let batch_entity = self
+            .entities
+            .values()
+            .find(|e| {
+                e.entity_type == "ProductBatch"
+                    && e.properties.get("batchId").is_some_and(|id| id == batch_id)
+            })
             .ok_or_else(|| anyhow::anyhow!("Batch not found: {}", batch_id))?;
 
         let mut emissions = Vec::new();
@@ -101,7 +105,9 @@ impl SustainabilityTracker {
 
     /// Calculate overall carbon footprint
     fn calculate_carbon_footprint(&self) -> Result<CarbonFootprint> {
-        let product_batches: Vec<_> = self.entities.values()
+        let product_batches: Vec<_> = self
+            .entities
+            .values()
             .filter(|e| e.entity_type == "ProductBatch")
             .collect();
 
@@ -110,24 +116,29 @@ impl SustainabilityTracker {
 
         for batch in &product_batches {
             let batch_footprint = self.calculate_batch_carbon_footprint(
-                &batch.properties.get("batchId").cloned().unwrap_or_else(|| "unknown".to_string())
+                &batch
+                    .properties
+                    .get("batchId")
+                    .cloned()
+                    .unwrap_or_else(|| "unknown".to_string()),
             )?;
-            
+
             total_emissions += batch_footprint.total_co2_equivalent_kg;
-            
+
             for source in batch_footprint.emissions_by_source {
                 *source_totals.entry(source.source.clone()).or_insert(0.0) += source.co2_kg;
             }
         }
 
-        let emissions_by_source = source_totals.into_iter()
+        let emissions_by_source = source_totals
+            .into_iter()
             .map(|(source, co2_kg)| {
                 let percentage = if total_emissions > 0.0 {
                     (co2_kg / total_emissions) * 100.0
                 } else {
                     0.0
                 };
-                
+
                 EmissionSource {
                     source: source.clone(),
                     co2_kg,
@@ -195,14 +206,20 @@ impl SustainabilityTracker {
             social_score,
             governance_score,
             rating: ESGRating::from_score(overall_score),
-            improvement_areas: self.identify_esg_improvement_areas(environmental_score, social_score, governance_score),
+            improvement_areas: self.identify_esg_improvement_areas(
+                environmental_score,
+                social_score,
+                governance_score,
+            ),
             last_assessment: Utc::now(),
         })
     }
 
     /// Analyze sustainability certifications
     fn analyze_certifications(&self) -> Result<Vec<SustainabilityCertification>> {
-        let certificates: Vec<_> = self.entities.values()
+        let certificates: Vec<_> = self
+            .entities
+            .values()
             .filter(|e| e.entity_type == "Certificate")
             .collect();
 
@@ -211,8 +228,10 @@ impl SustainabilityTracker {
         for cert in certificates {
             // Extract certification type from properties or URI
             let cert_type = self.extract_certification_type(cert);
-            let is_sustainability_cert = matches!(cert_type.as_str(), 
-                "Organic" | "Fair Trade" | "Rainforest Alliance" | "Carbon Neutral" | "ISO 14001");
+            let is_sustainability_cert = matches!(
+                cert_type.as_str(),
+                "Organic" | "Fair Trade" | "Rainforest Alliance" | "Carbon Neutral" | "ISO 14001"
+            );
 
             if is_sustainability_cert {
                 certifications.push(SustainabilityCertification {
@@ -344,9 +363,14 @@ impl SustainabilityTracker {
         Ok(0.85) // Good governance
     }
 
-    fn identify_esg_improvement_areas(&self, env: f64, social: f64, governance: f64) -> Vec<String> {
+    fn identify_esg_improvement_areas(
+        &self,
+        env: f64,
+        social: f64,
+        governance: f64,
+    ) -> Vec<String> {
         let mut areas = Vec::new();
-        
+
         if env < 0.8 {
             areas.push("Environmental impact reduction".to_string());
         }
@@ -356,17 +380,18 @@ impl SustainabilityTracker {
         if governance < 0.8 {
             areas.push("Governance transparency".to_string());
         }
-        
+
         if areas.is_empty() {
             areas.push("Continue current sustainability practices".to_string());
         }
-        
+
         areas
     }
 
     fn extract_certification_type(&self, cert: &KnowledgeEntity) -> String {
         // Extract from label or properties
-        cert.label.clone()
+        cert.label
+            .clone()
             .or_else(|| cert.properties.get("type").cloned())
             .unwrap_or_else(|| "Organic".to_string())
     }

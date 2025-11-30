@@ -1,14 +1,14 @@
 //! Enhanced Graph Database Operations
-//! 
+//!
 //! This module provides advanced graph operations, indexing,
 //! and analytics capabilities for the knowledge graph.
 
-use super::{KnowledgeEntity, KnowledgeRelationship, KnowledgeGraph};
-use petgraph::algo::{dijkstra, connected_components, is_cyclic_directed};
-use petgraph::graph::NodeIndex;
-use std::collections::{HashMap, HashSet};
+use super::{KnowledgeEntity, KnowledgeGraph, KnowledgeRelationship};
 use anyhow::Result;
 use ndarray::Array2;
+use petgraph::algo::{connected_components, dijkstra, is_cyclic_directed};
+use petgraph::graph::NodeIndex;
+use std::collections::{HashMap, HashSet};
 
 /// Enhanced graph database with advanced operations
 pub struct GraphDatabase {
@@ -25,7 +25,7 @@ impl GraphDatabase {
             indexes: GraphIndexes::new(),
             embeddings: None,
         };
-        
+
         db.rebuild_indexes();
         db
     }
@@ -33,10 +33,11 @@ impl GraphDatabase {
     /// Rebuild all indexes for efficient querying
     pub fn rebuild_indexes(&mut self) {
         self.indexes = GraphIndexes::new();
-        
+
         // Build entity type index
         for (uri, entity) in &self.knowledge_graph.entities {
-            self.indexes.entity_type_index
+            self.indexes
+                .entity_type_index
                 .entry(entity.entity_type.clone())
                 .or_default()
                 .push(uri.clone());
@@ -45,7 +46,8 @@ impl GraphDatabase {
         // Build property index
         for (uri, entity) in &self.knowledge_graph.entities {
             for (property, value) in &entity.properties {
-                self.indexes.property_index
+                self.indexes
+                    .property_index
                     .entry(property.clone())
                     .or_default()
                     .entry(value.clone())
@@ -56,7 +58,8 @@ impl GraphDatabase {
 
         // Build relationship index
         for relationship in &self.knowledge_graph.relationships {
-            self.indexes.relationship_index
+            self.indexes
+                .relationship_index
                 .entry(relationship.predicate.clone())
                 .or_default()
                 .push((relationship.subject.clone(), relationship.object.clone()));
@@ -69,7 +72,7 @@ impl GraphDatabase {
         let to_idx = self.knowledge_graph.entity_index.get(to)?;
 
         let distances = dijkstra(&self.knowledge_graph.graph, *from_idx, Some(*to_idx), |_| 1);
-        
+
         if distances.contains_key(to_idx) {
             // Reconstruct path (simplified - in real implementation would track predecessors)
             Some(vec![from.to_string(), to.to_string()])
@@ -83,8 +86,15 @@ impl GraphDatabase {
         let mut paths = Vec::new();
         let mut current_path = vec![from.to_string()];
         let mut visited = HashSet::new();
-        
-        self.dfs_paths(from, to, &mut current_path, &mut visited, &mut paths, max_length);
+
+        self.dfs_paths(
+            from,
+            to,
+            &mut current_path,
+            &mut visited,
+            &mut paths,
+            max_length,
+        );
         paths
     }
 
@@ -113,7 +123,14 @@ impl GraphDatabase {
         for relationship in &self.knowledge_graph.relationships {
             if relationship.subject == current && !visited.contains(&relationship.object) {
                 current_path.push(relationship.object.clone());
-                self.dfs_paths(&relationship.object, target, current_path, visited, paths, max_length);
+                self.dfs_paths(
+                    &relationship.object,
+                    target,
+                    current_path,
+                    visited,
+                    paths,
+                    max_length,
+                );
                 current_path.pop();
             }
         }
@@ -125,7 +142,7 @@ impl GraphDatabase {
     pub fn find_neighbors(&self, entity_uri: &str, max_distance: usize) -> Vec<(String, usize)> {
         if let Some(&start_idx) = self.knowledge_graph.entity_index.get(entity_uri) {
             let distances = dijkstra(&self.knowledge_graph.graph, start_idx, None, |_| 1);
-            
+
             distances
                 .into_iter()
                 .filter_map(|(node_idx, distance)| {
@@ -152,19 +169,26 @@ impl GraphDatabase {
 
         for (uri, &node_idx) in &self.knowledge_graph.entity_index {
             let degree = graph.edges(node_idx).count();
-            let in_degree = graph.edges_directed(node_idx, petgraph::Direction::Incoming).count();
-            let out_degree = graph.edges_directed(node_idx, petgraph::Direction::Outgoing).count();
+            let in_degree = graph
+                .edges_directed(node_idx, petgraph::Direction::Incoming)
+                .count();
+            let out_degree = graph
+                .edges_directed(node_idx, petgraph::Direction::Outgoing)
+                .count();
 
             // Calculate betweenness centrality (simplified)
             let betweenness = self.calculate_betweenness_centrality(node_idx);
 
-            centrality_map.insert(uri.clone(), CentralityMeasures {
-                degree_centrality: degree as f64,
-                in_degree_centrality: in_degree as f64,
-                out_degree_centrality: out_degree as f64,
-                betweenness_centrality: betweenness,
-                closeness_centrality: self.calculate_closeness_centrality(node_idx),
-            });
+            centrality_map.insert(
+                uri.clone(),
+                CentralityMeasures {
+                    degree_centrality: degree as f64,
+                    in_degree_centrality: in_degree as f64,
+                    out_degree_centrality: out_degree as f64,
+                    betweenness_centrality: betweenness,
+                    closeness_centrality: self.calculate_closeness_centrality(node_idx),
+                },
+            );
         }
 
         centrality_map
@@ -181,7 +205,7 @@ impl GraphDatabase {
     fn calculate_closeness_centrality(&self, node_idx: NodeIndex) -> f64 {
         let distances = dijkstra(&self.knowledge_graph.graph, node_idx, None, |_| 1);
         let total_distance: usize = distances.values().sum();
-        
+
         if total_distance > 0 {
             (distances.len() - 1) as f64 / total_distance as f64
         } else {
@@ -199,7 +223,7 @@ impl GraphDatabase {
                 // Find which component this node belongs to
                 let mut component_idx = 0;
                 let mut current_count = 0;
-                
+
                 for (idx, _) in self.knowledge_graph.graph.node_indices().enumerate() {
                     if petgraph::graph::NodeIndex::new(idx) == node_idx {
                         component_idx = current_count % components;
@@ -207,7 +231,7 @@ impl GraphDatabase {
                     }
                     current_count += 1;
                 }
-                
+
                 if component_idx < communities.len() {
                     communities[component_idx].push(uri.clone());
                 }
@@ -231,7 +255,7 @@ impl GraphDatabase {
         for (i, (_uri, &node_idx)) in self.knowledge_graph.entity_index.iter().enumerate() {
             let walks = self.generate_random_walks(node_idx, 10, 80); // 10 walks of length 80
             let embedding = self.compute_embedding_from_walks(&walks, dimensions);
-            
+
             for (j, &value) in embedding.iter().enumerate() {
                 if j < dimensions {
                     embeddings[[i, j]] = value;
@@ -241,7 +265,10 @@ impl GraphDatabase {
 
         self.embeddings = Some(GraphEmbeddings {
             embeddings,
-            entity_to_index: self.knowledge_graph.entity_index.iter()
+            entity_to_index: self
+                .knowledge_graph
+                .entity_index
+                .iter()
                 .enumerate()
                 .map(|(i, (uri, _))| (uri.clone(), i))
                 .collect(),
@@ -251,47 +278,56 @@ impl GraphDatabase {
     }
 
     /// Generate random walks from a starting node
-    fn generate_random_walks(&self, start_node: NodeIndex, num_walks: usize, walk_length: usize) -> Vec<Vec<NodeIndex>> {
+    fn generate_random_walks(
+        &self,
+        start_node: NodeIndex,
+        num_walks: usize,
+        walk_length: usize,
+    ) -> Vec<Vec<NodeIndex>> {
         let mut walks = Vec::new();
-        
+
         for _ in 0..num_walks {
             let mut walk = vec![start_node];
             let mut current = start_node;
-            
+
             for _ in 1..walk_length {
                 let neighbors: Vec<_> = self.knowledge_graph.graph.neighbors(current).collect();
                 if neighbors.is_empty() {
                     break;
                 }
-                
+
                 // Simple random selection (in practice would use proper random number generation)
                 let next_idx = neighbors.len() % neighbors.len();
                 current = neighbors[next_idx];
                 walk.push(current);
             }
-            
+
             walks.push(walk);
         }
-        
+
         walks
     }
 
     /// Compute embedding from random walks (simplified)
-    fn compute_embedding_from_walks(&self, walks: &[Vec<NodeIndex>], dimensions: usize) -> Vec<f64> {
+    fn compute_embedding_from_walks(
+        &self,
+        walks: &[Vec<NodeIndex>],
+        dimensions: usize,
+    ) -> Vec<f64> {
         let mut embedding = vec![0.0; dimensions];
-        
+
         // Simple approach: use walk statistics as features
         for (i, walk) in walks.iter().enumerate() {
             if i < dimensions {
                 embedding[i] = walk.len() as f64 / 80.0; // Normalize by max walk length
             }
         }
-        
+
         // Fill remaining dimensions with derived features
         for i in walks.len()..dimensions {
             embedding[i] = (i as f64).sin(); // Simple derived feature
         }
-        
+
         embedding
     }
 
@@ -305,7 +341,10 @@ impl GraphDatabase {
                 for (other_uri, &other_idx) in &embeddings.entity_to_index {
                     if other_uri != entity_uri {
                         let other_embedding = embeddings.embeddings.row(other_idx);
-                        let similarity = cosine_similarity(&entity_embedding.to_vec(), &other_embedding.to_vec());
+                        let similarity = cosine_similarity(
+                            &entity_embedding.to_vec(),
+                            &other_embedding.to_vec(),
+                        );
                         similarities.push((other_uri.clone(), similarity));
                     }
                 }
@@ -321,16 +360,20 @@ impl GraphDatabase {
     }
 
     /// Query entities by type with optional filters
-    pub fn query_entities_by_type(&self, entity_type: &str, filters: Option<&HashMap<String, String>>) -> Vec<&KnowledgeEntity> {
+    pub fn query_entities_by_type(
+        &self,
+        entity_type: &str,
+        filters: Option<&HashMap<String, String>>,
+    ) -> Vec<&KnowledgeEntity> {
         if let Some(entity_uris) = self.indexes.entity_type_index.get(entity_type) {
             entity_uris
                 .iter()
                 .filter_map(|uri| self.knowledge_graph.entities.get(uri))
                 .filter(|entity| {
                     if let Some(filters) = filters {
-                        filters.iter().all(|(key, value)| {
-                            entity.properties.get(key) == Some(value)
-                        })
+                        filters
+                            .iter()
+                            .all(|(key, value)| entity.properties.get(key) == Some(value))
                     } else {
                         true
                     }
@@ -345,16 +388,18 @@ impl GraphDatabase {
     pub fn get_graph_statistics(&self) -> GraphStatistics {
         let centrality = self.calculate_centrality();
         let communities = self.detect_communities();
-        
+
         GraphStatistics {
             num_entities: self.knowledge_graph.entities.len(),
             num_relationships: self.knowledge_graph.relationships.len(),
             num_entity_types: self.indexes.entity_type_index.len(),
             num_communities: communities.len(),
             has_cycles: self.has_cycles(),
-            average_degree: centrality.values()
+            average_degree: centrality
+                .values()
                 .map(|c| c.degree_centrality)
-                .sum::<f64>() / centrality.len() as f64,
+                .sum::<f64>()
+                / centrality.len() as f64,
             density: self.calculate_graph_density(),
         }
     }
@@ -363,7 +408,7 @@ impl GraphDatabase {
     fn calculate_graph_density(&self) -> f64 {
         let num_nodes = self.knowledge_graph.entities.len() as f64;
         let num_edges = self.knowledge_graph.relationships.len() as f64;
-        
+
         if num_nodes > 1.0 {
             num_edges / (num_nodes * (num_nodes - 1.0))
         } else {

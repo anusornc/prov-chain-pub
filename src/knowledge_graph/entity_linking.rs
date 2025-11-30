@@ -1,12 +1,12 @@
 //! Entity Linking and Resolution System
-//! 
+//!
 //! This module provides automatic entity resolution, deduplication,
 //! and confidence scoring for entity relationships.
 
 use super::{KnowledgeEntity, KnowledgeGraph};
-use std::collections::HashMap;
 use anyhow::Result;
 use lazy_static::lazy_static;
+use std::collections::HashMap;
 
 /// Entity linking system for resolving and deduplicating entities
 pub struct EntityLinker {
@@ -35,7 +35,7 @@ impl EntityLinker {
         self.string_matchers.push(Box::new(LevenshteinMatcher));
         self.string_matchers.push(Box::new(TokenMatcher));
         self.string_matchers.push(Box::new(PhoneticMatcher));
-        
+
         self.external_resolvers.push(Box::new(GeoNamesResolver));
         self.external_resolvers.push(Box::new(CompanyResolver));
     }
@@ -60,7 +60,7 @@ impl EntityLinker {
                             break;
                         }
                     }
-                    
+
                     if !found_cluster {
                         let mut new_cluster = std::collections::HashSet::new();
                         new_cluster.insert(entity1.uri.clone());
@@ -95,7 +95,11 @@ impl EntityLinker {
     }
 
     /// Check if two entities are similar enough to be considered the same
-    fn are_entities_similar(&self, entity1: &KnowledgeEntity, entity2: &KnowledgeEntity) -> Result<bool> {
+    fn are_entities_similar(
+        &self,
+        entity1: &KnowledgeEntity,
+        entity2: &KnowledgeEntity,
+    ) -> Result<bool> {
         // Must be the same type
         if entity1.entity_type != entity2.entity_type {
             return Ok(false);
@@ -132,8 +136,13 @@ impl EntityLinker {
     }
 
     /// Merge multiple entities into a single canonical entity
-    fn merge_entities(&self, kg: &mut KnowledgeGraph, entity_uris: &std::collections::HashSet<String>) -> Result<KnowledgeEntity> {
-        let entities: Vec<KnowledgeEntity> = entity_uris.iter()
+    fn merge_entities(
+        &self,
+        kg: &mut KnowledgeGraph,
+        entity_uris: &std::collections::HashSet<String>,
+    ) -> Result<KnowledgeEntity> {
+        let entities: Vec<KnowledgeEntity> = entity_uris
+            .iter()
             .filter_map(|uri| kg.entities.get(uri))
             .cloned()
             .collect();
@@ -143,7 +152,8 @@ impl EntityLinker {
         }
 
         // Choose canonical entity (highest confidence score)
-        let canonical = entities.iter()
+        let canonical = entities
+            .iter()
             .max_by(|a, b| a.confidence_score.partial_cmp(&b.confidence_score).unwrap())
             .unwrap();
 
@@ -163,7 +173,9 @@ impl EntityLinker {
             entity_type: canonical.entity_type.clone(),
             label: canonical.label.clone(),
             properties: merged_properties,
-            confidence_score: (entities.iter().map(|e| e.confidence_score).sum::<f64>() / entities.len() as f64).min(1.0),
+            confidence_score: (entities.iter().map(|e| e.confidence_score).sum::<f64>()
+                / entities.len() as f64)
+                .min(1.0),
         };
 
         // Remove old entities and add merged entity
@@ -182,7 +194,8 @@ impl EntityLinker {
             }
         }
 
-        kg.entities.insert(canonical.uri.clone(), merged_entity.clone());
+        kg.entities
+            .insert(canonical.uri.clone(), merged_entity.clone());
         Ok(merged_entity)
     }
 
@@ -195,7 +208,9 @@ impl EntityLinker {
             if let Some(external_data) = resolver.resolve_entity(entity)? {
                 // Merge external data
                 for (key, value) in external_data.properties {
-                    if let std::collections::hash_map::Entry::Vacant(e) = enriched.properties.entry(key) {
+                    if let std::collections::hash_map::Entry::Vacant(e) =
+                        enriched.properties.entry(key)
+                    {
                         e.insert(value);
                         was_enriched = true;
                     }
@@ -207,7 +222,8 @@ impl EntityLinker {
                 }
 
                 // Update confidence score
-                enriched.confidence_score = (enriched.confidence_score + external_data.confidence_score) / 2.0;
+                enriched.confidence_score =
+                    (enriched.confidence_score + external_data.confidence_score) / 2.0;
             }
         }
 
@@ -281,7 +297,7 @@ impl StringMatcher for LevenshteinMatcher {
     fn calculate_similarity(&self, str1: &str, str2: &str) -> Result<f64> {
         let distance = levenshtein_distance(str1, str2);
         let max_len = str1.len().max(str2.len());
-        
+
         if max_len == 0 {
             Ok(1.0)
         } else {
@@ -297,10 +313,10 @@ impl StringMatcher for TokenMatcher {
     fn calculate_similarity(&self, str1: &str, str2: &str) -> Result<f64> {
         let tokens1: std::collections::HashSet<&str> = str1.split_whitespace().collect();
         let tokens2: std::collections::HashSet<&str> = str2.split_whitespace().collect();
-        
+
         let intersection = tokens1.intersection(&tokens2).count();
         let union = tokens1.union(&tokens2).count();
-        
+
         if union == 0 {
             Ok(1.0)
         } else {
@@ -316,7 +332,7 @@ impl StringMatcher for PhoneticMatcher {
     fn calculate_similarity(&self, str1: &str, str2: &str) -> Result<f64> {
         let soundex1 = soundex(str1);
         let soundex2 = soundex(str2);
-        
+
         if soundex1 == soundex2 {
             Ok(0.8) // High but not perfect similarity for phonetic matches
         } else {
@@ -336,7 +352,7 @@ impl ExternalResolver for GeoNamesResolver {
             properties.insert("country".to_string(), "Unknown".to_string());
             properties.insert("latitude".to_string(), "0.0".to_string());
             properties.insert("longitude".to_string(), "0.0".to_string());
-            
+
             Ok(Some(ExternalEntityData {
                 label: Some("Geographic Location".to_string()),
                 properties,
@@ -358,7 +374,7 @@ impl ExternalResolver for CompanyResolver {
             let mut properties = HashMap::new();
             properties.insert("industry".to_string(), "Agriculture".to_string());
             properties.insert("founded".to_string(), "Unknown".to_string());
-            
+
             Ok(Some(ExternalEntityData {
                 label: None,
                 properties,
@@ -403,19 +419,31 @@ fn soundex(s: &str) -> String {
     lazy_static! {
         static ref SOUNDEX_MAP: HashMap<char, char> = {
             let mut m = HashMap::new();
-            for c in "BFPV".chars() { m.insert(c, '1'); }
-            for c in "CGJKQSXZ".chars() { m.insert(c, '2'); }
-            for c in "DT".chars() { m.insert(c, '3'); }
-            for c in "L".chars() { m.insert(c, '4'); }
-            for c in "MN".chars() { m.insert(c, '5'); }
-            for c in "R".chars() { m.insert(c, '6'); }
+            for c in "BFPV".chars() {
+                m.insert(c, '1');
+            }
+            for c in "CGJKQSXZ".chars() {
+                m.insert(c, '2');
+            }
+            for c in "DT".chars() {
+                m.insert(c, '3');
+            }
+            for c in "L".chars() {
+                m.insert(c, '4');
+            }
+            for c in "MN".chars() {
+                m.insert(c, '5');
+            }
+            for c in "R".chars() {
+                m.insert(c, '6');
+            }
             m
         };
     }
 
     let s = s.to_uppercase();
     let chars: Vec<char> = s.chars().filter(|c| c.is_alphabetic()).collect();
-    
+
     if chars.is_empty() {
         return "0000".to_string();
     }
@@ -424,7 +452,7 @@ fn soundex(s: &str) -> String {
     result.push(chars[0]);
 
     let mut prev_code = SOUNDEX_MAP.get(&chars[0]).copied().unwrap_or('0');
-    
+
     for &c in chars.iter().skip(1) {
         if let Some(&code) = SOUNDEX_MAP.get(&c) {
             if code != prev_code && code != '0' {

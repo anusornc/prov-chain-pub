@@ -1,7 +1,7 @@
-use provchain_org::storage::rdf_store::RDFStore;
 use oxigraph::model::NamedNode;
 use oxigraph::sparql::QueryResults;
 use provchain_org::core::blockchain::Block;
+use provchain_org::storage::rdf_store::RDFStore;
 
 #[test]
 fn test_rdf_insertion_and_query_in_named_graph() {
@@ -25,7 +25,11 @@ fn test_rdf_insertion_and_query_in_named_graph() {
 
     if let QueryResults::Solutions(solutions) = store.query(query) {
         let results: Vec<_> = solutions.collect();
-        assert_eq!(results.len(), 1, "Should find exactly one milk batch in the named graph");
+        assert_eq!(
+            results.len(),
+            1,
+            "Should find exactly one milk batch in the named graph"
+        );
     } else {
         panic!("SPARQL query failed");
     }
@@ -34,7 +38,12 @@ fn test_rdf_insertion_and_query_in_named_graph() {
 #[test]
 fn test_block_metadata_storage_and_query() {
     let mut store = RDFStore::new();
-    let block = Block::new(1, "test data".into(), "some_hash".into(), "state_root_hash".into());
+    let block = Block::new(
+        1,
+        "test data".into(),
+        "some_hash".into(),
+        "state_root_hash".into(),
+    );
     store.add_block_metadata(&block);
 
     let query = r#"PREFIX pc: <http://provchain.org/>
@@ -49,7 +58,10 @@ fn test_block_metadata_storage_and_query() {
         let results: Vec<_> = solutions.collect();
         assert_eq!(results.len(), 1, "Should find the block's hash");
         let solution = results[0].as_ref().unwrap();
-        assert_eq!(solution.get("hash").unwrap().to_string(), format!("\"{}\"", block.hash));
+        assert_eq!(
+            solution.get("hash").unwrap().to_string(),
+            format!("\"{}\"", block.hash)
+        );
     } else {
         panic!("SPARQL query failed");
     }

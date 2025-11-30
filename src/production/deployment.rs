@@ -1,7 +1,7 @@
 //! Deployment automation and orchestration for production
 
-use serde::{Deserialize, Serialize};
 use crate::production::ProductionError;
+use serde::{Deserialize, Serialize};
 
 /// Deployment configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -235,9 +235,13 @@ impl DeploymentManager {
     }
 
     /// Start a new deployment
-    pub async fn deploy(&self, version: String, deployed_by: String) -> Result<String, ProductionError> {
+    pub async fn deploy(
+        &self,
+        version: String,
+        deployed_by: String,
+    ) -> Result<String, ProductionError> {
         let deployment_id = uuid::Uuid::new_v4().to_string();
-        
+
         let deployment_record = DeploymentRecord {
             id: deployment_id.clone(),
             version: version.clone(),
@@ -258,26 +262,40 @@ impl DeploymentManager {
             *current = Some(deployment_record.clone());
         }
 
-        tracing::info!("Starting deployment {} with version {} using {:?} strategy", 
-            deployment_id, version, self.config.strategy);
+        tracing::info!(
+            "Starting deployment {} with version {} using {:?} strategy",
+            deployment_id,
+            version,
+            self.config.strategy
+        );
 
         // Execute deployment based on strategy
         match self.config.strategy {
-            DeploymentStrategy::BlueGreen => self.execute_blue_green_deployment(&deployment_id).await?,
-            DeploymentStrategy::RollingUpdate => self.execute_rolling_update(&deployment_id).await?,
+            DeploymentStrategy::BlueGreen => {
+                self.execute_blue_green_deployment(&deployment_id).await?
+            }
+            DeploymentStrategy::RollingUpdate => {
+                self.execute_rolling_update(&deployment_id).await?
+            }
             DeploymentStrategy::Canary => self.execute_canary_deployment(&deployment_id).await?,
-            DeploymentStrategy::Recreate => self.execute_recreate_deployment(&deployment_id).await?,
+            DeploymentStrategy::Recreate => {
+                self.execute_recreate_deployment(&deployment_id).await?
+            }
         }
 
         Ok(deployment_id)
     }
 
     /// Execute blue-green deployment
-    async fn execute_blue_green_deployment(&self, deployment_id: &str) -> Result<(), ProductionError> {
+    async fn execute_blue_green_deployment(
+        &self,
+        deployment_id: &str,
+    ) -> Result<(), ProductionError> {
         tracing::info!("Executing blue-green deployment for {}", deployment_id);
 
         // Update deployment status
-        self.update_deployment_status(deployment_id, DeploymentStatus::InProgress).await?;
+        self.update_deployment_status(deployment_id, DeploymentStatus::InProgress)
+            .await?;
 
         // Step 1: Deploy to green environment
         tracing::info!("Deploying to green environment");
@@ -285,7 +303,8 @@ impl DeploymentManager {
 
         // Step 2: Run health checks on green environment
         let health_results = self.run_health_checks("green").await?;
-        self.add_health_check_results(deployment_id, health_results).await?;
+        self.add_health_check_results(deployment_id, health_results)
+            .await?;
 
         // Step 3: Switch traffic to green environment
         tracing::info!("Switching traffic to green environment");
@@ -305,7 +324,8 @@ impl DeploymentManager {
     async fn execute_rolling_update(&self, deployment_id: &str) -> Result<(), ProductionError> {
         tracing::info!("Executing rolling update deployment for {}", deployment_id);
 
-        self.update_deployment_status(deployment_id, DeploymentStatus::InProgress).await?;
+        self.update_deployment_status(deployment_id, DeploymentStatus::InProgress)
+            .await?;
 
         // Simulate rolling update of replicas
         let replicas = self.config.auto_scaling.min_replicas;
@@ -315,7 +335,8 @@ impl DeploymentManager {
 
             // Health check after each replica update
             let health_results = self.run_health_checks(&format!("replica-{i}")).await?;
-            self.add_health_check_results(deployment_id, health_results).await?;
+            self.add_health_check_results(deployment_id, health_results)
+                .await?;
         }
 
         self.complete_deployment(deployment_id).await?;
@@ -326,7 +347,8 @@ impl DeploymentManager {
     async fn execute_canary_deployment(&self, deployment_id: &str) -> Result<(), ProductionError> {
         tracing::info!("Executing canary deployment for {}", deployment_id);
 
-        self.update_deployment_status(deployment_id, DeploymentStatus::InProgress).await?;
+        self.update_deployment_status(deployment_id, DeploymentStatus::InProgress)
+            .await?;
 
         // Step 1: Deploy canary version (5% traffic)
         tracing::info!("Deploying canary version with 5% traffic");
@@ -334,15 +356,19 @@ impl DeploymentManager {
 
         // Step 2: Monitor canary metrics
         let health_results = self.run_health_checks("canary").await?;
-        self.add_health_check_results(deployment_id, health_results).await?;
+        self.add_health_check_results(deployment_id, health_results)
+            .await?;
 
         // Step 3: Gradually increase traffic (25%, 50%, 100%)
         for percentage in [25, 50, 100] {
             tracing::info!("Increasing canary traffic to {}%", percentage);
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-            let health_results = self.run_health_checks(&format!("canary-{percentage}")).await?;
-            self.add_health_check_results(deployment_id, health_results).await?;
+            let health_results = self
+                .run_health_checks(&format!("canary-{percentage}"))
+                .await?;
+            self.add_health_check_results(deployment_id, health_results)
+                .await?;
         }
 
         self.complete_deployment(deployment_id).await?;
@@ -350,10 +376,14 @@ impl DeploymentManager {
     }
 
     /// Execute recreate deployment
-    async fn execute_recreate_deployment(&self, deployment_id: &str) -> Result<(), ProductionError> {
+    async fn execute_recreate_deployment(
+        &self,
+        deployment_id: &str,
+    ) -> Result<(), ProductionError> {
         tracing::info!("Executing recreate deployment for {}", deployment_id);
 
-        self.update_deployment_status(deployment_id, DeploymentStatus::InProgress).await?;
+        self.update_deployment_status(deployment_id, DeploymentStatus::InProgress)
+            .await?;
 
         // Step 1: Stop all instances
         tracing::info!("Stopping all instances");
@@ -369,28 +399,28 @@ impl DeploymentManager {
 
         // Step 4: Health checks
         let health_results = self.run_health_checks("new-instances").await?;
-        self.add_health_check_results(deployment_id, health_results).await?;
+        self.add_health_check_results(deployment_id, health_results)
+            .await?;
 
         self.complete_deployment(deployment_id).await?;
         Ok(())
     }
 
     /// Run health checks
-    async fn run_health_checks(&self, target: &str) -> Result<Vec<HealthCheckResult>, ProductionError> {
+    async fn run_health_checks(
+        &self,
+        target: &str,
+    ) -> Result<Vec<HealthCheckResult>, ProductionError> {
         let mut results = Vec::new();
-        
-        for i in 0..self.config.health_checks.healthy_threshold {
+
+        for _i in 0..self.config.health_checks.healthy_threshold {
             let start_time = std::time::Instant::now();
-            
+
             // Simulate health check
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-            
+
             let response_time = start_time.elapsed().as_millis() as u64;
-            let status = if i < self.config.health_checks.healthy_threshold - 1 {
-                HealthStatus::Healthy
-            } else {
-                HealthStatus::Healthy // Assume all checks pass for demo
-            };
+            let status = HealthStatus::Healthy; // Assume all checks pass for demo
 
             results.push(HealthCheckResult {
                 timestamp: chrono::Utc::now(),
@@ -405,7 +435,11 @@ impl DeploymentManager {
     }
 
     /// Update deployment status
-    async fn update_deployment_status(&self, deployment_id: &str, status: DeploymentStatus) -> Result<(), ProductionError> {
+    async fn update_deployment_status(
+        &self,
+        deployment_id: &str,
+        status: DeploymentStatus,
+    ) -> Result<(), ProductionError> {
         let mut current = self.current_deployment.write().await;
         if let Some(ref mut deployment) = *current {
             if deployment.id == deployment_id {
@@ -416,7 +450,11 @@ impl DeploymentManager {
     }
 
     /// Add health check results to deployment
-    async fn add_health_check_results(&self, deployment_id: &str, results: Vec<HealthCheckResult>) -> Result<(), ProductionError> {
+    async fn add_health_check_results(
+        &self,
+        deployment_id: &str,
+        results: Vec<HealthCheckResult>,
+    ) -> Result<(), ProductionError> {
         let mut current = self.current_deployment.write().await;
         if let Some(ref mut deployment) = *current {
             if deployment.id == deployment_id {
@@ -435,7 +473,8 @@ impl DeploymentManager {
                     deployment.status = DeploymentStatus::Completed;
                     deployment.completed_at = Some(chrono::Utc::now());
                     deployment.duration_seconds = Some(
-                        (deployment.completed_at.unwrap() - deployment.started_at).num_seconds() as u64
+                        (deployment.completed_at.unwrap() - deployment.started_at).num_seconds()
+                            as u64,
                     );
                     Some(deployment.clone())
                 } else {
@@ -467,24 +506,34 @@ impl DeploymentManager {
     }
 
     /// Rollback to previous version
-    pub async fn rollback(&self, target_version: Option<String>) -> Result<String, ProductionError> {
+    pub async fn rollback(
+        &self,
+        target_version: Option<String>,
+    ) -> Result<String, ProductionError> {
         let history = self.deployment_history.read().await;
-        
+
         let rollback_version = if let Some(version) = target_version {
             version
         } else {
             // Find the last successful deployment
-            history.iter()
+            history
+                .iter()
                 .rev()
                 .find(|d| matches!(d.status, DeploymentStatus::Completed))
                 .map(|d| d.version.clone())
-                .ok_or_else(|| ProductionError::Deployment("No previous successful deployment found".to_string()))?
+                .ok_or_else(|| {
+                    ProductionError::Deployment(
+                        "No previous successful deployment found".to_string(),
+                    )
+                })?
         };
 
         tracing::info!("Rolling back to version: {}", rollback_version);
 
         // Start rollback deployment
-        let rollback_id = self.deploy(rollback_version.clone(), "system-rollback".to_string()).await?;
+        let rollback_id = self
+            .deploy(rollback_version.clone(), "system-rollback".to_string())
+            .await?;
 
         // Update deployment record to indicate it's a rollback
         {
@@ -527,17 +576,21 @@ impl DeploymentManager {
         let current = self.current_deployment.read().await;
 
         let total_deployments = history.len();
-        let successful_deployments = history.iter()
+        let successful_deployments = history
+            .iter()
             .filter(|d| matches!(d.status, DeploymentStatus::Completed))
             .count();
-        let failed_deployments = history.iter()
+        let failed_deployments = history
+            .iter()
             .filter(|d| matches!(d.status, DeploymentStatus::Failed))
             .count();
 
         let avg_deployment_time = if !history.is_empty() {
-            history.iter()
+            history
+                .iter()
                 .filter_map(|d| d.duration_seconds)
-                .sum::<u64>() / history.len() as u64
+                .sum::<u64>()
+                / history.len() as u64
         } else {
             0
         };
@@ -572,24 +625,42 @@ Generated: {}
 - Automate deployment pipeline
 "#,
             chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC"),
-            if current.is_some() { "Deployment in progress" } else { "No active deployment" },
+            if current.is_some() {
+                "Deployment in progress"
+            } else {
+                "No active deployment"
+            },
             total_deployments,
             successful_deployments,
-            if total_deployments > 0 { (successful_deployments as f64 / total_deployments as f64) * 100.0 } else { 0.0 },
+            if total_deployments > 0 {
+                (successful_deployments as f64 / total_deployments as f64) * 100.0
+            } else {
+                0.0
+            },
             failed_deployments,
-            if total_deployments > 0 { (failed_deployments as f64 / total_deployments as f64) * 100.0 } else { 0.0 },
+            if total_deployments > 0 {
+                (failed_deployments as f64 / total_deployments as f64) * 100.0
+            } else {
+                0.0
+            },
             avg_deployment_time,
             self.config.environment,
             self.config.strategy,
-            if self.config.auto_scaling.enabled { "Enabled" } else { "Disabled" },
+            if self.config.auto_scaling.enabled {
+                "Enabled"
+            } else {
+                "Disabled"
+            },
             self.config.auto_scaling.min_replicas,
             self.config.auto_scaling.max_replicas,
             self.config.health_checks.interval_seconds,
-            history.iter()
+            history
+                .iter()
                 .rev()
                 .take(5)
-                .map(|d| format!("- {} ({}): {:?} - {}", 
-                    d.version, 
+                .map(|d| format!(
+                    "- {} ({}): {:?} - {}",
+                    d.version,
                     &d.id[..8],
                     d.status,
                     d.started_at.format("%Y-%m-%d %H:%M:%S")
@@ -699,6 +770,7 @@ jobs:
         run: |
           echo "Deployment completed successfully"
           # Send notification to team
-"#.to_string()
+"#
+        .to_string()
     }
 }

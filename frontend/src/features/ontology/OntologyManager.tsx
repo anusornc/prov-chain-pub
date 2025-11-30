@@ -1,10 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import Alert from '../../components/ui/Alert';
-import { sparqlAPI } from '../../services/api';
+import React, { useState, useEffect } from "react";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import Badge from "../../components/ui/Badge";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import Alert from "../../components/ui/Alert";
+import { sparqlAPI } from "../../services/api";
+
+interface SPARQLBinding {
+  [key: string]:
+    | {
+        value: string;
+        type?: string;
+      }
+    | undefined;
+}
+
+interface SPARQLResults {
+  bindings: SPARQLBinding[];
+}
+
+interface SPARQLResponse {
+  results: {
+    results: SPARQLResults;
+  };
+}
 
 interface OntologyClass {
   id: string;
@@ -18,7 +37,6 @@ interface OntologyProperty {
   domain: string;
   range: string;
 }
-
 
 const OntologyManager: React.FC = () => {
   const [classes, setClasses] = useState<OntologyClass[]>([]);
@@ -34,7 +52,7 @@ const OntologyManager: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       // Load ontology classes
       const classesQuery = `
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -49,18 +67,22 @@ const OntologyManager: React.FC = () => {
         }
         ORDER BY ?class
       `;
-      
-      const classesResponse: any = await sparqlAPI.query(classesQuery);
-      const loadedClasses: OntologyClass[] = classesResponse.data.results.results.bindings.map((binding: any) => {
-        const classUri = binding.class?.value || '';
-        const classId = classUri ? classUri.replace('http://provchain.org/core#', '') : 'unknown';
+
+      const classesResponse = await sparqlAPI.query(classesQuery);
+      const loadedClasses: OntologyClass[] = (
+        classesResponse.data as SPARQLResponse
+      ).results.results.bindings.map((binding: SPARQLBinding) => {
+        const classUri = binding.class?.value || "";
+        const classId = classUri
+          ? classUri.replace("http://provchain.org/core#", "")
+          : "unknown";
         return {
           id: classId,
           label: binding.label?.value || classId,
-          description: binding.comment?.value || 'No description available'
+          description: binding.comment?.value || "No description available",
         };
       });
-      
+
       // Load ontology properties
       const propertiesQuery = `
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -76,24 +98,39 @@ const OntologyManager: React.FC = () => {
         }
         ORDER BY ?property
       `;
-      
+
       const propertiesResponse = await sparqlAPI.query(propertiesQuery);
-      const loadedProperties: OntologyProperty[] = propertiesResponse.data.results.results.bindings.map((binding: any) => {
-        const propertyUri = binding.property?.value || '';
-        const propertyId = propertyUri ? propertyUri.replace('http://provchain.org/core#', '') : 'unknown';
+      const loadedProperties: OntologyProperty[] = (
+        propertiesResponse.data as SPARQLResponse
+      ).results.results.bindings.map((binding: SPARQLBinding) => {
+        const propertyUri = binding.property?.value || "";
+        const propertyId = propertyUri
+          ? propertyUri.replace("http://provchain.org/core#", "")
+          : "unknown";
         return {
           id: propertyId,
           label: binding.label?.value || propertyId,
-          domain: binding.domain?.value ? binding.domain.value.replace('http://provchain.org/core#', '') : 'Unknown',
-          range: binding.range?.value ? binding.range.value.replace('http://provchain.org/core#', '') : 'Unknown'
+          domain: binding.domain?.value
+            ? binding.domain.value.replace("http://provchain.org/core#", "")
+            : "Unknown",
+          range: binding.range?.value
+            ? binding.range.value.replace("http://provchain.org/core#", "")
+            : "Unknown",
         };
       });
 
       setClasses(loadedClasses);
       setProperties(loadedProperties);
-    } catch (err: any) {
-      setError('Failed to load ontology data: ' + (err.response?.data?.message || err.message || 'Please try again.'));
-      console.error('Error loading ontology data:', err);
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Please try again.";
+      const responseMessage = (
+        err as { response?: { data?: { message?: string } } }
+      )?.response?.data?.message;
+      setError(
+        "Failed to load ontology data: " + (responseMessage || errorMessage),
+      );
+      console.error("Error loading ontology data:", err);
     } finally {
       setIsLoading(false);
     }
@@ -124,16 +161,14 @@ const OntologyManager: React.FC = () => {
           <Button variant="secondary" onClick={refreshData}>
             🔄 Refresh
           </Button>
-          <Button variant="primary">
-            ➕ Add New Class
-          </Button>
+          <Button variant="primary">➕ Add New Class</Button>
         </div>
       </div>
 
       {error && (
         <div className="mb-6">
-          <Alert 
-            variant="error" 
+          <Alert
+            variant="error"
             message={error}
             dismissible
             onClose={() => setError(null)}
@@ -147,9 +182,15 @@ const OntologyManager: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Label</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Label
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -176,10 +217,18 @@ const OntologyManager: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Label</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Range</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Label
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Domain
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Range
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -209,18 +258,30 @@ const OntologyManager: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 text-center">
             <div className="text-3xl mb-2">🏛️</div>
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{classes.length}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300">Classes</div>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {classes.length}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">
+              Classes
+            </div>
           </div>
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-6 text-center">
             <div className="text-3xl mb-2">🔗</div>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{properties.length}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300">Properties</div>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {properties.length}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">
+              Properties
+            </div>
           </div>
           <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-6 text-center">
             <div className="text-3xl mb-2">📊</div>
-            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{classes.length + properties.length}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-300">Total Elements</div>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+              {classes.length + properties.length}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">
+              Total Elements
+            </div>
           </div>
         </div>
       </Card>

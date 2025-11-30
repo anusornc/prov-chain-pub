@@ -1,5 +1,5 @@
 //! Storage Optimization Module
-//! 
+//!
 //! This module provides storage optimization features including compression,
 //! archival strategies, and distributed storage capabilities for ProvChain.
 
@@ -85,7 +85,11 @@ pub struct StorageMetadata {
 }
 
 impl StorageMetadata {
-    pub fn new(data_id: String, original_size: usize, compression_algorithm: CompressionAlgorithm) -> Self {
+    pub fn new(
+        data_id: String,
+        original_size: usize,
+        compression_algorithm: CompressionAlgorithm,
+    ) -> Self {
         let now = SystemTime::now();
         Self {
             data_id,
@@ -109,17 +113,21 @@ impl StorageMetadata {
     }
 
     pub fn age_days(&self) -> u32 {
-        (self.created_at
+        (self
+            .created_at
             .duration_since(UNIX_EPOCH)
             .unwrap_or(Duration::from_secs(0))
-            .as_secs() / (24 * 60 * 60)) as u32
+            .as_secs()
+            / (24 * 60 * 60)) as u32
     }
 
     pub fn days_since_last_access(&self) -> u32 {
-        (self.last_accessed
+        (self
+            .last_accessed
             .duration_since(UNIX_EPOCH)
             .unwrap_or(Duration::from_secs(0))
-            .as_secs() / (24 * 60 * 60)) as u32
+            .as_secs()
+            / (24 * 60 * 60)) as u32
     }
 }
 
@@ -136,7 +144,7 @@ impl StorageOptimizer {
     pub fn new(compression_level: u32) -> Self {
         let mut config = StorageConfig::default();
         config.compression_level = compression_level;
-        
+
         Self {
             config,
             metadata: HashMap::new(),
@@ -148,12 +156,16 @@ impl StorageOptimizer {
     /// Compress data using the configured algorithm
     pub fn compress_data(&mut self, data_id: String, data: &[u8]) -> Result<Vec<u8>, String> {
         let original_size = data.len();
-        let mut metadata = StorageMetadata::new(data_id.clone(), original_size, self.config.compression_algorithm.clone());
-        
+        let mut metadata = StorageMetadata::new(
+            data_id.clone(),
+            original_size,
+            self.config.compression_algorithm.clone(),
+        );
+
         // Calculate checksum for deduplication
         let checksum = self.calculate_checksum(data);
         metadata.checksum = checksum.clone();
-        
+
         // Check for deduplication
         if self.config.enable_deduplication {
             if let Some(existing_id) = self.deduplication_map.get(&checksum) {
@@ -172,7 +184,7 @@ impl StorageOptimizer {
         };
 
         metadata.compressed_size = compressed_data.len();
-        
+
         // Update statistics
         self.compression_stats.total_original_size += original_size;
         self.compression_stats.total_compressed_size += compressed_data.len();
@@ -188,7 +200,11 @@ impl StorageOptimizer {
     }
 
     /// Decompress data
-    pub fn decompress_data(&mut self, data_id: &str, compressed_data: &[u8]) -> Result<Vec<u8>, String> {
+    pub fn decompress_data(
+        &mut self,
+        data_id: &str,
+        compressed_data: &[u8],
+    ) -> Result<Vec<u8>, String> {
         // Check if this is a deduplication reference
         if let Ok(ref_str) = std::str::from_utf8(compressed_data) {
             if let Some(referenced_id) = ref_str.strip_prefix("DEDUP_REF:") {
@@ -197,7 +213,9 @@ impl StorageOptimizer {
             }
         }
 
-        let metadata = self.metadata.get_mut(data_id)
+        let metadata = self
+            .metadata
+            .get_mut(data_id)
             .ok_or_else(|| format!("No metadata found for data_id: {data_id}"))?;
 
         // Update access statistics
@@ -271,13 +289,16 @@ impl StorageOptimizer {
         let total_items = self.metadata.len();
         let tier_distribution = self.calculate_tier_distribution();
         let avg_compression_ratio = self.compression_stats.average_compression_ratio();
-        
+
         StorageStats {
             total_items,
             total_original_size: self.compression_stats.total_original_size,
             total_compressed_size: self.compression_stats.total_compressed_size,
             average_compression_ratio: avg_compression_ratio,
-            space_saved: self.compression_stats.total_original_size.saturating_sub(self.compression_stats.total_compressed_size),
+            space_saved: self
+                .compression_stats
+                .total_original_size
+                .saturating_sub(self.compression_stats.total_compressed_size),
             tier_distribution,
             deduplication_hits: self.compression_stats.deduplication_hits,
             compression_operations: self.compression_stats.compression_operations,
@@ -288,7 +309,7 @@ impl StorageOptimizer {
     /// Calculate tier distribution
     fn calculate_tier_distribution(&self) -> HashMap<String, usize> {
         let mut distribution = HashMap::new();
-        
+
         for metadata in self.metadata.values() {
             let tier_name = match metadata.storage_tier {
                 StorageTier::Hot => "Hot",
@@ -298,7 +319,7 @@ impl StorageOptimizer {
             };
             *distribution.entry(tier_name.to_string()).or_insert(0) += 1;
         }
-        
+
         distribution
     }
 
@@ -316,7 +337,7 @@ impl StorageOptimizer {
     fn calculate_checksum(&self, data: &[u8]) -> String {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         data.hash(&mut hasher);
         format!("{:x}", hasher.finish())
@@ -431,14 +452,22 @@ impl StorageStats {
         println!("Total items: {}", self.total_items);
         println!("Original size: {} bytes", self.total_original_size);
         println!("Compressed size: {} bytes", self.total_compressed_size);
-        println!("Average compression ratio: {:.2}:1", self.average_compression_ratio);
-        println!("Space saved: {} bytes ({:.1}%)", 
-                 self.space_saved, 
-                 (self.space_saved as f64 / self.total_original_size as f64) * 100.0);
+        println!(
+            "Average compression ratio: {:.2}:1",
+            self.average_compression_ratio
+        );
+        println!(
+            "Space saved: {} bytes ({:.1}%)",
+            self.space_saved,
+            (self.space_saved as f64 / self.total_original_size as f64) * 100.0
+        );
         println!("Deduplication hits: {}", self.deduplication_hits);
         println!("Compression operations: {}", self.compression_operations);
-        println!("Decompression operations: {}", self.decompression_operations);
-        
+        println!(
+            "Decompression operations: {}",
+            self.decompression_operations
+        );
+
         println!("Tier distribution:");
         for (tier, count) in &self.tier_distribution {
             println!("  {tier}: {count}");
@@ -458,8 +487,10 @@ pub struct TieringAction {
 
 impl TieringAction {
     pub fn print_summary(&self) {
-        println!("Tiering: {} from {:?} to {:?} ({})", 
-                 self.data_id, self.from_tier, self.to_tier, self.reason);
+        println!(
+            "Tiering: {} from {:?} to {:?} ({})",
+            self.data_id, self.from_tier, self.to_tier, self.reason
+        );
     }
 }
 
@@ -470,7 +501,10 @@ mod tests {
     #[test]
     fn test_storage_config_default() {
         let config = StorageConfig::default();
-        assert!(matches!(config.compression_algorithm, CompressionAlgorithm::Gzip));
+        assert!(matches!(
+            config.compression_algorithm,
+            CompressionAlgorithm::Gzip
+        ));
         assert_eq!(config.compression_level, 6);
         assert!(config.enable_auto_tiering);
         assert!(config.enable_deduplication);
@@ -478,8 +512,9 @@ mod tests {
 
     #[test]
     fn test_storage_metadata() {
-        let metadata = StorageMetadata::new("test_id".to_string(), 1000, CompressionAlgorithm::Gzip);
-        
+        let metadata =
+            StorageMetadata::new("test_id".to_string(), 1000, CompressionAlgorithm::Gzip);
+
         assert_eq!(metadata.data_id, "test_id");
         assert_eq!(metadata.original_size, 1000);
         assert_eq!(metadata.compressed_size, 1000); // Not compressed yet
@@ -491,7 +526,7 @@ mod tests {
     fn test_storage_optimizer_creation() {
         let optimizer = StorageOptimizer::new(6);
         let stats = optimizer.get_storage_stats();
-        
+
         assert_eq!(stats.total_items, 0);
         assert_eq!(stats.total_original_size, 0);
         assert_eq!(stats.total_compressed_size, 0);
@@ -502,31 +537,41 @@ mod tests {
     fn test_compression_decompression() {
         let mut optimizer = StorageOptimizer::new(6);
         let test_data = b"Hello, World! This is test data for compression.";
-        
-        let compressed = optimizer.compress_data("test1".to_string(), test_data).unwrap();
+
+        let compressed = optimizer
+            .compress_data("test1".to_string(), test_data)
+            .unwrap();
         assert!(compressed.len() < test_data.len()); // Should be compressed
-        
+
         let decompressed = optimizer.decompress_data("test1", &compressed).unwrap();
         // The decompressed size should be approximately the original size
         // Allow for some variance due to compression simulation
         let size_diff = (decompressed.len() as i32 - test_data.len() as i32).abs();
-        assert!(size_diff <= 2, "Decompressed size {} differs too much from original size {}", 
-                decompressed.len(), test_data.len());
+        assert!(
+            size_diff <= 2,
+            "Decompressed size {} differs too much from original size {}",
+            decompressed.len(),
+            test_data.len()
+        );
     }
 
     #[test]
     fn test_deduplication() {
         let mut optimizer = StorageOptimizer::new(6);
         let test_data = b"Duplicate data for testing";
-        
+
         // Compress same data twice
-        let _compressed1 = optimizer.compress_data("test1".to_string(), test_data).unwrap();
-        let compressed2 = optimizer.compress_data("test2".to_string(), test_data).unwrap();
-        
+        let _compressed1 = optimizer
+            .compress_data("test1".to_string(), test_data)
+            .unwrap();
+        let compressed2 = optimizer
+            .compress_data("test2".to_string(), test_data)
+            .unwrap();
+
         // Second compression should result in deduplication reference
         let compressed2_str = std::str::from_utf8(&compressed2).unwrap();
         assert!(compressed2_str.starts_with("DEDUP_REF:"));
-        
+
         let stats = optimizer.get_storage_stats();
         assert_eq!(stats.deduplication_hits, 1);
     }
@@ -535,19 +580,19 @@ mod tests {
     fn test_compression_algorithms() {
         let optimizer = StorageOptimizer::new(6);
         let test_data = b"Test data for compression algorithm testing";
-        
+
         // Test different compression algorithms
         let lz4_result = optimizer.compress_lz4(test_data).unwrap();
         let gzip_result = optimizer.compress_gzip(test_data).unwrap();
         let brotli_result = optimizer.compress_brotli(test_data).unwrap();
         let rdf_result = optimizer.compress_rdf_aware(test_data).unwrap();
-        
+
         // All should compress to smaller sizes
         assert!(lz4_result.len() < test_data.len());
         assert!(gzip_result.len() < test_data.len());
         assert!(brotli_result.len() < test_data.len());
         assert!(rdf_result.len() < test_data.len());
-        
+
         // Brotli and RDF-aware should have better compression
         assert!(brotli_result.len() <= gzip_result.len());
         assert!(rdf_result.len() <= gzip_result.len());
@@ -558,10 +603,14 @@ mod tests {
         let mut optimizer = StorageOptimizer::new(6);
         let test_data1 = b"First test data";
         let test_data2 = b"Second test data with more content";
-        
-        optimizer.compress_data("test1".to_string(), test_data1).unwrap();
-        optimizer.compress_data("test2".to_string(), test_data2).unwrap();
-        
+
+        optimizer
+            .compress_data("test1".to_string(), test_data1)
+            .unwrap();
+        optimizer
+            .compress_data("test2".to_string(), test_data2)
+            .unwrap();
+
         let stats = optimizer.get_storage_stats();
         assert_eq!(stats.total_items, 2);
         assert!(stats.total_original_size > 0);
@@ -572,9 +621,10 @@ mod tests {
 
     #[test]
     fn test_compression_ratio_calculation() {
-        let mut metadata = StorageMetadata::new("test".to_string(), 1000, CompressionAlgorithm::Gzip);
+        let mut metadata =
+            StorageMetadata::new("test".to_string(), 1000, CompressionAlgorithm::Gzip);
         metadata.compressed_size = 600;
-        
+
         assert!((metadata.compression_ratio() - 1.67).abs() < 0.01); // 1000/600 ≈ 1.67
     }
 
@@ -584,11 +634,11 @@ mod tests {
         let data1 = b"test data";
         let data2 = b"test data";
         let data3 = b"different data";
-        
+
         let checksum1 = optimizer.calculate_checksum(data1);
         let checksum2 = optimizer.calculate_checksum(data2);
         let checksum3 = optimizer.calculate_checksum(data3);
-        
+
         assert_eq!(checksum1, checksum2); // Same data should have same checksum
         assert_ne!(checksum1, checksum3); // Different data should have different checksum
     }
@@ -596,11 +646,15 @@ mod tests {
     #[test]
     fn test_tier_distribution() {
         let mut optimizer = StorageOptimizer::new(6);
-        
+
         // Add some test data
-        optimizer.compress_data("test1".to_string(), b"data1").unwrap();
-        optimizer.compress_data("test2".to_string(), b"data2").unwrap();
-        
+        optimizer
+            .compress_data("test1".to_string(), b"data1")
+            .unwrap();
+        optimizer
+            .compress_data("test2".to_string(), b"data2")
+            .unwrap();
+
         let distribution = optimizer.calculate_tier_distribution();
         assert_eq!(distribution.get("Hot"), Some(&2)); // Both should be in Hot tier initially
     }
@@ -609,10 +663,10 @@ mod tests {
     fn test_compression_level_setting() {
         let mut optimizer = StorageOptimizer::new(6);
         assert_eq!(optimizer.config.compression_level, 6);
-        
+
         optimizer.set_compression_level(9);
         assert_eq!(optimizer.config.compression_level, 9);
-        
+
         optimizer.set_compression_level(15); // Should be clamped to 9
         assert_eq!(optimizer.config.compression_level, 9);
     }

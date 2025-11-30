@@ -1,21 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Package, Activity, Filter, Search, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
-import LoadingSpinner from '../ui/LoadingSpinner';
-import Card from '../ui/Card';
-import Badge from '../ui/Badge';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
-import type { TraceabilityItem, Transaction, Block } from '../../types';
+import React, { useState, useEffect } from "react";
+import {
+  Calendar,
+  Clock,
+  User,
+  Package,
+  Activity,
+  Filter,
+  Search,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+} from "lucide-react";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import Card from "../ui/Card";
+import Badge from "../ui/Badge";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import type { TraceabilityItem, Transaction, Block } from "../../types";
 
 interface TimelineEvent {
   id: string;
   timestamp: string;
-  type: 'block' | 'transaction' | 'traceability' | 'quality' | 'transport' | 'production';
+  type:
+    | "block"
+    | "transaction"
+    | "traceability"
+    | "quality"
+    | "transport"
+    | "production";
   title: string;
   description: string;
   participant?: string;
   location?: string;
-  status: 'completed' | 'pending' | 'failed' | 'active';
+  status: "completed" | "pending" | "failed" | "active";
   data: Block | Transaction | TraceabilityItem | Record<string, unknown>;
   relatedEvents?: string[];
 }
@@ -37,18 +54,22 @@ const Timeline: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<TimelineFilters>({
     dateRange: {
-      start: '',
-      end: ''
+      start: "",
+      end: "",
     },
     eventTypes: [],
     participants: [],
     locations: [],
-    searchQuery: ''
+    searchQuery: "",
   });
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(
+    null,
+  );
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [viewMode, setViewMode] = useState<'timeline' | 'gantt' | 'calendar'>('timeline');
+  const [viewMode, setViewMode] = useState<"timeline" | "gantt" | "calendar">(
+    "timeline",
+  );
 
   useEffect(() => {
     loadTimelineData();
@@ -61,97 +82,113 @@ const Timeline: React.FC = () => {
   const loadTimelineData = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem("authToken");
       const timelineEvents: TimelineEvent[] = [];
 
       // Load blocks
       try {
-        const blocksResponse = await fetch('http://localhost:8080/api/blocks', {
+        const blocksResponse = await fetch("http://localhost:8080/api/blocks", {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
 
         if (blocksResponse.ok) {
           const blocks: Block[] = await blocksResponse.json();
-          const blockEvents = blocks.map(block => ({
+          const blockEvents = blocks.map((block) => ({
             id: `block-${block.index}`,
             timestamp: block.timestamp,
-            type: 'block' as const,
+            type: "block" as const,
             title: `Block #${block.index} Created`,
             description: `New block added to blockchain with ${block.transaction_count} transactions`,
-            participant: block.validator || 'System',
-            status: 'completed' as const,
-            data: block
+            participant: block.validator || "System",
+            status: "completed" as const,
+            data: block,
           }));
           timelineEvents.push(...blockEvents);
         }
       } catch (error) {
-        console.warn('Error loading blocks for timeline:', error);
+        console.warn("Error loading blocks for timeline:", error);
       }
 
       // Load transactions
       try {
-        const transactionsResponse = await fetch('http://localhost:8080/api/transactions', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const transactionsResponse = await fetch(
+          "http://localhost:8080/api/transactions",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
 
         if (transactionsResponse.ok) {
           const transactions: Transaction[] = await transactionsResponse.json();
-          const transactionEvents = transactions.map(tx => ({
+          const transactionEvents = transactions.map((tx) => ({
             id: `transaction-${tx.id}`,
             timestamp: tx.timestamp,
-            type: tx.type.toLowerCase() as 'transaction' | 'production' | 'transport' | 'quality',
+            type: tx.type.toLowerCase() as
+              | "transaction"
+              | "production"
+              | "transport"
+              | "quality",
             title: `${tx.type} Transaction`,
-            description: `Transaction from ${tx.from} to ${tx.to || 'N/A'}`,
+            description: `Transaction from ${tx.from} to ${tx.to || "N/A"}`,
             participant: tx.from,
-            status: tx.status === 'confirmed' ? 'completed' as const : tx.status as 'pending' | 'failed',
-            data: tx
+            status:
+              tx.status === "confirmed"
+                ? ("completed" as const)
+                : (tx.status as "pending" | "failed"),
+            data: tx,
           }));
           timelineEvents.push(...transactionEvents);
         }
       } catch (error) {
-        console.warn('Error loading transactions for timeline:', error);
+        console.warn("Error loading transactions for timeline:", error);
       }
 
       // Load traceability items
       try {
-        const traceabilityResponse = await fetch('http://localhost:8080/api/traceability/items', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const traceabilityResponse = await fetch(
+          "http://localhost:8080/api/traceability/items",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
 
         if (traceabilityResponse.ok) {
           const items: TraceabilityItem[] = await traceabilityResponse.json();
-          const traceabilityEvents = items.map(item => ({
+          const traceabilityEvents = items.map((item) => ({
             id: `traceability-${item.id}`,
             timestamp: item.created_at,
-            type: 'traceability' as const,
+            type: "traceability" as const,
             title: `${item.name} Created`,
             description: `New ${item.type} item created`,
             participant: item.current_owner,
             location: item.location,
-            status: 'active' as const,
-            data: item
+            status: "active" as const,
+            data: item,
           }));
           timelineEvents.push(...traceabilityEvents);
         }
       } catch (error) {
-        console.warn('Error loading traceability items for timeline:', error);
+        console.warn("Error loading traceability items for timeline:", error);
       }
 
       // Sort events by timestamp
-      timelineEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      
+      timelineEvents.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      );
+
       setEvents(timelineEvents);
     } catch (error) {
-      console.error('Error loading timeline data:', error);
+      console.error("Error loading timeline data:", error);
     } finally {
       setIsLoading(false);
     }
@@ -163,20 +200,25 @@ const Timeline: React.FC = () => {
     // Apply search query
     if (filters.searchQuery) {
       const query = filters.searchQuery.toLowerCase();
-      filtered = filtered.filter(event =>
-        event.title.toLowerCase().includes(query) ||
-        event.description.toLowerCase().includes(query) ||
-        event.participant?.toLowerCase().includes(query) ||
-        event.location?.toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (event) =>
+          event.title.toLowerCase().includes(query) ||
+          event.description.toLowerCase().includes(query) ||
+          event.participant?.toLowerCase().includes(query) ||
+          event.location?.toLowerCase().includes(query),
       );
     }
 
     // Apply date range
     if (filters.dateRange.start || filters.dateRange.end) {
-      filtered = filtered.filter(event => {
+      filtered = filtered.filter((event) => {
         const eventDate = new Date(event.timestamp);
-        const startDate = filters.dateRange.start ? new Date(filters.dateRange.start) : null;
-        const endDate = filters.dateRange.end ? new Date(filters.dateRange.end) : null;
+        const startDate = filters.dateRange.start
+          ? new Date(filters.dateRange.start)
+          : null;
+        const endDate = filters.dateRange.end
+          ? new Date(filters.dateRange.end)
+          : null;
 
         if (startDate && eventDate < startDate) return false;
         if (endDate && eventDate > endDate) return false;
@@ -186,78 +228,115 @@ const Timeline: React.FC = () => {
 
     // Apply event type filters
     if (filters.eventTypes.length > 0) {
-      filtered = filtered.filter(event => filters.eventTypes.includes(event.type));
+      filtered = filtered.filter((event) =>
+        filters.eventTypes.includes(event.type),
+      );
     }
 
     // Apply participant filters
     if (filters.participants.length > 0) {
-      filtered = filtered.filter(event => 
-        event.participant && filters.participants.some(p => 
-          event.participant!.toLowerCase().includes(p.toLowerCase())
-        )
+      filtered = filtered.filter(
+        (event) =>
+          event.participant &&
+          filters.participants.some((p) =>
+            event.participant!.toLowerCase().includes(p.toLowerCase()),
+          ),
       );
     }
 
     // Apply location filters
     if (filters.locations.length > 0) {
-      filtered = filtered.filter(event => 
-        event.location && filters.locations.some(l => 
-          event.location!.toLowerCase().includes(l.toLowerCase())
-        )
+      filtered = filtered.filter(
+        (event) =>
+          event.location &&
+          filters.locations.some((l) =>
+            event.location!.toLowerCase().includes(l.toLowerCase()),
+          ),
       );
     }
 
     setFilteredEvents(filtered);
   };
 
-  const handleFilterChange = (key: keyof TimelineFilters, value: string | string[] | { start: string; end: string }) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const handleFilterChange = (
+    key: keyof TimelineFilters,
+    value: string | string[] | { start: string; end: string },
+  ) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const clearFilters = () => {
     setFilters({
-      dateRange: { start: '', end: '' },
+      dateRange: { start: "", end: "" },
       eventTypes: [],
       participants: [],
       locations: [],
-      searchQuery: ''
+      searchQuery: "",
     });
   };
 
   const getEventIcon = (type: string) => {
     switch (type) {
-      case 'block': return <Package className="w-4 h-4" />;
-      case 'transaction': return <Activity className="w-4 h-4" />;
-      case 'production': return <Package className="w-4 h-4" />;
-      case 'transport': return <Activity className="w-4 h-4" />;
-      case 'quality': return <Activity className="w-4 h-4" />;
-      case 'traceability': return <Package className="w-4 h-4" />;
-      default: return <Clock className="w-4 h-4" />;
+      case "block":
+        return <Package className="w-4 h-4" />;
+      case "transaction":
+        return <Activity className="w-4 h-4" />;
+      case "production":
+        return <Package className="w-4 h-4" />;
+      case "transport":
+        return <Activity className="w-4 h-4" />;
+      case "quality":
+        return <Activity className="w-4 h-4" />;
+      case "traceability":
+        return <Package className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
     }
   };
 
   const getEventColor = (type: string, status: string) => {
-    if (status === 'failed') return 'bg-red-500';
-    if (status === 'pending') return 'bg-yellow-500';
-    
+    if (status === "failed") return "bg-red-500";
+    if (status === "pending") return "bg-yellow-500";
+
     switch (type) {
-      case 'block': return 'bg-blue-500';
-      case 'transaction': return 'bg-green-500';
-      case 'production': return 'bg-purple-500';
-      case 'transport': return 'bg-orange-500';
-      case 'quality': return 'bg-indigo-500';
-      case 'traceability': return 'bg-teal-500';
-      default: return 'bg-gray-500';
+      case "block":
+        return "bg-blue-500";
+      case "transaction":
+        return "bg-green-500";
+      case "production":
+        return "bg-purple-500";
+      case "transport":
+        return "bg-orange-500";
+      case "quality":
+        return "bg-indigo-500";
+      case "traceability":
+        return "bg-teal-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
-  const getStatusBadgeVariant = (status: string): 'default' | 'success' | 'warning' | 'primary' | 'secondary' | 'danger' | 'info' => {
+  const getStatusBadgeVariant = (
+    status: string,
+  ):
+    | "default"
+    | "success"
+    | "warning"
+    | "primary"
+    | "secondary"
+    | "danger"
+    | "info" => {
     switch (status) {
-      case 'completed': return 'success';
-      case 'pending': return 'warning';
-      case 'failed': return 'danger';
-      case 'active': return 'primary';
-      default: return 'default';
+      case "completed":
+        return "success";
+      case "pending":
+        return "warning";
+      case "failed":
+        return "danger";
+      case "active":
+        return "primary";
+      default:
+        return "default";
     }
   };
 
@@ -266,7 +345,7 @@ const Timeline: React.FC = () => {
     return {
       date: date.toLocaleDateString(),
       time: date.toLocaleTimeString(),
-      relative: getRelativeTime(date)
+      relative: getRelativeTime(date),
     };
   };
 
@@ -277,7 +356,7 @@ const Timeline: React.FC = () => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
+    if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
@@ -286,7 +365,7 @@ const Timeline: React.FC = () => {
 
   const groupEventsByDate = (events: TimelineEvent[]) => {
     const groups: { [key: string]: TimelineEvent[] } = {};
-    events.forEach(event => {
+    events.forEach((event) => {
       const date = new Date(event.timestamp).toDateString();
       if (!groups[date]) groups[date] = [];
       groups[date].push(event);
@@ -305,7 +384,8 @@ const Timeline: React.FC = () => {
             Traceability Timeline
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Interactive timeline visualization of blockchain events and traceability activities
+            Interactive timeline visualization of blockchain events and
+            traceability activities
           </p>
         </div>
 
@@ -320,7 +400,9 @@ const Timeline: React.FC = () => {
                   type="text"
                   placeholder="Search events, participants, locations..."
                   value={filters.searchQuery}
-                  onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("searchQuery", e.target.value)
+                  }
                   className="pl-10"
                 />
               </div>
@@ -330,7 +412,11 @@ const Timeline: React.FC = () => {
             <div className="flex gap-2">
               <select
                 value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as 'timeline' | 'gantt' | 'calendar')}
+                onChange={(e) =>
+                  setViewMode(
+                    e.target.value as "timeline" | "gantt" | "calendar",
+                  )
+                }
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               >
                 <option value="timeline">Timeline View</option>
@@ -345,9 +431,13 @@ const Timeline: React.FC = () => {
               >
                 <Filter className="w-4 h-4" />
                 Filters
-                {(filters.eventTypes.length > 0 || filters.participants.length > 0 || filters.locations.length > 0) && (
+                {(filters.eventTypes.length > 0 ||
+                  filters.participants.length > 0 ||
+                  filters.locations.length > 0) && (
                   <Badge variant="primary" className="ml-1">
-                    {filters.eventTypes.length + filters.participants.length + filters.locations.length}
+                    {filters.eventTypes.length +
+                      filters.participants.length +
+                      filters.locations.length}
                   </Badge>
                 )}
               </Button>
@@ -358,14 +448,16 @@ const Timeline: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setZoomLevel(prev => Math.min(3, prev + 0.5))}
+                onClick={() => setZoomLevel((prev) => Math.min(3, prev + 0.5))}
               >
                 <ZoomIn className="w-4 h-4" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.5))}
+                onClick={() =>
+                  setZoomLevel((prev) => Math.max(0.5, prev - 0.5))
+                }
               >
                 <ZoomOut className="w-4 h-4" />
               </Button>
@@ -392,13 +484,23 @@ const Timeline: React.FC = () => {
                     <Input
                       type="date"
                       value={filters.dateRange.start}
-                      onChange={(e) => handleFilterChange('dateRange', { ...filters.dateRange, start: e.target.value })}
+                      onChange={(e) =>
+                        handleFilterChange("dateRange", {
+                          ...filters.dateRange,
+                          start: e.target.value,
+                        })
+                      }
                       className="text-sm"
                     />
                     <Input
                       type="date"
                       value={filters.dateRange.end}
-                      onChange={(e) => handleFilterChange('dateRange', { ...filters.dateRange, end: e.target.value })}
+                      onChange={(e) =>
+                        handleFilterChange("dateRange", {
+                          ...filters.dateRange,
+                          end: e.target.value,
+                        })
+                      }
                       className="text-sm"
                     />
                   </div>
@@ -410,16 +512,29 @@ const Timeline: React.FC = () => {
                     Event Types
                   </label>
                   <div className="space-y-1">
-                    {['block', 'transaction', 'production', 'transport', 'quality', 'traceability'].map(type => (
+                    {[
+                      "block",
+                      "transaction",
+                      "production",
+                      "transport",
+                      "quality",
+                      "traceability",
+                    ].map((type) => (
                       <label key={type} className="flex items-center">
                         <input
                           type="checkbox"
                           checked={filters.eventTypes.includes(type)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              handleFilterChange('eventTypes', [...filters.eventTypes, type]);
+                              handleFilterChange("eventTypes", [
+                                ...filters.eventTypes,
+                                type,
+                              ]);
                             } else {
-                              handleFilterChange('eventTypes', filters.eventTypes.filter(t => t !== type));
+                              handleFilterChange(
+                                "eventTypes",
+                                filters.eventTypes.filter((t) => t !== type),
+                              );
                             }
                           }}
                           className="mr-2"
@@ -439,20 +554,36 @@ const Timeline: React.FC = () => {
                     type="text"
                     placeholder="Filter by participant"
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         const value = (e.target as HTMLInputElement).value;
                         if (value && !filters.participants.includes(value)) {
-                          handleFilterChange('participants', [...filters.participants, value]);
-                          (e.target as HTMLInputElement).value = '';
+                          handleFilterChange("participants", [
+                            ...filters.participants,
+                            value,
+                          ]);
+                          (e.target as HTMLInputElement).value = "";
                         }
                       }
                     }}
                   />
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {filters.participants.map(participant => (
-                      <Badge key={participant} variant="primary" className="flex items-center gap-1">
+                    {filters.participants.map((participant) => (
+                      <Badge
+                        key={participant}
+                        variant="primary"
+                        className="flex items-center gap-1"
+                      >
                         {participant}
-                        <button onClick={() => handleFilterChange('participants', filters.participants.filter(p => p !== participant))}>
+                        <button
+                          onClick={() =>
+                            handleFilterChange(
+                              "participants",
+                              filters.participants.filter(
+                                (p) => p !== participant,
+                              ),
+                            )
+                          }
+                        >
                           ×
                         </button>
                       </Badge>
@@ -469,20 +600,34 @@ const Timeline: React.FC = () => {
                     type="text"
                     placeholder="Filter by location"
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         const value = (e.target as HTMLInputElement).value;
                         if (value && !filters.locations.includes(value)) {
-                          handleFilterChange('locations', [...filters.locations, value]);
-                          (e.target as HTMLInputElement).value = '';
+                          handleFilterChange("locations", [
+                            ...filters.locations,
+                            value,
+                          ]);
+                          (e.target as HTMLInputElement).value = "";
                         }
                       }
                     }}
                   />
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {filters.locations.map(location => (
-                      <Badge key={location} variant="primary" className="flex items-center gap-1">
+                    {filters.locations.map((location) => (
+                      <Badge
+                        key={location}
+                        variant="primary"
+                        className="flex items-center gap-1"
+                      >
                         {location}
-                        <button onClick={() => handleFilterChange('locations', filters.locations.filter(l => l !== location))}>
+                        <button
+                          onClick={() =>
+                            handleFilterChange(
+                              "locations",
+                              filters.locations.filter((l) => l !== location),
+                            )
+                          }
+                        >
                           ×
                         </button>
                       </Badge>
@@ -506,7 +651,13 @@ const Timeline: React.FC = () => {
             <LoadingSpinner size="lg" message="Loading timeline..." />
           </div>
         ) : (
-          <div className="space-y-8" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left' }}>
+          <div
+            className="space-y-8"
+            style={{
+              transform: `scale(${zoomLevel})`,
+              transformOrigin: "top left",
+            }}
+          >
             {Object.entries(eventGroups).map(([date, dayEvents]) => (
               <div key={date} className="relative">
                 {/* Date Header */}
@@ -515,11 +666,11 @@ const Timeline: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-gray-500" />
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {new Date(date).toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
+                        {new Date(date).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
                         })}
                       </h3>
                     </div>
@@ -535,16 +686,21 @@ const Timeline: React.FC = () => {
                   {dayEvents.map((event) => {
                     const timeInfo = formatTimestamp(event.timestamp);
                     return (
-                      <div key={event.id} className="relative flex items-start gap-6">
+                      <div
+                        key={event.id}
+                        className="relative flex items-start gap-6"
+                      >
                         {/* Timeline Dot */}
-                        <div className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full ${getEventColor(event.type, event.status)}`}>
+                        <div
+                          className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full ${getEventColor(event.type, event.status)}`}
+                        >
                           <div className="text-white">
                             {getEventIcon(event.type)}
                           </div>
                         </div>
 
                         {/* Event Card */}
-                        <Card 
+                        <Card
                           className="flex-1 hover:shadow-md transition-shadow cursor-pointer"
                           onClick={() => setSelectedEvent(event)}
                         >
@@ -554,14 +710,19 @@ const Timeline: React.FC = () => {
                                 <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                                   {event.title}
                                 </h4>
-                                <Badge variant={getStatusBadgeVariant(event.status)}>
+                                <Badge
+                                  variant={getStatusBadgeVariant(event.status)}
+                                >
                                   {event.status}
                                 </Badge>
-                                <Badge variant="secondary" className="capitalize">
+                                <Badge
+                                  variant="secondary"
+                                  className="capitalize"
+                                >
                                   {event.type}
                                 </Badge>
                               </div>
-                              
+
                               <p className="text-gray-600 dark:text-gray-300 mb-3">
                                 {event.description}
                               </p>
@@ -627,7 +788,9 @@ const Timeline: React.FC = () => {
                     {selectedEvent.title}
                   </h3>
                   <div className="flex items-center gap-2">
-                    <Badge variant={getStatusBadgeVariant(selectedEvent.status)}>
+                    <Badge
+                      variant={getStatusBadgeVariant(selectedEvent.status)}
+                    >
                       {selectedEvent.status}
                     </Badge>
                     <Badge variant="secondary" className="capitalize">
@@ -646,33 +809,49 @@ const Timeline: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Description</h4>
-                  <p className="text-gray-600 dark:text-gray-300">{selectedEvent.description}</p>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                    Description
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    {selectedEvent.description}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Timestamp</h4>
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                      Timestamp
+                    </h4>
                     <p className="text-gray-600 dark:text-gray-300">
                       {new Date(selectedEvent.timestamp).toLocaleString()}
                     </p>
                   </div>
                   {selectedEvent.participant && (
                     <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Participant</h4>
-                      <p className="text-gray-600 dark:text-gray-300">{selectedEvent.participant}</p>
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                        Participant
+                      </h4>
+                      <p className="text-gray-600 dark:text-gray-300">
+                        {selectedEvent.participant}
+                      </p>
                     </div>
                   )}
                   {selectedEvent.location && (
                     <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Location</h4>
-                      <p className="text-gray-600 dark:text-gray-300">{selectedEvent.location}</p>
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                        Location
+                      </h4>
+                      <p className="text-gray-600 dark:text-gray-300">
+                        {selectedEvent.location}
+                      </p>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Event Data</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                    Event Data
+                  </h4>
                   <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg text-sm overflow-x-auto">
                     {JSON.stringify(selectedEvent.data, null, 2)}
                   </pre>

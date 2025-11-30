@@ -1,8 +1,19 @@
-import { useEffect, useRef, useCallback } from 'react';
-import webSocketService from '../services/websocket';
-import type { MessageType, Block, Transaction, TraceabilityItem, NetworkHealth } from '../types';
+import { useEffect, useRef, useCallback } from "react";
+import webSocketService from "../services/websocket";
+import type {
+  MessageType,
+  Block,
+  Transaction,
+  TraceabilityItem,
+  NetworkHealth,
+} from "../types";
 
-type WebSocketData = Block | Transaction | TraceabilityItem | NetworkHealth | Record<string, unknown>;
+type WebSocketData =
+  | Block
+  | Transaction
+  | TraceabilityItem
+  | NetworkHealth
+  | Record<string, unknown>;
 
 export const useWebSocket = () => {
   const isConnected = useRef(false);
@@ -22,9 +33,12 @@ export const useWebSocket = () => {
     };
   }, []);
 
-  const subscribe = useCallback((messageType: MessageType, callback: (data: WebSocketData) => void) => {
-    return webSocketService.subscribe(messageType, callback);
-  }, []);
+  const subscribe = useCallback(
+    (messageType: MessageType, callback: (data: WebSocketData) => void) => {
+      return webSocketService.subscribe(messageType, callback);
+    },
+    [],
+  );
 
   const emit = useCallback((event: string, data: WebSocketData) => {
     webSocketService.emit(event, data);
@@ -44,7 +58,8 @@ export const useWebSocket = () => {
     onNewTransaction: webSocketService.onNewTransaction.bind(webSocketService),
     onItemUpdate: webSocketService.onItemUpdate.bind(webSocketService),
     onNetworkStatus: webSocketService.onNetworkStatus.bind(webSocketService),
-    onValidationAlert: webSocketService.onValidationAlert.bind(webSocketService),
+    onValidationAlert:
+      webSocketService.onValidationAlert.bind(webSocketService),
   };
 };
 

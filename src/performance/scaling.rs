@@ -1,5 +1,5 @@
 //! Horizontal Scaling Module
-//! 
+//!
 //! This module provides horizontal scaling capabilities for ProvChain,
 //! including load balancing, sharding strategies, and auto-scaling features.
 
@@ -145,7 +145,9 @@ impl HorizontalScaler {
 
     /// Get the best node for a new request based on load balancing strategy
     pub fn select_node(&mut self, request_key: Option<&str>) -> Option<&NodeConfig> {
-        let active_nodes: Vec<_> = self.nodes.values()
+        let active_nodes: Vec<_> = self
+            .nodes
+            .values()
             .filter(|node| node.is_active && node.available_capacity() > 0)
             .collect();
 
@@ -159,14 +161,14 @@ impl HorizontalScaler {
                 self.round_robin_index += 1;
                 Some(node)
             }
-            LoadBalancingStrategy::LeastLoad => {
-                active_nodes.iter()
-                    .min_by_key(|node| node.current_load)
-                    .copied()
-            }
+            LoadBalancingStrategy::LeastLoad => active_nodes
+                .iter()
+                .min_by_key(|node| node.current_load)
+                .copied(),
             LoadBalancingStrategy::WeightedRoundRobin => {
                 // Select based on available capacity
-                active_nodes.iter()
+                active_nodes
+                    .iter()
                     .max_by_key(|node| node.available_capacity())
                     .copied()
             }
@@ -236,10 +238,11 @@ impl HorizontalScaler {
 
         // Check scale-up conditions
         if active_node_count < self.auto_scaling_config.max_nodes {
-            if metrics.avg_cpu_usage > self.auto_scaling_config.scale_up_cpu_threshold ||
-               metrics.avg_memory_usage > self.auto_scaling_config.scale_up_memory_threshold {
-                
-                let breach_count = self.threshold_breach_counts
+            if metrics.avg_cpu_usage > self.auto_scaling_config.scale_up_cpu_threshold
+                || metrics.avg_memory_usage > self.auto_scaling_config.scale_up_memory_threshold
+            {
+                let breach_count = self
+                    .threshold_breach_counts
                     .entry("scale_up".to_string())
                     .or_insert(0);
                 *breach_count += 1;
@@ -256,10 +259,11 @@ impl HorizontalScaler {
 
         // Check scale-down conditions
         if active_node_count > self.auto_scaling_config.min_nodes {
-            if metrics.avg_cpu_usage < self.auto_scaling_config.scale_down_cpu_threshold &&
-               metrics.avg_memory_usage < self.auto_scaling_config.scale_down_memory_threshold {
-                
-                let breach_count = self.threshold_breach_counts
+            if metrics.avg_cpu_usage < self.auto_scaling_config.scale_down_cpu_threshold
+                && metrics.avg_memory_usage < self.auto_scaling_config.scale_down_memory_threshold
+            {
+                let breach_count = self
+                    .threshold_breach_counts
                     .entry("scale_down".to_string())
                     .or_insert(0);
                 *breach_count += 1;
@@ -308,7 +312,7 @@ impl HorizontalScaler {
     pub fn rebalance_load(&mut self) -> Vec<RebalanceAction> {
         let mut actions = Vec::new();
         let active_nodes: Vec<_> = self.nodes.values().collect();
-        
+
         if active_nodes.len() < 2 {
             return actions;
         }
@@ -317,11 +321,13 @@ impl HorizontalScaler {
         let avg_load = total_load / active_nodes.len() as u32;
 
         // Find overloaded and underloaded nodes
-        let overloaded: Vec<_> = active_nodes.iter()
+        let overloaded: Vec<_> = active_nodes
+            .iter()
             .filter(|n| n.current_load > avg_load + (avg_load / 4)) // 25% above average
             .collect();
-        
-        let underloaded: Vec<_> = active_nodes.iter()
+
+        let underloaded: Vec<_> = active_nodes
+            .iter()
             .filter(|n| n.current_load < avg_load - (avg_load / 4)) // 25% below average
             .collect();
 
@@ -347,7 +353,7 @@ impl HorizontalScaler {
     fn hash_key(&self, key: &str) -> usize {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         key.hash(&mut hasher);
         hasher.finish() as usize
@@ -427,8 +433,10 @@ pub struct RebalanceAction {
 
 impl RebalanceAction {
     pub fn print_summary(&self) {
-        println!("Rebalance: {} units from {} to {}", 
-                 self.load_amount, self.from_node, self.to_node);
+        println!(
+            "Rebalance: {} units from {} to {}",
+            self.load_amount, self.from_node, self.to_node
+        );
     }
 }
 
@@ -439,7 +447,7 @@ mod tests {
     #[test]
     fn test_node_config() {
         let node = NodeConfig::new("node1".to_string(), "127.0.0.1".to_string(), 8080, 100);
-        
+
         assert_eq!(node.node_id, "node1");
         assert_eq!(node.capacity, 100);
         assert_eq!(node.current_load, 0);
@@ -452,7 +460,7 @@ mod tests {
     fn test_node_load_calculation() {
         let mut node = NodeConfig::new("node1".to_string(), "127.0.0.1".to_string(), 8080, 100);
         node.current_load = 75;
-        
+
         assert_eq!(node.load_percentage(), 75.0);
         assert_eq!(node.available_capacity(), 25);
     }
@@ -464,7 +472,7 @@ mod tests {
             ShardingStrategy::HashBased,
             AutoScalingConfig::default(),
         );
-        
+
         let stats = scaler.get_cluster_stats();
         assert_eq!(stats.total_nodes, 0);
         assert_eq!(stats.active_nodes, 0);
@@ -477,21 +485,21 @@ mod tests {
             ShardingStrategy::HashBased,
             AutoScalingConfig::default(),
         );
-        
+
         let node1 = NodeConfig::new("node1".to_string(), "127.0.0.1".to_string(), 8080, 100);
         let node2 = NodeConfig::new("node2".to_string(), "127.0.0.1".to_string(), 8081, 100);
-        
+
         scaler.add_node(node1);
         scaler.add_node(node2);
-        
+
         let stats = scaler.get_cluster_stats();
         assert_eq!(stats.total_nodes, 2);
         assert_eq!(stats.active_nodes, 2);
-        
+
         let removed = scaler.remove_node("node1");
         assert!(removed.is_some());
         assert_eq!(removed.unwrap().node_id, "node1");
-        
+
         let stats = scaler.get_cluster_stats();
         assert_eq!(stats.total_nodes, 1);
     }
@@ -503,16 +511,31 @@ mod tests {
             ShardingStrategy::HashBased,
             AutoScalingConfig::default(),
         );
-        
-        scaler.add_node(NodeConfig::new("node1".to_string(), "127.0.0.1".to_string(), 8080, 100));
-        scaler.add_node(NodeConfig::new("node2".to_string(), "127.0.0.1".to_string(), 8081, 100));
-        scaler.add_node(NodeConfig::new("node3".to_string(), "127.0.0.1".to_string(), 8082, 100));
-        
+
+        scaler.add_node(NodeConfig::new(
+            "node1".to_string(),
+            "127.0.0.1".to_string(),
+            8080,
+            100,
+        ));
+        scaler.add_node(NodeConfig::new(
+            "node2".to_string(),
+            "127.0.0.1".to_string(),
+            8081,
+            100,
+        ));
+        scaler.add_node(NodeConfig::new(
+            "node3".to_string(),
+            "127.0.0.1".to_string(),
+            8082,
+            100,
+        ));
+
         let node1_id = scaler.select_node(None).unwrap().node_id.clone();
         let node2_id = scaler.select_node(None).unwrap().node_id.clone();
         let node3_id = scaler.select_node(None).unwrap().node_id.clone();
         let node4_id = scaler.select_node(None).unwrap().node_id.clone(); // Should wrap around
-        
+
         // Should cycle through nodes
         assert_ne!(node1_id, node2_id);
         assert_ne!(node2_id, node3_id);
@@ -526,14 +549,24 @@ mod tests {
             ShardingStrategy::HashBased,
             AutoScalingConfig::default(),
         );
-        
-        scaler.add_node(NodeConfig::new("node1".to_string(), "127.0.0.1".to_string(), 8080, 100));
-        scaler.add_node(NodeConfig::new("node2".to_string(), "127.0.0.1".to_string(), 8081, 100));
-        
+
+        scaler.add_node(NodeConfig::new(
+            "node1".to_string(),
+            "127.0.0.1".to_string(),
+            8080,
+            100,
+        ));
+        scaler.add_node(NodeConfig::new(
+            "node2".to_string(),
+            "127.0.0.1".to_string(),
+            8081,
+            100,
+        ));
+
         // Update loads
         scaler.update_node_load("node1", 50);
         scaler.update_node_load("node2", 25);
-        
+
         let selected = scaler.select_node(None).unwrap();
         assert_eq!(selected.node_id, "node2"); // Should select node with least load
     }
@@ -545,11 +578,11 @@ mod tests {
             ShardingStrategy::HashBased,
             AutoScalingConfig::default(),
         );
-        
+
         let shard1 = scaler.determine_shard("key1", 4);
         let shard2 = scaler.determine_shard("key2", 4);
         let shard3 = scaler.determine_shard("key1", 4); // Same key should go to same shard
-        
+
         assert!(shard1 < 4);
         assert!(shard2 < 4);
         assert_eq!(shard1, shard3); // Consistent hashing
@@ -562,15 +595,15 @@ mod tests {
             ShardingStrategy::RangeBased,
             AutoScalingConfig::default(),
         );
-        
+
         let shard_a = scaler.determine_shard("apple", 4);
         let shard_m = scaler.determine_shard("mango", 4);
         let shard_z = scaler.determine_shard("zebra", 4);
-        
+
         assert!(shard_a < 4);
         assert!(shard_m < 4);
         assert!(shard_z < 4);
-        
+
         // Should generally distribute alphabetically
         assert!(shard_a <= shard_m);
         assert!(shard_m <= shard_z);
@@ -579,7 +612,7 @@ mod tests {
     #[test]
     fn test_auto_scaling_config() {
         let config = AutoScalingConfig::default();
-        
+
         assert_eq!(config.min_nodes, 2);
         assert_eq!(config.max_nodes, 10);
         assert_eq!(config.scale_up_cpu_threshold, 80.0);
@@ -593,13 +626,23 @@ mod tests {
             ShardingStrategy::HashBased,
             AutoScalingConfig::default(),
         );
-        
-        scaler.add_node(NodeConfig::new("node1".to_string(), "127.0.0.1".to_string(), 8080, 100));
-        scaler.add_node(NodeConfig::new("node2".to_string(), "127.0.0.1".to_string(), 8081, 100));
-        
+
+        scaler.add_node(NodeConfig::new(
+            "node1".to_string(),
+            "127.0.0.1".to_string(),
+            8080,
+            100,
+        ));
+        scaler.add_node(NodeConfig::new(
+            "node2".to_string(),
+            "127.0.0.1".to_string(),
+            8081,
+            100,
+        ));
+
         scaler.update_node_load("node1", 60);
         scaler.update_node_load("node2", 40);
-        
+
         let stats = scaler.get_cluster_stats();
         assert_eq!(stats.total_nodes, 2);
         assert_eq!(stats.active_nodes, 2);
@@ -615,17 +658,27 @@ mod tests {
             ShardingStrategy::HashBased,
             AutoScalingConfig::default(),
         );
-        
-        scaler.add_node(NodeConfig::new("node1".to_string(), "127.0.0.1".to_string(), 8080, 100));
-        scaler.add_node(NodeConfig::new("node2".to_string(), "127.0.0.1".to_string(), 8081, 100));
-        
+
+        scaler.add_node(NodeConfig::new(
+            "node1".to_string(),
+            "127.0.0.1".to_string(),
+            8080,
+            100,
+        ));
+        scaler.add_node(NodeConfig::new(
+            "node2".to_string(),
+            "127.0.0.1".to_string(),
+            8081,
+            100,
+        ));
+
         // Create imbalanced load
         scaler.update_node_load("node1", 80);
         scaler.update_node_load("node2", 20);
-        
+
         let actions = scaler.rebalance_load();
         assert!(!actions.is_empty());
-        
+
         let action = &actions[0];
         assert_eq!(action.from_node, "node1");
         assert_eq!(action.to_node, "node2");
@@ -639,15 +692,25 @@ mod tests {
             ShardingStrategy::HashBased,
             AutoScalingConfig::default(),
         );
-        
-        scaler.add_node(NodeConfig::new("node1".to_string(), "127.0.0.1".to_string(), 8080, 100));
-        scaler.add_node(NodeConfig::new("node2".to_string(), "127.0.0.1".to_string(), 8081, 100));
-        
+
+        scaler.add_node(NodeConfig::new(
+            "node1".to_string(),
+            "127.0.0.1".to_string(),
+            8080,
+            100,
+        ));
+        scaler.add_node(NodeConfig::new(
+            "node2".to_string(),
+            "127.0.0.1".to_string(),
+            8081,
+            100,
+        ));
+
         let node1_id = scaler.select_node(Some("key1")).unwrap().node_id.clone();
         let node2_id = scaler.select_node(Some("key1")).unwrap().node_id.clone(); // Same key
         let _node3_id = scaler.select_node(Some("key2")).unwrap().node_id.clone(); // Different key
-        
+
         assert_eq!(node1_id, node2_id); // Same key should go to same node
-        // Different keys may or may not go to different nodes (depends on hash)
+                                        // Different keys may or may not go to different nodes (depends on hash)
     }
 }
