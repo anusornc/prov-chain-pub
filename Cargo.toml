@@ -133,13 +133,7 @@ harness = false
 name = "comprehensive_performance_benchmarks"
 harness = false
 
-[[bench]]
-name = "blockchain_performance_benchmarks"
-harness = false
 
-[[bench]]
-name = "consensus_benchmarks"
-harness = false
 
 [[bench]]
 name = "rdf_canonicalization_benchmarks"

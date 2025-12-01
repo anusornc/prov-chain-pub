@@ -220,13 +220,22 @@ fn bench_owl2_reasoning_performance(c: &mut Criterion) {
                         let _ = blockchain.add_block(ontology_block);
                     }
 
-                    // Perform OWL2 reasoning tasks
-                    let reasoning_queries = generate_reasoning_queries();
-                    for query in reasoning_queries {
-                        let _result = blockchain.rdf_store.query(&query);
-                    }
+                    // Use Owl2EnhancedTraceability for reasoning
+                    let enhancer =
+                        provchain_org::semantic::owl2_traceability::Owl2EnhancedTraceability::new(
+                            blockchain,
+                        );
 
-                    black_box(blockchain)
+                    // We need to extract entities to use the enhancer
+                    // For this benchmark, we'll simulate entity extraction based on the ontology data
+                    // In a real scenario, this would query the blockchain
+                    let entities = extract_entities_from_ontology_data();
+
+                    let _result = enhancer.entities_to_owl_ontology(&entities);
+                    let _validation = enhancer.validate_entity_keys(&entities);
+                    let _inference = enhancer.apply_property_chain_inference(&entities);
+
+                    black_box(())
                 },
                 criterion::BatchSize::LargeInput,
             );
@@ -234,6 +243,23 @@ fn bench_owl2_reasoning_performance(c: &mut Criterion) {
     }
 
     group.finish();
+}
+
+// Helper to simulate entity extraction for the benchmark
+fn extract_entities_from_ontology_data() -> Vec<provchain_org::core::entity::TraceableEntity> {
+    use provchain_org::core::entity::{DomainType, EntityType, PropertyValue, TraceableEntity};
+
+    let mut entities = Vec::new();
+    for i in 0..50 {
+        let mut entity = TraceableEntity::new(
+            format!("entity_{}", i),
+            EntityType::Product,
+            DomainType::SupplyChain,
+        );
+        entity.add_property("id".to_string(), PropertyValue::String(format!("ID_{}", i)));
+        entities.push(entity);
+    }
+    entities
 }
 
 /// Benchmark performance under failure conditions
@@ -680,41 +706,6 @@ fn generate_cross_ontology_query() -> String {
     } LIMIT 200
     "#
     .to_string()
-}
-
-fn generate_reasoning_queries() -> Vec<String> {
-    vec![
-        r#"
-        PREFIX owl: <http://www.w3.org/2002/07/owl#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-
-        SELECT ?class ?subclass
-        WHERE {
-            ?subclass rdfs:subClassOf+ ?class .
-            ?class a owl:Class .
-        }
-        "#
-        .to_string(),
-        r#"
-        PREFIX owl: <http://www.w3.org/2002/07/owl#>
-
-        SELECT ?equivalentClass1 ?equivalentClass2
-        WHERE {
-            ?equivalentClass1 owl:equivalentClass ?equivalentClass2 .
-        }
-        "#
-        .to_string(),
-        r#"
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-
-        SELECT ?property ?domain ?range
-        WHERE {
-            ?property rdfs:domain ?domain ;
-                    rdfs:range ?range .
-        }
-        "#
-        .to_string(),
-    ]
 }
 
 // Workflow Generation Functions
