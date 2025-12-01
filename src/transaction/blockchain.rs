@@ -8,11 +8,9 @@
 
 use anyhow::{anyhow, Result};
 use chrono::Utc;
-use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
-use uuid::Uuid;
 use hex;
+use std::collections::HashMap;
+use uuid::Uuid;
 
 use crate::core::blockchain::Blockchain;
 use crate::transaction::transaction::{
@@ -109,7 +107,9 @@ impl TransactionBlockchain {
         // Create block proposal
         // Note: We use the hex string representation of the public key as the validator ID in the block
         let validator_pub_key = hex::encode(validator_wallet.public_key.as_bytes());
-        let mut block = self.blockchain.create_block_proposal(block_data, validator_pub_key)?;
+        let mut block = self
+            .blockchain
+            .create_block_proposal(block_data, validator_pub_key)?;
 
         // Sign the block
         let signature = validator_wallet.sign(block.hash.as_bytes())?;

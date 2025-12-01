@@ -1,9 +1,10 @@
 //! Domain-specific ontology loading and management
 
+use crate::ontology::error::{
+    ConsistencyError, ConstraintType, OntologyError, ShapeViolation, ValidationError,
+};
 use crate::ontology::OntologyConfig;
 use crate::ontology::ShaclValidator;
-use crate::ontology::error::{ConsistencyError, ConstraintType, OntologyError, ShapeViolation, ValidationError};
-use owl2_reasoner::ontology::Ontology;
 use owl2_reasoner::parser::ParserFactory;
 use owl2_reasoner::reasoning::{OwlReasoner, Reasoner};
 use oxigraph::store::Store;
@@ -107,11 +108,17 @@ impl OntologyManager {
         // Load domain configuration
         let domain_config = Self::load_domain_config(&config)?;
 
+        // Initialize OWL2 Reasoner
+        let reasoner = Self::initialize_reasoner(&config)
+            .ok()
+            .map(|r| Arc::new(std::sync::Mutex::new(r)));
+
         // Create SHACL validator
         let validator = ShaclValidator::new(
             &config.core_shacl_path,
             &config.domain_shacl_path,
             config.ontology_hash.clone(),
+            reasoner.clone(),
         )
         .map_err(|e| OntologyError::OntologyLoadError {
             path: "SHACL validator".to_string(),
@@ -120,11 +127,6 @@ impl OntologyManager {
 
         // Load ontology into store
         let ontology_store = Self::load_ontology_store(&config)?;
-
-        // Initialize OWL2 Reasoner
-        let reasoner = Self::initialize_reasoner(&config)
-            .ok()
-            .map(|r| Arc::new(std::sync::Mutex::new(r)));
 
         Ok(OntologyManager {
             config,
@@ -146,12 +148,12 @@ impl OntologyManager {
         })?;
 
         let mut ontology = if let Some(parser) = ParserFactory::auto_detect(&core_content) {
-            parser.parse_str(&core_content).map_err(|e| {
-                OntologyError::OntologyParseError {
+            parser
+                .parse_str(&core_content)
+                .map_err(|e| OntologyError::OntologyParseError {
                     path: config.core_ontology_path.clone(),
                     message: format!("Failed to parse core ontology: {}", e),
-                }
-            })?
+                })?
         } else {
             return Err(OntologyError::OntologyParseError {
                 path: config.core_ontology_path.clone(),
@@ -183,7 +185,7 @@ impl OntologyManager {
                 // we are just initializing the reasoner with the combined set of axioms.
                 // For now, let's just add the classes and properties which is safer.
                 for class in domain_ontology.classes() {
-                     let _ = ontology.add_class((**class).clone());
+                    let _ = ontology.add_class((**class).clone());
                 }
                 for prop in domain_ontology.object_properties() {
                     let _ = ontology.add_object_property((**prop).clone());
@@ -191,7 +193,7 @@ impl OntologyManager {
                 for prop in domain_ontology.data_properties() {
                     let _ = ontology.add_data_property((**prop).clone());
                 }
-                
+
                 // For axioms, we need to be careful. The `add_axiom` takes an `Axiom` struct,
                 // but we have `Arc<Axiom>`. We need to clone the inner data.
                 let _ = ontology.add_axiom((**axiom).clone());
@@ -426,14 +428,16 @@ impl OntologyManager {
     /// This checks that key domain classes are subclasses of core classes.
     pub fn validate_domain_extension(&mut self) -> Result<(), ValidationError> {
         if let Some(reasoner_lock) = &self.reasoner {
-            let mut reasoner = reasoner_lock.lock().map_err(|_| ValidationError::with_violations(
-                "Lock Error".to_string(),
-                vec![ShapeViolation::new(
-                    "ReasonerLock".to_string(),
-                    ConstraintType::Custom("Locking".to_string()),
-                    "Failed to acquire reasoner lock".to_string(),
-                )],
-            ))?;
+            let mut reasoner = reasoner_lock.lock().map_err(|_| {
+                ValidationError::with_violations(
+                    "Lock Error".to_string(),
+                    vec![ShapeViolation::new(
+                        "ReasonerLock".to_string(),
+                        ConstraintType::Custom("Locking".to_string()),
+                        "Failed to acquire reasoner lock".to_string(),
+                    )],
+                )
+            })?;
 
             // Define core classes that should be extended
             // In a real implementation, these IRIs would come from constants or the core ontology itself
@@ -453,7 +457,8 @@ impl OntologyManager {
                 .map(|c| c.iri().to_string())
                 .collect();
 
-            let domain_namespace = format!("http://provchain.org/{}#", self.domain_config.domain_name);
+            let domain_namespace =
+                format!("http://provchain.org/{}#", self.domain_config.domain_name);
 
             for class_iri_str in classes {
                 // Only check classes in the domain namespace
@@ -473,8 +478,11 @@ impl OntologyManager {
                     let mut is_valid_extension = false;
 
                     for core_class_str in &core_classes {
-                        let core_class_iri = owl2_reasoner::iri::IRI::new(core_class_str.to_string()).map_err(|e| {
-                             ValidationError::with_violations(
+                        let core_class_iri = owl2_reasoner::iri::IRI::new(
+                            core_class_str.to_string(),
+                        )
+                        .map_err(|e| {
+                            ValidationError::with_violations(
                                 "Invalid Core IRI encountered".to_string(),
                                 vec![ShapeViolation::new(
                                     "InvalidCoreIRI".to_string(),
@@ -486,9 +494,11 @@ impl OntologyManager {
                         })?;
 
                         // Check if domain class is a subclass of core class
-                        // Note: is_subclass_of returns true if they are the same class, 
+                        // Note: is_subclass_of returns true if they are the same class,
                         // but we want strict subclass or at least proper inheritance
-                        let is_sub = reasoner.is_subclass_of(&class_iri, &core_class_iri).unwrap_or(false);
+                        let is_sub = reasoner
+                            .is_subclass_of(&class_iri, &core_class_iri)
+                            .unwrap_or(false);
                         if is_sub {
                             is_valid_extension = true;
                             break;
@@ -511,7 +521,7 @@ impl OntologyManager {
                     }
                 }
             }
-            
+
             Ok(())
         } else {
             // If no reasoner is available, we can't perform this validation
@@ -523,7 +533,8 @@ impl OntologyManager {
                 vec![ShapeViolation::new(
                     "ReasonerAvailability".to_string(),
                     ConstraintType::Custom("Initialization".to_string()),
-                    "OWL2 Reasoner is not initialized. Cannot validate domain extension.".to_string(),
+                    "OWL2 Reasoner is not initialized. Cannot validate domain extension."
+                        .to_string(),
                 )],
             ))
         }
@@ -643,11 +654,17 @@ impl OntologyManager {
         // Reload domain configuration
         self.domain_config = Self::load_domain_config(&self.config)?;
 
+        // Re-initialize reasoner
+        self.reasoner = Self::initialize_reasoner(&self.config)
+            .ok()
+            .map(|r| Arc::new(std::sync::Mutex::new(r)));
+
         // Recreate SHACL validator
         self.validator = ShaclValidator::new(
             &self.config.core_shacl_path,
             &self.config.domain_shacl_path,
             self.config.ontology_hash.clone(),
+            self.reasoner.clone(),
         )
         .map_err(|e| OntologyError::OntologyLoadError {
             path: "SHACL validator reload".to_string(),

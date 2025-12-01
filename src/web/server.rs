@@ -17,7 +17,7 @@ use crate::web::{
         get_blocks,
         get_enhanced_product_trace,
         get_knowledge_graph,
-        get_participants,
+
         get_product_analytics,
         get_product_by_id,
         get_product_provenance,

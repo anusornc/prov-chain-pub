@@ -1,4 +1,4 @@
-use provchain_org::ontology::{DomainConfig, OntologyConfig, OntologyManager, ValidationMode};
+use provchain_org::ontology::{OntologyConfig, OntologyManager, ValidationMode};
 use std::fs;
 use tempfile::TempDir;
 
@@ -60,7 +60,11 @@ fn test_valid_domain_extension() {
 
     // 4. Validate Extension
     let result = manager.validate_domain_extension();
-    assert!(result.is_ok(), "Valid extension should pass validation: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Valid extension should pass validation: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -107,7 +111,7 @@ fn test_invalid_domain_extension() {
     // 4. Validate Extension
     let result = manager.validate_domain_extension();
     assert!(result.is_err(), "Invalid extension should fail validation");
-    
+
     let err = result.unwrap_err();
     println!("Expected error: {}", err);
     // Check if error message contains relevant info

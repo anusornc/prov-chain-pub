@@ -177,6 +177,7 @@ mod shacl_validator_tests {
             &core_path.to_string_lossy(),
             &domain_path.to_string_lossy(),
             "test_hash".to_string(),
+            None,
         );
 
         // For now, we expect this to fail due to SHACL parsing issues
@@ -199,6 +200,7 @@ mod shacl_validator_tests {
             &core_path.to_string_lossy(),
             &domain_path.to_string_lossy(),
             "test_hash".to_string(),
+            None,
         );
 
         // The validator should be created successfully with minimal SHACL
@@ -229,6 +231,7 @@ mod shacl_validator_tests {
             &core_path.to_string_lossy(),
             &domain_path.to_string_lossy(),
             "test_hash".to_string(),
+            None,
         ) {
             let malformed_rdf = "This is not valid RDF data";
             let result = validator.validate_transaction(malformed_rdf);

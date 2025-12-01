@@ -7,7 +7,9 @@
 //! - Memory and resource optimization validation
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use provchain_org::config::Config;
 use provchain_org::core::blockchain::Blockchain;
+use provchain_org::ontology::OntologyConfig;
 use provchain_org::web::server::WebServer;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -266,6 +268,64 @@ fn bench_resilience_performance(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmark SHACL validation impact
+fn bench_shacl_validation_impact(c: &mut Criterion) {
+    let mut group = c.benchmark_group("shacl_validation_impact");
+    group.measurement_time(Duration::from_secs(20));
+
+    let batch_size = 50;
+    // Use SHACL compliant data to trigger actual validation logic
+    let transactions = generate_shacl_compliant_data(batch_size);
+
+    // Benchmark without validation (default)
+    group.bench_function("validation_disabled", |b| {
+        b.iter_batched(
+            || {
+                let blockchain = Blockchain::new();
+                (blockchain, transactions.clone())
+            },
+            |(mut blockchain, txs)| {
+                for tx in txs {
+                    let _ = blockchain.add_block(black_box(tx));
+                }
+                black_box(blockchain)
+            },
+            criterion::BatchSize::SmallInput,
+        );
+    });
+
+    // Benchmark with validation enabled
+    group.bench_function("validation_enabled", |b| {
+        b.iter_batched(
+            || {
+                // Setup configuration for SHACL
+                let config = Config::default();
+                // We assume these files exist in the project root
+                let mut ontology_config =
+                    OntologyConfig::new(Some("ontologies/generic_core.owl".to_string()), &config)
+                        .expect("Failed to create ontology config");
+
+                // Override the SHACL path to use the existing one
+                ontology_config.domain_shacl_path = "shapes/traceability.shacl.ttl".to_string();
+
+                let blockchain = Blockchain::new_with_ontology(ontology_config)
+                    .expect("Failed to create blockchain with ontology");
+
+                (blockchain, transactions.clone())
+            },
+            |(mut blockchain, txs)| {
+                for tx in txs {
+                    let _ = blockchain.add_block(black_box(tx));
+                }
+                black_box(blockchain)
+            },
+            criterion::BatchSize::SmallInput,
+        );
+    });
+
+    group.finish();
+}
+
 // Helper Functions for Benchmark Setup
 
 fn setup_realistic_supply_chain_blockchain(volume: usize) -> (Blockchain, Vec<String>) {
@@ -477,6 +537,46 @@ _:complex{} stress:nestedProperty "{}" ;
         .collect()
 }
 
+fn generate_shacl_compliant_data(size: usize) -> Vec<String> {
+    (0..size)
+        .map(|i| {
+            format!(
+                r#"
+@prefix core: <http://provchain.org/core#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix trace: <http://provchain.org/trace#> .
+
+core:batch{} a core:Batch ;
+    core:hasIdentifier "BATCH{:06}" ;
+    core:producedAt "{}"^^xsd:dateTime ;
+    prov:wasAttributedTo core:org{} ;
+    trace:product core:product{} ;
+    trace:origin "Origin-{}" ;
+    trace:status "Active" .
+
+core:org{} a core:Organization .
+
+core:product{} a core:Product ;
+    trace:name "Product-{}" ;
+    trace:participant "Participant-{}" ;
+    trace:status "Created" .
+"#,
+                i,
+                i,
+                chrono::Utc::now().to_rfc3339(),
+                i,
+                i,
+                i,
+                i,
+                i,
+                i,
+                i
+            )
+        })
+        .collect()
+}
+
 // Query Generation Functions
 
 fn generate_simple_traceability_query() -> String {
@@ -668,6 +768,7 @@ enum ApiRequest {
     ValidateChain,
 }
 
+#[allow(dead_code)]
 struct TestEnvironment {
     network_conditions: NetworkConditions,
     resource_limits: ResourceLimits,
@@ -684,6 +785,7 @@ impl TestEnvironment {
     }
 }
 
+#[allow(dead_code)]
 enum NetworkConditions {
     Normal,
     HighLatency,
@@ -691,12 +793,14 @@ enum NetworkConditions {
     Partitioned,
 }
 
+#[allow(dead_code)]
 enum ResourceLimits {
     Standard,
     Limited,
     Exhausted,
 }
 
+#[allow(dead_code)]
 enum ErrorInjection {
     None,
     RandomFailures,
@@ -1201,7 +1305,8 @@ criterion_group!(
     bench_resource_utilization,
     bench_supply_chain_workflows,
     bench_owl2_reasoning_performance,
-    bench_resilience_performance
+    bench_resilience_performance,
+    bench_shacl_validation_impact
 );
 
 criterion_main!(benches);

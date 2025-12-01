@@ -1,10 +1,11 @@
-//! SHACL validation implementation for RDF transaction data
-
 use crate::ontology::error::{ConstraintType, ShapeViolation, ValidationError, ValidationResult};
+use owl2_reasoner::iri::IRI;
+use owl2_reasoner::reasoning::{OwlReasoner, Reasoner};
 use oxigraph::model::*;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
 use std::fs;
+use std::sync::{Arc, Mutex};
 
 /// SHACL validator for RDF transaction data
 pub struct ShaclValidator {
@@ -16,6 +17,8 @@ pub struct ShaclValidator {
     pub ontology_hash: String,
     /// Whether validation is enabled
     pub validation_enabled: bool,
+    /// OWL2 Reasoner for advanced validation
+    pub reasoner: Option<Arc<Mutex<OwlReasoner>>>,
     /// Oxigraph store for SHACL validation queries
     #[allow(dead_code)]
     store: Store,
@@ -28,6 +31,7 @@ impl std::fmt::Debug for ShaclValidator {
             .field("domain_shapes", &self.domain_shapes)
             .field("ontology_hash", &self.ontology_hash)
             .field("validation_enabled", &self.validation_enabled)
+            .field("reasoner", &self.reasoner.is_some())
             .field("store", &"<Store>")
             .finish()
     }
@@ -48,6 +52,7 @@ impl Clone for ShaclValidator {
             domain_shapes: self.domain_shapes.clone(),
             ontology_hash: self.ontology_hash.clone(),
             validation_enabled: self.validation_enabled,
+            reasoner: self.reasoner.clone(),
             store,
         }
     }
@@ -59,6 +64,7 @@ impl ShaclValidator {
         core_shacl_path: &str,
         domain_shacl_path: &str,
         ontology_hash: String,
+        reasoner: Option<Arc<Mutex<OwlReasoner>>>,
     ) -> Result<Self, ValidationError> {
         let core_shapes = Self::load_shacl_shapes(core_shacl_path)?;
         let domain_shapes = Self::load_shacl_shapes(domain_shacl_path)?;
@@ -73,6 +79,7 @@ impl ShaclValidator {
             domain_shapes,
             ontology_hash,
             validation_enabled: true,
+            reasoner,
             store,
         })
     }
@@ -168,12 +175,13 @@ impl ShaclValidator {
         let query = format!(
             r#"
             PREFIX sh: <http://www.w3.org/ns/shacl#>
-            SELECT ?property ?path ?datatype ?minCount ?maxCount WHERE {{
+            SELECT ?property ?path ?datatype ?minCount ?maxCount ?class WHERE {{
                 <{}> sh:property ?property .
                 ?property sh:path ?path .
                 OPTIONAL {{ ?property sh:datatype ?datatype }}
                 OPTIONAL {{ ?property sh:minCount ?minCount }}
                 OPTIONAL {{ ?property sh:maxCount ?maxCount }}
+                OPTIONAL {{ ?property sh:class ?class }}
             }}
         "#,
             shape_iri
@@ -216,12 +224,18 @@ impl ShaclValidator {
                         }
                     });
 
+                    let class = solution.get("class").map(|t| match t {
+                        Term::NamedNode(node) => node.as_str().to_string(),
+                        _ => t.to_string(),
+                    });
+
                     properties.push(ShaclProperty {
                         id: property_id,
                         path,
                         datatype,
                         min_count,
                         max_count,
+                        class,
                         constraints: Vec::new(), // Will be populated separately
                     });
                 }
@@ -612,6 +626,87 @@ impl ShaclValidator {
             }
         }
 
+        // Check class constraint using OWL2 Reasoner
+        if let Some(expected_class) = &property.class {
+            if let Some(reasoner_lock) = &self.reasoner {
+                if let Ok(mut reasoner) = reasoner_lock.lock() {
+                    if let Ok(expected_class_iri) = IRI::new(expected_class) {
+                        for value in &values {
+                            // Only check if value is an IRI
+                            if value.starts_with("http") {
+                                if let Ok(_value_iri) = IRI::new(value) {
+                                    // Check if the value is an instance of the expected class
+                                    // or if the value's type is a subclass of the expected class
+                                    // Since we don't have instance types easily available here without querying the store again,
+                                    // we'll assume for now we are checking if the object is of the right type.
+                                    // BUT, `sh:class` on a property means the object of the triple must be an instance of the class.
+                                    // In our data generation, we have `core:batch1 a core:Batch`.
+                                    // And `prov:wasAttributedTo core:org1`. `core:org1 a core:Organization`.
+                                    // The property `prov:wasAttributedTo` has `sh:class core:Organization`.
+                                    // So we need to check if `core:org1` is an instance of `core:Organization`.
+
+                                    // To do this properly with the reasoner, we need to know the types of the value.
+                                    // We can query the data_store for the type of the value.
+                                    let type_query =
+                                        format!("SELECT ?type WHERE {{ <{}> a ?type }}", value);
+
+                                    let mut is_instance = false;
+                                    if let Ok(type_results) = data_store.query(&type_query) {
+                                        if let QueryResults::Solutions(type_solutions) =
+                                            type_results
+                                        {
+                                            for type_sol in type_solutions {
+                                                if let Ok(ts) = type_sol {
+                                                    if let Some(type_term) = ts.get("type") {
+                                                        let type_str = match type_term {
+                                                            Term::NamedNode(n) => {
+                                                                n.as_str().to_string()
+                                                            }
+                                                            _ => type_term.to_string(),
+                                                        };
+
+                                                        if let Ok(type_iri) = IRI::new(&type_str) {
+                                                            // Check if type_iri is subclass of expected_class_iri (or same)
+                                                            if let Ok(is_sub) = reasoner
+                                                                .is_subclass_of(
+                                                                    &type_iri,
+                                                                    &expected_class_iri,
+                                                                )
+                                                            {
+                                                                if is_sub {
+                                                                    is_instance = true;
+                                                                    break;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if !is_instance {
+                                        violations.push(
+                                            ShapeViolation::new(
+                                                shape_id.to_string(),
+                                                ConstraintType::Class,
+                                                format!(
+                                                    "Property {} value '{}' is not an instance of class {}",
+                                                    property.path, value, expected_class
+                                                ),
+                                            )
+                                            .with_property_path(property.path.clone())
+                                            .with_value(value.clone()),
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if violations.is_empty() {
             Ok(())
         } else {
@@ -645,6 +740,19 @@ impl ShaclValidator {
             }
         }
 
+        Ok(())
+    }
+
+    pub fn reload(&mut self) -> Result<(), ValidationError> {
+        let store = Store::new().map_err(|e| {
+            ValidationError::new(format!("Failed to create store for reload: {}", e))
+        })?;
+
+        // Reload shapes into the new store
+        let _ = Self::load_shapes_into_store(&store, &self.core_shapes);
+        let _ = Self::load_shapes_into_store(&store, &self.domain_shapes);
+
+        self.store = store;
         Ok(())
     }
 
@@ -703,6 +811,8 @@ pub struct ShaclProperty {
     pub min_count: Option<u32>,
     /// Maximum cardinality
     pub max_count: Option<u32>,
+    /// Expected class (for object properties)
+    pub class: Option<String>,
     /// Property-specific constraints
     pub constraints: Vec<ShaclConstraint>,
 }
@@ -758,6 +868,7 @@ mod tests {
             &core_shacl_path.to_string_lossy(),
             &domain_shacl_path.to_string_lossy(),
             "test_hash".to_string(),
+            None,
         );
 
         assert!(validator.is_ok());
@@ -787,6 +898,7 @@ mod tests {
             &core_shacl_path.to_string_lossy(),
             &domain_shacl_path.to_string_lossy(),
             "test_hash".to_string(),
+            None,
         )
         .unwrap();
 

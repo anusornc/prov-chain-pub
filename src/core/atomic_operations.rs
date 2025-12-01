@@ -151,6 +151,7 @@ mod tests {
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
             "0".to_string(),
             state_root,
+            "TEST_VALIDATOR".to_string(),
         );
 
         // Add block atomically
@@ -202,6 +203,7 @@ mod security_tests {
                 "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
                 "0".to_string(),
                 state_root,
+                "TEST_VALIDATOR".to_string(),
             );
 
             // Begin atomic operation
@@ -263,6 +265,7 @@ mod security_tests {
                     .to_string(),
                 "0".to_string(),
                 state_root,
+                "TEST_VALIDATOR".to_string(),
             );
 
             // Perform rollback
@@ -304,7 +307,13 @@ mod security_tests {
                         "@prefix ex: <http://example.org/> . ex:test{} ex:value \"test{}\" .",
                         i, i
                     );
-                    let block = Block::new(i as u64 + 1, rdf_data, "0".to_string(), state_root);
+                    let block = Block::new(
+                        i as u64 + 1,
+                        rdf_data,
+                        "0".to_string(),
+                        state_root,
+                        "TEST_VALIDATOR".to_string(),
+                    );
 
                     // Perform atomic operation
                     let result = context.add_block_atomically(&block);
@@ -356,7 +365,13 @@ mod security_tests {
                 "@prefix ex: <http://example.org/> . ex:consistency_test ex:value \"test\" ."
                     .to_string();
 
-            let block = Block::new(1, test_rdf, "0".to_string(), state_root);
+            let block = Block::new(
+                1,
+                test_rdf,
+                "0".to_string(),
+                state_root,
+                "TEST_VALIDATOR".to_string(),
+            );
 
             // Attempt atomic operation
             let operation_result = context.add_block_atomically(&block);
@@ -446,7 +461,13 @@ mod security_tests {
 
             let state_root =
                 "0000000000000000000000000000000000000000000000000000000000000000".to_string();
-            let _block = Block::new(1, large_rdf_data, "0".to_string(), state_root);
+            let _block = Block::new(
+                1,
+                large_rdf_data,
+                "0".to_string(),
+                state_root,
+                "TEST_VALIDATOR".to_string(),
+            );
 
             // Begin operation
             let begin_result = context.begin_operation();
@@ -526,7 +547,13 @@ mod security_tests {
                     let rdf_data =
                         "@prefix ex: <http://example.org/> . ex:race ex:value \"test\" ."
                             .to_string();
-                    let block = Block::new(1, rdf_data, "0".to_string(), state_root);
+                    let block = Block::new(
+                        1,
+                        rdf_data,
+                        "0".to_string(),
+                        state_root,
+                        "TEST_VALIDATOR".to_string(),
+                    );
 
                     // Perform operation
                     let result = context.add_block_atomically(&block);

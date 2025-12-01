@@ -213,6 +213,7 @@ impl PeerConnection {
 pub struct PeerServer {
     listener: TcpListener,
     message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
+    connection_handler: Arc<dyn Fn(PeerConnection) + Send + Sync>,
 }
 
 impl PeerServer {
@@ -220,6 +221,7 @@ impl PeerServer {
     pub async fn new(
         listen_addr: &str,
         message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
+        connection_handler: Arc<dyn Fn(PeerConnection) + Send + Sync>,
     ) -> Result<Self> {
         let listener = TcpListener::bind(listen_addr).await?;
         info!("WebSocket server listening on {}", listen_addr);
@@ -227,6 +229,7 @@ impl PeerServer {
         Ok(Self {
             listener,
             message_handler,
+            connection_handler,
         })
     }
 
@@ -236,10 +239,17 @@ impl PeerServer {
             match self.listener.accept().await {
                 Ok((stream, addr)) => {
                     info!("New connection from {}", addr);
-                    let handler = Arc::clone(&self.message_handler);
+                    let message_handler = Arc::clone(&self.message_handler);
+                    let connection_handler = Arc::clone(&self.connection_handler);
 
                     tokio::spawn(async move {
-                        if let Err(e) = Self::handle_incoming_connection(stream, handler).await {
+                        if let Err(e) = Self::handle_incoming_connection(
+                            stream,
+                            message_handler,
+                            connection_handler,
+                        )
+                        .await
+                        {
                             error!("Failed to handle incoming connection from {}: {}", addr, e);
                         }
                     });
@@ -255,6 +265,7 @@ impl PeerServer {
     async fn handle_incoming_connection(
         stream: TcpStream,
         message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
+        connection_handler: Arc<dyn Fn(PeerConnection) + Send + Sync>,
     ) -> Result<()> {
         let ws_stream = accept_async(stream).await?;
         info!("WebSocket connection established");
@@ -269,10 +280,12 @@ impl PeerServer {
             false,
         );
 
-        let _connection =
+        let connection =
             PeerConnection::new_incoming(peer_info, ws_stream, message_handler).await?;
 
-        // Connection is now managed by the PeerConnection task
+        // Pass the connection to the handler
+        connection_handler(connection);
+
         Ok(())
     }
 }

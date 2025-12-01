@@ -1,16 +1,25 @@
 use chrono::Utc;
 use clap::{Parser, Subcommand};
 use provchain_org::{
-    config::Config, core::blockchain::Blockchain, demo, demo_runner::run_demo_with_args,
-    ontology::OntologyConfig, semantic::owl2_traceability::Owl2EnhancedTraceability,
-    semantic::simple_owl2_test::simple_owl2_integration_test, web::server::create_web_server,
+    config::Config,
+    core::blockchain::Blockchain,
+    demo,
+    demo_runner::run_demo_with_args,
+    network::{consensus::ConsensusManager, NetworkManager},
+    ontology::OntologyConfig,
+    semantic::owl2_traceability::Owl2EnhancedTraceability,
+    semantic::simple_owl2_test::simple_owl2_integration_test,
+    storage::rdf_store::StorageConfig,
+    utils::config::load_config,
+    web::server::create_web_server,
 };
-use std::env;
+
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
-use tokio::sync::Mutex;
-use tracing::info;
+
+use tokio::sync::RwLock;
+use tracing::{error, info};
 
 #[derive(Parser)]
 #[command(name = "TraceChain")]
@@ -120,6 +129,20 @@ enum Commands {
         /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
         #[arg(long)]
         ontology: Option<String>,
+    },
+
+    /// Start a full node with networking and consensus
+    StartNode {
+        /// Config file path
+        #[arg(short, long)]
+        config: Option<String>,
+    },
+
+    /// Generate a new Ed25519 keypair for authority nodes
+    GenerateKey {
+        /// Output file path for the private key
+        #[arg(short, long)]
+        out: String,
     },
 }
 
@@ -291,7 +314,8 @@ fn create_blockchain_with_ontology(
     let data_dir = "data";
     // Ensure data directory exists
     if !Path::new(data_dir).exists() {
-        fs::create_dir_all(data_dir).map_err(|e| format!("Failed to create data directory: {}", e))?;
+        fs::create_dir_all(data_dir)
+            .map_err(|e| format!("Failed to create data directory: {}", e))?;
     }
 
     if let Some(ontology_path) = ontology_path {
@@ -307,7 +331,12 @@ fn create_blockchain_with_ontology(
 
         // Create persistent blockchain with ontology
         let blockchain = Blockchain::new_persistent_with_ontology(data_dir, ontology_config)
-            .map_err(|e| format!("Failed to initialize persistent blockchain with ontology: {}", e))?;
+            .map_err(|e| {
+                format!(
+                    "Failed to initialize persistent blockchain with ontology: {}",
+                    e
+                )
+            })?;
 
         info!(
             "✅ Persistent Blockchain initialized with domain ontology: {}",
@@ -513,7 +542,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("✅ Enhanced OWL2 demo completed successfully!");
         }
         Commands::AdvancedOwl2 { ontology } => {
-            use provchain_org::semantic::library_integration::{check_consistency, validate_ontology};
+            use provchain_org::semantic::library_integration::{
+                check_consistency, validate_ontology,
+            };
 
             println!("=== Advanced OWL2 Reasoning ===");
             println!("Processing ontology: {}", ontology);
@@ -529,7 +560,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("  Completeness: {:.2}", report.completeness_score);
                     println!("  Structural: {:.2}", report.structural_score);
                     println!("  Readiness: {:?}", report.publication_readiness);
-                    
+
                     if !report.recommendations.is_empty() {
                         println!("  Recommendations:");
                         for rec in &report.recommendations {
@@ -566,8 +597,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             info!("Building knowledge graph from blockchain data...");
             let builder = GraphBuilder::new(blockchain.rdf_store);
-            let kg = builder.build_knowledge_graph().map_err(|e| format!("Failed to build knowledge graph: {}", e))?;
-            
+            let kg = builder
+                .build_knowledge_graph()
+                .map_err(|e| format!("Failed to build knowledge graph: {}", e))?;
+
             info!("Initializing graph database...");
             let graph_db = GraphDatabase::new(kg);
 
@@ -583,6 +616,117 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("❌ No path found between '{}' and '{}'", from, to);
                 }
             }
+        }
+        Commands::StartNode { config } => {
+            // Load configuration
+            let node_config = load_config(config.as_deref())
+                .map_err(|e| format!("Failed to load config: {}", e))?;
+
+            info!("Starting node {}...", node_config.node_id);
+            info!("Network ID: {}", node_config.network.network_id);
+            info!("Listen Address: {}", node_config.listen_address());
+
+            // Initialize components
+            // Convert utils::config::StorageConfig to storage::rdf_store::StorageConfig
+            let storage_config = StorageConfig {
+                data_dir: std::path::PathBuf::from(node_config.storage.data_dir.clone()),
+                enable_backup: true,
+                backup_interval_hours: 24,
+                max_backup_files: 7,
+                enable_compression: true,
+                enable_encryption: false,
+                cache_size: 1000, // Default
+                warm_cache_on_startup: false,
+            };
+
+            let blockchain = Arc::new(RwLock::new(
+                Blockchain::new_persistent_with_config(storage_config)
+                    .map_err(|e| format!("Failed to initialize blockchain: {}", e))?,
+            ));
+
+            let network = NetworkManager::new(node_config.clone());
+            let network_arc = Arc::new(network);
+
+            // We need to start the network manager, but it requires mutable access
+            // However, we also need to pass it to ConsensusManager wrapped in Arc
+            // This circular dependency needs to be handled carefully.
+            // For now, we'll clone the Arc for ConsensusManager, but we need to start the network
+            // which is a bit tricky with the current structure.
+
+            // Let's modify how we start things.
+            // NetworkManager::start(&mut self) is the issue if we wrap it in Arc.
+            // We might need to use interior mutability for NetworkManager or change start() to take &self.
+            // But looking at NetworkManager, start() calls start_server() and connect_to_known_peers() which take &self.
+            // So we can change start() to take &self if we change the signature in mod.rs.
+            // Let's check mod.rs again.
+
+            // In mod.rs: pub async fn start(&mut self) -> Result<()>
+            // But start_server takes &self, connect_to_known_peers takes &self.
+            // So we can change start to take &self!
+
+            // Wait, I can't change mod.rs in this tool call.
+            // I'll assume I can fix mod.rs in a separate step or just use unsafe/interior mutability trick if needed,
+            // but actually, since I just modified mod.rs, let's see.
+            // I implemented start_server(&self) and connect_to_known_peers(&self).
+            // So I can change start(&mut self) to start(&self) in mod.rs!
+
+            // But for now, let's implement the handler assuming I'll fix the signature.
+
+            let consensus = ConsensusManager::new(
+                node_config.consensus.clone(),
+                network_arc.clone(),
+                blockchain.clone(),
+            )
+            .await
+            .map_err(|e| format!("Failed to initialize consensus: {}", e))?;
+
+            // Register consensus manager as message handler
+            network_arc
+                .add_message_handler(Box::new(consensus.clone()))
+                .await;
+
+            // Start services
+            // We need to spawn the network start task.
+            // Since start() currently takes &mut self, we can't call it on Arc.
+            // I will fix this in the next step.
+
+            // For now, let's just spawn the consensus start
+            tokio::spawn(async move {
+                if let Err(e) = consensus.start().await {
+                    error!("Consensus error: {}", e);
+                }
+            });
+
+            // And we need to start the network.
+            // I'll add a TODO comment here and fix the NetworkManager::start signature in the next step.
+            // actually, I can't compile if I call it wrong.
+            // So I will comment out the network start call and fix it immediately after.
+
+            tokio::spawn(async move {
+                if let Err(e) = network_arc.start().await {
+                    error!("Network error: {}", e);
+                }
+            });
+
+            info!("Node started successfully. Press Ctrl+C to stop.");
+
+            // Wait for interrupt signal
+            tokio::signal::ctrl_c().await?;
+            info!("Shutting down...");
+        }
+        Commands::GenerateKey { out } => {
+            use ed25519_dalek::SigningKey;
+
+            let keypair = SigningKey::from_bytes(&rand::random::<[u8; 32]>());
+            let public_key = keypair.verifying_key();
+
+            // Save private key to file
+            fs::write(&out, keypair.to_bytes())
+                .map_err(|e| format!("Failed to write key to file: {}", e))?;
+
+            println!("Generated new authority keypair");
+            println!("Private key saved to: {}", out);
+            println!("Public key (hex): {}", hex::encode(public_key.to_bytes()));
         }
     }
 

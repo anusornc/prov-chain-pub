@@ -534,6 +534,7 @@ impl Blockchain {
             &ontology_config.core_shacl_path,
             &ontology_config.domain_shacl_path,
             ontology_config.ontology_hash.clone(),
+            None,
         )
         .map_err(|e| {
             ProvChainError::Blockchain(BlockchainError::OntologyInitializationFailed(format!(

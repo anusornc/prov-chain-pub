@@ -1,0 +1,26 @@
+node_id = "2BCE511E-25A4-452C-9D16-091875940C5A"
+[network]
+network_id = "provchain-test"
+listen_port = 8081
+bind_address = "127.0.0.1"
+known_peers = ["127.0.0.1:8080"]
+max_peers = 50
+connection_timeout = 30
+ping_interval = 30
+
+[consensus]
+is_authority = true
+authority_key_file = "data/node2/authority.key"
+authority_keys = ["d101ddbc0adacd30351041749b705d4b106526c10302ee87ae26c8918b42b607", "50be52f88c3ad2b08269a7ca5ea9cd2e1f2c903a40d303e22fdca7688a0271bf"]
+block_interval = 5
+max_block_size = 1048576
+
+[storage]
+data_dir = "data/node2/storage"
+persistent = true
+store_type = "oxigraph"
+cache_size_mb = 100
+
+[logging]
+level = "info"
+format = "pretty"

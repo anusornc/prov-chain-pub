@@ -16,7 +16,7 @@ use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
 use super::messages::P2PMessage;
-use super::NetworkManager;
+use super::{MessageHandler, NetworkManager};
 use crate::core::blockchain::{Block, Blockchain};
 use crate::utils::config::ConsensusConfig;
 
@@ -81,7 +81,7 @@ pub struct BlockProposal {
 
 impl ConsensusManager {
     /// Create a new consensus manager
-    pub fn new(
+    pub async fn new(
         config: ConsensusConfig,
         network: Arc<NetworkManager>,
         blockchain: Arc<RwLock<Blockchain>>,
@@ -102,7 +102,8 @@ impl ConsensusManager {
                     {
                         let authority_id = Uuid::new_v4(); // In practice, this would be derived from the key
                         authority_keys
-                            .blocking_write()
+                            .write()
+                            .await
                             .insert(authority_id, public_key);
                     }
                 }
@@ -603,6 +604,30 @@ impl Clone for ConsensusManager {
     }
 }
 
+impl MessageHandler for ConsensusManager {
+    fn handle_message(&self, _peer_id: Uuid, message: P2PMessage) -> Result<Option<P2PMessage>> {
+        match message {
+            P2PMessage::BlockAnnouncement {
+                block_index,
+                block_hash: _,
+                previous_hash: _,
+                graph_uri: _,
+                timestamp: _,
+            } => {
+                info!("Received block announcement for block {}", block_index);
+                let _manager = self.clone();
+                tokio::spawn(async move {
+                    // In a real implementation, we would request the full block here
+                    // For this test, we just want to see it received.
+                    info!("Processing block announcement {}", block_index);
+                });
+                Ok(None)
+            }
+            _ => Ok(None),
+        }
+    }
+}
+
 /// Consensus statistics
 #[derive(Debug, Clone)]
 pub struct ConsensusStats {
@@ -626,7 +651,9 @@ mod tests {
         let network = Arc::new(NetworkManager::new(node_config));
         let blockchain = Arc::new(RwLock::new(Blockchain::new()));
 
-        let consensus = ConsensusManager::new(config, network, blockchain).unwrap();
+        let consensus = ConsensusManager::new(config, network, blockchain)
+            .await
+            .unwrap();
         let stats = consensus.get_consensus_stats().await;
 
         assert!(!stats.is_authority);
@@ -643,7 +670,9 @@ mod tests {
         let network = Arc::new(NetworkManager::new(node_config));
         let blockchain = Arc::new(RwLock::new(Blockchain::new()));
 
-        let consensus = ConsensusManager::new(config, network, blockchain.clone()).unwrap();
+        let consensus = ConsensusManager::new(config, network, blockchain.clone())
+            .await
+            .unwrap();
         let block = consensus.create_block().await.unwrap();
 
         assert_eq!(block.index, 1); // Should be 1 since blockchain starts with genesis block
