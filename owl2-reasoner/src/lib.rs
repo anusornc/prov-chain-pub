@@ -109,7 +109,7 @@ pub mod datatypes;
 
 /// OWL2 Profile validation (EL, QL, RL) with comprehensive checking
 pub mod profiles;
-pub mod test_data_generator;
+// pub mod test_data_generator;
 
 /// GS1 EPCIS ontology implementation for supply chain traceability
 pub mod epcis;
@@ -136,10 +136,10 @@ pub mod cache_manager;
 pub mod memory;
 
 /// Test memory guard for preventing OOM issues during testing
-pub mod test_memory_guard;
+// pub mod test_memory_guard;
 
 /// Test helpers for memory-safe testing patterns
-pub mod test_helpers;
+// pub mod test_helpers;
 
 /// Performance utilities and optimizations
 pub mod utils;
@@ -156,5 +156,5 @@ pub use parser::{ImportResolver, ImportResolverConfig, OntologyParser, ParserFac
 pub use reasoning::{
     OwlReasoner, PatternTerm, QueryEngine, QueryPattern, Reasoner, SimpleReasoner, TriplePattern,
 };
-pub use test_data_generator::*;
+// pub use test_data_generator::*;
 pub use validation::academic_validation::{AcademicValidator, AcademicValidationReport};

@@ -1,6 +1,15 @@
 //! Simple Criterion.rs benchmarks for consensus algorithms
 //!
 //! This provides basic statistical benchmarking for ProvChain consensus performance
+//!
+//! ## Performance Optimization Strategy
+//!
+//! These benchmarks use **adaptive configuration** to prevent hanging on large inputs:
+//! - **Sample sizes scale down** as chain length increases (100 → 50)
+//! - **Measurement time reduces** for longer chains (15s → 10s)
+//!
+//! This ensures benchmarks complete in reasonable time while still providing meaningful
+//! performance metrics across different scales.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use provchain_org::core::blockchain::Blockchain;
@@ -72,11 +81,19 @@ fn bench_sparql_queries(c: &mut Criterion) {
 /// Benchmark blockchain scaling performance
 fn bench_blockchain_scaling(c: &mut Criterion) {
     let mut group = c.benchmark_group("blockchain_scaling");
-    group.measurement_time(Duration::from_secs(10));
 
     // Test scaling with different chain lengths
     for chain_length in [10, 25, 50, 100].iter() {
+        // Adaptive configuration based on chain length
+        let (measurement_time, sample_size) = match *chain_length {
+            0..=50 => (Duration::from_secs(12), 100),
+            _ => (Duration::from_secs(10), 50), // 100
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
         group.throughput(Throughput::Elements(*chain_length as u64));
+
         group.bench_with_input(
             BenchmarkId::new("scaling", chain_length),
             chain_length,

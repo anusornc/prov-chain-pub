@@ -4,6 +4,15 @@
 //! - JoinHashTablePool for reusable hash join operations
 //! - LockFreeMemoryManager for thread-local arena allocation
 //! - AdaptiveQueryIndex for intelligent query caching
+//!
+//! ## Performance Optimization Strategy
+//!
+//! These benchmarks use **adaptive configuration** to prevent hanging on large inputs:
+//! - **Sample sizes scale down** as input size increases (100 → 50 → 20 → 10)
+//! - **Measurement time reduces** for larger datasets (15s → 12s → 10s → 8s)
+//!
+//! This ensures benchmarks complete in reasonable time while still providing meaningful
+//! performance metrics across different scales.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use owl2_reasoner::axioms::*;
@@ -22,6 +31,15 @@ fn benchmark_join_hash_table_pool(c: &mut Criterion) {
 
     // Test different binding sizes
     for size in [100, 1000, 10000].iter() {
+        // Adaptive configuration based on binding size
+        let (measurement_time, sample_size) = match *size {
+            0..=1000 => (Duration::from_secs(15), 100),
+            1001..=10000 => (Duration::from_secs(12), 50),
+            _ => (Duration::from_secs(10), 20),
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
         group.throughput(Throughput::Elements(*size as u64));
 
         // Baseline: Create new HashMap each time
@@ -82,6 +100,16 @@ fn benchmark_lock_free_memory_manager(c: &mut Criterion) {
 
     // Test different allocation counts
     for count in [1000, 10000, 100000].iter() {
+        // Adaptive configuration based on allocation count
+        let (measurement_time, sample_size) = match *count {
+            0..=1000 => (Duration::from_secs(15), 100),
+            1001..=10000 => (Duration::from_secs(12), 50),
+            10001..=100000 => (Duration::from_secs(10), 20),
+            _ => (Duration::from_secs(8), 10),
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
         group.throughput(Throughput::Elements(*count as u64));
 
         // Baseline: Traditional mutex-based memory manager
@@ -156,6 +184,14 @@ fn benchmark_adaptive_query_index(c: &mut Criterion) {
 
     // Test different numbers of unique queries
     for unique_queries in [100, 1000, 10000].iter() {
+        // Adaptive configuration based on query count
+        let (measurement_time, sample_size) = match *unique_queries {
+            0..=1000 => (Duration::from_secs(15), 100),
+            _ => (Duration::from_secs(12), 50), // 10000
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
         group.throughput(Throughput::Elements(*unique_queries as u64));
 
         // Baseline: Linear scan through query cache
@@ -214,6 +250,14 @@ fn benchmark_query_pattern_predictor(c: &mut Criterion) {
 
     // Test different sequence lengths
     for sequence_length in [100, 1000, 10000].iter() {
+        // Adaptive configuration based on sequence length
+        let (measurement_time, sample_size) = match *sequence_length {
+            0..=1000 => (Duration::from_secs(15), 100),
+            _ => (Duration::from_secs(12), 50), // 10000
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
         group.throughput(Throughput::Elements(*sequence_length as u64));
 
         group.bench_with_input(

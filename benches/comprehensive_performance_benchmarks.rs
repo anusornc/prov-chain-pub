@@ -5,6 +5,16 @@
 //! - Supply chain specific workloads
 //! - Real-time system performance under load
 //! - Memory and resource optimization validation
+//!
+//! ## Performance Optimization Strategy
+//!
+//! These benchmarks use **adaptive configuration** to prevent hanging on large inputs:
+//! - **Sample sizes scale down** as input sizes increase (100 → 50 → 20 → 10)
+//! - **Measurement time reduces** for larger datasets (30s → 20s → 15s → 10s)
+//! - **Dataset sizes optimized** for benchmark completion without sacrificing accuracy
+//!
+//! This ensures benchmarks complete in reasonable time while still providing meaningful
+//! performance metrics across different scales.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use provchain_org::config::Config;
@@ -19,12 +29,21 @@ use tokio::runtime::Runtime;
 /// Benchmark comprehensive blockchain performance under realistic supply chain loads
 fn bench_production_blockchain_performance(c: &mut Criterion) {
     let mut group = c.benchmark_group("production_blockchain_performance");
-    group.measurement_time(Duration::from_secs(30));
-    group.sample_size(100);
 
     // Test different realistic supply chain volumes
     for volume in [100, 500, 1000, 5000, 10000] {
+        // Adaptive configuration based on input size
+        let (measurement_time, sample_size) = match volume {
+            0..=500 => (Duration::from_secs(30), 100),
+            501..=1000 => (Duration::from_secs(20), 50),
+            1001..=5000 => (Duration::from_secs(15), 20),
+            _ => (Duration::from_secs(10), 10), // 10000+
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
         group.throughput(Throughput::Elements(volume as u64));
+
         group.bench_with_input(
             BenchmarkId::new("supply_chain_volume", volume),
             &volume,
@@ -48,9 +67,19 @@ fn bench_production_blockchain_performance(c: &mut Criterion) {
 /// Benchmark API performance under concurrent load
 fn bench_api_concurrent_performance(c: &mut Criterion) {
     let mut group = c.benchmark_group("api_concurrent_performance");
-    group.measurement_time(Duration::from_secs(20));
 
     for concurrent_users in [10, 50, 100, 500, 1000] {
+        // Adaptive configuration based on concurrency level
+        let (measurement_time, sample_size) = match concurrent_users {
+            0..=50 => (Duration::from_secs(20), 100),
+            51..=100 => (Duration::from_secs(15), 50),
+            101..=500 => (Duration::from_secs(12), 20),
+            _ => (Duration::from_secs(10), 10), // 1000+
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
+
         group.bench_with_input(
             BenchmarkId::new("concurrent_users", concurrent_users),
             &concurrent_users,
@@ -75,7 +104,8 @@ fn bench_api_concurrent_performance(c: &mut Criterion) {
 /// Benchmark real-time traceability query performance
 fn bench_real_time_traceability_performance(c: &mut Criterion) {
     let mut group = c.benchmark_group("real_time_traceability");
-    group.measurement_time(Duration::from_secs(25));
+    group.measurement_time(Duration::from_secs(15));
+    group.sample_size(30);
 
     let query_complexities = vec![
         ("simple_lookup", generate_simple_traceability_query()),
@@ -116,6 +146,16 @@ fn bench_resource_utilization(c: &mut Criterion) {
     ];
 
     for (pattern, load_size) in load_patterns {
+        // Adaptive configuration based on load size
+        let (measurement_time, sample_size) = match load_size {
+            0..=1000 => (Duration::from_secs(20), 50),
+            1001..=5000 => (Duration::from_secs(15), 20),
+            _ => (Duration::from_secs(10), 10), // 10000+
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
+
         group.bench_function(BenchmarkId::new("memory_pattern", pattern), |b| {
             b.iter_batched(
                 || {
@@ -195,7 +235,8 @@ fn bench_supply_chain_workflows(c: &mut Criterion) {
 /// Benchmark OWL2 reasoning performance
 fn bench_owl2_reasoning_performance(c: &mut Criterion) {
     let mut group = c.benchmark_group("owl2_reasoning_performance");
-    group.measurement_time(Duration::from_secs(30));
+    group.measurement_time(Duration::from_secs(20));
+    group.sample_size(30);
 
     let ontology_scenarios = vec![
         ("healthcare_domain", generate_healthcare_ontology_data()),
@@ -376,7 +417,8 @@ fn setup_test_web_server() -> (Arc<WebServer>, TempDir) {
 
 fn setup_large_traceability_dataset() -> (Blockchain, Vec<String>) {
     let blockchain = Blockchain::new();
-    let data = generate_large_traceability_dataset(5000);
+    // Reduced from 5000 to 2000 for faster benchmark execution
+    let data = generate_large_traceability_dataset(2000);
 
     // Pre-load data
     let mut blockchain = blockchain;

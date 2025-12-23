@@ -1,11 +1,21 @@
 //! OWL2 Performance Benchmarks
 //!
 //! Benchmarks for the enhanced OWL2 features
+//!
+//! ## Performance Optimization Strategy
+//!
+//! These benchmarks use **adaptive configuration** to prevent hanging on large inputs:
+//! - **Sample sizes scale down** as entity count increases (100 → 50)
+//! - **Measurement time reduces** for larger datasets (15s → 12s)
+//!
+//! This ensures benchmarks complete in reasonable time while still providing meaningful
+//! performance metrics across different scales.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use provchain_org::core::blockchain::Blockchain;
 use provchain_org::core::entity::{DomainType, EntityType, PropertyValue, TraceableEntity};
 use provchain_org::semantic::owl2_traceability::Owl2EnhancedTraceability;
+use std::time::Duration;
 
 /// Helper to generate test entities
 fn generate_test_entities(count: usize) -> Vec<TraceableEntity> {
@@ -56,6 +66,15 @@ pub fn bench_entities_to_owl_ontology(c: &mut Criterion) {
     let owl2_enhancer = Owl2EnhancedTraceability::new(blockchain);
 
     for size in [10, 100, 1000].iter() {
+        // Adaptive configuration based on entity count
+        let (measurement_time, sample_size) = match *size {
+            0..=100 => (Duration::from_secs(15), 100),
+            _ => (Duration::from_secs(12), 50), // 1000
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
+
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             let entities = generate_test_entities(size);
             b.iter(|| {
@@ -73,6 +92,15 @@ pub fn bench_haskey_validation(c: &mut Criterion) {
     let owl2_enhancer = Owl2EnhancedTraceability::new(blockchain);
 
     for size in [10, 100, 1000].iter() {
+        // Adaptive configuration based on entity count
+        let (measurement_time, sample_size) = match *size {
+            0..=100 => (Duration::from_secs(15), 100),
+            _ => (Duration::from_secs(12), 50), // 1000
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
+
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             let entities = generate_test_entities(size);
             b.iter(|| {
@@ -90,6 +118,15 @@ pub fn bench_property_chain_inference(c: &mut Criterion) {
     let owl2_enhancer = Owl2EnhancedTraceability::new(blockchain);
 
     for size in [10, 100, 1000].iter() {
+        // Adaptive configuration based on entity count
+        let (measurement_time, sample_size) = match *size {
+            0..=100 => (Duration::from_secs(15), 100),
+            _ => (Duration::from_secs(12), 50), // 1000
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
+
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             let entities = generate_test_entities(size);
             b.iter(|| {

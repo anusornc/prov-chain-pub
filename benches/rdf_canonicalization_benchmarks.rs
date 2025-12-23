@@ -1,6 +1,15 @@
 //! Criterion.rs benchmarks for RDF canonicalization performance
 //!
 //! Benchmarks different RDF canonicalization algorithms and complexity scenarios
+//!
+//! ## Performance Optimization Strategy
+//!
+//! These benchmarks use **adaptive configuration** to prevent hanging on large inputs:
+//! - **Sample sizes scale down** as graph size increases (100 → 50 → 30)
+//! - **Measurement time reduces** for larger graphs (15s → 12s → 10s)
+//!
+//! This ensures benchmarks complete in reasonable time while still providing meaningful
+//! performance metrics across different scales.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use provchain_org::core::blockchain::Blockchain;
@@ -77,11 +86,20 @@ fn bench_blank_node_patterns(c: &mut Criterion) {
 /// Benchmark canonicalization scaling with graph size
 fn bench_canonicalization_scaling(c: &mut Criterion) {
     let mut group = c.benchmark_group("canonicalization_scaling");
-    group.measurement_time(Duration::from_secs(20));
 
     // Test different graph sizes
     for &size in [10, 25, 50, 100, 200].iter() {
+        // Adaptive configuration based on graph size
+        let (measurement_time, sample_size) = match size {
+            0..=50 => (Duration::from_secs(15), 100),
+            51..=100 => (Duration::from_secs(12), 50),
+            _ => (Duration::from_secs(10), 30), // 200
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
         group.throughput(Throughput::Elements(size as u64));
+
         group.bench_with_input(
             BenchmarkId::new("graph_size", size),
             &size,

@@ -1,4 +1,13 @@
 //! Scalability benchmarks
+//!
+//! ## Performance Optimization Strategy
+//!
+//! These benchmarks use **adaptive configuration** to prevent hanging on large inputs:
+//! - **Sample sizes scale down** as ontology size increases (100 → 50 → 20 → 10)
+//! - **Measurement time reduces** for larger ontologies (20s → 15s → 12s → 10s)
+//!
+//! This ensures benchmarks complete in reasonable time while still providing meaningful
+//! performance metrics across different scales.
 
 use criterion::{black_box, BenchmarkId, Criterion};
 use owl2_reasoner::axioms::{ClassExpression, SubClassOfAxiom};
@@ -6,12 +15,24 @@ use owl2_reasoner::entities::{Class, NamedIndividual};
 use owl2_reasoner::iri::IRI;
 use owl2_reasoner::ontology::Ontology;
 use owl2_reasoner::reasoning::SimpleReasoner;
+use std::time::Duration;
 
 /// Benchmark handling of large ontologies
 pub fn bench_large_ontology_handling(c: &mut Criterion) {
     let mut group = c.benchmark_group("large_ontology_handling");
 
     for size in [1000, 5000, 10000, 20000].iter() {
+        // Adaptive configuration based on ontology size
+        let (measurement_time, sample_size) = match *size {
+            0..=1000 => (Duration::from_secs(20), 100),
+            1001..=5000 => (Duration::from_secs(15), 50),
+            5001..=10000 => (Duration::from_secs(12), 20),
+            _ => (Duration::from_secs(10), 10), // 20000
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
+
         group.bench_with_input(
             BenchmarkId::new("large_ontology_reasoning", size),
             size,
@@ -34,6 +55,17 @@ pub fn bench_ontology_loading(c: &mut Criterion) {
     let mut group = c.benchmark_group("ontology_loading");
 
     for size in [1000, 5000, 10000, 20000].iter() {
+        // Adaptive configuration based on ontology size
+        let (measurement_time, sample_size) = match *size {
+            0..=1000 => (Duration::from_secs(15), 100),
+            1001..=5000 => (Duration::from_secs(12), 50),
+            5001..=10000 => (Duration::from_secs(10), 20),
+            _ => (Duration::from_secs(8), 10), // 20000
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
+
         group.bench_with_input(
             BenchmarkId::new("load_large_ontology", size),
             size,
@@ -54,6 +86,16 @@ pub fn bench_deep_hierarchy_reasoning(c: &mut Criterion) {
     let mut group = c.benchmark_group("deep_hierarchy");
 
     for depth in [10, 50, 100, 200].iter() {
+        // Adaptive configuration based on hierarchy depth
+        let (measurement_time, sample_size) = match *depth {
+            0..=50 => (Duration::from_secs(15), 100),
+            51..=100 => (Duration::from_secs(12), 50),
+            _ => (Duration::from_secs(10), 30), // 200
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
+
         let ontology = create_deep_hierarchy(*depth);
         let reasoner = SimpleReasoner::new(ontology);
 
@@ -77,6 +119,16 @@ pub fn bench_wide_hierarchy_reasoning(c: &mut Criterion) {
     let mut group = c.benchmark_group("wide_hierarchy");
 
     for width in [10, 50, 100, 200].iter() {
+        // Adaptive configuration based on hierarchy width
+        let (measurement_time, sample_size) = match *width {
+            0..=50 => (Duration::from_secs(15), 100),
+            51..=100 => (Duration::from_secs(12), 50),
+            _ => (Duration::from_secs(10), 30), // 200
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
+
         let ontology = create_wide_hierarchy(*width);
         let reasoner = SimpleReasoner::new(ontology);
 
@@ -103,6 +155,15 @@ pub fn bench_concurrent_access(c: &mut Criterion) {
     let mut group = c.benchmark_group("concurrent_access");
 
     for thread_count in [2, 4, 8].iter() {
+        // Adaptive configuration based on thread count
+        let (measurement_time, sample_size) = match *thread_count {
+            0..=4 => (Duration::from_secs(15), 50),
+            _ => (Duration::from_secs(12), 30), // 8
+        };
+
+        group.measurement_time(measurement_time);
+        group.sample_size(sample_size);
+
         group.bench_with_input(
             BenchmarkId::new("concurrent_reasoning", thread_count),
             thread_count,

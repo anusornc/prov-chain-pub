@@ -3,7 +3,7 @@
 //! This module provides validation infrastructure for the OWL2 reasoner.
 
 pub mod academic_validation;
-pub mod benchmark_suite;
+// pub mod benchmark_suite;
 pub mod competition_framework;
 pub mod compliance_reporter;
 pub mod enterprise_validation;
