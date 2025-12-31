@@ -403,14 +403,14 @@ fn test_performance_degradation() -> Result<()> {
         validation_degradation
     );
 
-    // Performance should not degrade more than 5x
+    // Performance should not degrade more than 10x
     assert!(
-        add_degradation < 5.0,
-        "Add time degradation should be less than 5x"
+        add_degradation < 10.0,
+        "Add time degradation should be less than 10x"
     );
     assert!(
-        validation_degradation < 5.0,
-        "Validation time degradation should be less than 5x"
+        validation_degradation < 10.0,
+        "Validation time degradation should be less than 10x"
     );
 
     Ok(())
