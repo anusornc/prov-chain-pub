@@ -3,6 +3,9 @@ name = "provchain-org"
 version = "0.1.0"
 edition = "2021"
 
+[workspace]
+members = ["owl2-reasoner"]
+
 [lib]
 name = "provchain_org"
 path = "src/lib.rs"
