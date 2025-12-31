@@ -664,6 +664,7 @@ fn generate_complex_provenance_query() -> String {
     PREFIX trace: <http://provchain.org/trace#>
     PREFIX prov: <http://www.w3.org/ns/prov#>
     PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
     SELECT DISTINCT ?product ?process ?agent ?location ?timestamp
     WHERE {
@@ -707,6 +708,7 @@ fn generate_temporal_analysis_query() -> String {
     r#"
     PREFIX trace: <http://provchain.org/trace#>
     PREFIX prov: <http://www.w3.org/ns/prov#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
     SELECT ?processType ?duration ?qualityScore
     WHERE {
