@@ -10,13 +10,14 @@ use crate::reasoning::Reasoner;
 
 use super::{
     compute_config_hash, create_cache_key, QueryCache, QueryConfig, QueryEngineStats, QueryPattern,
-    QueryResult, QueryType, ResultPool, TriplePattern, RDF_TYPE,
+    QueryResult, QueryType, ResultPool, TriplePattern, RDF_TYPE, FilterExpression,
 };
 
 use dashmap::DashMap;
 use parking_lot::RwLock;
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::num::NonZeroUsize;
 
 /// Query engine for OWL2 ontologies with advanced optimizations
 pub struct QueryEngine {
@@ -506,7 +507,6 @@ mod tests {
     use super::{PatternTerm, QueryPattern, TriplePattern, RDF_TYPE};
     use crate::entities::*;
     use crate::iri::IRI;
-    use std::sync::Arc;
 
     fn create_test_ontology() -> Ontology {
         let mut ontology = Ontology::new();
@@ -620,7 +620,12 @@ mod tests {
             enable_caching: true,
             enable_parallel: true,
             max_results: Some(1000),
-            cache_size: Some(100),
+            cache_size: NonZeroUsize::new(100),
+            enable_reasoning: true,
+            timeout: None,
+            enable_optimization: true,
+            max_memory: None,
+            batch_size: 100,
         };
         QueryEngine::with_config(ontology, config)
     }
@@ -632,7 +637,7 @@ mod tests {
 
         let stats = engine.stats();
         assert_eq!(stats.successful_queries, 0);
-        assert_eq!(stats.get_failed_queries(), 0);
+        assert_eq!(stats.failed_queries, 0);
     }
 
     #[test]
@@ -643,7 +648,11 @@ mod tests {
             enable_caching: true,
             enable_parallel: false,
             max_results: Some(500),
-            cache_size: Some(50),
+            cache_size: NonZeroUsize::new(50),
+            timeout: None,
+            enable_optimization: true,
+            max_memory: None,
+            batch_size: 100,
         };
 
         let engine = QueryEngine::with_config(ontology, config);
@@ -653,7 +662,7 @@ mod tests {
         assert_eq!(engine_config.enable_caching, true);
         assert_eq!(engine_config.enable_parallel, false);
         assert_eq!(engine_config.max_results, Some(500));
-        assert_eq!(engine_config.cache_size, Some(50));
+        assert_eq!(engine_config.cache_size, NonZeroUsize::new(50));
     }
 
     #[test]
@@ -912,8 +921,8 @@ mod tests {
         // Should have recorded cache activity
         if engine.config().enable_caching {
             assert!(
-                stats_after2.get_cache_hits() + stats_after2.get_cache_misses()
-                    > stats_after1.get_cache_hits() + stats_after1.get_cache_misses()
+                stats_after2.cache_hits + stats_after2.cache_misses
+                    > stats_after1.cache_hits + stats_after1.cache_misses
             );
         }
     }
@@ -943,7 +952,7 @@ mod tests {
 
         let initial_stats = engine.stats();
         assert_eq!(initial_stats.successful_queries, 0);
-        assert_eq!(initial_stats.get_failed_queries(), 0);
+        assert_eq!(initial_stats.failed_queries, 0);
 
         // Execute some successful queries
         for _ in 0..3 {
@@ -954,9 +963,9 @@ mod tests {
 
         let final_stats = engine.stats();
         assert_eq!(final_stats.successful_queries, 3);
-        assert_eq!(final_stats.get_failed_queries(), 0);
+        assert_eq!(final_stats.failed_queries, 0);
         assert!(final_stats.total_queries > 0);
-        assert!(final_stats.get_average_time() > 0.0);
+        assert!(final_stats.average_time_ms > 0.0);
     }
 
     #[test]
@@ -977,7 +986,7 @@ mod tests {
 
         let stats_after = engine.stats();
         assert_eq!(stats_after.successful_queries, 0);
-        assert_eq!(stats_after.get_failed_queries(), 0);
+        assert_eq!(stats_after.failed_queries, 0);
         assert_eq!(stats_after.total_queries, 0);
     }
 
@@ -1125,7 +1134,7 @@ mod tests {
 
         let stats = engine.stats();
         assert_eq!(stats.successful_queries, 10);
-        assert!(stats.get_average_time() > 0.0);
+        assert!(stats.average_time_ms > 0.0);
     }
 
     #[test]
@@ -1198,7 +1207,7 @@ mod tests {
         let mut handles = Vec::new();
 
         // Spawn multiple threads accessing the engine
-        for thread_id in 0..4 {
+        for _thread_id in 0..4 {
             let engine_clone = Arc::clone(&engine);
             let handle = thread::spawn(move || {
                 let pattern = create_test_query_pattern("?s", "?p", "?o");
@@ -1243,8 +1252,12 @@ mod tests {
                     enable_reasoning,
                     enable_caching,
                     enable_parallel,
-                    cache_size: Some(cache_size),
+                    cache_size: NonZeroUsize::new(cache_size),
                     max_results: Some(max_results),
+                    timeout: None,
+                    enable_optimization: true,
+                    max_memory: None,
+                    batch_size: 100,
                 };
 
                 let engine = QueryEngine::with_config(ontology, config);
@@ -1258,7 +1271,7 @@ mod tests {
                 prop_assert_eq!(engine_config.enable_reasoning, enable_reasoning);
                 prop_assert_eq!(engine_config.enable_caching, enable_caching);
                 prop_assert_eq!(engine_config.enable_parallel, enable_parallel);
-                prop_assert_eq!(engine_config.cache_size, Some(cache_size));
+                prop_assert_eq!(engine_config.cache_size, NonZeroUsize::new(cache_size));
                 prop_assert_eq!(engine_config.max_results, Some(max_results));
             }
 

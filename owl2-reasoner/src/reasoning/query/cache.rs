@@ -1254,7 +1254,6 @@ pub fn create_cache_key(pattern_hash: u64, config_hash: u64) -> QueryCacheKey {
 mod tests {
     use super::*;
     use crate::iri::IRI;
-    use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
     use std::sync::Arc;
     use std::thread;

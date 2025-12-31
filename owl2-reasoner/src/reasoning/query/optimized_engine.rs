@@ -627,7 +627,6 @@ mod tests {
     use super::*;
     use crate::entities::*;
     use crate::iri::IRI;
-    use std::sync::Arc;
     use std::time::Duration;
 
     fn create_test_ontology() -> Ontology {
@@ -1130,7 +1129,7 @@ mod tests {
         for thread_id in 0..4 {
             let engine_clone = Arc::clone(&engine);
             let handle = thread::spawn(move || {
-                let pattern = create_test_query_pattern(
+                let _pattern = create_test_query_pattern(
                     &format!("?s{}", thread_id),
                     "?p",
                     &format!("?o{}", thread_id),

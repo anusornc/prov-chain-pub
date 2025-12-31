@@ -184,24 +184,12 @@ name = "family_ontology"
 path = "examples/basic/family_ontology.rs"
 
 [[example]]
-name = "biomedical_ontology"
-path = "examples/basic/biomedical_ontology.rs"
-
-[[example]]
 name = "simple_example"
 path = "examples/basic/simple_example.rs"
 
 [[example]]
 name = "json_ld_example"
 path = "examples/basic/json_ld_example.rs"
-
-[[example]]
-name = "benchmark_cli"
-path = "examples/benchmarking/benchmark_cli.rs"
-
-[[example]]
-name = "performance_benchmarking"
-path = "examples/benchmarking/performance_benchmarking.rs"
 
 [[example]]
 name = "complete_validation"
@@ -227,10 +215,6 @@ path = "examples/import_resolution_example.rs"
 name = "web_service_example"
 path = "examples/web_service_example.rs"
 required-features = ["web-service"]
-
-[[example]]
-name = "parallel_query_demo"
-path = "examples/parallel_query_demo.rs"
 
 [[bin]]
 name = "owl2_validation"
