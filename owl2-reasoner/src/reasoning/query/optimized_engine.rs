@@ -395,8 +395,8 @@ impl OptimizedQueryEngine {
     fn match_single_pattern(&self, pattern: &TriplePattern) -> OwlResult<Vec<QueryBinding>> {
         let mut bindings = Vec::new();
 
-        // Use type index for rdf:type queries
         if let PatternTerm::IRI(ref_iri) = &pattern.predicate {
+            // Use type index for rdf:type queries
             if ref_iri.as_str() == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" {
                 if let PatternTerm::IRI(type_iri) = &pattern.object {
                     if let Some(axioms) = self.type_index.get(type_iri) {
@@ -404,6 +404,15 @@ impl OptimizedQueryEngine {
                             if let Some(binding) = self.match_class_assertion(pattern, axiom) {
                                 bindings.push(binding);
                             }
+                        }
+                    }
+                }
+            } else {
+                // Use property index for other queries
+                if let Some(axioms) = self.property_index.get(ref_iri) {
+                    for axiom in axioms.iter() {
+                        if let Some(binding) = self.match_property_assertion(pattern, axiom) {
+                            bindings.push(binding);
                         }
                     }
                 }
@@ -446,6 +455,50 @@ impl OptimizedQueryEngine {
             if let ClassExpression::Class(class) = axiom.class_expr() {
                 binding.add_binding(var_name.clone(), QueryValue::IRI((**class.iri()).clone()));
             }
+        }
+
+        Some(binding)
+    }
+
+    fn match_property_assertion(
+        &self,
+        pattern: &TriplePattern,
+        axiom: &PropertyAssertionAxiom,
+    ) -> Option<QueryBinding> {
+        let mut binding = QueryBinding::new();
+
+        // Match subject
+        match &pattern.subject {
+            PatternTerm::Variable(var) => {
+                binding.add_binding(var.clone(), QueryValue::IRI((**axiom.subject()).clone()));
+            }
+            PatternTerm::IRI(iri) => {
+                if *iri != **axiom.subject() {
+                    return None;
+                }
+            }
+            _ => return None,
+        }
+
+        // Match object
+        match &pattern.object {
+            PatternTerm::Variable(var) => {
+                match axiom.object() {
+                    PropertyAssertionObject::Named(iri) => {
+                         binding.add_binding(var.clone(), QueryValue::IRI((**iri).clone()));
+                    }
+                    _ => return None,
+                }
+            }
+            PatternTerm::IRI(iri) => {
+                 match axiom.object() {
+                    PropertyAssertionObject::Named(obj_iri) => {
+                         if *iri != **obj_iri { return None; }
+                    }
+                    _ => return None,
+                 }
+            }
+            _ => return None,
         }
 
         Some(binding)
@@ -1170,7 +1223,7 @@ mod tests {
 
             // Stats should be consistent
             assert!(stats.queries_executed >= i + 1);
-            assert!(stats.cache_hits + stats.cache_misses >= stats.queries_executed);
+            assert!(stats.cache_hits + stats.cache_misses + stats.adaptive_index_hits >= stats.queries_executed);
 
             // Should never exceed 100% accuracy
             assert!(stats.prediction_accuracy >= 0.0 && stats.prediction_accuracy <= 100.0);

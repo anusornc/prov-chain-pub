@@ -112,11 +112,11 @@ impl JoinHashTablePool {
     /// Determine which bucket to use based on estimated size
     fn capacity_bucket(&self, size: usize) -> usize {
         match size {
-            0..=32 => 0,      // 16 capacity
-            33..=128 => 1,    // 64 capacity
-            129..=512 => 2,   // 256 capacity
-            513..=2048 => 3,  // 1024 capacity
-            2049..=8192 => 4, // 4096 capacity
+            0..=16 => 0,      // 16 capacity
+            17..=64 => 1,     // 64 capacity
+            65..=256 => 2,    // 256 capacity
+            257..=1024 => 3,  // 1024 capacity
+            1025..=4096 => 4, // 4096 capacity
             _ => 5,           // 16384 capacity
         }
     }
@@ -539,6 +539,7 @@ impl AdaptiveQueryIndex {
     }
 
     /// Estimate memory usage of the index
+    #[allow(dead_code)]
     fn estimate_memory_usage(&self) -> usize {
         let primary_size = self.primary_index.len() * std::mem::size_of::<AdaptiveIndexEntry>();
         let patterns_size = self.access_patterns.read().len() * std::mem::size_of::<QueryAccess>();
@@ -1310,18 +1311,18 @@ mod tests {
     fn test_capacity_bucket_selection() {
         let pool = JoinHashTablePool::new();
 
-        assert_eq!(pool.capacity_bucket(0), 0); // 0..=32 -> bucket 0 (16)
-        assert_eq!(pool.capacity_bucket(16), 0); // 0..=32 -> bucket 0 (16)
-        assert_eq!(pool.capacity_bucket(32), 0); // 0..=32 -> bucket 0 (16)
-        assert_eq!(pool.capacity_bucket(33), 1); // 33..=128 -> bucket 1 (64)
-        assert_eq!(pool.capacity_bucket(128), 1); // 33..=128 -> bucket 1 (64)
-        assert_eq!(pool.capacity_bucket(129), 2); // 129..=512 -> bucket 2 (256)
-        assert_eq!(pool.capacity_bucket(512), 2); // 129..=512 -> bucket 2 (256)
-        assert_eq!(pool.capacity_bucket(513), 3); // 513..=2048 -> bucket 3 (1024)
-        assert_eq!(pool.capacity_bucket(2048), 3); // 513..=2048 -> bucket 3 (1024)
-        assert_eq!(pool.capacity_bucket(2049), 4); // 2049..=8192 -> bucket 4 (4096)
-        assert_eq!(pool.capacity_bucket(8192), 4); // 2049..=8192 -> bucket 4 (4096)
-        assert_eq!(pool.capacity_bucket(8193), 5); // >8192 -> bucket 5 (16384)
+        assert_eq!(pool.capacity_bucket(0), 0); // 0..=16 -> bucket 0 (16)
+        assert_eq!(pool.capacity_bucket(16), 0); // 0..=16 -> bucket 0 (16)
+        assert_eq!(pool.capacity_bucket(17), 1); // 17..=64 -> bucket 1 (64)
+        assert_eq!(pool.capacity_bucket(32), 1); // 17..=64 -> bucket 1 (64)
+        assert_eq!(pool.capacity_bucket(64), 1); // 17..=64 -> bucket 1 (64)
+        assert_eq!(pool.capacity_bucket(65), 2); // 65..=256 -> bucket 2 (256)
+        assert_eq!(pool.capacity_bucket(256), 2); // 65..=256 -> bucket 2 (256)
+        assert_eq!(pool.capacity_bucket(257), 3); // 257..=1024 -> bucket 3 (1024)
+        assert_eq!(pool.capacity_bucket(1024), 3); // 257..=1024 -> bucket 3 (1024)
+        assert_eq!(pool.capacity_bucket(1025), 4); // 1025..=4096 -> bucket 4 (4096)
+        assert_eq!(pool.capacity_bucket(4096), 4); // 1025..=4096 -> bucket 4 (4096)
+        assert_eq!(pool.capacity_bucket(4097), 5); // >4096 -> bucket 5 (16384)
     }
 
     #[test]
@@ -1608,7 +1609,8 @@ mod tests {
         let index = AdaptiveQueryIndex::new();
 
         // Record some access patterns
-        for i in 0..20 {
+        // Need enough accesses to exceed warmup_threshold (default 10)
+        for i in 0..60 {
             let pattern_hash = (i % 5) as u64; // Create repeating pattern
             index.record_access(&pattern_hash, Duration::from_millis(i as u64));
         }
