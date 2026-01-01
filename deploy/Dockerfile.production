@@ -15,7 +15,7 @@ WORKDIR /app
 
 # Copy Cargo files for dependency caching
 COPY Cargo.toml Cargo.lock ./
-COPY owl2_rs/ ./owl2_rs/
+COPY owl2-reasoner/ ./owl2-reasoner/
 
 # Create dummy main.rs to build dependencies
 RUN mkdir src && echo "fn main() {}" > src/main.rs
