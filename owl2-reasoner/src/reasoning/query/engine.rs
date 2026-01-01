@@ -10,14 +10,13 @@ use crate::reasoning::Reasoner;
 
 use super::{
     compute_config_hash, create_cache_key, QueryCache, QueryConfig, QueryEngineStats, QueryPattern,
-    QueryResult, QueryType, ResultPool, TriplePattern, RDF_TYPE, FilterExpression,
+    QueryResult, QueryType, ResultPool, TriplePattern, RDF_TYPE,
 };
 
 use dashmap::DashMap;
 use parking_lot::RwLock;
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::num::NonZeroUsize;
 
 /// Query engine for OWL2 ontologies with advanced optimizations
 pub struct QueryEngine {
@@ -662,7 +661,9 @@ impl QueryPatternExt for QueryPattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::{QueryPattern, TriplePattern, RDF_TYPE, FilterExpression};
+    use super::{QueryPattern, TriplePattern, RDF_TYPE};
+    use super::super::FilterExpression;
+    use std::num::NonZeroUsize;
     use crate::PatternTerm;
     use crate::entities::*;
     use crate::iri::IRI;
@@ -832,7 +833,7 @@ mod tests {
         let result = engine.execute(&pattern);
 
         assert!(result.is_ok());
-        let query_result = result.unwrap();
+        let _query_result = result.unwrap();
     }
 
     #[test]
@@ -1019,7 +1020,7 @@ mod tests {
         let result = engine.execute(&pattern);
 
         assert!(result.is_ok());
-        let query_result = result.unwrap();
+        let _query_result = result.unwrap();
 
         // Should execute filter pattern (though filter evaluation might be basic)
     }
@@ -1033,7 +1034,7 @@ mod tests {
         let result = engine.execute(&pattern);
 
         assert!(result.is_ok());
-        let query_result = result.unwrap();
+        let _query_result = result.unwrap();
 
         // Should execute reduced pattern
     }
@@ -1047,7 +1048,7 @@ mod tests {
         let result = engine.execute(&pattern);
 
         assert!(result.is_ok());
-        let query_result = result.unwrap();
+        let _query_result = result.unwrap();
 
         // Should execute distinct pattern
     }
@@ -1152,7 +1153,7 @@ mod tests {
             let _ = engine.execute(&pattern);
         }
 
-        let (cache_size, pattern_size) = engine.cache_stats();
+        let (_cache_size, _pattern_size) = engine.cache_stats();
 
         // Clear caches
         engine.clear_caches();
@@ -1232,7 +1233,7 @@ mod tests {
         let result = engine.execute(&nested_pattern);
 
         assert!(result.is_ok());
-        let query_result = result.unwrap();
+        let _query_result = result.unwrap();
     }
 
     #[test]
@@ -1377,7 +1378,7 @@ mod tests {
         }
 
         // Engine should still be functional
-        let final_stats = engine.stats();
+        let _final_stats = engine.stats();
     }
 
     // Property-based tests for QueryEngine

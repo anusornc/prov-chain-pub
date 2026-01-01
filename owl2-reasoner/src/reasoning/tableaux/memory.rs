@@ -1679,7 +1679,7 @@ mod tests {
         assert_eq!(stats.allocated_constraints, 0);
         assert_eq!(stats.total_bytes_allocated, 0);
         // Arena count might be non-zero due to static thread locals
-        assert!(stats.arena_count >= 0);
+        
         assert_eq!(stats.string_intern_count, 0);
     }
 
@@ -2100,10 +2100,10 @@ mod tests {
                 .expect("Should intern string");
         }
 
-        let stats = manager.get_stats();
+        let _stats = manager.get_stats();
         // Note: The exact string_intern_count depends on implementation details
         // of how strings are tracked in the interner
-        assert!(stats.string_intern_count >= 0);
+        
     }
 
     #[test]
@@ -2182,7 +2182,7 @@ mod tests {
                 if stats.total_allocations() > 0 {
                     assert!(stats.avg_allocation_size() > 0.0);
                     assert!(stats.total_bytes_allocated > 0);
-                    assert!(stats.memory_savings() >= 0);
+                    
                 }
             }
 
