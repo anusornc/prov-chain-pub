@@ -283,6 +283,21 @@ impl QueryResult {
     pub fn iter(&self) -> impl Iterator<Item = &QueryBinding> {
         self.bindings.iter()
     }
+
+    /// Rename a variable in the result
+    pub fn rename_variable(&mut self, old_name: &str, new_name: &str) {
+        // Update variables list
+        if let Some(pos) = self.variables.iter().position(|v| v == old_name) {
+            self.variables[pos] = new_name.to_string();
+        }
+
+        // Update bindings
+        for binding in &mut self.bindings {
+            if let Some(value) = binding.variables.remove(old_name) {
+                binding.variables.insert(new_name.to_string(), value);
+            }
+        }
+    }
 }
 
 impl Default for QueryResult {

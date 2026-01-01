@@ -347,7 +347,14 @@ impl QueryEngine {
     /// Execute type query (rdf:type pattern)
     fn execute_type_query(&self, triple: &TriplePattern) -> OwlResult<QueryResult> {
         if let super::PatternTerm::IRI(class_iri) = &triple.object {
-            self.get_class_instances(class_iri)
+            let mut result = self.get_class_instances(class_iri)?;
+            
+            // Rename 'instance' variable to match subject variable if it is one
+            if let super::PatternTerm::Variable(var_name) = &triple.subject {
+                result.rename_variable("instance", var_name);
+            }
+            
+            Ok(result)
         } else {
             Ok(QueryResult::new())
         }
@@ -364,8 +371,10 @@ impl QueryEngine {
         };
 
         // Optimization for specific case
-        if let (super::PatternTerm::IRI(s), super::PatternTerm::Variable(_)) = (&triple.subject, &triple.object) {
-             return self.get_property_values(s, predicate_iri);
+        if let (super::PatternTerm::IRI(s), super::PatternTerm::Variable(var_name)) = (&triple.subject, &triple.object) {
+             let mut result = self.get_property_values(s, predicate_iri)?;
+             result.rename_variable("value", var_name);
+             return Ok(result);
         }
 
         let mut result = QueryResult::new();
@@ -666,23 +675,23 @@ mod tests {
         let company_class = Class::new("http://example.org/Company");
         let employee_class = Class::new("http://example.org/Employee");
 
-        ontology.add_class(person_class.clone());
-        ontology.add_class(company_class.clone());
-        ontology.add_class(employee_class.clone());
+        let _ = ontology.add_class(person_class.clone());
+        let _ = ontology.add_class(company_class.clone());
+        let _ = ontology.add_class(employee_class.clone());
 
         // Add some object properties
         let works_for_prop = ObjectProperty::new("http://example.org/worksFor");
         let manager_of_prop = ObjectProperty::new("http://example.org/managerOf");
 
-        ontology.add_object_property(works_for_prop.clone());
-        ontology.add_object_property(manager_of_prop.clone());
+        let _ = ontology.add_object_property(works_for_prop.clone());
+        let _ = ontology.add_object_property(manager_of_prop.clone());
 
         // Add some data properties
         let name_prop = DataProperty::new("http://example.org/name");
         let age_prop = DataProperty::new("http://example.org/age");
 
-        ontology.add_data_property(name_prop.clone());
-        ontology.add_data_property(age_prop.clone());
+        let _ = ontology.add_data_property(name_prop.clone());
+        let _ = ontology.add_data_property(age_prop.clone());
 
         // Add some individuals
         let person1 = NamedIndividual::new("http://example.org/person1");
@@ -691,11 +700,11 @@ mod tests {
         let company1 = NamedIndividual::new("http://example.org/company1");
         let company2 = NamedIndividual::new("http://example.org/company2");
 
-        ontology.add_named_individual(person1.clone());
-        ontology.add_named_individual(person2.clone());
-        ontology.add_named_individual(person3.clone());
-        ontology.add_named_individual(company1.clone());
-        ontology.add_named_individual(company2.clone());
+        let _ = ontology.add_named_individual(person1.clone());
+        let _ = ontology.add_named_individual(person2.clone());
+        let _ = ontology.add_named_individual(person3.clone());
+        let _ = ontology.add_named_individual(company1.clone());
+        let _ = ontology.add_named_individual(company2.clone());
 
         // Add class assertions
         let person1_type = ClassAssertionAxiom::new(
@@ -715,10 +724,10 @@ mod tests {
             ClassExpression::Class(company_class.clone()),
         );
 
-        ontology.add_class_assertion(person1_type);
-        ontology.add_class_assertion(person2_type);
-        ontology.add_class_assertion(person3_type);
-        ontology.add_class_assertion(company1_type);
+        let _ = ontology.add_class_assertion(person1_type);
+        let _ = ontology.add_class_assertion(person2_type);
+        let _ = ontology.add_class_assertion(person3_type);
+        let _ = ontology.add_class_assertion(company1_type);
 
         // Add property assertions
         let works_for1 = PropertyAssertionAxiom::new(
@@ -737,9 +746,9 @@ mod tests {
             person1.iri().clone(),
         );
 
-        ontology.add_property_assertion(works_for1);
-        ontology.add_property_assertion(works_for2);
-        ontology.add_property_assertion(manager_of);
+        let _ = ontology.add_property_assertion(works_for1);
+        let _ = ontology.add_property_assertion(works_for2);
+        let _ = ontology.add_property_assertion(manager_of);
 
         ontology
     }
@@ -824,8 +833,6 @@ mod tests {
 
         assert!(result.is_ok());
         let query_result = result.unwrap();
-        assert!(query_result.stats.time_ms >= 0);
-        assert!(query_result.stats.results_count >= 0);
     }
 
     #[test]
@@ -971,7 +978,6 @@ mod tests {
         let query_result = result.unwrap();
 
         // Should execute optional pattern successfully
-        assert!(query_result.stats.time_ms >= 0);
         assert!(query_result.variables.len() >= 2); // Should have ?s and ?company variables
     }
 
@@ -998,7 +1004,6 @@ mod tests {
         let query_result = result.unwrap();
 
         // Should execute union pattern successfully
-        assert!(query_result.stats.time_ms >= 0);
         assert!(query_result.variables.contains(&"?s".to_string()));
     }
 
@@ -1017,7 +1022,6 @@ mod tests {
         let query_result = result.unwrap();
 
         // Should execute filter pattern (though filter evaluation might be basic)
-        assert!(query_result.stats.time_ms >= 0);
     }
 
     #[test]
@@ -1032,7 +1036,6 @@ mod tests {
         let query_result = result.unwrap();
 
         // Should execute reduced pattern
-        assert!(query_result.stats.time_ms >= 0);
     }
 
     #[test]
@@ -1047,7 +1050,6 @@ mod tests {
         let query_result = result.unwrap();
 
         // Should execute distinct pattern
-        assert!(query_result.stats.time_ms >= 0);
     }
 
     #[test]
@@ -1151,7 +1153,6 @@ mod tests {
         }
 
         let (cache_size, pattern_size) = engine.cache_stats();
-        assert!(cache_size + pattern_size >= 0);
 
         // Clear caches
         engine.clear_caches();
@@ -1173,7 +1174,6 @@ mod tests {
 
         // Result should have consistent structure
         assert!(!query_result.variables.is_empty());
-        assert!(query_result.stats.time_ms >= 0);
         assert!(query_result.stats.results_count == query_result.bindings.len());
 
         // Each binding should be consistent with variables
@@ -1233,7 +1233,6 @@ mod tests {
 
         assert!(result.is_ok());
         let query_result = result.unwrap();
-        assert!(query_result.stats.time_ms >= 0);
     }
 
     #[test]
@@ -1379,7 +1378,6 @@ mod tests {
 
         // Engine should still be functional
         let final_stats = engine.stats();
-        assert!(final_stats.successful_queries >= 0);
     }
 
     // Property-based tests for QueryEngine
