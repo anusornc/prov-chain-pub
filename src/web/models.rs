@@ -289,3 +289,57 @@ pub struct SubmitTransactionResponse {
     pub message: String,
     pub timestamp: DateTime<Utc>,
 }
+
+// --- Query Parameters ---
+
+/// Query parameters for product trace
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TraceQueryParams {
+    pub batch_id: Option<String>,
+    pub product_name: Option<String>,
+}
+
+fn default_optimization_level() -> u8 {
+    1
+}
+
+/// Query parameters for enhanced product trace
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EnhancedTraceQueryParams {
+    pub batch_id: String,
+    #[serde(default = "default_optimization_level")]
+    pub optimization_level: u8,
+}
+
+/// Query parameters for products listing
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProductsQueryParams {
+    pub q: Option<String>,
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
+    pub sort_by: Option<String>,
+    pub sort_order: Option<String>,
+    #[serde(rename = "type")]
+    pub product_type: Option<String>,
+    pub participant: Option<String>,
+    pub location: Option<String>,
+    pub status: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+}
+
+/// Query parameters for knowledge graph
+#[derive(Debug, Serialize, Deserialize)]
+pub struct KnowledgeGraphParams {
+    pub item_id: Vec<String>,
+}
+
+/// Analytics query parameters
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AnalyticsQueryParams {
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub participant_type: Option<String>,
+    pub transaction_type: Option<String>,
+    pub granularity: Option<String>, // hour | day | week | month
+}

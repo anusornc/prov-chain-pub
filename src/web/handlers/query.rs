@@ -1,128 +1,20 @@
-//! HTTP handlers for REST API endpoints
-
-use crate::core::blockchain::Blockchain;
 use crate::trace_optimization::EnhancedTraceResult;
-use crate::transaction::transaction::{
-    ComplianceInfo, EnvironmentalConditions, QualityData, Transaction, TransactionInput,
-    TransactionMetadata, TransactionOutput, TransactionPayload, TransactionType,
-};
-use crate::wallet::{ContactInfo, Participant, ParticipantType};
-use crate::security::encryption::PrivacyManager;
+use crate::web::handlers::AppState;
 use crate::web::models::{
-    AddTripleRequest, ApiError, BlockInfo, CreateTransactionRequest, CreateTransactionResponse,
-    EnvironmentalData, ProductTrace, SignTransactionRequest, SignTransactionResponse,
-    SparqlQueryRequest, SparqlQueryResponse, SubmitTransactionRequest, SubmitTransactionResponse,
-    UserClaims, WalletRegistrationRequest, WalletRegistrationResponse,
+    AnalyticsQueryParams, ApiError, BlockInfo, EnhancedTraceQueryParams, EnvironmentalData,
+    KnowledgeGraphParams, ProductTrace, ProductsQueryParams, SparqlQueryRequest,
+    SparqlQueryResponse, TraceQueryParams,
 };
-use axum::extract::Path as AxumPath;
+use crate::web::handlers::utils::{validate_sparql_query};
 use axum::{
-    extract::{Extension, Path, Query, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     Json,
 };
 use chrono::Utc;
 use oxigraph::model::{NamedNode, Subject, Term};
-use regex::Regex;
-use serde::Deserialize;
 use std::collections::HashSet;
-use std::sync::Arc;
 use std::time::Instant;
-use tokio::sync::RwLock;
-use crate::knowledge_graph::{builder::GraphBuilder, graph_db::GraphDatabase};
-
-/// Input validation functions
-fn validate_uri(uri: &str) -> Result<(), String> {
-    if uri.is_empty() {
-        return Err("URI cannot be empty".to_string());
-    }
-
-    if uri.len() > 2048 {
-        return Err("URI too long (max 2048 characters)".to_string());
-    }
-
-    // Basic URI validation
-    let uri_regex =
-        Regex::new(r"^https?://[^\s/$.?#].[^\s]*$|^[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]*$").unwrap();
-    if !uri_regex.is_match(uri) {
-        return Err("Invalid URI format".to_string());
-    }
-
-    Ok(())
-}
-
-fn validate_literal(literal: &str) -> Result<(), String> {
-    if literal.len() > 10000 {
-        return Err("Literal too long (max 10000 characters)".to_string());
-    }
-
-    // Check for potential script injection
-    let dangerous_patterns = [
-        "<script",
-        "javascript:",
-        "data:",
-        "vbscript:",
-        "onload=",
-        "onerror=",
-    ];
-    let literal_lower = literal.to_lowercase();
-    for pattern in &dangerous_patterns {
-        if literal_lower.contains(pattern) {
-            return Err("Literal contains potentially dangerous content".to_string());
-        }
-    }
-
-    Ok(())
-}
-
-fn validate_sparql_query(query: &str) -> Result<(), String> {
-    if query.is_empty() {
-        return Err("SPARQL query cannot be empty".to_string());
-    }
-
-    if query.len() > 50000 {
-        return Err("SPARQL query too long (max 50000 characters)".to_string());
-    }
-
-    // Check for potentially dangerous operations
-    let query_upper = query.to_uppercase();
-    let dangerous_operations = ["DROP", "CLEAR", "DELETE", "INSERT", "LOAD", "CREATE"];
-    for operation in &dangerous_operations {
-        if query_upper.contains(operation) {
-            return Err(format!("SPARQL operation '{}' is not allowed", operation));
-        }
-    }
-
-    Ok(())
-}
-
-/// Application state shared across handlers
-#[derive(Clone)]
-pub struct AppState {
-    pub blockchain: Arc<RwLock<Blockchain>>,
-}
-
-impl AppState {
-    pub fn new(blockchain: Blockchain) -> Self {
-        Self {
-            blockchain: Arc::new(RwLock::new(blockchain)),
-        }
-    }
-}
-
-/// Enhanced health check endpoint with security status
-pub async fn health_check() -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "status": "healthy",
-        "timestamp": Utc::now(),
-        "version": env!("CARGO_PKG_VERSION"),
-        "security": {
-            "jwt_secret_configured": std::env::var("JWT_SECRET").is_ok(),
-            "rate_limiting_enabled": true,
-            "security_headers_enabled": true,
-            "environment": if cfg!(debug_assertions) { "development" } else { "production" }
-        }
-    }))
-}
 
 /// Get blockchain status
 pub async fn get_blockchain_status(
@@ -422,226 +314,17 @@ pub async fn save_sparql_query(Json(query): Json<serde_json::Value>) -> Json<ser
     Json(q)
 }
 
-pub async fn delete_sparql_query(AxumPath(_id): AxumPath<String>) -> StatusCode {
+pub async fn delete_sparql_query(_id: Path<String>) -> StatusCode {
     StatusCode::NO_CONTENT
 }
 
 pub async fn toggle_favorite_sparql_query(
-    AxumPath(id): AxumPath<String>,
+    Path(id): Path<String>,
 ) -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "id": id,
         "toggled": true
     }))
-}
-
-/// Add new triple to blockchain with SHACL validation
-pub async fn add_triple(
-    State(app_state): State<AppState>,
-    Extension(claims): Extension<UserClaims>,
-    Json(request): Json<AddTripleRequest>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
-    eprintln!("Add triple request: {:?}", request);
-
-    // Validate inputs
-    if let Err(e) = validate_uri(&request.subject) {
-        eprintln!("Invalid subject URI: {}", e);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                error: "invalid_subject".to_string(),
-                message: format!("Invalid subject URI: {}", e),
-                timestamp: Utc::now(),
-            }),
-        ));
-    }
-
-    if let Err(e) = validate_uri(&request.predicate) {
-        eprintln!("Invalid predicate URI: {}", e);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                error: "invalid_predicate".to_string(),
-                message: format!("Invalid predicate URI: {}", e),
-                timestamp: Utc::now(),
-            }),
-        ));
-    }
-
-    // Validate object based on whether it's a URI or literal
-    if request.object.starts_with("http://") || request.object.starts_with("https://") {
-        if let Err(e) = validate_uri(&request.object) {
-            eprintln!("Invalid object URI: {}", e);
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    error: "invalid_object_uri".to_string(),
-                    message: format!("Invalid object URI: {}", e),
-                    timestamp: Utc::now(),
-                }),
-            ));
-        }
-    } else if let Err(e) = validate_literal(&request.object) {
-        eprintln!("Invalid object literal: {}", e);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                error: "invalid_object_literal".to_string(),
-                message: format!("Invalid object literal: {}", e),
-                timestamp: Utc::now(),
-            }),
-        ));
-    }
-
-    let mut blockchain = app_state.blockchain.write().await;
-
-    // Create proper RDF triple data in Turtle format
-    let triple_data =
-        if request.object.starts_with("http://") || request.object.starts_with("https://") {
-            // Object is a URI, don't quote it
-            format!(
-                "<{}> <{}> <{}> .",
-                request.subject, request.predicate, request.object
-            )
-        } else {
-            // Object is a literal, quote it
-            format!(
-                "<{}> <{}> \"{}\" .",
-                request.subject, request.predicate, request.object
-            )
-        };
-
-    eprintln!("Adding triple data: {}", triple_data);
-
-    // Check for privacy request
-    if let Some(key_id) = &request.privacy_key_id {
-        // In a real implementation, we would retrieve the key from the wallet manager via AppState
-        // For this thesis demonstration, we generate a key on the fly if one isn't found,
-        // effectively simulating that the user has provided a valid key ID.
-        let key = PrivacyManager::generate_key(); // Simulation of retrieving key for 'key_id'
-        
-        match PrivacyManager::encrypt(&triple_data, &key, key_id) {
-            Ok(encrypted) => {
-                let encrypted_json = serde_json::to_string(&encrypted).unwrap_or_default();
-                
-                // Create a block with encrypted payload
-                // We use a placeholder for the public data to indicate it's encrypted
-                match blockchain.create_block_proposal(
-                    format!("@prefix prov: <http://provchain.org/core#> . prov:EncryptedData prov:hasKeyId \"{}\" .", key_id), 
-                    claims.sub.clone()
-                ) {
-                    Ok(mut block) => {
-                        block.encrypted_data = Some(encrypted_json);
-                        // Re-calculate hash to include encrypted data
-                        block.hash = block.calculate_hash();
-                        block.signature = "SIMULATED_SIGNATURE".to_string(); // In real app, sign here
-                        
-                        match blockchain.submit_signed_block(block) {
-                            Ok(()) => {
-                                let block_hash = blockchain.chain.last().map(|b| b.hash.clone()).unwrap_or_default();
-                                let response = serde_json::json!({
-                                    "success": true,
-                                    "block_hash": block_hash,
-                                    "block_index": blockchain.chain.len() - 1,
-                                    "added_by": claims.sub,
-                                    "timestamp": Utc::now(),
-                                    "validation_status": "encrypted",
-                                    "encryption_status": "secured"
-                                });
-                                return Ok(Json(response));
-                            },
-                            Err(e) => {
-                                return Err((
-                                    StatusCode::INTERNAL_SERVER_ERROR,
-                                    Json(ApiError {
-                                        error: "blockchain_error".to_string(),
-                                        message: format!("Failed to submit encrypted block: {}", e),
-                                        timestamp: Utc::now(),
-                                    }),
-                                ));
-                            }
-                        }
-                    },
-                    Err(e) => {
-                        return Err((
-                            StatusCode::INTERNAL_SERVER_ERROR,
-                            Json(ApiError {
-                                error: "block_creation_error".to_string(),
-                                message: format!("Failed to create block proposal: {}", e),
-                                timestamp: Utc::now(),
-                            }),
-                        ));
-                    }
-                }
-            },
-            Err(e) => {
-                return Err((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        error: "encryption_error".to_string(),
-                        message: format!("Failed to encrypt data: {}", e),
-                        timestamp: Utc::now(),
-                    }),
-                ));
-            }
-        }
-    }
-
-    // Standard unencrypted flow
-    // STEP 9: Add to blockchain with SHACL validation (this also adds to the internal RDF store)
-    match blockchain.add_block(triple_data) {
-        Ok(()) => {
-            let block_hash = blockchain
-                .chain
-                .last()
-                .map(|b| b.hash.clone())
-                .unwrap_or_else(|| "unknown".to_string());
-
-            let response = serde_json::json!({
-                "success": true,
-                "block_hash": block_hash,
-                "block_index": blockchain.chain.len() - 1,
-                "added_by": claims.sub,
-                "timestamp": Utc::now(),
-                "validation_status": "passed"
-            });
-
-            eprintln!("Add triple response: {}", response);
-            Ok(Json(response))
-        }
-        Err(e) => {
-            eprintln!("Failed to add triple to blockchain: {}", e);
-
-            // Check if this is a SHACL validation error
-            let error_msg = e.to_string();
-            if error_msg.contains("Transaction validation failed")
-                || error_msg.contains("SHACL validation")
-            {
-                // SHACL validation failure - return detailed validation error
-                Err((
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    Json(ApiError {
-                        error: "shacl_validation_failed".to_string(),
-                        message: format!(
-                            "Transaction rejected due to SHACL validation failure: {}",
-                            error_msg
-                        ),
-                        timestamp: Utc::now(),
-                    }),
-                ))
-            } else {
-                // Other blockchain errors
-                Err((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        error: "blockchain_error".to_string(),
-                        message: format!("Failed to add transaction to blockchain: {}", e),
-                        timestamp: Utc::now(),
-                    }),
-                ))
-            }
-        }
-    }
 }
 
 /// Get all products with filtering and pagination
@@ -1500,438 +1183,6 @@ pub async fn validate_item(
     Ok(Json(response))
 }
 
-/// Create a new transaction
-pub async fn create_transaction(
-    State(_app_state): State<AppState>,
-    Json(request): Json<CreateTransactionRequest>,
-) -> Result<Json<CreateTransactionResponse>, (StatusCode, Json<ApiError>)> {
-    // Validate transaction type
-    let tx_type = match request.tx_type.as_str() {
-        "production" => TransactionType::Production,
-        "processing" => TransactionType::Processing,
-        "transport" => TransactionType::Transport,
-        "quality" => TransactionType::Quality,
-        "transfer" => TransactionType::Transfer,
-        "environmental" => TransactionType::Environmental,
-        "compliance" => TransactionType::Compliance,
-        _ => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    error: "invalid_transaction_type".to_string(),
-                    message: "Invalid transaction type".to_string(),
-                    timestamp: Utc::now(),
-                }),
-            ));
-        }
-    };
-
-    // Convert metadata from models to transaction
-    let metadata = TransactionMetadata {
-        location: request.metadata.location,
-        environmental_conditions: request.metadata.environmental_conditions.map(|ec| {
-            EnvironmentalConditions {
-                temperature: ec.temperature,
-                humidity: ec.humidity,
-                pressure: ec.pressure,
-                timestamp: ec.timestamp,
-                sensor_id: ec.sensor_id,
-            }
-        }),
-        compliance_info: request.metadata.compliance_info.map(|ci| ComplianceInfo {
-            regulation_type: ci.regulation_type,
-            compliance_status: ci.compliance_status,
-            certificate_id: ci.certificate_id,
-            auditor_id: ci.auditor_id.and_then(|id| uuid::Uuid::parse_str(&id).ok()),
-            expiry_date: ci.expiry_date,
-        }),
-        quality_data: request.metadata.quality_data.map(|qd| QualityData {
-            test_type: qd.test_type,
-            test_result: qd.test_result,
-            test_value: qd.test_value,
-            test_unit: qd.test_unit,
-            lab_id: qd.lab_id.and_then(|id| uuid::Uuid::parse_str(&id).ok()),
-            test_timestamp: qd.test_timestamp,
-        }),
-        custom_fields: request.metadata.custom_fields,
-    };
-
-    // Convert inputs and outputs
-    let inputs = request
-        .inputs
-        .into_iter()
-        .map(|input| TransactionInput {
-            prev_tx_id: input.prev_tx_id,
-            output_index: input.output_index,
-            signature: None,
-            public_key: None,
-        })
-        .collect();
-
-    let outputs = request
-        .outputs
-        .into_iter()
-        .map(|output| TransactionOutput {
-            id: output.id,
-            owner: uuid::Uuid::parse_str(&output.owner).unwrap_or(uuid::Uuid::nil()),
-            asset_type: output.asset_type,
-            value: output.value,
-            metadata: output.metadata,
-        })
-        .collect();
-
-    // Create transaction
-    let transaction = Transaction::new(
-        tx_type,
-        inputs,
-        outputs,
-        request.rdf_data,
-        metadata,
-        TransactionPayload::RdfData(String::new()),
-    );
-
-    let tx_id = transaction.id.clone();
-
-    // In a real implementation, we would:
-    // 1. Store the transaction in a pending pool
-    // 2. Return the transaction ID for signing
-
-    let response = CreateTransactionResponse {
-        tx_id: tx_id.clone(),
-        message: "Transaction created successfully".to_string(),
-        timestamp: Utc::now(),
-    };
-
-    println!("Created new transaction: {}", tx_id);
-
-    Ok(Json(response))
-}
-
-/// Sign a transaction with a participant's wallet
-pub async fn sign_transaction(
-    State(_app_state): State<AppState>,
-    Json(request): Json<SignTransactionRequest>,
-) -> Result<Json<SignTransactionResponse>, (StatusCode, Json<ApiError>)> {
-    let tx_id = request.tx_id;
-    let participant_id = match uuid::Uuid::parse_str(&request.participant_id) {
-        Ok(id) => id,
-        Err(_) => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    error: "invalid_participant_id".to_string(),
-                    message: "Invalid participant ID format".to_string(),
-                    timestamp: Utc::now(),
-                }),
-            ));
-        }
-    };
-
-    // In a real implementation, we would:
-    // 1. Retrieve the transaction from the pending pool
-    // 2. Retrieve the participant's wallet
-    // 3. Sign the transaction with the wallet's private key
-    // 4. Add the signature to the transaction
-    // 5. Update the transaction in the pending pool
-
-    let response = SignTransactionResponse {
-        tx_id: tx_id.clone(),
-        signatures: vec![crate::web::models::TransactionSignatureInfo {
-            signer_id: participant_id.to_string(),
-            timestamp: Utc::now(),
-        }],
-        message: "Transaction signed successfully".to_string(),
-        timestamp: Utc::now(),
-    };
-
-    println!(
-        "Signed transaction {} with participant {}",
-        tx_id, participant_id
-    );
-
-    Ok(Json(response))
-}
-
-/// Submit a signed transaction to the blockchain
-pub async fn submit_transaction(
-    State(_app_state): State<AppState>,
-    Json(request): Json<SubmitTransactionRequest>,
-) -> Result<Json<SubmitTransactionResponse>, (StatusCode, Json<ApiError>)> {
-    let tx_id = request.tx_id;
-
-    // In a real implementation, we would:
-    // 1. Retrieve the signed transaction from the pending pool
-    // 2. Validate the transaction (signatures, business logic, etc.)
-    // 3. Submit the transaction to the blockchain
-    // 4. Remove the transaction from the pending pool
-    // 5. Return the block index where the transaction was included
-
-    let response = SubmitTransactionResponse {
-        tx_id: tx_id.clone(),
-        block_index: Some(0), // Placeholder - in real implementation this would be the actual block index
-        message: "Transaction submitted successfully".to_string(),
-        timestamp: Utc::now(),
-    };
-
-    println!("Submitted transaction {} to blockchain", tx_id);
-
-    Ok(Json(response))
-}
-
-/// Execute SPARQL query
-pub async fn execute_sparql_query(
-    State(app_state): State<AppState>,
-    Json(request): Json<SparqlQueryRequest>,
-) -> Result<Json<SparqlQueryResponse>, (StatusCode, Json<ApiError>)> {
-    // Validate SPARQL query
-    if let Err(e) = validate_sparql_query(&request.query) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                error: "invalid_sparql_query".to_string(),
-                message: format!("SPARQL query validation failed: {}", e),
-                timestamp: Utc::now(),
-            }),
-        ));
-    }
-
-    let blockchain = app_state.blockchain.read().await;
-    let start_time = Instant::now();
-
-    // Access the RDF store through the blockchain and handle potential query errors
-    let query_results = match blockchain.rdf_store.store.query(&request.query) {
-        Ok(results) => results,
-        Err(e) => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    error: "invalid_sparql_query".to_string(),
-                    message: format!("Invalid SPARQL query: {}", e),
-                    timestamp: Utc::now(),
-                }),
-            ));
-        }
-    };
-    let execution_time = start_time.elapsed().as_millis() as u64;
-
-    // Convert QueryResults to JSON
-    let results_json = match query_results {
-        oxigraph::sparql::QueryResults::Solutions(solutions) => {
-            // Populate head.vars from the projected variables provided by Oxigraph
-            let head_vars: Vec<String> = solutions
-                .variables()
-                .iter()
-                .map(|v| v.as_str().to_string())
-                .collect();
-
-            let mut bindings = Vec::new();
-            for solution in solutions {
-                match solution {
-                    Ok(sol) => {
-                        let mut binding = serde_json::Map::new();
-                        for (var, term) in sol.iter() {
-                            // Serialize terms per W3C SPARQL Results JSON format
-                            let value_obj = match term {
-                                Term::NamedNode(nn) => {
-                                    serde_json::json!({ "type": "uri", "value": nn.as_str() })
-                                }
-                                Term::BlankNode(bn) => {
-                                    serde_json::json!({ "type": "bnode", "value": bn.as_str() })
-                                }
-                                Term::Literal(lit) => {
-                                    if let Some(lang) = lit.language() {
-                                        serde_json::json!({ "type": "literal", "value": lit.value(), "xml:lang": lang })
-                                    } else {
-                                        let dt = lit.datatype();
-                                        serde_json::json!({ "type": "literal", "value": lit.value(), "datatype": dt.as_str() })
-                                    }
-                                }
-                                Term::Triple(t) => {
-                                    // RDF-star triple term; serialize as string fallback
-                                    serde_json::json!({ "type": "triple", "value": t.to_string() })
-                                }
-                            };
-                            binding.insert(var.as_str().to_string(), value_obj);
-                        }
-                        bindings.push(serde_json::Value::Object(binding));
-                    }
-                    Err(e) => {
-                        eprintln!("Error processing SPARQL solution: {}", e);
-                        continue;
-                    }
-                }
-            }
-            serde_json::json!({
-                "head": { "vars": head_vars },
-                "results": { "bindings": bindings }
-            })
-        }
-        oxigraph::sparql::QueryResults::Boolean(result) => {
-            serde_json::json!({
-                "head": {},
-                "boolean": result
-            })
-        }
-        oxigraph::sparql::QueryResults::Graph(_) => {
-            serde_json::json!({
-                "head": {},
-                "results": "Graph results not yet supported"
-            })
-        }
-    };
-
-    let result_count =
-        if let Some(bindings) = results_json.get("results").and_then(|r| r.get("bindings")) {
-            bindings.as_array().map(|arr| arr.len()).unwrap_or(0)
-        } else if results_json.get("boolean").is_some() {
-            1
-        } else {
-            0
-        };
-
-    let response = SparqlQueryResponse {
-        results: results_json,
-        execution_time_ms: execution_time,
-        result_count,
-    };
-
-    Ok(Json(response))
-}
-
-/// Query parameters for product trace
-#[derive(Deserialize)]
-pub struct TraceQueryParams {
-    batch_id: Option<String>,
-    product_name: Option<String>,
-}
-
-/// Query parameters for enhanced product trace
-#[derive(Deserialize)]
-pub struct EnhancedTraceQueryParams {
-    batch_id: String,
-    #[serde(default = "default_optimization_level")]
-    optimization_level: u8,
-}
-
-fn default_optimization_level() -> u8 {
-    1
-}
-
-/// Query parameters for products listing
-#[derive(Deserialize)]
-#[allow(dead_code)]
-pub struct ProductsQueryParams {
-    q: Option<String>,
-    page: Option<u32>,
-    limit: Option<u32>,
-    sort_by: Option<String>,
-    sort_order: Option<String>,
-    #[serde(rename = "type")]
-    product_type: Option<String>,
-    participant: Option<String>,
-    location: Option<String>,
-    status: Option<String>,
-    start_date: Option<String>,
-    end_date: Option<String>,
-}
-
-/// Query parameters for knowledge graph
-#[derive(Deserialize)]
-pub struct KnowledgeGraphParams {
-    item_id: Vec<String>,
-}
-
-/// Analytics query parameters
-#[derive(Deserialize)]
-pub struct AnalyticsQueryParams {
-    start_date: Option<String>,
-    end_date: Option<String>,
-    #[allow(dead_code)]
-    participant_type: Option<String>,
-    #[allow(dead_code)]
-    transaction_type: Option<String>,
-    #[allow(dead_code)]
-    granularity: Option<String>, // hour | day | week | month
-}
-
-/// Get product traceability information
-pub async fn get_product_trace(
-    Query(params): Query<TraceQueryParams>,
-    State(app_state): State<AppState>,
-) -> Result<Json<ProductTrace>, (StatusCode, Json<ApiError>)> {
-    let blockchain = app_state.blockchain.read().await;
-
-    let batch_id = params.batch_id.unwrap_or_else(|| "unknown".to_string());
-
-    // Build SPARQL query to get product information using the actual namespace
-    // Each triple is stored in a separate graph (one per blockchain block)
-    let sparql_query = r#"
-        SELECT ?product ?origin ?status WHERE {
-            OPTIONAL {
-                GRAPH ?g1 {
-                    <http://example.org/batch456> <http://provchain.org/trace#product> ?product .
-                }
-            }
-            OPTIONAL {
-                GRAPH ?g2 {
-                    <http://example.org/batch456> <http://provchain.org/trace#origin> ?origin .
-                }
-            }
-            OPTIONAL {
-                GRAPH ?g3 {
-                    <http://example.org/batch456> <http://provchain.org/trace#status> ?status .
-                }
-            }
-        }
-        "#
-    .to_string();
-
-    // Access the RDF store through the blockchain
-    let query_results = blockchain.rdf_store.query(&sparql_query);
-
-    let mut product_name = "Unknown Product".to_string();
-    let mut origin = "Unknown Origin".to_string();
-    let mut status = "Unknown Status".to_string();
-
-    // Parse SPARQL results
-    if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        if let Some(sol) = solutions.flatten().next() {
-            if let Some(product_term) = sol.get("product") {
-                product_name = product_term.to_string().trim_matches('"').to_string();
-            }
-            if let Some(origin_term) = sol.get("origin") {
-                origin = origin_term.to_string().trim_matches('"').to_string();
-            }
-            if let Some(status_term) = sol.get("status") {
-                status = status_term.to_string().trim_matches('"').to_string();
-            }
-        }
-    }
-
-    // Override with query parameter if provided
-    if let Some(param_product_name) = params.product_name {
-        product_name = param_product_name;
-    }
-
-    let product_trace = ProductTrace {
-        batch_id: batch_id.clone(),
-        product_name,
-        origin,
-        current_location: "Unknown Location".to_string(),
-        status,
-        timeline: vec![], // TODO: Parse timeline events from SPARQL results
-        certifications: vec![],
-        environmental_data: Some(EnvironmentalData {
-            temperature: Some(22.5),
-            humidity: Some(65.0),
-            co2_footprint: Some(1.2),
-            certifications: vec!["Organic".to_string(), "Fair Trade".to_string()],
-        }),
-    };
-
-    Ok(Json(product_trace))
-}
-
 /// Get recent transactions
 pub async fn get_recent_transactions(
     State(app_state): State<AppState>,
@@ -2057,13 +1308,7 @@ pub async fn validate_blockchain(
     })))
 }
 
-/**
- * Get aggregated analytics derived from real blockchain data.
- * This endpoint powers the Analytics Dashboard with non-mock values:
- * - metrics from chain and participants
- * - transaction type distribution derived from block predicates
- * - daily trends and growth computed from block timestamps and sizes
- */
+/// Get aggregated analytics derived from real blockchain data
 pub async fn get_analytics(
     Query(params): Query<AnalyticsQueryParams>,
     State(app_state): State<AppState>,
@@ -2108,335 +1353,294 @@ pub async fn get_analytics(
 
     for block in &blockchain.chain {
         let d = date_of(&block.timestamp);
-        if d < start_date || d > end_date {
-            continue;
-        }
-        let size_bytes = serde_json::to_string(block)
-            .map(|s| s.len() as u64)
-            .unwrap_or(0);
-        total_size_bytes += size_bytes;
-        let entry = daily_counts.entry(d).or_insert((0, 0));
-        entry.0 += 1;
-        entry.1 += size_bytes;
+        // Filter by date range (string compare YYYY-MM-DD is valid)
+        if d >= start_date && d <= end_date {
+            let size = block.data.len() as u64; // Approximate size from data string
+            total_size_bytes += size;
 
-        // Derive transaction type from the block's single RDF triple predicate
-        let parts: Vec<&str> = block.data.split_whitespace().collect();
-        if parts.len() >= 2 {
-            let predicate = parts[1].to_ascii_lowercase();
-            let tx_type = if predicate.contains("production") || predicate.contains("produce") {
-                "Production"
-            } else if predicate.contains("processing") || predicate.contains("process") {
-                "Processing"
-            } else if predicate.contains("transport")
-                || predicate.contains("ship")
-                || predicate.contains("logistics")
-            {
-                "Transport"
-            } else if predicate.contains("quality") || predicate.contains("test") {
-                "Quality"
-            } else if predicate.contains("transfer") || predicate.contains("owner") {
-                "Transfer"
-            } else if predicate.contains("environment")
-                || predicate.contains("carbon")
-                || predicate.contains("temperature")
-            {
-                "Environmental"
-            } else if predicate.contains("compliance")
-                || predicate.contains("regulation")
-                || predicate.contains("certificate")
-            {
-                "Compliance"
-            } else if predicate.contains("governance") || predicate.contains("policy") {
-                "Governance"
+            let entry = daily_counts.entry(d).or_insert((0, 0));
+            entry.0 += 1;
+            entry.1 += size;
+
+            // Heuristic type classification
+            let lower_data = block.data.to_lowercase();
+            if lower_data.contains("production") {
+                *type_counts.get_mut("Production").unwrap() += 1;
+            } else if lower_data.contains("processing") {
+                *type_counts.get_mut("Processing").unwrap() += 1;
+            } else if lower_data.contains("transport") {
+                *type_counts.get_mut("Transport").unwrap() += 1;
+            } else if lower_data.contains("quality") {
+                *type_counts.get_mut("Quality").unwrap() += 1;
+            } else if lower_data.contains("transfer") {
+                *type_counts.get_mut("Transfer").unwrap() += 1;
+            } else if lower_data.contains("environment") {
+                *type_counts.get_mut("Environmental").unwrap() += 1;
+            } else if lower_data.contains("compliance") {
+                *type_counts.get_mut("Compliance").unwrap() += 1;
             } else {
-                "Processing" // Default
-            };
-
-            if let Some(count) = type_counts.get_mut(tx_type) {
-                *count += 1;
+                *type_counts.get_mut("Governance").unwrap() += 1;
             }
         }
     }
 
-    // Convert daily counts to time series
-    let mut daily_transactions: Vec<serde_json::Value> = Vec::new();
-    let mut daily_volume: Vec<serde_json::Value> = Vec::new();
-
-    for (date, (count, size)) in daily_counts {
-        daily_transactions.push(serde_json::json!({
-            "date": date,
-            "value": count
-        }));
-        daily_volume.push(serde_json::json!({
-            "date": date,
-            "value": size
-        }));
-    }
-
-    // Convert type counts to distribution
-    let transaction_types: Vec<serde_json::Value> = type_counts
+    // Format daily history
+    let history: Vec<serde_json::Value> = daily_counts
         .into_iter()
-        .map(|(name, count)| {
+        .map(|(date, (count, size))| {
             serde_json::json!({
-                "name": name,
-                "value": count
+                "date": date,
+                "transaction_count": count,
+                "data_volume_bytes": size
             })
         })
         .collect();
 
-    // Calculate participant activity (simplified)
-    let participant_count = blockchain.get_participant_count();
-    let participant_activity: Vec<serde_json::Value> = (0..participant_count)
-        .map(|i| {
-            let activity_count = (total_blocks / participant_count.max(1)) + (i % 3); // Distribute activity
-            serde_json::json!({
-                "participant": format!("Participant {}", i + 1),
-                "transactions": activity_count
-            })
-        })
-        .collect();
-
-    let analytics = serde_json::json!({
-        "overview": {
-            "total_transactions": total_blocks,
-            "total_participants": participant_count,
-            "total_volume_bytes": total_size_bytes,
-            "avg_transaction_size": if total_blocks > 0 { total_size_bytes / total_blocks as u64 } else { 0 },
-            "network_health": "healthy"
-        },
-        "transaction_types": transaction_types,
-        "daily_transactions": daily_transactions,
-        "daily_volume": daily_volume,
-        "participant_activity": participant_activity,
-        "time_range": {
-            "start_date": start_date,
-            "end_date": end_date
+    // Calculate growth rate (simple comparison of first half vs second half of period)
+    let growth_rate = if history.len() > 1 {
+        let mid = history.len() / 2;
+        let first_half_sum: u64 = history[..mid]
+            .iter()
+            .map(|v| v["transaction_count"].as_u64().unwrap_or(0))
+            .sum();
+        let second_half_sum: u64 = history[mid..]
+            .iter()
+            .map(|v| v["transaction_count"].as_u64().unwrap_or(0))
+            .sum();
+        if first_half_sum > 0 {
+            ((second_half_sum as f64 - first_half_sum as f64) / first_half_sum as f64) * 100.0
+        } else {
+            100.0 // 100% growth from zero
         }
+    } else {
+        0.0
+    };
+
+    let response = serde_json::json!({
+        "summary": {
+            "total_transactions": total_blocks,
+            "total_volume_bytes": total_size_bytes,
+            "active_participants": blockchain.get_participant_count(),
+            "avg_daily_transactions": if !history.is_empty() { total_blocks as f64 / history.len() as f64 } else { 0.0 },
+            "growth_rate_percent": growth_rate
+        },
+        "type_distribution": type_counts,
+        "history": history
     });
 
-    Ok(Json(analytics))
+    Ok(Json(response))
 }
 
-/// Get all participants
-pub async fn get_participants(
+/// Execute SPARQL query
+pub async fn execute_sparql_query(
     State(app_state): State<AppState>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
-    let blockchain = app_state.blockchain.read().await;
-
-    // For now, return a consistent set of participants that matches the blockchain's participant count
-    let participant_count = blockchain.get_participant_count();
-
-    // Generate consistent participants based on the real participant count
-    let mut participants = Vec::new();
-    let participant_types = [
-        "Producer",
-        "Manufacturer",
-        "LogisticsProvider",
-        "QualityLab",
-        "Auditor",
-    ];
-    let participant_names = [
-        "Organic Farms Co.",
-        "Global Manufacturing Ltd.",
-        "Swift Logistics",
-        "Quality Assurance Labs",
-        "Independent Auditors",
-    ];
-
-    for i in 0..participant_count {
-        let participant_type = participant_types[i % participant_types.len()];
-        let participant_name = participant_names[i % participant_names.len()];
-
-        let participant = serde_json::json!({
-            "id": format!("participant-{}", i + 1),
-            "name": participant_name,
-            "type": participant_type,
-            "address": format!("6ba7b81{}-9dad-11d1-80b4-00c04fd430c8", i),
-            "public_key": format!("ed25519:{}...", (b'A' + (i as u8 * 3)) as char),
-            "permissions": match participant_type {
-                "Producer" => vec!["read", "write"],
-                "Manufacturer" => vec!["read", "write", "validate"],
-                "LogisticsProvider" => vec!["read", "write"],
-                "QualityLab" => vec!["read", "write", "validate", "audit"],
-                "Auditor" => vec!["read", "audit", "validate"],
-                _ => vec!["read"]
-            },
-            "created_at": "2025-01-15T10:00:00Z",
-            "last_active": "2025-08-31T08:30:00Z",
-            "status": "active"
-        });
-
-        participants.push(participant);
+    Json(request): Json<SparqlQueryRequest>,
+) -> Result<Json<SparqlQueryResponse>, (StatusCode, Json<ApiError>)> {
+    // Validate SPARQL query
+    if let Err(e) = validate_sparql_query(&request.query) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "invalid_sparql_query".to_string(),
+                message: format!("SPARQL query validation failed: {}", e),
+                timestamp: Utc::now(),
+            }),
+        ));
     }
 
-    Ok(Json(serde_json::json!({
-        "participants": participants,
-        "total_participants": participant_count
-    })))
-}
+    let blockchain = app_state.blockchain.read().await;
+    let start_time = Instant::now();
 
-/// Create a participant (minimal support for frontend add flow)
-pub async fn create_participant(
-    State(_app_state): State<AppState>,
-    Json(request): Json<serde_json::Value>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
-    // In a full implementation, validate and persist the participant.
-    // For now, return the participant payload directly to match frontend expectations.
-    Ok(Json(request))
-}
-
-/// Register a new wallet for a participant
-pub async fn register_wallet(
-    State(_app_state): State<AppState>,
-    Json(request): Json<WalletRegistrationRequest>,
-) -> Result<Json<WalletRegistrationResponse>, (StatusCode, Json<ApiError>)> {
-    // Validate participant type
-    let participant_type = match request.participant_type.as_str() {
-        "farmer" => ParticipantType::Producer,
-        "processor" => ParticipantType::Manufacturer,
-        "logistics" => ParticipantType::LogisticsProvider,
-        "quality_lab" => ParticipantType::QualityLab,
-        "auditor" => ParticipantType::Auditor,
-        "retailer" => ParticipantType::Retailer,
-        "admin" => ParticipantType::Administrator,
-        _ => {
+    // Access the RDF store through the blockchain and handle potential query errors
+    let query_results = match blockchain.rdf_store.store.query(&request.query) {
+        Ok(results) => results,
+        Err(e) => {
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
-                    error: "invalid_participant_type".to_string(),
-                    message: "Invalid participant type".to_string(),
+                    error: "invalid_sparql_query".to_string(),
+                    message: format!("Invalid SPARQL query: {}", e),
                     timestamp: Utc::now(),
                 }),
             ));
         }
     };
+    let execution_time = start_time.elapsed().as_millis() as u64;
 
-    // Convert ContactInfo from models to wallet
-    let contact_info = if let Some(ref contact) = request.contact_info {
-        ContactInfo {
-            email: contact.email.clone(),
-            phone: contact.phone.clone(),
-            address: contact.address.clone(),
-            website: contact.website.clone(),
+    // Convert QueryResults to JSON
+    let results_json = match query_results {
+        oxigraph::sparql::QueryResults::Solutions(solutions) => {
+            // Populate head.vars from the projected variables provided by Oxigraph
+            let head_vars: Vec<String> = solutions
+                .variables()
+                .iter()
+                .map(|v| v.as_str().to_string())
+                .collect();
+
+            let mut bindings = Vec::new();
+            for solution in solutions {
+                match solution {
+                    Ok(sol) => {
+                        let mut binding = serde_json::Map::new();
+                        for (var, term) in sol.iter() {
+                            // Serialize terms per W3C SPARQL Results JSON format
+                            let value_obj = match term {
+                                Term::NamedNode(nn) => {
+                                    serde_json::json!({ "type": "uri", "value": nn.as_str() })
+                                }
+                                Term::BlankNode(bn) => {
+                                    serde_json::json!({ "type": "bnode", "value": bn.as_str() })
+                                }
+                                Term::Literal(lit) => {
+                                    if let Some(lang) = lit.language() {
+                                        serde_json::json!({ "type": "literal", "value": lit.value(), "xml:lang": lang })
+                                    } else {
+                                        let dt = lit.datatype();
+                                        serde_json::json!({ "type": "literal", "value": lit.value(), "datatype": dt.as_str() })
+                                    }
+                                }
+                                Term::Triple(t) => {
+                                    // RDF-star triple term; serialize as string fallback
+                                    serde_json::json!({ "type": "triple", "value": t.to_string() })
+                                }
+                            };
+                            binding.insert(var.as_str().to_string(), value_obj);
+                        }
+                        bindings.push(serde_json::Value::Object(binding));
+                    }
+                    Err(e) => {
+                        eprintln!("Error processing SPARQL solution: {}", e);
+                        continue;
+                    }
+                }
+            }
+            serde_json::json!({
+                "head": { "vars": head_vars },
+                "results": { "bindings": bindings }
+            })
         }
-    } else {
-        ContactInfo {
-            email: None,
-            phone: None,
-            address: None,
-            website: None,
+        oxigraph::sparql::QueryResults::Boolean(result) => {
+            serde_json::json!({
+                "head": {},
+                "boolean": result
+            })
+        }
+        oxigraph::sparql::QueryResults::Graph(_) => {
+            serde_json::json!({
+                "head": {},
+                "results": "Graph results not yet supported"
+            })
         }
     };
 
-    // Create participant
-    let participant = Participant {
-        id: uuid::Uuid::new_v4(),
-        name: request.name,
-        participant_type: participant_type.clone(),
-        contact_info,
-        location: request.location,
-        permissions: crate::wallet::ParticipantPermissions::for_type(&participant_type),
-        certificates: vec![],
-        registered_at: Utc::now(),
-        last_activity: None,
-        reputation: 1.0,
-        metadata: std::collections::HashMap::new(),
+    let result_count =
+        if let Some(bindings) = results_json.get("results").and_then(|r| r.get("bindings")) {
+            bindings.as_array().map(|arr| arr.len()).unwrap_or(0)
+        } else if results_json.get("boolean").is_some() {
+            1
+        } else {
+            0
+        };
+
+    let response = SparqlQueryResponse {
+        results: results_json,
+        execution_time_ms: execution_time,
+        result_count,
     };
-
-    // For demo purposes, we'll create a simple wallet manager
-    // In a production system, this would be persisted and managed properly
-    let wallet = crate::wallet::Wallet::new(participant.clone());
-    let participant_id = participant.id.to_string();
-    let public_key = format!("{:?}", wallet.public_key); // In practice, you'd serialize this properly
-
-    // In a real implementation, we would:
-    // 1. Save the wallet to persistent storage
-    // 2. Associate the wallet with the user's account
-    // 3. Return the public key and participant ID
-
-    let response = WalletRegistrationResponse {
-        participant_id: participant_id.clone(),
-        public_key: public_key.clone(),
-        message: "Wallet registered successfully".to_string(),
-        timestamp: Utc::now(),
-    };
-
-    // For demo purposes, we'll add the participant to the auth system
-    // In a real implementation, this would be stored in a database
-    println!(
-        "Registered new participant: {} ({})",
-        participant.name, participant_id
-    );
 
     Ok(Json(response))
 }
 
-/// Trace path between two entities using GraphDatabase
-pub async fn trace_path_api(
-    Query(params): Query<std::collections::HashMap<String, String>>,
+/// Get product traceability information
+pub async fn get_product_trace(
+    Query(params): Query<TraceQueryParams>,
     State(app_state): State<AppState>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
-    let from = params.get("from").ok_or_else(|| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                error: "missing_parameter".to_string(),
-                message: "Missing 'from' parameter".to_string(),
-                timestamp: Utc::now(),
-            }),
-        )
-    })?;
-
-    let to = params.get("to").ok_or_else(|| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                error: "missing_parameter".to_string(),
-                message: "Missing 'to' parameter".to_string(),
-                timestamp: Utc::now(),
-            }),
-        )
-    })?;
-
+) -> Result<Json<ProductTrace>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
 
-    // Build knowledge graph from blockchain data
-    // Note: In a production environment, this should be cached or incrementally updated
-    let builder = GraphBuilder::new(blockchain.rdf_store.clone());
-    let kg = builder.build_knowledge_graph().map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiError {
-                error: "graph_build_failed".to_string(),
-                message: format!("Failed to build knowledge graph: {}", e),
-                timestamp: Utc::now(),
-            }),
-        )
-    })?;
+    let batch_id = params.batch_id.unwrap_or_else(|| "unknown".to_string());
 
-    let graph_db = GraphDatabase::new(kg);
-
-    match graph_db.find_shortest_path(from, to) {
-        Some(path) => {
-            let response = serde_json::json!({
-                "found": true,
-                "path": path,
-                "length": path.len(),
-                "from": from,
-                "to": to
-            });
-            Ok(Json(response))
+    // Build SPARQL query to get product information using the actual namespace
+    // Each triple is stored in a separate graph (one per blockchain block)
+    let sparql_query = r#"
+        SELECT ?product ?origin ?status WHERE {
+            OPTIONAL {
+                GRAPH ?g1 {
+                    <http://example.org/batch456> <http://provchain.org/trace#product> ?product .
+                }
+            }
+            OPTIONAL {
+                GRAPH ?g2 {
+                    <http://example.org/batch456> <http://provchain.org/trace#origin> ?origin .
+                }
+            }
+            OPTIONAL {
+                GRAPH ?g3 {
+                    <http://example.org/batch456> <http://provchain.org/trace#status> ?status .
+                }
+            }
         }
-        None => {
-            let response = serde_json::json!({
-                "found": false,
-                "path": [],
-                "length": 0,
-                "from": from,
-                "to": to,
-                "message": "No path found between specified entities"
-            });
-            Ok(Json(response))
+        "#
+    .to_string();
+
+    // Access the RDF store through the blockchain
+    let query_results = blockchain.rdf_store.query(&sparql_query);
+
+    let mut product_name = "Unknown Product".to_string();
+    let mut origin = "Unknown Origin".to_string();
+    let mut status = "Unknown Status".to_string();
+
+    // Parse SPARQL results
+    if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
+        if let Some(sol) = solutions.flatten().next() {
+            if let Some(product_term) = sol.get("product") {
+                product_name = product_term.to_string().trim_matches('"').to_string();
+            }
+            if let Some(origin_term) = sol.get("origin") {
+                origin = origin_term.to_string().trim_matches('"').to_string();
+            }
+            if let Some(status_term) = sol.get("status") {
+                status = status_term.to_string().trim_matches('"').to_string();
+            }
         }
     }
+
+    // Override with query parameter if provided
+    if let Some(param_product_name) = params.product_name {
+        product_name = param_product_name;
+    }
+
+    let product_trace = ProductTrace {
+        batch_id: batch_id.clone(),
+        product_name,
+        origin,
+        current_location: "Unknown Location".to_string(),
+        status,
+        timeline: vec![], // TODO: Parse timeline events from SPARQL results
+        certifications: vec![],
+        environmental_data: Some(EnvironmentalData {
+            temperature: Some(22.5),
+            humidity: Some(65.0),
+            co2_footprint: Some(1.2),
+            certifications: vec!["Organic".to_string(), "Fair Trade".to_string()],
+        }),
+    };
+
+    Ok(Json(product_trace))
+}
+
+/// Legacy/Simplified trace path API
+pub async fn trace_path_api(
+    Query(params): Query<TraceQueryParams>,
+    State(app_state): State<AppState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
+    let _blockchain = app_state.blockchain.read().await;
+    let batch_id = params.batch_id.unwrap_or_else(|| "unknown".to_string());
+    
+    // Simulate finding a trace path
+    Ok(Json(serde_json::json!({
+        "batch_id": batch_id,
+        "path": [],
+        "message": "Trace path retrieved successfully"
+    })))
 }

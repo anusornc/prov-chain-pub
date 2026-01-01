@@ -154,7 +154,7 @@ impl ProofOfAuthority {
         for key_str in &config.authority_keys {
             if let Ok(key_bytes) = hex::decode(key_str) {
                 if key_bytes.len() == 32 {
-                    if let Ok(public_key) = VerifyingKey::from_bytes(&key_bytes.try_into().unwrap()) {
+                    if let Ok(public_key) = VerifyingKey::from_bytes(&key_bytes.try_into().map_err(|_| anyhow::anyhow!("Invalid key length"))?) {
                         let authority_id = Uuid::new_v4();
                         authority_keys.write().await.insert(authority_id, public_key);
                     }
@@ -183,17 +183,28 @@ impl ProofOfAuthority {
 
     fn load_or_generate_keypair(key_file: &Option<String>) -> Result<SigningKey> {
         if let Some(file_path) = key_file {
+            // Try to load existing keypair
             if std::path::Path::new(file_path).exists() {
-                let key_data = std::fs::read(file_path)?;
+                let key_data = std::fs::read(file_path)
+                    .map_err(|e| anyhow::anyhow!("Failed to read authority key file: {}", e))?;
+                
                 if key_data.len() == 32 {
-                    let keypair = SigningKey::from_bytes(&key_data.try_into().unwrap());
+                    let keypair = SigningKey::from_bytes(&key_data.try_into().map_err(|_| anyhow::anyhow!("Invalid key length"))?);
+                    info!("Loaded authority keypair from {}", file_path);
                     return Ok(keypair);
+                } else {
+                    return Err(anyhow::anyhow!("Authority key file must be 32 bytes"));
                 }
             }
+
+            // Generate new keypair and save it
             let keypair = SigningKey::from_bytes(&rand::random::<[u8; 32]>());
-            std::fs::write(file_path, keypair.to_bytes())?;
+            std::fs::write(file_path, keypair.to_bytes())
+                .map_err(|e| anyhow::anyhow!("Failed to write authority key file: {}", e))?;
+            info!("Generated new authority keypair and saved to {}", file_path);
             Ok(keypair)
         } else {
+            // Generate ephemeral keypair
             Ok(SigningKey::from_bytes(&rand::random::<[u8; 32]>()))
         }
     }
