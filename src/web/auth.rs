@@ -113,9 +113,9 @@ impl AuthState {
 
     /// Initialize with default users ONLY if ALLOW_DEFAULT_USERS env var is set (for development)
     pub fn new_with_defaults() -> Self {
-        // Only allow default users in development if explicitly requested
-        if !cfg!(debug_assertions) || std::env::var("ALLOW_DEFAULT_USERS").is_err() {
-            eprintln!("SECURITY: Default users are disabled. Set ALLOW_DEFAULT_USERS=1 in development to enable.");
+        // Only allow default users in development if explicitly requested AND demo mode is on
+        if !cfg!(debug_assertions) || std::env::var("PROVCHAIN_DEMO_MODE").map(|v| v != "1").unwrap_or(true) {
+            eprintln!("SECURITY: Default users are disabled. Set PROVCHAIN_DEMO_MODE=1 in development to enable demo users.");
             return Self::new();
         }
 

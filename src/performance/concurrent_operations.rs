@@ -52,24 +52,32 @@ impl Worker {
                 match task {
                     Ok(Task::Canonicalization {
                         id,
-                        rdf_content: _,
+                        rdf_content,
                         result_sender,
                     }) => {
-                        // Simulate RDF canonicalization work
+                        // Real CPU work: SHA-256 hashing
+                        use sha2::{Sha256, Digest};
                         let start = Instant::now();
-                        thread::sleep(Duration::from_millis(10)); // Simulate work
-                        let hash = format!("canon_hash_{}_{:?}", id, start.elapsed());
-                        let _ = result_sender.send((id, hash));
+                        let mut hasher = Sha256::new();
+                        // Perform some repetitive work to simulate complexity
+                        for _ in 0..1000 {
+                            hasher.update(rdf_content.as_bytes());
+                        }
+                        let hash = format!("{:x}", hasher.finalize());
+                        let _ = result_sender.send((id, format!("{}_{:?}", hash, start.elapsed())));
                     }
                     Ok(Task::QueryExecution {
                         id,
                         query,
                         result_sender,
                     }) => {
-                        // Simulate SPARQL query execution
-                        let _start = Instant::now();
-                        thread::sleep(Duration::from_millis(20)); // Simulate work
-                        let results = format!("query_results_{}_{}", id, query.len());
+                        // Real CPU work: SHA-256 hashing
+                        use sha2::{Sha256, Digest};
+                        let mut hasher = Sha256::new();
+                        for _ in 0..2000 {
+                            hasher.update(query.as_bytes());
+                        }
+                        let results = format!("res_{:x}", hasher.finalize());
                         let _ = result_sender.send((id, results));
                     }
                     Ok(Task::BlockValidation {
@@ -77,10 +85,14 @@ impl Worker {
                         block_data,
                         result_sender,
                     }) => {
-                        // Simulate block validation
-                        let _start = Instant::now();
-                        thread::sleep(Duration::from_millis(5)); // Simulate work
-                        let is_valid = block_data.len() > 10; // Simple validation
+                        // Real CPU work: SHA-256 hashing
+                        use sha2::{Sha256, Digest};
+                        let mut hasher = Sha256::new();
+                        for _ in 0..500 {
+                            hasher.update(block_data.as_bytes());
+                        }
+                        let _hash = hasher.finalize();
+                        let is_valid = block_data.len() > 10;
                         let _ = result_sender.send((id, is_valid));
                     }
                     Ok(Task::Shutdown) => {

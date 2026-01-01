@@ -1,4 +1,10 @@
 //! Deployment automation and orchestration for production
+//! 
+//! # ⚠️ ARCHITECTURAL SIMULATION ⚠️
+//! This module provides a high-fidelity simulation of deployment strategies 
+//! (Blue-Green, Canary, Rolling) for architectural demonstration and 
+//! performance modeling. In a live production environment, these methods 
+//! would interact with container orchestrators like Kubernetes or cloud APIs.
 
 use crate::production::ProductionError;
 use serde::{Deserialize, Serialize};
@@ -262,14 +268,14 @@ impl DeploymentManager {
             *current = Some(deployment_record.clone());
         }
 
-        tracing::info!(
-            "Starting deployment {} with version {} using {:?} strategy",
+        tracing::warn!(
+            "🚀 SIMULATION: Starting deployment {} with version {} using {:?} strategy",
             deployment_id,
             version,
             self.config.strategy
         );
 
-        // Execute deployment based on strategy
+        // Execute deployment based on strategy (SIMULATED)
         match self.config.strategy {
             DeploymentStrategy::BlueGreen => {
                 self.execute_blue_green_deployment(&deployment_id).await?
@@ -286,20 +292,20 @@ impl DeploymentManager {
         Ok(deployment_id)
     }
 
-    /// Execute blue-green deployment
+    /// Execute blue-green deployment (SIMULATED)
     async fn execute_blue_green_deployment(
         &self,
         deployment_id: &str,
     ) -> Result<(), ProductionError> {
-        tracing::info!("Executing blue-green deployment for {}", deployment_id);
+        tracing::info!("Executing blue-green deployment simulation for {}", deployment_id);
 
         // Update deployment status
         self.update_deployment_status(deployment_id, DeploymentStatus::InProgress)
             .await?;
 
         // Step 1: Deploy to green environment
-        tracing::info!("Deploying to green environment");
-        tokio::time::sleep(std::time::Duration::from_secs(5)).await; // Simulate deployment
+        tracing::info!("Deploying to green environment (simulating container spin-up)");
+        tokio::time::sleep(std::time::Duration::from_secs(5)).await; // Simulate deployment latency
 
         // Step 2: Run health checks on green environment
         let health_results = self.run_health_checks("green").await?;
