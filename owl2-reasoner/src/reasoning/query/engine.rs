@@ -10,13 +10,14 @@ use crate::reasoning::Reasoner;
 
 use super::{
     compute_config_hash, create_cache_key, QueryCache, QueryConfig, QueryEngineStats, QueryPattern,
-    QueryResult, QueryType, ResultPool, TriplePattern, RDF_TYPE,
+    QueryResult, QueryType, ResultPool, TriplePattern, RDF_TYPE, FilterExpression,
 };
 
 use dashmap::DashMap;
 use parking_lot::RwLock;
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::num::NonZeroUsize;
 
 /// Query engine for OWL2 ontologies with advanced optimizations
 pub struct QueryEngine {
