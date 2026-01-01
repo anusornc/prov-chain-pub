@@ -355,23 +355,172 @@ impl QueryEngine {
 
     /// Execute property query
     fn execute_property_query(&self, triple: &TriplePattern) -> OwlResult<QueryResult> {
-        match (&triple.subject, &triple.predicate, &triple.object) {
-            (
-                super::PatternTerm::IRI(subject),
-                super::PatternTerm::IRI(predicate),
-                super::PatternTerm::Variable(_),
-            ) => self.get_property_values(subject, predicate),
-            _ => {
-                // For more complex patterns, implement generic property query
-                Ok(QueryResult::new())
-            }
+        let predicate_term = &triple.predicate;
+        
+        let predicate_iri = if let super::PatternTerm::IRI(iri) = predicate_term {
+            iri
+        } else {
+            return Ok(QueryResult::new());
+        };
+
+        // Optimization for specific case
+        if let (super::PatternTerm::IRI(s), super::PatternTerm::Variable(_)) = (&triple.subject, &triple.object) {
+             return self.get_property_values(s, predicate_iri);
         }
+
+        let mut result = QueryResult::new();
+        
+        let s_var = if let super::PatternTerm::Variable(v) = &triple.subject { Some(v.clone()) } else { None };
+        let o_var = if let super::PatternTerm::Variable(v) = &triple.object { Some(v.clone()) } else { None };
+
+        let s_iri = if let super::PatternTerm::IRI(i) = &triple.subject { Some(i) } else { None };
+        let o_iri = if let super::PatternTerm::IRI(i) = &triple.object { Some(i) } else { None };
+
+        if let Some(v) = &s_var { result.variables.push(v.clone()); }
+        if let Some(v) = &o_var { result.variables.push(v.clone()); }
+
+        for axiom in self.ontology.property_assertions() {
+            if **axiom.property() != *predicate_iri { continue; }
+
+            let subject = axiom.subject();
+            let object = axiom.object();
+
+            if let Some(iri) = s_iri {
+                if **subject != *iri { continue; }
+            }
+
+            if let Some(iri) = o_iri {
+                match object {
+                    PropertyAssertionObject::Named(ind) => {
+                        if **ind != *iri { continue; }
+                    }
+                    _ => continue, 
+                }
+            }
+
+            let mut binding = super::QueryBinding::new();
+            if let Some(v) = &s_var {
+                binding.add_binding(v.clone(), super::QueryValue::IRI((**subject).clone()));
+            }
+            if let Some(v) = &o_var {
+                match object {
+                    PropertyAssertionObject::Named(ind) => {
+                        binding.add_binding(v.clone(), super::QueryValue::IRI((**ind).clone()));
+                    }
+                    _ => continue,
+                }
+            }
+            result.add_binding(binding);
+        }
+
+        result.stats.results_count = result.len();
+        result.stats.reasoning_used = self.config.enable_reasoning;
+
+        Ok(result)
     }
 
     /// Execute variable predicate query
-    fn execute_variable_predicate_query(&self, _triple: &TriplePattern) -> OwlResult<QueryResult> {
-        // TODO: Implement variable predicate queries
-        Ok(QueryResult::new())
+    fn execute_variable_predicate_query(&self, triple: &TriplePattern) -> OwlResult<QueryResult> {
+        let mut result = QueryResult::new();
+        
+        // Extract variable names or IRI filters
+        let s_var = if let super::PatternTerm::Variable(v) = &triple.subject { Some(v.clone()) } else { None };
+        let p_var = if let super::PatternTerm::Variable(v) = &triple.predicate { Some(v.clone()) } else { None };
+        let o_var = if let super::PatternTerm::Variable(v) = &triple.object { Some(v.clone()) } else { None };
+
+        let s_iri = if let super::PatternTerm::IRI(i) = &triple.subject { Some(i) } else { None };
+        let o_iri = if let super::PatternTerm::IRI(i) = &triple.object { Some(i) } else { None };
+
+        // Set result variables
+        if let Some(v) = &s_var { result.variables.push(v.clone()); }
+        if let Some(v) = &p_var { result.variables.push(v.clone()); }
+        if let Some(v) = &o_var { result.variables.push(v.clone()); }
+
+        // 1. Class Assertions (rdf:type)
+        for axiom in self.ontology.class_assertions() {
+            let individual = axiom.individual();
+            let class = axiom.class_expr();
+            
+            // Check subject filter
+            if let Some(iri) = s_iri {
+                if **individual != *iri { continue; }
+            }
+            
+            // Check object filter (must be Named class for simple matching)
+            let class_iri = if let ClassExpression::Class(c) = class {
+                Some(c.iri())
+            } else {
+                None 
+            };
+            
+            if let Some(iri) = o_iri {
+                if let Some(c_iri) = class_iri {
+                    if **c_iri != *iri { continue; }
+                } else {
+                    continue; 
+                }
+            }
+
+            // Create binding
+            let mut binding = super::QueryBinding::new();
+            if let Some(v) = &s_var { 
+                binding.add_binding(v.clone(), super::QueryValue::IRI((**individual).clone())); 
+            }
+            if let Some(v) = &p_var {
+                binding.add_binding(v.clone(), super::QueryValue::IRI(IRI::new(RDF_TYPE).unwrap()));
+            }
+            if let Some(v) = &o_var {
+                if let Some(c_iri) = class_iri {
+                    binding.add_binding(v.clone(), super::QueryValue::IRI((**c_iri).clone()));
+                } else {
+                    continue; 
+                }
+            }
+            result.add_binding(binding);
+        }
+
+        // 2. Property Assertions
+        for axiom in self.ontology.property_assertions() {
+            let subject = axiom.subject();
+            let property = axiom.property();
+            let object = axiom.object();
+
+            // Check subject filter
+            if let Some(iri) = s_iri {
+                if **subject != *iri { continue; }
+            }
+
+            // Check object filter
+            if let Some(iri) = o_iri {
+                match object {
+                    PropertyAssertionObject::Named(ind) => {
+                        if **ind != *iri { continue; }
+                    }
+                    _ => continue, 
+                }
+            }
+
+            // Create binding
+            let mut binding = super::QueryBinding::new();
+            if let Some(v) = &s_var {
+                binding.add_binding(v.clone(), super::QueryValue::IRI((**subject).clone()));
+            }
+            if let Some(v) = &p_var {
+                binding.add_binding(v.clone(), super::QueryValue::IRI((**property).clone()));
+            }
+            if let Some(v) = &o_var {
+                match object {
+                    PropertyAssertionObject::Named(ind) => {
+                        binding.add_binding(v.clone(), super::QueryValue::IRI((**ind).clone()));
+                    }
+                    _ => continue,
+                }
+            }
+            result.add_binding(binding);
+        }
+
+        result.stats.results_count = result.len();
+        Ok(result)
     }
 
     /// Execute optional pattern
@@ -504,7 +653,8 @@ impl QueryPatternExt for QueryPattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::{PatternTerm, QueryPattern, TriplePattern, RDF_TYPE};
+    use super::{QueryPattern, TriplePattern, RDF_TYPE, FilterExpression};
+    use crate::PatternTerm;
     use crate::entities::*;
     use crate::iri::IRI;
 
