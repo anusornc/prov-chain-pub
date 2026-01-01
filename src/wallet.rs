@@ -213,6 +213,8 @@ pub struct Wallet {
     pub created_at: DateTime<Utc>,
     /// Last backup timestamp
     pub last_backup: Option<DateTime<Utc>>,
+    /// Shared secrets for data privacy (KeyID -> HexEncodedSecret)
+    pub shared_secrets: HashMap<String, String>,
 }
 
 impl Wallet {
@@ -228,6 +230,7 @@ impl Wallet {
             derivation_path: None,
             created_at: Utc::now(),
             last_backup: None,
+            shared_secrets: HashMap::new(),
         }
     }
 
@@ -242,7 +245,18 @@ impl Wallet {
             derivation_path: None,
             created_at: Utc::now(),
             last_backup: None,
+            shared_secrets: HashMap::new(),
         }
+    }
+
+    /// Add a shared secret for data privacy
+    pub fn add_secret(&mut self, key_id: String, secret: String) {
+        self.shared_secrets.insert(key_id, secret);
+    }
+
+    /// Get a shared secret by Key ID
+    pub fn get_secret(&self, key_id: &str) -> Option<&String> {
+        self.shared_secrets.get(key_id)
     }
 
     /// Get the participant ID

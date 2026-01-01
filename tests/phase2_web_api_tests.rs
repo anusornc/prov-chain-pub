@@ -136,6 +136,7 @@ fn test_add_triple_request_model() {
         predicate: "http://example.org/hasLocation".to_string(),
         object: "Farm A".to_string(),
         graph_name: Some("supply_chain".to_string()),
+        privacy_key_id: None,
     };
 
     let json = serde_json::to_string(&request).unwrap();
@@ -145,6 +146,25 @@ fn test_add_triple_request_model() {
     assert_eq!(deserialized.predicate, "http://example.org/hasLocation");
     assert_eq!(deserialized.object, "Farm A");
     assert_eq!(deserialized.graph_name, Some("supply_chain".to_string()));
+    assert_eq!(deserialized.privacy_key_id, None);
+}
+
+#[test]
+fn test_add_triple_request_with_privacy() {
+    let request = AddTripleRequest {
+        subject: "http://example.org/secret_formula".to_string(),
+        predicate: "http://example.org/hasIngredient".to_string(),
+        object: "Secret Ingredient X".to_string(),
+        graph_name: None,
+        privacy_key_id: Some("key_123".to_string()),
+    };
+
+    let json = serde_json::to_string(&request).unwrap();
+    assert!(json.contains("privacy_key_id"));
+    assert!(json.contains("key_123"));
+
+    let deserialized: AddTripleRequest = serde_json::from_str(&json).unwrap();
+    assert_eq!(deserialized.privacy_key_id, Some("key_123".to_string()));
 }
 
 #[test]
@@ -340,6 +360,7 @@ fn test_model_edge_cases() {
         predicate: "test".to_string(),
         object: "test".to_string(),
         graph_name: None,
+        privacy_key_id: None,
     };
     let json = serde_json::to_string(&add_triple).unwrap();
     let deserialized: AddTripleRequest = serde_json::from_str(&json).unwrap();

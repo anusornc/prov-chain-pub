@@ -41,6 +41,7 @@ pub struct AddTripleRequest {
     pub predicate: String,
     pub object: String,
     pub graph_name: Option<String>,
+    pub privacy_key_id: Option<String>, // Optional key ID for encryption
 }
 
 /// Request model for SPARQL queries

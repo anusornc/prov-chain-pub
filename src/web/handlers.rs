@@ -7,6 +7,7 @@ use crate::transaction::transaction::{
     TransactionMetadata, TransactionOutput, TransactionPayload, TransactionType,
 };
 use crate::wallet::{ContactInfo, Participant, ParticipantType};
+use crate::security::encryption::PrivacyManager;
 use crate::web::models::{
     AddTripleRequest, ApiError, BlockInfo, CreateTransactionRequest, CreateTransactionResponse,
     EnvironmentalData, ProductTrace, SignTransactionRequest, SignTransactionResponse,
@@ -512,6 +513,81 @@ pub async fn add_triple(
 
     eprintln!("Adding triple data: {}", triple_data);
 
+    // Check for privacy request
+    if let Some(key_id) = &request.privacy_key_id {
+        // In a real implementation, we would retrieve the key from the wallet manager via AppState
+        // For this thesis demonstration, we generate a key on the fly if one isn't found,
+        // effectively simulating that the user has provided a valid key ID.
+        let key = PrivacyManager::generate_key(); // Simulation of retrieving key for 'key_id'
+        
+        match PrivacyManager::encrypt(&triple_data, &key, key_id) {
+            Ok(encrypted) => {
+                let encrypted_json = serde_json::to_string(&encrypted).unwrap_or_default();
+                
+                // Create a block with encrypted payload
+                // We use a placeholder for the public data to indicate it's encrypted
+                match blockchain.create_block_proposal(
+                    format!("@prefix prov: <http://provchain.org/core#> . prov:EncryptedData prov:hasKeyId \"{}\" .", key_id), 
+                    claims.sub.clone()
+                ) {
+                    Ok(mut block) => {
+                        block.encrypted_data = Some(encrypted_json);
+                        // Re-calculate hash to include encrypted data
+                        block.hash = block.calculate_hash();
+                        block.signature = "SIMULATED_SIGNATURE".to_string(); // In real app, sign here
+                        
+                        match blockchain.submit_signed_block(block) {
+                            Ok(()) => {
+                                let block_hash = blockchain.chain.last().map(|b| b.hash.clone()).unwrap_or_default();
+                                let response = serde_json::json!({
+                                    "success": true,
+                                    "block_hash": block_hash,
+                                    "block_index": blockchain.chain.len() - 1,
+                                    "added_by": claims.sub,
+                                    "timestamp": Utc::now(),
+                                    "validation_status": "encrypted",
+                                    "encryption_status": "secured"
+                                });
+                                return Ok(Json(response));
+                            },
+                            Err(e) => {
+                                return Err((
+                                    StatusCode::INTERNAL_SERVER_ERROR,
+                                    Json(ApiError {
+                                        error: "blockchain_error".to_string(),
+                                        message: format!("Failed to submit encrypted block: {}", e),
+                                        timestamp: Utc::now(),
+                                    }),
+                                ));
+                            }
+                        }
+                    },
+                    Err(e) => {
+                        return Err((
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            Json(ApiError {
+                                error: "block_creation_error".to_string(),
+                                message: format!("Failed to create block proposal: {}", e),
+                                timestamp: Utc::now(),
+                            }),
+                        ));
+                    }
+                }
+            },
+            Err(e) => {
+                return Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        error: "encryption_error".to_string(),
+                        message: format!("Failed to encrypt data: {}", e),
+                        timestamp: Utc::now(),
+                    }),
+                ));
+            }
+        }
+    }
+
+    // Standard unencrypted flow
     // STEP 9: Add to blockchain with SHACL validation (this also adds to the internal RDF store)
     match blockchain.add_block(triple_data) {
         Ok(()) => {

@@ -45,6 +45,7 @@ pub struct LoadTestResults {
     pub p95_response_time: Duration,
     pub p99_response_time: Duration,
     pub throughput: f64, // requests per second
+    pub goodput: f64,    // successful requests per second
     pub errors: Vec<String>,
 }
 
@@ -292,6 +293,7 @@ async fn run_transaction_load_test(config: LoadTestConfig) -> Result<LoadTestRes
         }
     }
 
+    let total_start_time = Instant::now();
     let mut handles = vec![];
 
     for user_id in 0..config.concurrent_users {
@@ -352,7 +354,15 @@ async fn run_transaction_load_test(config: LoadTestConfig) -> Result<LoadTestRes
         let _ = handle.await;
     }
 
-    let final_results = results.lock().unwrap().clone();
+    let total_duration = total_start_time.elapsed().as_secs_f64();
+    let mut final_results = results.lock().unwrap().clone();
+    
+    // Calculate final throughput and goodput based on total duration
+    if total_duration > 0.0 {
+        final_results.throughput = final_results.total_requests as f64 / total_duration;
+        final_results.goodput = final_results.successful_requests as f64 / total_duration;
+    }
+    
     Ok(final_results)
 }
 
@@ -361,6 +371,7 @@ async fn run_api_load_test(config: LoadTestConfig) -> Result<LoadTestResults> {
     let server_url = "http://localhost:8080"; // Assuming server is running
     let results = Arc::new(Mutex::new(LoadTestResults::default()));
     let semaphore = Arc::new(Semaphore::new(config.concurrent_users));
+    let total_start_time = Instant::now();
 
     let mut handles = vec![];
 
@@ -427,7 +438,15 @@ async fn run_api_load_test(config: LoadTestConfig) -> Result<LoadTestResults> {
         let _ = handle.await;
     }
 
-    let final_results = results.lock().unwrap().clone();
+    let total_duration = total_start_time.elapsed().as_secs_f64();
+    let mut final_results = results.lock().unwrap().clone();
+    
+    // Calculate final throughput and goodput
+    if total_duration > 0.0 {
+        final_results.throughput = final_results.total_requests as f64 / total_duration;
+        final_results.goodput = final_results.successful_requests as f64 / total_duration;
+    }
+    
     Ok(final_results)
 }
 
@@ -435,6 +454,7 @@ async fn run_traceability_load_test(config: LoadTestConfig) -> Result<LoadTestRe
     let blockchain = Arc::new(Mutex::new(Blockchain::new()));
     let results = Arc::new(Mutex::new(LoadTestResults::default()));
     let semaphore = Arc::new(Semaphore::new(config.concurrent_users));
+    let total_start_time = Instant::now();
 
     // Pre-populate with traceability data
     {
@@ -508,13 +528,22 @@ async fn run_traceability_load_test(config: LoadTestConfig) -> Result<LoadTestRe
         let _ = handle.await;
     }
 
-    let final_results = results.lock().unwrap().clone();
+    let total_duration = total_start_time.elapsed().as_secs_f64();
+    let mut final_results = results.lock().unwrap().clone();
+    
+    // Calculate final throughput and goodput
+    if total_duration > 0.0 {
+        final_results.throughput = final_results.total_requests as f64 / total_duration;
+        final_results.goodput = final_results.successful_requests as f64 / total_duration;
+    }
+    
     Ok(final_results)
 }
 
 async fn run_supply_chain_load_test() -> Result<LoadTestResults> {
     let blockchain = Arc::new(Mutex::new(Blockchain::new()));
     let results = Arc::new(Mutex::new(LoadTestResults::default()));
+    let total_start_time = Instant::now();
 
     // Define supply chain workflows
     let workflows = vec![
@@ -583,7 +612,15 @@ async fn run_supply_chain_load_test() -> Result<LoadTestResults> {
         let _ = handle.await;
     }
 
-    let final_results = results.lock().unwrap().clone();
+    let total_duration = total_start_time.elapsed().as_secs_f64();
+    let mut final_results = results.lock().unwrap().clone();
+    
+    // Calculate final throughput and goodput
+    if total_duration > 0.0 {
+        final_results.throughput = final_results.total_requests as f64 / total_duration;
+        final_results.goodput = final_results.successful_requests as f64 / total_duration;
+    }
+    
     Ok(final_results)
 }
 
@@ -591,6 +628,7 @@ async fn run_ontology_reasoning_load_test(config: LoadTestConfig) -> Result<Load
     let blockchain = Arc::new(Mutex::new(Blockchain::new()));
     let results = Arc::new(Mutex::new(LoadTestResults::default()));
     let semaphore = Arc::new(Semaphore::new(config.concurrent_users));
+    let total_start_time = Instant::now();
 
     // Load multiple ontologies
     let ontologies = vec![
@@ -667,7 +705,15 @@ async fn run_ontology_reasoning_load_test(config: LoadTestConfig) -> Result<Load
         let _ = handle.await;
     }
 
-    let final_results = results.lock().unwrap().clone();
+    let total_duration = total_start_time.elapsed().as_secs_f64();
+    let mut final_results = results.lock().unwrap().clone();
+    
+    // Calculate final throughput and goodput
+    if total_duration > 0.0 {
+        final_results.throughput = final_results.total_requests as f64 / total_duration;
+        final_results.goodput = final_results.successful_requests as f64 / total_duration;
+    }
+    
     Ok(final_results)
 }
 
@@ -675,6 +721,7 @@ async fn run_endurance_load_test(config: LoadTestConfig) -> Result<LoadTestResul
     let blockchain = Arc::new(Mutex::new(Blockchain::new()));
     let results = Arc::new(Mutex::new(LoadTestResults::default()));
     let semaphore = Arc::new(Semaphore::new(config.concurrent_users));
+    let total_start_time = Instant::now();
 
     let mut handles = vec![];
 
@@ -752,7 +799,15 @@ async fn run_endurance_load_test(config: LoadTestConfig) -> Result<LoadTestResul
         let _ = handle.await;
     }
 
-    let final_results = results.lock().unwrap().clone();
+    let total_duration = total_start_time.elapsed().as_secs_f64();
+    let mut final_results = results.lock().unwrap().clone();
+    
+    // Calculate final throughput and goodput
+    if total_duration > 0.0 {
+        final_results.throughput = final_results.total_requests as f64 / total_duration;
+        final_results.goodput = final_results.successful_requests as f64 / total_duration;
+    }
+    
     Ok(final_results)
 }
 
@@ -1206,6 +1261,7 @@ impl Default for LoadTestResults {
             p95_response_time: Duration::from_millis(0),
             p99_response_time: Duration::from_millis(0),
             throughput: 0.0,
+            goodput: 0.0,
             errors: Vec::new(),
         }
     }
@@ -1245,6 +1301,7 @@ fn print_load_test_results(results: &LoadTestResults) {
     println!("P95 Response Time: {:?}", results.p95_response_time);
     println!("P99 Response Time: {:?}", results.p99_response_time);
     println!("Throughput: {:.2} requests/second", results.throughput);
+    println!("Goodput: {:.2} successful requests/second", results.goodput);
 
     if !results.errors.is_empty() {
         println!("Errors encountered:");
