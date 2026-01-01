@@ -1125,6 +1125,15 @@ impl RDFStore {
             ),
         ];
 
+        if let Some(ref encrypted) = block.encrypted_data {
+            quads.push(Quad::new(
+                block_uri.clone(),
+                NamedNode::new("http://provchain.org/hasEncryptedData").unwrap(),
+                Literal::new_simple_literal(encrypted.clone()),
+                graph_name.clone(),
+            ));
+        }
+
         if let Some(prev) = prev_block_uri {
             quads.push(Quad::new(
                 block_uri,

@@ -37,8 +37,9 @@ data_dir = "./"
     )
     .unwrap();
 
+    let binary_path = env!("CARGO_BIN_EXE_provchain-org");
     let mut authority_node = std::process::Command::new(
-        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+        binary_path,
     )
     .current_dir(authority_dir.path())
     .stdout(Stdio::piped())
@@ -70,7 +71,7 @@ data_dir = "./"
     .unwrap();
 
     let mut node2 = std::process::Command::new(
-        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+        binary_path,
     )
     .current_dir(node2_dir.path())
     .stdout(Stdio::piped())
@@ -99,7 +100,7 @@ data_dir = "./"
     .unwrap();
 
     let mut node3 = std::process::Command::new(
-        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+        binary_path,
     )
     .current_dir(node3_dir.path())
     .stdout(Stdio::piped())
@@ -121,7 +122,7 @@ ex:subject ex:predicate ex:object ."#
     .unwrap();
 
     let add_block_output = std::process::Command::new(
-        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+        binary_path,
     )
     .current_dir(authority_dir.path())
     .args(["add-file", test_data_path.to_str().unwrap()])
@@ -136,7 +137,7 @@ ex:subject ex:predicate ex:object ."#
     // 4. Validate Blockchain Integrity
     for dir in &[&authority_dir, &node2_dir, &node3_dir] {
         let validate_output = std::process::Command::new(
-            "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+            binary_path,
         )
         .current_dir(dir.path())
         .arg("validate")
@@ -146,7 +147,7 @@ ex:subject ex:predicate ex:object ."#
     }
 
     let authority_dump_output = std::process::Command::new(
-        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+        binary_path,
     )
     .current_dir(authority_dir.path())
     .arg("dump")
@@ -159,7 +160,7 @@ ex:subject ex:predicate ex:object ."#
         .collect();
 
     let node2_dump_output = std::process::Command::new(
-        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+        binary_path,
     )
     .current_dir(node2_dir.path())
     .arg("dump")
@@ -172,7 +173,7 @@ ex:subject ex:predicate ex:object ."#
         .collect();
 
     let node3_dump_output = std::process::Command::new(
-        "/Users/anusornchaikaew/Work/Phd/ProvChainOrg/target/debug/provchain-org",
+        binary_path,
     )
     .current_dir(node3_dir.path())
     .arg("dump")

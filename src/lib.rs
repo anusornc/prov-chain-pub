@@ -25,6 +25,7 @@ pub mod web;
 pub mod domain;
 pub mod interop;
 pub mod ontology;
+pub mod security;
 
 // Re-export common error types
 pub use error::{ProvChainError, Result};

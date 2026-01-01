@@ -139,13 +139,42 @@ pub async fn get_blockchain_status(
         .map(|b| b.timestamp.clone())
         .unwrap_or_else(|| Utc::now().to_rfc3339());
 
-    // Calculate average block time (simplified)
-    let avg_block_time = if blockchain.chain.len() > 1 {
-        // Simple calculation - in practice you'd parse timestamps properly
-        10.0 // Placeholder average in seconds
+    // Calculate average block time and TPS based on recent history (last 10 blocks)
+    let (avg_block_time, tps) = if blockchain.chain.len() > 2 {
+        let sample_size = std::cmp::min(blockchain.chain.len() - 1, 10);
+        let recent_blocks = &blockchain.chain[blockchain.chain.len() - sample_size..];
+        
+        let first_recent = chrono::DateTime::parse_from_rfc3339(&recent_blocks[0].timestamp)
+            .map(|dt| dt.with_timezone(&Utc))
+            .unwrap_or_else(|_| Utc::now());
+        let last_recent = chrono::DateTime::parse_from_rfc3339(&recent_blocks[recent_blocks.len()-1].timestamp)
+            .map(|dt| dt.with_timezone(&Utc))
+            .unwrap_or_else(|_| Utc::now());
+        
+        let total_duration = last_recent.signed_duration_since(first_recent).num_seconds();
+        if total_duration > 0 {
+            let avg = total_duration as f64 / (sample_size - 1) as f64;
+            let current_tps = (sample_size - 1) as f64 / total_duration as f64;
+            (avg, current_tps)
+        } else {
+            (10.0, 0.1) // Default fallbacks
+        }
     } else {
-        0.0
+        (0.0, 0.0)
     };
+
+    // Calculate uptime from genesis block
+    let uptime = if let Some(genesis) = blockchain.chain.first() {
+        let genesis_time = chrono::DateTime::parse_from_rfc3339(&genesis.timestamp)
+            .map(|dt| dt.with_timezone(&Utc))
+            .unwrap_or_else(|_| Utc::now());
+        Utc::now().signed_duration_since(genesis_time).num_seconds()
+    } else {
+        0
+    };
+
+    // Calculate a synthetic hash rate as blocks_per_second * complexity_factor
+    let network_hash_rate = (tps * 1000000.0) as u64;
 
     let status = serde_json::json!({
         "total_blocks": total_blocks,
@@ -155,12 +184,17 @@ pub async fn get_blockchain_status(
         "network_status": "healthy",
         "last_block_time": last_block_time,
         "avg_block_time": avg_block_time,
-        "transactions_per_second": 0.1, // Placeholder
-        "network_hash_rate": 1000000, // Placeholder
-        "uptime": 3600, // Placeholder - 1 hour
+        "transactions_per_second": tps,
+        "network_hash_rate": network_hash_rate,
+        "uptime": uptime,
         "peer_count": 0, // TODO: Get from network module
         "sync_status": "synced",
-        "last_block_age": 30, // Placeholder - 30 seconds
+        "last_block_age": if let Some(last) = blockchain.chain.last() {
+            let last_time = chrono::DateTime::parse_from_rfc3339(&last.timestamp)
+                .map(|dt| dt.with_timezone(&Utc))
+                .unwrap_or_else(|_| Utc::now());
+            Utc::now().signed_duration_since(last_time).num_seconds()
+        } else { 0 },
         "validation_errors": 0
     });
 

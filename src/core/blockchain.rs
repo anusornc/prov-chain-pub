@@ -17,6 +17,7 @@ pub struct Block {
     pub index: u64,
     pub timestamp: String,
     pub data: String, // RDF in Turtle format
+    pub encrypted_data: Option<String>, // JSON-serialized EncryptedData
     pub previous_hash: String,
     pub hash: String,
     pub state_root: String, // State root hash for atomic consistency
@@ -37,6 +38,7 @@ impl Block {
             index,
             timestamp,
             data,
+            encrypted_data: None,
             previous_hash,
             hash: String::new(),
             state_root,
@@ -72,9 +74,10 @@ impl Block {
 
         // Combine block metadata with canonicalized RDF hash
         // Note: Validator is part of the hash, but signature is NOT (signature signs the hash)
+        let encrypted_part = self.encrypted_data.as_deref().unwrap_or("");
         let record = format!(
-            "{0}{1}{2}{3}{4}",
-            self.index, self.timestamp, rdf_hash, self.previous_hash, self.validator
+            "{0}{1}{2}{3}{4}{5}",
+            self.index, self.timestamp, rdf_hash, self.previous_hash, self.validator, encrypted_part
         );
         let mut hasher = Sha256::new();
         hasher.update(record.as_bytes());
@@ -243,7 +246,7 @@ impl Blockchain {
         // Query to get all blocks ordered by index
         let query = r#"
             PREFIX prov: <http://provchain.org/>
-            SELECT ?block ?index ?timestamp ?hash ?prevHash ?dataGraph ?validator ?signature WHERE {
+            SELECT ?block ?index ?timestamp ?hash ?prevHash ?dataGraph ?validator ?signature ?encryptedData WHERE {
                 GRAPH <http://provchain.org/blockchain> {
                     ?block a prov:Block ;
                            prov:hasIndex ?index ;
@@ -253,6 +256,7 @@ impl Blockchain {
                            prov:hasDataGraphIRI ?dataGraph ;
                            prov:hasValidator ?validator ;
                            prov:hasSignature ?signature .
+                    OPTIONAL { ?block prov:hasEncryptedData ?encryptedData }
                 }
             }
             ORDER BY ?index
@@ -284,6 +288,9 @@ impl Blockchain {
                     let previous_hash = prev_hash_term.to_string().trim_matches('"').to_string();
                     let validator = validator_term.to_string().trim_matches('"').to_string();
                     let signature = signature_term.to_string().trim_matches('"').to_string();
+                    
+                    let encrypted_data = sol.get("encryptedData")
+                        .map(|t| t.to_string().trim_matches('"').to_string());
 
                     // Extract RDF data from the block's graph
                     let data_graph_string = data_graph_term.to_string();
@@ -314,6 +321,7 @@ impl Blockchain {
                         index,
                         timestamp,
                         data,
+                        encrypted_data,
                         previous_hash,
                         hash,
                         state_root,
@@ -598,6 +606,7 @@ impl Blockchain {
             initial_state_root,
             "GENESIS_VALIDATOR".to_string(),
         );
+        block.encrypted_data = None;
         block.signature = "GENESIS_SIGNATURE".to_string();
         block
     }
@@ -633,8 +642,9 @@ impl Blockchain {
                 Ok(validation_result) => {
                     if !validation_result.is_valid {
                         let error_msg = format!(
-                            "SHACL Validation Failed for block {}: {}",
+                            "Transaction validation failed for block {}: {} violations found: {}",
                             index,
+                            validation_result.violations.len(),
                             validation_result
                                 .violations
                                 .iter()
@@ -667,7 +677,8 @@ impl Blockchain {
         // Calculate state root
         let state_root = self.rdf_store.calculate_state_root();
 
-        let block = Block::new(index, data, previous_hash, state_root, validator);
+        let mut block = Block::new(index, data, previous_hash, state_root, validator);
+        block.encrypted_data = None;
 
         Ok(block)
     }

@@ -537,6 +537,8 @@ fn benchmark_postgresql_simulation(transactions: &[SupplyChainTransaction]) -> E
 #[test]
 fn benchmark_comprehensive_system_comparison() {
     println!("=== Comprehensive System Comparison Benchmark ===");
+    println!("DISCLAIMER: Competitor results (Fabric, Ethereum, Jena, Postgres) are SIMULATED");
+    println!("based on literature-derived performance baselines and synthetic overheads.");
     
     let transaction_count = 1000;
     let transactions = SupplyChainTransaction::generate_batch(transaction_count);
