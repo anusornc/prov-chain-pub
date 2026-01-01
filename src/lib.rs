@@ -23,6 +23,7 @@ pub mod wallet;
 pub mod web;
 
 pub mod domain;
+pub mod interop;
 pub mod ontology;
 
 // Re-export common error types

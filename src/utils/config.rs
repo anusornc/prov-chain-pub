@@ -62,6 +62,9 @@ pub struct NetworkConfig {
 /// Consensus-related configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConsensusConfig {
+    /// Consensus protocol type ("poa" or "pbft")
+    pub consensus_type: String,
+
     /// Whether this node is an authority (can create blocks)
     pub is_authority: bool,
 
@@ -153,6 +156,7 @@ impl Default for NetworkConfig {
 impl Default for ConsensusConfig {
     fn default() -> Self {
         Self {
+            consensus_type: "poa".to_string(),
             is_authority: false,
             authority_key_file: None,
             authority_keys: vec![],
@@ -259,6 +263,11 @@ impl NodeConfig {
         }
 
         // Validate consensus configuration
+        let valid_consensus_types = ["poa", "pbft"];
+        if !valid_consensus_types.contains(&self.consensus.consensus_type.as_str()) {
+            anyhow::bail!("Invalid consensus type: {}", self.consensus.consensus_type);
+        }
+
         if self.consensus.is_authority && self.consensus.authority_key_file.is_none() {
             anyhow::bail!("Authority nodes must specify a key file");
         }
