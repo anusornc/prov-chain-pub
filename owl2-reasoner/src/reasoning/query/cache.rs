@@ -1667,7 +1667,7 @@ mod tests {
         index.cleanup();
 
         // Cleanup should not crash and should maintain valid state
-        let after_stats = index.stats();
+        let _after_stats = index.stats();
     }
 
     #[test]
