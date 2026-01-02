@@ -1,57 +1,50 @@
-# ProvChainOrg
+# ProvChainOrg: Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability
 
-A distributed blockchain system implementing the GraphChain concept for supply chain traceability using RDF graphs and SPARQL queries. This project demonstrates semantic blockchain technology with provenance tracking capabilities and **domain-flexible ontology integration**.
+ProvChainOrg is a research-driven distributed blockchain system implemented in Rust. It serves as the primary implementation for the thesis: **"Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability"**. 
 
-ProvChainOrg is designed as a **permissioned blockchain for traceability** that supports multiple domains through pre-configured ontologies. Unlike systems that require runtime ontology switching, ProvChainOrg uses deployment-time configuration to ensure data consistency and system reliability while providing flexibility across different traceability domains.
+The project extends the "GraphChain" concept by integrating semantic technologies directly into the blockchain core, providing high-speed traceability, configurable consensus, cross-chain interoperability, and granular data privacy.
 
-## Overview
+## 🎓 Thesis Objectives & Contributions
 
-ProvChainOrg is a **comprehensive research implementation** of the GraphChain concept from the research paper "GraphChain – A Distributed Database with Explicit Semantics and Chained RDF Graphs" by Sopek et al. (2018). It combines blockchain security with semantic web technologies to create a **distributed ledger for supply chain traceability** with **formal ontology support**.
+This project satisfies the following research objectives:
+1. **RDF-Native Data Structure**: Redesigning the blockchain to store data as RDF triples, enabling machine-readable provenance.
+2. **Multi-Consensus Architecture**: A configurable consensus layer supporting selectable protocols (PoA/PBFT).
+3. **Data Owner Permission Control**: Granular visibility control using ChaCha20-Poly1305 encryption for private triples.
+4. **Cross-Chain Data Interchange**: A secure bridge for transferring traceable assets between independent networks with SHACL validation.
+5. **Knowledge Graph Traceability**: Using embedded ontologies and optimized graph algorithms (SSSP-inspired) for microsecond-latency product tracing.
 
-The system is designed as a **permissioned blockchain** that can be configured for different traceability domains using domain-specific ontologies. Users select and configure the appropriate ontology at deployment time, and the system operates as a dedicated traceability infrastructure for that domain.
+## 🚀 Key Features
 
-## Key Features
+- **Embedded Ontology Engine**: Built-in **Oxigraph** triplestore with full **SPARQL** and **SHACL** validation support.
+- **Selectable Consensus**: Runtime protocol switching between **Proof-of-Authority (PoA)** and **PBFT (Prototype)** via configuration.
+- **Granular Privacy**: Hybrid on-chain storage supporting both public triples and **ChaCha20-Poly1305 encrypted** private data.
+- **Secure Cross-Chain Bridge**: Lock-and-Mint foundation using **Ed25519 digital signatures** and automated **SHACL compliance** checks for ingested data.
+- **Optimized Traceability**: Implements **Frontier Reduction** and **Pivot Selection** for high-performance supply chain backtracking.
+- **Scientific Benchmarking**: Evaluation suite measuring **Goodput** (Successful TPS) and **Latency**, specifically tuned for semantic overhead.
 
-- **RDF-Native Blockchain**: Blocks reference RDF graphs directly with cryptographic integrity
-- **Semantic Data Access**: Full SPARQL query support across all blockchain data
-- **Ontology Integration**: Automatic loading and validation using configurable traceability ontology
-- **Domain-Flexible Design**: Pre-configured ontologies for supply chain, healthcare, pharmaceutical, and other domains
-- **RDF Canonicalization**: Advanced canonicalization algorithm for semantic equivalence
-- **Distributed P2P Network**: WebSocket-based peer communication and discovery (Experimental/Foundational)
-- **Supply Chain Traceability**: Track products from origin to consumer with environmental monitoring
-- **Modern Rust Implementation**: High performance with memory safety and comprehensive testing
+## 🛠️ Technology Stack
 
-## Architecture
+- **Language**: Rust (Memory safety, High concurrency)
+- **Semantic Store**: Oxigraph (RDF/SPARQL)
+- **Cryptography**: Ed25519 (Signatures), ChaCha20-Poly1305 (Encryption)
+- **Web API**: Axum (RESTful Modular Handlers)
+- **Networking**: Tokio / WebSockets (P2P Foundation)
+- **Ontology**: OWL2 / PROV-O / SHACL
 
-### Core Components
-- **Blockchain Engine**: Hash-linked blocks with RDF graph references
-- **RDF Store**: Oxigraph triplestore with named graphs and SPARQL endpoint
-- **Ontology System**: Flexible loading and validation of traceability ontology
-- **Ontology Manager**: Runtime configuration and management of ontologies
-- **Canonicalization**: Deterministic RDF graph hashing with blank node handling
-- **Network Layer**: P2P messaging protocol and peer discovery (Experimental/Foundational)
-- **Configuration**: Comprehensive node configuration management
+## 📦 Architecture
 
-### Data Model
-```rust
-pub struct Block {
-    pub index: u64,           // Sequential block number
-    pub timestamp: String,    // ISO 8601 timestamp
-    pub data: String,         // RDF data in Turtle format
-    pub previous_hash: String, // Link to previous block
-    pub hash: String,         // This block's cryptographic hash
-}
-```
+### Core Modules
+- `src/core/`: Blockchain state and block management.
+- `src/network/consensus.rs`: Trait-based multi-protocol consensus manager.
+- `src/security/encryption.rs`: Privacy engine for data visibility control.
+- `src/interop/bridge.rs`: Cross-chain data interchange logic.
+- `src/web/handlers/`: Modular REST API handlers (Auth, Transaction, Query).
+- `src/semantic/`: OWL2 reasoning and SHACL validation systems.
 
-### RDF Graph Organization
-- **Block Graphs**: `http://provchain.org/block/{index}` - Contains block's RDF data
-- **Ontology Graph**: `http://provchain.org/ontology` - Traceability ontology
-- **Metadata**: Block metadata stored as RDF triples
-
-## Quick Start
+## 🚦 Quick Start
 
 ### Prerequisites
-- Rust 1.70+ 
+- Rust 1.70+
 - Cargo
 
 ### Single Node Demo
@@ -60,483 +53,49 @@ pub struct Block {
 git clone https://github.com/anusornc/provchain-org.git
 cd provchain-org
 
-# Run the ontology-integrated demo
+# Run the supply chain traceability demo
 cargo run demo
-
-# Run comprehensive tests
-cargo test
 ```
 
-### Custom Ontology Configuration
+### Running Thesis Benchmarks
+To generate performance data for the thesis evaluation (requires high-power hardware):
 ```bash
-# Create custom ontology configuration
-cp config/ontology.toml.example config/ontology.toml
-
-# Edit the configuration to use different ontologies
-nano config/ontology.toml
-
-# Run with custom configuration
-cargo run -- --config config/ontology.toml demo
+cargo test --test load_tests --release -- --ignored
 ```
 
-### CLI Usage
-```bash
-# Add RDF file as new block
-cargo run -- add-file test_data/simple_supply_chain_test.ttl
+## ⚙️ Configuration
 
-# Run SPARQL query
-cargo run -- query queries/trace_by_batch_ontology.sparql
-
-# Validate blockchain integrity
-cargo run -- validate
-
-# Dump blockchain as JSON
-cargo run -- dump
-
-# Run with custom ontology configuration
-cargo run -- --ontology-config config/my_ontology.toml demo
-
-# List loaded ontologies
-cargo run -- list-ontologies
-```
-
-### Distributed Network (Experimental)
-```bash
-# Node 1 (Authority)
-PROVCHAIN_PORT=8080 PROVCHAIN_AUTHORITY=true cargo run
-
-# Node 2 (Regular)
-PROVCHAIN_PORT=8081 PROVCHAIN_PEERS="127.0.0.1:8080" cargo run
-
-# Node 3 (Regular)  
-PROVCHAIN_PORT=8082 PROVCHAIN_PEERS="127.0.0.1:8080" cargo run
-```
-
-## Configuration
-
-Create a `config.toml` file:
+The system is highly configurable via `config.toml`:
 
 ```toml
-[network]
-network_id = "provchain-org-default"
-listen_port = 8080
-known_peers = ["127.0.0.1:8081"]
-
 [consensus]
-is_authority = false
-
-[storage]
-data_dir = "./data"
-persistent = true
-store_type = "oxigraph"
+consensus_type = "poa" # Options: "poa", "pbft"
+is_authority = true
+block_interval = 5
 
 [ontology]
 path = "ontologies/generic_core.owl"
-graph_name = "http://provchain.org/ontology"
-auto_load = true
-validate_data = false
+validate_data = true # Enables SHACL validation for every block
 ```
 
-## Ontology Management System
+## 🧪 Verification
 
-### Purpose and Design Philosophy
+The project includes a comprehensive verification suite:
+- `tests/thesis_requirements_test.rs`: Validates Consensus and Bridge.
+- `tests/privacy_test.rs`: Validates Encryption and Wallet key management.
+- `tests/load_tests.rs`: Measures Goodput and Latency under stress.
 
-ProvChainOrg is designed as a **permissioned blockchain for traceability** that supports multiple domains through flexible ontology integration. The system allows users to configure which ontology to use at deployment time, enabling adaptation to various traceability domains such as supply chain, healthcare, pharmaceutical, automotive, and digital assets.
+## 📝 Documentation
 
-Unlike public blockchains that might need runtime flexibility, ProvChainOrg is intended to be configured once for a specific domain and then deployed as a dedicated traceability system. The ontology configuration is set at initialization and remains consistent throughout the blockchain's lifetime to ensure data integrity and consistency.
-
-### Flexible Ontology Configuration
-The system supports flexible ontology configuration through multiple methods:
-
-```toml
-# config/ontology.toml
-[main_ontology]
-path = "ontologies/generic_core.owl"
-graph_iri = "http://provchain.org/ontology/core"
-auto_load = true
-validate_data = false
-
-[resolution]
-strategy = "FileSystem"
-
-[namespaces]
-core = "http://provchain.org/core#"
-prov = "http://www.w3.org/ns/prov#"
-xsd = "http://www.w3.org/2001/XMLSchema#"
-rdfs = "http://www.w3.org/2000/01/rdf-schema#"
-owl = "http://www.w3.org/2002/07/owl#"
-
-[domain_ontologies.supply_chain]
-path = "ontologies/supply-chain.owl"
-graph_iri = "http://provchain.org/ontology/supply-chain"
-enabled = true
-priority = 100
-```
-
-### Configuration Methods
-1. **TOML Configuration Files** - `config/ontology.toml`
-2. **Environment Variables** - `ONTOLGY_MAIN_PATH`, `ONTOLGY_AUTO_LOAD`
-3. **Programmatic Configuration** - API-based setup
-4. **Command-Line Arguments** - Future enhancement
-
-### Domain-Specific Ontologies
-The system includes example ontologies for various domains to demonstrate its flexibility:
-- Supply Chain (`ontologies/supply-chain.owl`)
-- Healthcare (`ontologies/healthcare.owl`)
-- Pharmaceutical (`ontologies/pharmaceutical.owl`)
-- Automotive (`ontologies/automotive.owl`)
-- Digital Assets (`ontologies/digital_assets.owl`)
-
-Each domain ontology extends the generic core ontology and adds domain-specific classes and properties while maintaining compatibility with the core traceability model.
-
-### Deployment-Time Configuration
-Ontology configuration is performed at deployment time to ensure:
-- Data consistency throughout the blockchain's lifetime
-- Performance optimization for the specific domain
-- Security through known and validated ontologies
-- Predictable behavior for traceability queries
-
-This approach aligns with the permissioned blockchain model where the system is configured for a specific use case and then operated as a dedicated traceability infrastructure.
-
-## Use Case: Supply Chain Traceability
-
-### Complete Traceability Chain
-1. **Farm Origin**: Raw milk batch with farmer attribution and batch ID
-2. **Processing**: UHT processing activity with ingredient traceability
-3. **Transport**: Cold chain logistics with environmental monitoring
-4. **Retail**: Final destination with complete provenance chain
-
-### Example RDF Data (Ontology-Based)
-```turtle
-@prefix core: <http://provchain.org/core#> .
-@prefix prov: <http://www.w3.org/ns/prov#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-
-ex:milkBatch1 a core:Batch ;
-    core:hasIdentifier "MB001" ;
-    core:producedAt "2025-08-08T10:00:00Z"^^xsd:dateTime ;
-    prov:wasAttributedTo ex:FarmerJohn .
-
-ex:FarmerJohn a core:Supplier ;
-    rdfs:label "John's Dairy Farm" .
-
-ex:transport1 a core:TransportProcess ;
-    core:recordedAt "2025-08-08T14:00:00Z"^^xsd:dateTime ;
-    prov:used ex:milkBatch1 ;
-    core:hasCondition ex:condition1 .
-
-ex:condition1 a core:EnvironmentalCondition ;
-    core:hasTemperature "4.2"^^xsd:decimal ;
-    core:hasHumidity "65.0"^^xsd:decimal .
-```
-
-### SPARQL Queries
-```sparql
-# Ontology-aware batch tracing
-SELECT ?batch ?activity ?agent ?timestamp WHERE {
-    ?batch a core:Batch ;
-           core:hasIdentifier "MB001" .
-    ?activity prov:used ?batch ;
-              prov:wasAssociatedWith ?agent ;
-              core:recordedAt ?timestamp .
-} ORDER BY ?timestamp
-
-# Environmental conditions monitoring
-SELECT ?batch ?temp ?humidity WHERE {
-    ?activity prov:used ?batch ;
-              core:hasCondition ?condition .
-    ?condition core:hasTemperature ?temp ;
-               core:hasHumidity ?humidity .
-    FILTER(?temp > 5.0)
-}
-```
-
-## Detailed Codebase Analysis
-
-### 1. Core Architecture
-
-The project follows a modular architecture with several key components:
-
-#### Core Module (`src/core/`)
-- `blockchain.rs`: Implements the fundamental blockchain structure with blocks that store RDF data
-- `entity.rs`: Defines a generic `TraceableEntity` model that can represent various types of entities across different domains
-- `atomic_operations.rs`: Handles atomic operations for consistency
-
-#### Storage Module (`src/storage/`)
-- `rdf_store.rs`: The central component that wraps Oxigraph for RDF storage, SPARQL querying, and canonicalization
-
-#### Transaction Module (`src/transaction/`)
-- `transaction.rs`: Implements a full transaction system with inputs/outputs, signing, and validation
-- `blockchain.rs`: Extends the core blockchain with transaction processing capabilities
-
-#### Web Module (`src/web/`)
-- Provides a REST API using Axum with endpoints for blockchain interaction, SPARQL queries, and traceability
-
-#### Semantic Module (`src/semantic/`)
-- Contains OWL reasoners and SHACL validators for semantic processing
-
-### 2. Key Features and Capabilities
-
-#### Blockchain with RDF Integration
-- Each block contains RDF data stored in named graphs
-- Uses RDF canonicalization (RDFC-1.0) for consistent hashing
-- Implements a transaction system with digital signatures (Ed25519)
-
-#### Advanced Semantic Features
-- Integration with a custom OWL2 library (`owl2_rs`) for ontology processing
-- Support for `owl:hasKey` axioms for entity uniqueness constraints
-- Property chain inference for transitive relationship discovery
-- SHACL validation for data conformance
-
-#### Multi-Domain Support
-- Generic entity model that can be adapted to different domains
-- Domain-specific adapters for supply chain, healthcare, and pharmaceutical industries
-- Plugin interface for extending functionality
-
-#### Trace Optimization
-- Implements frontier reduction and pivot selection concepts from SSSP algorithms
-- Optimized traceability queries for supply chain data
-
-#### Wallet and Identity Management
-- Multi-participant wallet system with role-based permissions
-- Secure key storage and management
-- Certificate management for participants
-
-### 3. Technical Implementation Details
-
-#### RDF Handling
-- Uses Oxigraph as the RDF store with support for named graphs
-- Implements both in-memory and persistent storage
-- Supports RDF canonicalization for deterministic hashing
-- Provides SPARQL query capabilities
-
-#### Consensus and Validation
-- Transaction validation with business logic checks
-- Multi-signature support for critical operations
-- Signature verification using Ed25519
-
-#### Web API
-- REST API built with Axum
-- JWT-based authentication
-- Endpoints for blockchain status, SPARQL queries, and traceability
-- Input validation and sanitization
-
-#### Performance Optimizations
-- Frontier reduction in traceability queries
-- Memory caching for RDF data
-- Adaptive canonicalization algorithm selection
-
-### 4. Domain-Specific Functionality
-
-#### Supply Chain
-- Models for products, batches, processes, and transport activities
-- Environmental monitoring data integration
-- Quality control and compliance tracking
-
-#### Healthcare/Pharmaceutical
-- Domain adapters for healthcare-specific entities and relationships
-- Regulatory compliance features
-
-### 5. Advanced Features
-
-#### OWL2 Reasoning
-- Enhanced reasoner with support for `owl:hasKey`, property chains, and qualified cardinality restrictions
-- Integration with the custom `owl2_rs` library
-
-#### Knowledge Graph
-- Modules for knowledge graph construction and entity linking
-- Analytics capabilities for supply chain insights
-
-#### Production Features
-- Monitoring and metrics collection
-- Compliance checking
-- Containerization support
-
-## Project Structure
-
-```
-src/
-├── blockchain.rs      # Core blockchain with ontology integration
-├── rdf_store.rs      # RDF store with canonicalization & validation
-├── demo.rs           # Ontology-integrated demo application
-├── config.rs         # Comprehensive configuration management
-├── trace_optimization.rs # Enhanced traceability algorithms (frontier reduction, pivot selection)
-├── network/          # Distributed networking foundation
-│   ├── mod.rs        # Network manager
-│   ├── messages.rs   # P2P message protocol
-│   ├── peer.rs       # Peer connection management
-│   └── discovery.rs  # Peer discovery protocol
-├── ontology/         # Flexible ontology management system
-│   ├── mod.rs        # Ontology module exports
-│   ├── config.rs     # Ontology configuration management
-│   ├── manager.rs    # Ontology loading and management
-│   ├── loader.rs     # Configuration file loading
-│   └── processor.rs  # Ontology processing and validation
-└── lib.rs           # Library exports
-
-owl2-reasoner/       # Dedicated OWL2 reasoning engine
-├── src/             # Reasoner source code
-└── Cargo.toml       # Reasoner dependencies
-
-benches/             # Performance benchmarks
-├── simple_consensus_benchmarks.rs
-├── comprehensive_performance_benchmarks.rs
-├── rdf_canonicalization_benchmarks.rs
-└── trace_optimization_benchmarks.rs
-
-ontologies/          # Flexible ontology management system
-├── generic_core.owl      # Generic core ontology (primary)
-├── supply-chain.owl      # Supply chain domain ontology
-├── healthcare.owl        # Healthcare domain ontology
-├── pharmaceutical.owl    # Pharmaceutical domain ontology
-├── automotive.owl        # Automotive domain ontology
-├── digital_assets.owl    # Digital assets domain ontology
-├── advanced_owl2_reasoning.owl # OWL2 advanced features ontology
-└── test-owl2.owl        # Test OWL2 features ontology
-
-config/              # Configuration files
-├── config.toml           # Main configuration
-├── ontology.toml         # Ontology configuration
-└── network.toml          # Network configuration
-
-test_data/           # Sample RDF data files
-├── minimal_test_data.ttl
-├── simple_supply_chain_test.ttl
-└── complete_supply_chain_test.ttl
-
-queries/             # SPARQL query examples
-├── trace_by_batch_ontology.sparql  # Ontology-aware queries
-├── trace_by_batch.sparql
-├── trace_origin.sparql
-├── env_conditions_for_batch.sparql
-└── blockchain_metadata.sparql
-
-tests/               # Comprehensive test suite (30+ suites)
-├── blockchain_tests.rs
-├── rdf_tests.rs
-├── canonicalization_tests.rs
-├── ontology_integration_tests.rs
-├── blockchain_with_test_data.rs
-├── test_data_validation.rs
-├── demo_tests.rs
-├── ontology_management_tests.rs
-├── enhanced_performance_benchmarks.rs
-└── domain_tests.rs
-```
-
-## Technology Stack
-
-- **Rust**: Systems programming language for performance and safety
-- **Oxigraph**: RDF triplestore for semantic data storage
-- **Tokio**: Async runtime for networking (foundation)
-- **WebSockets**: P2P communication protocol (foundation)
-- **Serde**: Serialization for messages and configuration
-- **SHA-256**: Cryptographic hashing with RDF canonicalization
-- **Ed25519**: Digital signatures (prepared for consensus)
-- **PROV-O**: W3C provenance ontology foundation
-- **Turtle**: RDF serialization format
-
-## Testing
-
-### Comprehensive Test Suite
-```bash
-# Run all tests (27 tests across 8 suites)
-cargo test
-
-# Specific test categories
-cargo test --test blockchain_tests           # Core blockchain (4 tests)
-cargo test --test rdf_tests                 # RDF operations (2 tests)
-cargo test --test canonicalization_tests    # RDF canonicalization (3 tests)
-cargo test --test ontology_integration_tests # Ontology features (5 tests)
-cargo test --test blockchain_with_test_data # Integration tests (3 tests)
-cargo test --test test_data_validation      # Data validation (3 tests)
-
-# Unit tests (12 tests)
-cargo test --lib
-```
-
-### Test Coverage
-- **Core Blockchain**: Block creation, validation, tampering detection
-- **RDF Operations**: Graph storage, SPARQL queries, metadata
-- **Canonicalization**: Blank node handling, semantic equivalence
-- **Ontology Integration**: Loading, validation, environmental conditions
-- **Ontology Management**: Flexible loading, configuration, domain ontologies
-- **Network Foundation**: P2P messages, peer discovery, configuration
-- **Data Validation**: Test data integrity, supply chain scenarios
-- **Performance**: Enhanced traceability, OWL2 reasoning, property chains
-
-## Key Innovations
-
-### 1. RDF Canonicalization Algorithm
-- Deterministic hashing of RDF graphs
-- Blank node canonicalization with Magic_S/Magic_O placeholders
-- Semantic equivalence detection
-- Blockchain integrity with varying RDF representations
-
-### 2. Ontology-Driven Validation
-- Automatic ontology loading on blockchain initialization
-- Flexible ontology configuration and loading
-- Runtime ontology switching without recompilation
-- Class-based validation for supply chain entities
-- Required property enforcement
-- Environmental condition integration
-- Domain-specific ontology support
-
-### 3. Semantic Blockchain Architecture
-- Named graphs for block organization
-- SPARQL queries across entire blockchain
-- Metadata storage as RDF triples
-- Provenance tracking with PROV-O compliance
-
-### 4. Performance & Scalability
-- **Linear Write Scaling**: Optimized O(1) state root calculation avoids O(N²) bottlenecks.
-- **Indexed Canonicalization**: Hash-based indexing allows canonicalization to scale linearly with graph complexity.
-- **Microsecond-Latency Queries**: Optimized trace algorithms deliver consistent <40µs query times.
-
-## Documentation
-
-- [Implementation Summary](IMPLEMENTATION_SUMMARY.md) - Complete technical overview
-- [Testing Summary](TESTING_SUMMARY.md) - Comprehensive testing analysis
-- [Ontology Integration](ONTOLOGY_INTEGRATION_COMPLETE.md) - Ontology features
-- [GraphChain Comparison](GRAPHCHAIN_COMPARISON.md) - Research paper comparison
-- [Run Instructions](Run.md) - Detailed usage instructions
-
-## Current Status
-
-### ✅ Implemented Features
-- **Core blockchain with RDF graphs**
-- **High-Performance RDF Canonicalization**: Indexed algorithm for O(N) complexity
-- **Linear Scalability**: O(1) state root calculation enabling efficient block addition
-- **Ontology integration and validation**: With OWL2 reasoner integration
-- **Flexible ontology management system**
-- **Comprehensive test suite**: Over 40 tests across 30+ suites
-- **SPARQL query capabilities**
-- **Supply chain traceability demo**
-- **Configuration management**
-- **P2P networking foundation** (Experimental)
-
-### 🚧 In Development
-- Full P2P network consensus (Proof-of-Authority)
-- Cross-node SPARQL queries
-- Production deployment tools
-
-### 📋 Future Enhancements
-- Multiple concurrent ontology support
-- Geographic origin tracking
-- Advanced sharding for massive scale
+- [Thesis Completion Report](docs/THESIS_COMPLETION_REPORT.md) - Summary of technical fulfillment.
+- [Architecture Guide](docs/ARCHITECTURE.md) - Detailed design patterns.
+- [User Manual](docs/USER_MANUAL.md) - End-user instructions.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes with tests
-4. Ensure all tests pass: `cargo test`
-5. Submit a pull request
+This project is licensed under the MIT License.
 
 ## Contact
 
-For questions or collaboration opportunities, please open an issue on GitHub.
+**Anusorn Chaikaew** - Student Code 640551018
+*Chiang Mai University, Faculty of Science, Department of Computer Science*
