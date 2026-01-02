@@ -1,10 +1,10 @@
 # ProvChainOrg: Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability
 
-ProvChainOrg is a research-driven distributed blockchain system implemented in Rust. It serves as the primary implementation for the thesis: **"Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability"**. 
+ProvChainOrg is a research-driven distributed blockchain system implemented in Rust. It serves as the primary implementation for the project: **"Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability"**. 
 
 The project extends the "GraphChain" concept by integrating semantic technologies directly into the blockchain core, providing high-speed traceability, configurable consensus, cross-chain interoperability, and granular data privacy.
 
-## 🎓 Thesis Objectives & Contributions
+## 🎓 Project Objectives & Contributions
 
 This project satisfies the following research objectives:
 1. **RDF-Native Data Structure**: Redesigning the blockchain to store data as RDF triples, enabling machine-readable provenance.
@@ -57,9 +57,31 @@ cd provchain-org
 cargo run demo
 ```
 
-### Running Thesis Benchmarks
-To generate performance data for the thesis evaluation (requires high-power hardware):
+### CLI Usage
+The system provides a powerful CLI for interacting with the blockchain:
+
 ```bash
+# Add RDF file as new block
+cargo run -- add-file test_data/simple_supply_chain_test.ttl
+
+# Run SPARQL query
+cargo run -- query queries/trace_by_batch_ontology.sparql
+
+# Validate blockchain integrity
+cargo run -- validate
+
+# Dump blockchain to stdout
+cargo run -- dump
+
+# Start web server
+cargo run -- web-server --port 8080
+```
+
+### Running Project Benchmarks
+To generate performance data for the project evaluation:
+```bash
+# Ensure JWT_SECRET is set for API tests
+export JWT_SECRET=$(openssl rand -base64 32)
 cargo test --test load_tests --release -- --ignored
 ```
 
@@ -78,16 +100,24 @@ path = "ontologies/generic_core.owl"
 validate_data = true # Enables SHACL validation for every block
 ```
 
+## 🔐 API Authentication
+
+The REST API and load tests require a `JWT_SECRET` for secure token generation. In development, you can set it as follows:
+
+```bash
+export JWT_SECRET="dev-secret-32-chars-long-minimum-for-testing"
+```
+
 ## 🧪 Verification
 
 The project includes a comprehensive verification suite:
-- `tests/thesis_requirements_test.rs`: Validates Consensus and Bridge.
+- `tests/project_requirements_test.rs`: Validates Consensus and Bridge.
 - `tests/privacy_test.rs`: Validates Encryption and Wallet key management.
 - `tests/load_tests.rs`: Measures Goodput and Latency under stress.
 
 ## 📝 Documentation
 
-- [Thesis Completion Report](docs/THESIS_COMPLETION_REPORT.md) - Summary of technical fulfillment.
+- [Project Completion Report](docs/THESIS_COMPLETION_REPORT.md) - Summary of technical fulfillment.
 - [Architecture Guide](docs/ARCHITECTURE.md) - Detailed design patterns.
 - [User Manual](docs/USER_MANUAL.md) - End-user instructions.
 

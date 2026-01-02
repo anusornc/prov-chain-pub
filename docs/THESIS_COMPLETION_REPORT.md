@@ -38,7 +38,7 @@ This report confirms that the **ProvChain** project now satisfies the specific t
 
 ## 3. Verification
 All new features have been verified with automated tests:
-- `tests/thesis_requirements_test.rs`: Validates consensus switching and cross-chain proof export/import.
+- `tests/project_requirements_test.rs`: Validates consensus switching and cross-chain proof export/import.
 - `tests/privacy_test.rs`: Validates encryption/decryption flows and access control.
 
 ## 4. Conclusion
