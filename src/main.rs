@@ -7,6 +7,7 @@ use provchain_org::{
     demo_runner::run_demo_with_args,
     network::{consensus::ConsensusManager, NetworkManager},
     ontology::OntologyConfig,
+    semantic::enhanced_owl2_demo::run_enhanced_owl2_demo,
     semantic::owl2_traceability::Owl2EnhancedTraceability,
     semantic::simple_owl2_test::simple_owl2_integration_test,
     storage::rdf_store::StorageConfig,
@@ -84,8 +85,8 @@ enum Commands {
         ontology: Option<String>,
     },
 
-    /// Test OWL2 integration with owl2-reasoner library
-    TestOwl2 {
+    /// Run OWL2 integration and enhanced features demo
+    Owl2Demo {
         /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
         #[arg(long)]
         ontology: Option<String>,
@@ -100,13 +101,6 @@ enum Commands {
         #[arg(short, long, default_value = "1")]
         optimization: u8,
 
-        /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
-        #[arg(long)]
-        ontology: Option<String>,
-    },
-
-    /// Run enhanced OWL2 features demo with hasKey support
-    DemoOwl2 {
         /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
         #[arg(long)]
         ontology: Option<String>,
@@ -174,9 +168,8 @@ fn generate_uht_demo_data(timestamp: &str) -> Vec<String> {
 <http://provchain.org/item/uht-product-1> <http://provchain.org/uht#milkType> "Whole" .
 <http://provchain.org/item/uht-product-1> <http://provchain.org/uht#fatContent> "3.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
 <http://provchain.org/item/uht-product-1> <http://provchain.org/uht#proteinContent> "3.2"^^<http://www.w3.org/2001/XMLSchema#decimal> .
-<http://provchain.org/item/uht-product-1> <http://provchain.org/uht#expiryDate> "{}"^^<http://www.w3.org/2001/XMLSchema#date> .
-<http://provchain.org/item/uht-product-1> <http://provchain.org/uht#packageSize> "1.0"^^<http://www.w3.org/2001/XMLSchema#decimal> ."#,
-            timestamp
+<http://provchain.org/item/uht-product-1> <http://provchain.org/uht#expiryDate> "{timestamp}"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://provchain.org/item/uht-product-1> <http://provchain.org/uht#packageSize> "1.0"^^<http://www.w3.org/2001/XMLSchema#decimal> ."#
         ),
         // UHT Processing activity
         format!(
@@ -184,16 +177,12 @@ fn generate_uht_demo_data(timestamp: &str) -> Vec<String> {
 <http://provchain.org/activity/uht-processing-1> <http://provchain.org/uht#heatingTemperature> "140.0"^^<http://www.w3.org/2001/XMLSchema#decimal> .
 <http://provchain.org/activity/uht-processing-1> <http://provchain.org/uht#heatingDuration> "5.0"^^<http://www.w3.org/2001/XMLSchema#decimal> .
 <http://provchain.org/activity/uht-processing-1> <http://provchain.org/uht#coolingTemperature> "6.0"^^<http://www.w3.org/2001/XMLSchema#decimal> .
-<http://provchain.org/activity/uht-processing-1> <http://provchain.org/trace#timestamp> "{}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://provchain.org/activity/uht-processing-1> <http://provchain.org/trace#participant> "UHT Processing Plant" ."#,
-            timestamp
+<http://provchain.org/activity/uht-processing-1> <http://provchain.org/trace#timestamp> "{timestamp}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/activity/uht-processing-1> <http://provchain.org/trace#participant> "UHT Processing Plant" ."#
         ),
         // Batch linking to product
         format!(
-            r#"<http://example.org/uht-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/uht-product-1> .
-<http://example.org/uht-batch1> <http://provchain.org/trace#origin> "Dairy Farm A" .
-<http://example.org/uht-batch1> <http://provchain.org/trace#status> "Processed" .
-<http://example.org/uht-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."#
+            r###"<http://example.org/uht-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/uht-product-1> .\n<http://example.org/uht-batch1> <http://provchain.org/trace#origin> \"Dairy Farm A\" .\n<http://example.org/uht-batch1> <http://provchain.org/trace#status> \"Processed\" .\n<http://example.org/uht-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."###
         ),
     ]
 }
@@ -202,31 +191,19 @@ fn generate_uht_demo_data(timestamp: &str) -> Vec<String> {
 fn generate_automotive_demo_data(timestamp: &str) -> Vec<String> {
     vec![
         // Automotive part with required properties
-        format!(r#"<http://provchain.org/item/auto-part-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/automotive#AutomotivePart> .
-<http://provchain.org/item/auto-part-1> <http://provchain.org/trace#name> "Engine Control Unit" .
-<http://provchain.org/item/auto-part-1> <http://provchain.org/trace#participant> "AutoParts Inc." .
-<http://provchain.org/item/auto-part-1> <http://provchain.org/trace#status> "Manufactured" .
-<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#partNumber> "ECU2023001" .
-<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#vehicleModel> "Model S" .
-<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#partCategory> "Electrical" .
-<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#materialType> "Electronic Components" .
-<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#weight> "0.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
-<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#serialNumber> "ECU1234567890" ."#),
+        format!(r###"<http://provchain.org/item/auto-part-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/automotive#AutomotivePart> .\n<http://provchain.org/item/auto-part-1> <http://provchain.org/trace#name> \"Engine Control Unit\" .\n<http://provchain.org/item/auto-part-1> <http://provchain.org/trace#participant> \"AutoParts Inc.\" .\n<http://provchain.org/item/auto-part-1> <http://provchain.org/trace#status> \"Manufactured\" .\n<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#partNumber> \"ECU2023001\" .\n<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#vehicleModel> \"Model S\" .\n<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#partCategory> \"Electrical\" .\n<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#materialType> \"Electronic Components\" .\n<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#weight> \"0.5\"^^<http://www.w3.org/2001/XMLSchema#decimal> .\n<http://provchain.org/item/auto-part-1> <http://provchain.org/automotive#serialNumber> \"ECU1234567890\" ."###),
 
         // Manufacturing activity
         format!(r#"<http://provchain.org/activity/auto-mfg-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/automotive#AutomotiveManufacturing> .
 <http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#manufacturingProcess> "Assembly" .
 <http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#productionLine> "LINE001" .
 <http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#batchSize> "100"^^<http://www.w3.org/2001/XMLSchema#integer> .
-<http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#manufacturingDate> "{}"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#manufacturingDate> "{timestamp}"^^<http://www.w3.org/2001/XMLSchema#date> .
 <http://provchain.org/activity/auto-mfg-1> <http://provchain.org/automotive#plantCode> "FACT001" .
-<http://provchain.org/activity/auto-mfg-1> <http://provchain.org/trace#participant> "Manufacturing Plant" ."#, timestamp),
+<http://provchain.org/activity/auto-mfg-1> <http://provchain.org/trace#participant> "Manufacturing Plant" ."#),
 
         // Batch
-        r#"<http://example.org/auto-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/auto-part-1> .
-<http://example.org/auto-batch1> <http://provchain.org/trace#origin> "Factory A" .
-<http://example.org/auto-batch1> <http://provchain.org/trace#status> "Quality Checked" .
-<http://example.org/auto-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."#.to_string(),
+        r###"<http://example.org/auto-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/auto-part-1> .\n<http://example.org/auto-batch1> <http://provchain.org/trace#origin> \"Factory A\" .\n<http://example.org/auto-batch1> <http://provchain.org/trace#status> \"Quality Checked\" .\n<http://example.org/auto-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."###.to_string(),
     ]
 }
 
@@ -240,20 +217,17 @@ fn generate_pharmaceutical_demo_data(timestamp: &str) -> Vec<String> {
 <http://provchain.org/item/pharma-product-1> <http://provchain.org/trace#status> "Approved" .
 <http://provchain.org/item/pharma-product-1> <http://provchain.org/pharmaceutical#batchNumber> "PHA-2023-001" .
 <http://provchain.org/item/pharma-product-1> <http://provchain.org/pharmaceutical#dosage> "500mg" .
-<http://provchain.org/item/pharma-product-1> <http://provchain.org/pharmaceutical#expiryDate> "{}"^^<http://www.w3.org/2001/XMLSchema#date> ."#, timestamp),
+<http://provchain.org/item/pharma-product-1> <http://provchain.org/pharmaceutical#expiryDate> "{timestamp}"^^<http://www.w3.org/2001/XMLSchema#date> ."#),
 
         // Quality control
         format!(r#"<http://provchain.org/activity/pharma-qc-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/pharmaceutical#PharmaceuticalQualityControl> .
 <http://provchain.org/activity/pharma-qc-1> <http://provchain.org/pharmaceutical#testResult> "Passed" .
 <http://provchain.org/activity/pharma-qc-1> <http://provchain.org/pharmaceutical#labTechnician> "Dr. Smith" .
-<http://provchain.org/activity/pharma-qc-1> <http://provchain.org/trace#timestamp> "{}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://provchain.org/activity/pharma-qc-1> <http://provchain.org/trace#participant> "Quality Lab" ."#, timestamp),
+<http://provchain.org/activity/pharma-qc-1> <http://provchain.org/trace#timestamp> "{timestamp}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/activity/pharma-qc-1> <http://provchain.org/trace#participant> "Quality Lab" ."#),
 
         // Batch
-        r#"<http://example.org/pharma-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/pharma-product-1> .
-<http://example.org/pharma-batch1> <http://provchain.org/trace#origin> "Manufacturing Facility A" .
-<http://example.org/pharma-batch1> <http://provchain.org/trace#status> "Released" .
-<http://example.org/pharma-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."#.to_string(),
+        r###"<http://example.org/pharma-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/pharma-product-1> .\n<http://example.org/pharma-batch1> <http://provchain.org/trace#origin> \"Manufacturing Facility A\" .\n<http://example.org/pharma-batch1> <http://provchain.org/trace#status> \"Released\" .\n<http://example.org/pharma-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."###.to_string(),
     ]
 }
 
@@ -267,20 +241,17 @@ fn generate_healthcare_demo_data(timestamp: &str) -> Vec<String> {
 <http://provchain.org/item/healthcare-product-1> <http://provchain.org/trace#status> "Sterilized" .
 <http://provchain.org/item/healthcare-product-1> <http://provchain.org/healthcare#sterilizationMethod> "Gamma Radiation" .
 <http://provchain.org/item/healthcare-product-1> <http://provchain.org/healthcare#lotNumber> "MED-2023-001" .
-<http://provchain.org/item/healthcare-product-1> <http://provchain.org/healthcare#expiryDate> "{}"^^<http://www.w3.org/2001/XMLSchema#date> ."#, timestamp),
+<http://provchain.org/item/healthcare-product-1> <http://provchain.org/healthcare#expiryDate> "{timestamp}"^^<http://www.w3.org/2001/XMLSchema#date> ."#),
 
         // Healthcare activity
         format!(r#"<http://provchain.org/activity/healthcare-activity-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/healthcare#HealthcareActivity> .
 <http://provchain.org/activity/healthcare-activity-1> <http://provchain.org/healthcare#procedure> "Sterilization" .
 <http://provchain.org/activity/healthcare-activity-1> <http://provchain.org/healthcare#operator> "Sterilization Technician" .
-<http://provchain.org/activity/healthcare-activity-1> <http://provchain.org/trace#timestamp> "{}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://provchain.org/activity/healthcare-activity-1> <http://provchain.org/trace#participant> "Sterilization Department" ."#, timestamp),
+<http://provchain.org/activity/healthcare-activity-1> <http://provchain.org/trace#timestamp> "{timestamp}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://provchain.org/activity/healthcare-activity-1> <http://provchain.org/trace#participant> "Sterilization Department" ."#),
 
         // Batch
-        r#"<http://example.org/healthcare-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/healthcare-product-1> .
-<http://example.org/healthcare-batch1> <http://provchain.org/trace#origin> "Medical Manufacturing Plant" .
-<http://example.org/healthcare-batch1> <http://provchain.org/trace#status> "Ready for Distribution" .
-<http://example.org/healthcare-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."#.to_string(),
+        r###"<http://example.org/healthcare-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/healthcare-product-1> .\n<http://example.org/healthcare-batch1> <http://provchain.org/trace#origin> \"Medical Manufacturing Plant\" .\n<http://example.org/healthcare-batch1> <http://provchain.org/trace#status> \"Ready for Distribution\" .\n<http://example.org/healthcare-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."###.to_string(),
     ]
 }
 
@@ -288,22 +259,13 @@ fn generate_healthcare_demo_data(timestamp: &str) -> Vec<String> {
 fn generate_generic_demo_data(timestamp: &str) -> Vec<String> {
     vec![
         // Generic product
-        format!(r#"<http://provchain.org/item/generic-product-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Product> .
-<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#name> "Generic Product" .
-<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#participant> "Generic Supplier" .
-<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#status> "Active" .
-<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#location> "Warehouse A" ."#),
+        format!(r###"<http://provchain.org/item/generic-product-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Product> .\n<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#name> \"Generic Product\" .\n<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#participant> \"Generic Supplier\" .\n<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#status> \"Active\" .\n<http://provchain.org/item/generic-product-1> <http://provchain.org/trace#location> \"Warehouse A\" ."###),
 
         // Generic activity
-        format!(r#"<http://provchain.org/activity/generic-activity-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Process> .
-<http://provchain.org/activity/generic-activity-1> <http://provchain.org/trace#timestamp> "{}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://provchain.org/activity/generic-activity-1> <http://provchain.org/trace#participant> "Generic Processor" ."#, timestamp),
+        format!(r###"<http://provchain.org/activity/generic-activity-1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Process> .\n<http://provchain.org/activity/generic-activity-1> <http://provchain.org/trace#timestamp> \"{timestamp}\"^^<http://www.w3.org/2001/XMLSchema#dateTime> .\n<http://provchain.org/activity/generic-activity-1> <http://provchain.org/trace#participant> \"Generic Processor\" ."###),
 
         // Batch
-        r#"<http://example.org/generic-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/generic-product-1> .
-<http://example.org/generic-batch1> <http://provchain.org/trace#origin> "Generic Origin" .
-<http://example.org/generic-batch1> <http://provchain.org/trace#status> "Processed" .
-<http://example.org/generic-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."#.to_string(),
+        r###"<http://example.org/generic-batch1> <http://provchain.org/trace#product> <http://provchain.org/item/generic-product-1> .\n<http://example.org/generic-batch1> <http://provchain.org/trace#origin> \"Generic Origin\" .\n<http://example.org/generic-batch1> <http://provchain.org/trace#status> \"Processed\" .\n<http://example.org/generic-batch1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://provchain.org/core#Batch> ."###.to_string(),
     ]
 }
 
@@ -315,38 +277,38 @@ fn create_blockchain_with_ontology(
     // Ensure data directory exists
     if !Path::new(data_dir).exists() {
         fs::create_dir_all(data_dir)
-            .map_err(|e| format!("Failed to create data directory: {}", e))?;
+            .map_err(|e| format!("Failed to create data directory: {e}"))?;
     }
 
     if let Some(ontology_path) = ontology_path {
         info!(
-            "Initializing persistent blockchain with domain ontology: {}",
+            "Initializing persistent blockchain with domain ontology: {}\n",
             ontology_path
         );
 
         // Create ontology configuration
         let config = Config::load_or_default("config.toml");
         let ontology_config = OntologyConfig::new(Some(ontology_path.clone()), &config)
-            .map_err(|e| format!("Failed to create ontology configuration: {}", e))?;
+            .map_err(|e| format!("Failed to create ontology configuration: {e}"))?;
 
         // Create persistent blockchain with ontology
         let blockchain = Blockchain::new_persistent_with_ontology(data_dir, ontology_config)
             .map_err(|e| {
                 format!(
-                    "Failed to initialize persistent blockchain with ontology: {}",
+                    "Failed to initialize persistent blockchain with ontology: {}\n",
                     e
                 )
             })?;
 
         info!(
-            "✅ Persistent Blockchain initialized with domain ontology: {}",
+            "✅ Persistent Blockchain initialized with domain ontology: {}\n",
             ontology_path
         );
         Ok(blockchain)
     } else {
-        info!("Initializing persistent blockchain without domain ontology");
+        info!("Initializing persistent blockchain without domain ontology\n");
         Ok(Blockchain::new_persistent(data_dir)
-            .map_err(|e| format!("Failed to initialize persistent blockchain: {}", e))?)
+            .map_err(|e| format!("Failed to initialize persistent blockchain: {e}\n"))?)
     }
 }
 
@@ -362,46 +324,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut blockchain = create_blockchain_with_ontology(ontology)?;
 
             let rdf_data = fs::read_to_string(&path)
-                .map_err(|e| format!("Cannot read RDF file '{path}': {e}"))?;
+                .map_err(|e| format!("Cannot read RDF file '{path}': {e}\n"))?;
 
             blockchain
                 .add_block(rdf_data)
-                .map_err(|e| format!("Failed to add block: {e}"))?;
+                .map_err(|e| format!("Failed to add block: {e}\n"))?;
             let block_hash = blockchain
                 .chain
                 .last()
                 .map(|b| b.hash.clone())
                 .unwrap_or_else(|| "unknown".to_string());
 
-            println!("Added RDF as a new block with hash: {block_hash}");
-            println!("Blockchain is valid: {}", blockchain.is_valid());
+            println!("Added RDF as a new block with hash: {block_hash}\n");
+            println!("Blockchain is valid: {}\n", blockchain.is_valid());
         }
         Commands::Query { path, ontology } => {
             let blockchain = create_blockchain_with_ontology(ontology)?;
 
             let query = fs::read_to_string(&path)
-                .map_err(|e| format!("Cannot read query file '{path}': {e}"))?;
+                .map_err(|e| format!("Cannot read query file '{path}': {e}\n"))?;
 
             let _results = blockchain.rdf_store.query(&query);
-            println!("Query results:");
+            println!("Query results:\n");
             // For now, just print that query was executed
-            println!("Query executed successfully");
+            println!("Query executed successfully\n");
         }
         Commands::Validate { ontology } => {
             let blockchain = create_blockchain_with_ontology(ontology)?;
 
             if blockchain.is_valid() {
-                println!("✅ Blockchain is valid.");
+                println!("✅ Blockchain is valid.\n");
             } else {
-                println!("❌ Blockchain is NOT valid.");
+                println!("❌ Blockchain is NOT valid.\n");
             }
         }
         Commands::Dump => {
             let blockchain = Blockchain::new();
             match blockchain.dump() {
-                Ok(json) => println!("{json}"),
+                Ok(json) => println!("{json}\n"),
                 Err(e) => {
-                    eprintln!("Error dumping blockchain: {e}");
+                    eprintln!("Error dumping blockchain: {e}\n");
                     std::process::exit(1);
                 }
             }
@@ -409,7 +371,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Demo { ontology } => {
             let _blockchain = create_blockchain_with_ontology(ontology)?;
 
-            info!("Running built-in demo...");
+            info!("Running built-in demo...\n");
             demo::run_demo();
         }
         Commands::TransactionDemo {
@@ -418,10 +380,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         } => {
             let _blockchain = create_blockchain_with_ontology(ontology)?;
 
-            info!("Running transaction blockchain demo: {}", demo_type);
+            info!("Running transaction blockchain demo: {}\n", demo_type);
             let args = vec!["provchain".to_string(), demo_type];
             if let Err(e) = run_demo_with_args(args) {
-                eprintln!("Demo error: {}", e);
+                eprintln!("Demo error: {}\n", e);
                 std::process::exit(1);
             }
         }
@@ -429,20 +391,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Initialize blockchain with ontology configuration
             let mut blockchain = create_blockchain_with_ontology(ontology.clone())?;
 
-            info!("Starting Phase 2 web server on port {}", port);
+            info!("Starting Phase 2 web server on port {}\n", port);
 
             // Load ontology data first
-            info!("Loading core ontology...");
+            info!("Loading core ontology...\n");
             let ontology_data = fs::read_to_string("ontologies/generic_core.owl")
-                .map_err(|e| format!("Cannot read ontology file: {e}"))?;
+                .map_err(|e| format!("Cannot read ontology file: {e}\n"))?;
             blockchain
                 .add_block(ontology_data)
-                .map_err(|e| format!("Failed to add ontology block: {e}"))?;
+                .map_err(|e| format!("Failed to add ontology block: {e}\n"))?;
 
             // Generate ontology-aware demo data
             let ontology_config =
                 OntologyConfig::new(ontology, &Config::load_or_default("config.toml"))
-                    .map_err(|e| format!("Failed to create ontology config: {e}"))?;
+                    .map_err(|e| format!("Failed to create ontology config: {e}\n"))?;
             let demo_data = generate_demo_data(&ontology_config);
 
             let demo_data_count = demo_data.len();
@@ -451,11 +413,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             for data in demo_data {
                 blockchain
                     .add_block(data)
-                    .map_err(|e| format!("Failed to add block: {e}"))?;
+                    .map_err(|e| format!("Failed to add block: {e}\n"))?;
             }
 
             info!(
-                "Loaded {} blocks (1 ontology + {} demo data)",
+                "Loaded {} blocks (1 ontology + {} demo data)\n",
                 blockchain.chain.len(),
                 demo_data_count
             );
@@ -467,34 +429,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Create and start the web server
             let web_server = create_web_server(blockchain, Some(config)).await?;
 
-            info!("🚀 Web server starting...");
-            info!("📡 API available at: http://localhost:{}", port);
-            info!("🔍 Health check: http://localhost:{}/health", port);
-            info!("🔐 Login endpoint: http://localhost:{}/auth/login", port);
+            info!("🚀 Web server starting...\n");
+            info!("📡 API available at: http://localhost:{}\n", port);
+            info!("🔍 Health check: http://localhost:{}/health\n", port);
+            info!("🔐 Login endpoint: http://localhost:{}/auth/login\n", port);
             info!(
-                "📊 Blockchain status: http://localhost:{}/api/blockchain/status",
+                "📊 Blockchain status: http://localhost:{}/api/blockchain/status\n",
                 port
             );
             info!("");
-            info!("Default users for testing:");
-            info!("  - admin/admin123 (Admin role)");
-            info!("  - farmer1/farmer123 (Farmer role)");
-            info!("  - processor1/processor123 (Processor role)");
+            info!("Default users for testing:\n");
+            info!("  - admin/admin123 (Admin role)\n");
+            info!("  - farmer1/farmer123 (Farmer role)\n");
+            info!("  - processor1/processor123 (Processor role)\n");
             info!("");
-            info!("Press Ctrl+C to stop the server");
+            info!("Press Ctrl+C to stop the server\n");
 
             web_server.start().await?;
         }
-        Commands::TestOwl2 { ontology } => {
+        Commands::Owl2Demo { ontology } => {
             let _blockchain = create_blockchain_with_ontology(ontology)?;
 
-            info!("Testing OWL2 integration with owl2-reasoner library...");
+            info!("Running OWL2 integration and enhanced features demo...\n");
+            
+            println!("\n--- Phase 1: Simple Integration Test ---\n");
             if let Err(e) = simple_owl2_integration_test() {
-                eprintln!("OWL2 integration test failed: {}", e);
+                eprintln!("OWL2 integration test failed: {}\n", e);
                 std::process::exit(1);
-            } else {
-                println!("✅ OWL2 integration test passed!");
             }
+            println!("✅ OWL2 integration test passed!\n");
+
+            println!("\n--- Phase 2: Enhanced OWL2 Features Demo ---\n");
+            run_enhanced_owl2_demo();
+            println!("✅ Enhanced OWL2 demo completed successfully!\n");
         }
         Commands::EnhancedTrace {
             batch_id,
@@ -503,7 +470,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         } => {
             let blockchain = create_blockchain_with_ontology(ontology)?;
 
-            info!("Running enhanced traceability with OWL2 reasoning...");
+            info!("Running enhanced traceability with OWL2 reasoning...\n");
 
             // Create the enhanced traceability system
             let owl2_enhancer = Owl2EnhancedTraceability::new(blockchain);
@@ -512,19 +479,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let result = owl2_enhancer.enhanced_trace(&batch_id, optimization);
 
             // Print results
-            println!("=== Enhanced Trace Results ===");
-            println!("Optimized: {}", result.optimized);
-            println!("Entities explored: {}", result.entities_explored);
-            println!("Execution time: {} ms", result.execution_time_ms);
+            println!("=== Enhanced Trace Results ===\n");
+            println!("Optimized: {}\n", result.optimized);
+            println!("Entities explored: {}\n", result.entities_explored);
+            println!("Execution time: {} ms\n", result.execution_time_ms);
 
             if let Some(improvement) = result.performance_improvement {
-                println!("Performance improvement: {:.2}x", improvement);
+                println!("Performance improvement: {:.2}x\n", improvement);
             }
 
-            println!("Trace path:");
+            println!("Trace path:\n");
             for (i, event) in result.path.iter().enumerate() {
                 println!(
-                    "  {}. {}: {} -> {}",
+                    "  {}. {}: {} -> {}\n",
                     i + 1,
                     event.entity,
                     event.relationship,
@@ -532,62 +499,54 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
             }
 
-            println!("✅ Enhanced trace completed successfully!");
-        }
-        Commands::DemoOwl2 { ontology } => {
-            let _blockchain = create_blockchain_with_ontology(ontology)?;
-
-            info!("Running enhanced OWL2 features demo...");
-            // We'll implement this once we fix the import issue
-            println!("✅ Enhanced OWL2 demo completed successfully!");
+            println!("✅ Enhanced trace completed successfully!\n");
         }
         Commands::AdvancedOwl2 { ontology } => {
             use provchain_org::semantic::library_integration::{
-                check_consistency, validate_ontology,
+                check_consistency,
+                validate_ontology,
             };
 
-            println!("=== Advanced OWL2 Reasoning ===");
-            println!("Processing ontology: {}", ontology);
+            println!("=== Advanced OWL2 Reasoning ===\n");
+            println!("Processing ontology: {}\n", ontology);
 
             // 1. Validation
-            println!("\n--- Validation ---");
-            // 1. Validation
-            println!("\n--- Validation ---");
+            println!("\n--- Validation ---\n");
             match validate_ontology(&ontology) {
                 Ok(report) => {
-                    println!("Validation Report:");
-                    println!("  Overall Score: {:.2}", report.overall_score);
-                    println!("  Completeness: {:.2}", report.completeness_score);
-                    println!("  Structural: {:.2}", report.structural_score);
-                    println!("  Readiness: {:?}", report.publication_readiness);
+                    println!("Validation Report:\n");
+                    println!("  Overall Score: {:.2}\n", report.overall_score);
+                    println!("  Completeness: {:.2}\n", report.completeness_score);
+                    println!("  Structural: {:.2}\n", report.structural_score);
+                    println!("  Readiness: {:?}\n", report.publication_readiness);
 
                     if !report.recommendations.is_empty() {
-                        println!("  Recommendations:");
+                        println!("  Recommendations:\n");
                         for rec in &report.recommendations {
-                            println!("    - {}", rec);
+                            println!("    - {}\n", rec);
                         }
                     }
 
                     if report.is_valid() {
-                        println!("✅ Ontology is valid according to AcademicValidator");
+                        println!("✅ Ontology is valid according to AcademicValidator\n");
                     } else {
-                        println!("⚠️  Ontology needs improvement");
+                        println!("⚠️  Ontology needs improvement\n");
                     }
                 }
-                Err(e) => println!("❌ Validation failed: {}", e),
+                Err(e) => println!("❌ Validation failed: {}\n", e),
             }
 
             // 2. Consistency Checking
-            println!("\n--- Consistency Checking ---");
+            println!("\n--- Consistency Checking ---\n");
             match check_consistency(&ontology) {
                 Ok(consistent) => {
                     if consistent {
-                        println!("✅ Ontology is consistent");
+                        println!("✅ Ontology is consistent\n");
                     } else {
-                        println!("❌ Ontology is INCONSISTENT");
+                        println!("❌ Ontology is INCONSISTENT\n");
                     }
                 }
-                Err(e) => println!("❌ Consistency checking failed: {}", e),
+                Err(e) => println!("❌ Consistency checking failed: {}\n", e),
             }
         }
         Commands::TracePath { from, to, ontology } => {
@@ -595,36 +554,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let blockchain = create_blockchain_with_ontology(ontology)?;
 
-            info!("Building knowledge graph from blockchain data...");
+            info!("Building knowledge graph from blockchain data...\n");
             let builder = GraphBuilder::new(blockchain.rdf_store);
             let kg = builder
                 .build_knowledge_graph()
-                .map_err(|e| format!("Failed to build knowledge graph: {}", e))?;
+                .map_err(|e| format!("Failed to build knowledge graph: {e}\n"))?;
 
-            info!("Initializing graph database...");
+            info!("Initializing graph database...\n");
             let graph_db = GraphDatabase::new(kg);
 
-            info!("Tracing path from '{}' to '{}'...", from, to);
+            info!("Tracing path from '{}' to '{}'...\n", from, to);
             match graph_db.find_shortest_path(&from, &to) {
                 Some(path) => {
-                    println!("✅ Path found:");
+                    println!("✅ Path found:\n");
                     for (i, node) in path.iter().enumerate() {
-                        println!("  {}. {}", i + 1, node);
+                        println!("  {}. {}\n", i + 1, node);
                     }
                 }
                 None => {
-                    println!("❌ No path found between '{}' and '{}'", from, to);
+                    println!("❌ No path found between '{}' and '{}'\n", from, to);
                 }
             }
         }
         Commands::StartNode { config } => {
             // Load configuration
             let node_config = load_config(config.as_deref())
-                .map_err(|e| format!("Failed to load config: {}", e))?;
+                .map_err(|e| format!("Failed to load config: {e}\n"))?;
 
-            info!("Starting node {}...", node_config.node_id);
-            info!("Network ID: {}", node_config.network.network_id);
-            info!("Listen Address: {}", node_config.listen_address());
+            info!("Starting node {}...\n", node_config.node_id);
+            info!("Network ID: {}\n", node_config.network.network_id);
+            info!("Listen Address: {}\n", node_config.listen_address());
 
             // Initialize components
             // Convert utils::config::StorageConfig to storage::rdf_store::StorageConfig
@@ -641,36 +600,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let blockchain = Arc::new(RwLock::new(
                 Blockchain::new_persistent_with_config(storage_config)
-                    .map_err(|e| format!("Failed to initialize blockchain: {}", e))?,
+                    .map_err(|e| format!("Failed to initialize blockchain: {e}\n"))?,
             ));
 
             let network = NetworkManager::new(node_config.clone());
             let network_arc = Arc::new(network);
-
-            // We need to start the network manager, but it requires mutable access
-            // However, we also need to pass it to ConsensusManager wrapped in Arc
-            // This circular dependency needs to be handled carefully.
-            // For now, we'll clone the Arc for ConsensusManager, but we need to start the network
-            // which is a bit tricky with the current structure.
-
-            // Let's modify how we start things.
-            // NetworkManager::start(&mut self) is the issue if we wrap it in Arc.
-            // We might need to use interior mutability for NetworkManager or change start() to take &self.
-            // But looking at NetworkManager, start() calls start_server() and connect_to_known_peers() which take &self.
-            // So we can change start() to take &self if we change the signature in mod.rs.
-            // Let's check mod.rs again.
-
-            // In mod.rs: pub async fn start(&mut self) -> Result<()>
-            // But start_server takes &self, connect_to_known_peers takes &self.
-            // So we can change start to take &self!
-
-            // Wait, I can't change mod.rs in this tool call.
-            // I'll assume I can fix mod.rs in a separate step or just use unsafe/interior mutability trick if needed,
-            // but actually, since I just modified mod.rs, let's see.
-            // I implemented start_server(&self) and connect_to_known_peers(&self).
-            // So I can change start(&mut self) to start(&self) in mod.rs!
-
-            // But for now, let's implement the handler assuming I'll fix the signature.
 
             let consensus = ConsensusManager::new(
                 node_config.consensus.clone(),
@@ -678,7 +612,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 blockchain.clone(),
             )
             .await
-            .map_err(|e| format!("Failed to initialize consensus: {}", e))?;
+            .map_err(|e| format!("Failed to initialize consensus: {e}\n"))?;
 
             // Register consensus manager as message handler
             network_arc
@@ -686,33 +620,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .await;
 
             // Start services
-            // We need to spawn the network start task.
-            // Since start() currently takes &mut self, we can't call it on Arc.
-            // I will fix this in the next step.
-
-            // For now, let's just spawn the consensus start
             tokio::spawn(async move {
                 if let Err(e) = consensus.start().await {
-                    error!("Consensus error: {}", e);
+                    error!("Consensus error: {}\n", e);
                 }
             });
-
-            // And we need to start the network.
-            // I'll add a TODO comment here and fix the NetworkManager::start signature in the next step.
-            // actually, I can't compile if I call it wrong.
-            // So I will comment out the network start call and fix it immediately after.
 
             tokio::spawn(async move {
                 if let Err(e) = network_arc.start().await {
-                    error!("Network error: {}", e);
+                    error!("Network error: {}\n", e);
                 }
             });
 
-            info!("Node started successfully. Press Ctrl+C to stop.");
+            info!("Node started successfully. Press Ctrl+C to stop.\n");
 
             // Wait for interrupt signal
             tokio::signal::ctrl_c().await?;
-            info!("Shutting down...");
+            info!("Shutting down...\n");
         }
         Commands::GenerateKey { out } => {
             use ed25519_dalek::SigningKey;
@@ -722,11 +646,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Save private key to file
             fs::write(&out, keypair.to_bytes())
-                .map_err(|e| format!("Failed to write key to file: {}", e))?;
+                .map_err(|e| format!("Failed to write key to file: {e}\n"))?;
 
-            println!("Generated new authority keypair");
-            println!("Private key saved to: {}", out);
-            println!("Public key (hex): {}", hex::encode(public_key.to_bytes()));
+            println!("Generated new authority keypair\n");
+            println!("Private key saved to: {}\n", out);
+            println!("Public key (hex): {}\n", hex::encode(public_key.to_bytes()));
         }
     }
 

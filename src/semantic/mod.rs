@@ -35,6 +35,6 @@ pub use owl2_enhanced_reasoner::{
 pub use owl2_integration::test_owl2_integration;
 pub use owl2_traceability::Owl2EnhancedTraceability;
 pub use owl_reasoner::{OwlReasoner, OwlReasonerConfig, ValidationResult};
-// pub use enhanced_owl2_demo::run_enhanced_owl2_demo;
+pub use enhanced_owl2_demo::run_enhanced_owl2_demo;
 pub use shacl_validator::ShaclValidator;
 pub use simple_owl2_test::simple_owl2_integration_test;
