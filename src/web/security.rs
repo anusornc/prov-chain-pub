@@ -181,18 +181,23 @@ pub async fn security_headers_middleware(
     let headers = response.headers_mut();
 
     // Content Security Policy
+    // SECURITY: Removed 'unsafe-inline' and 'unsafe-eval' to prevent XSS attacks.
+    // All JavaScript must be in external files with nonces or hashes.
+    // Inline scripts and event handlers are not permitted.
     headers.insert(
         "Content-Security-Policy",
         HeaderValue::from_static(
             "default-src 'self'; \
-             script-src 'self' 'unsafe-inline' 'unsafe-eval'; \
-             style-src 'self' 'unsafe-inline'; \
+             script-src 'self'; \
+             style-src 'self'; \
              img-src 'self' data: https:; \
              font-src 'self'; \
              connect-src 'self' ws: wss:; \
              frame-ancestors 'none'; \
              base-uri 'self'; \
-             form-action 'self'"
+             form-action 'self'; \
+             object-src 'none'; \
+             frame-src 'none'"
         ),
     );
 

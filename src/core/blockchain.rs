@@ -98,6 +98,10 @@ pub struct Blockchain {
     pub signing_key: SigningKey,
     /// Public key (hex-encoded) for signature verification
     pub validator_public_key: String,
+    /// Timestamp of last key rotation for security monitoring
+    pub last_key_rotation: chrono::DateTime<chrono::Utc>,
+    /// Recommended key rotation interval (90 days)
+    pub key_rotation_interval_days: u64,
 }
 
 impl Default for Blockchain {
@@ -123,6 +127,8 @@ impl Blockchain {
             governance: Governance::new(),
             signing_key,
             validator_public_key,
+            last_key_rotation: chrono::Utc::now(),
+            key_rotation_interval_days: 90,
         };
 
         // Load the traceability ontology
@@ -166,6 +172,8 @@ impl Blockchain {
             governance: Governance::new(),
             signing_key,
             validator_public_key,
+            last_key_rotation: chrono::Utc::now(),
+            key_rotation_interval_days: 90,
         };
 
         // Load the traceability ontology
@@ -243,6 +251,8 @@ impl Blockchain {
             governance: Governance::new(),
             signing_key,
             validator_public_key,
+            last_key_rotation: chrono::Utc::now(),
+            key_rotation_interval_days: 90,
         };
 
         // Load the traceability ontology
@@ -478,6 +488,8 @@ impl Blockchain {
             governance: Governance::new(),
             signing_key,
             validator_public_key,
+            last_key_rotation: chrono::Utc::now(),
+            key_rotation_interval_days: 90,
         };
 
         // Initialize ontology manager and SHACL validator
@@ -521,6 +533,8 @@ impl Blockchain {
             governance: Governance::new(),
             signing_key,
             validator_public_key,
+            last_key_rotation: chrono::Utc::now(),
+            key_rotation_interval_days: 90,
         };
 
         // Initialize ontology manager and SHACL validator
@@ -637,6 +651,8 @@ impl Blockchain {
             governance: Governance::new(),
             signing_key,
             validator_public_key,
+            last_key_rotation: chrono::Utc::now(),
+            key_rotation_interval_days: 90,
         };
 
         // Load the chain from the restored store
@@ -927,6 +943,65 @@ impl Blockchain {
     pub fn enhanced_trace(&self, batch_id: &str, optimization_level: u8) -> EnhancedTraceResult {
         let trace_system = EnhancedTraceabilitySystem::new(self);
         trace_system.enhanced_trace(batch_id, optimization_level)
+    }
+
+    /// Check if the signing key needs to be rotated based on age
+    /// 
+    /// Returns true if the key is older than the configured rotation interval.
+    /// This helps prevent long-term exposure of a single key.
+    pub fn should_rotate_key(&self) -> bool {
+        let rotation_threshold = self.last_key_rotation + chrono::Duration::days(self.key_rotation_interval_days as i64);
+        chrono::Utc::now() > rotation_threshold
+    }
+
+    /// Get days since last key rotation
+    /// 
+    /// Useful for monitoring and alerting on key age.
+    pub fn days_since_key_rotation(&self) -> i64 {
+        let duration = chrono::Utc::now() - self.last_key_rotation;
+        duration.num_days()
+    }
+
+    /// Get the key rotation interval in days
+    pub fn key_rotation_interval_days(&self) -> u64 {
+        self.key_rotation_interval_days
+    }
+
+    /// Rotate the signing key (for future use - requires persistence)
+    /// 
+    /// SECURITY: Key rotation limits exposure if a key is compromised.
+    /// In production, this would:
+    /// 1. Generate a new signing key
+    /// 2. Publish the old key's deprecation to the blockchain
+    /// 3. Update all dependent systems
+    /// 4. Archive the old key securely
+    /// 
+    /// Note: This is a placeholder for future implementation.
+    /// Full key rotation requires blockchain consensus and persistence.
+    #[allow(dead_code)]
+    pub fn rotate_signing_key(&mut self) -> Result<(), String> {
+        // Generate new signing key
+        let new_signing_key = crate::security::keys::generate_signing_key()
+            .map_err(|e| format!("Failed to generate new signing key: {}", e))?;
+        let new_public_key = new_signing_key.verifying_key();
+        let new_validator_public_key = hex::encode(new_public_key.to_bytes());
+
+        // In a full implementation:
+        // 1. Create a key rotation transaction
+        // 2. Submit it to the blockchain for consensus
+        // 3. Wait for confirmation
+        // 4. Update the signing key
+        // 5. Persist the new key
+
+        // For now, just log that rotation would happen
+        tracing::warn!(
+            old_key_age_days = self.days_since_key_rotation(),
+            new_public_key_prefix = &new_validator_public_key[..8],
+            "Key rotation requested - requires blockchain consensus"
+        );
+
+        // TODO: Implement full key rotation with blockchain persistence
+        Err("Key rotation requires blockchain consensus and persistence layer".to_string())
     }
 
     pub fn dump(&self) -> Result<String> {

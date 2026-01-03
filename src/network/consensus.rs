@@ -1168,7 +1168,15 @@ impl PbftConsensus {
         signature: Signature,
         public_key: VerifyingKey,
     ) -> Result<()> {
-        // SECURITY: Check for replay attacks FIRST (before signature verification to prevent DoS)
+        // SECURITY: Verify signature FIRST (before any other processing)
+        // This prevents invalid messages from passing authorization checks
+        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
+        if public_key.verify(&message_bytes, &signature).is_err() {
+            warn!("PBFT: Invalid signature on PRE-PREPARE message from {} - rejecting", sender);
+            return Err(anyhow!("Invalid signature on PRE-PREPARE from {}", sender));
+        }
+
+        // SECURITY: Check for replay attacks (fast check to prevent DoS)
         let message_id = Self::generate_message_id("preprepare", view, sequence, sender);
         if self.is_duplicate_message(&message_id).await {
             warn!("PBFT: Replay attack detected - duplicate PRE-PREPARE from {} (view={}, sequence={})", 
@@ -1178,15 +1186,8 @@ impl PbftConsensus {
         
         let state = self.pbft_state.read().await;
 
-        // Only accept PRE-PREPARE from primary
+        // Only accept PRE-PREPARE from primary (authorization check)
         if !self.is_primary_for_view(view).await || sender != self.node_id {
-            return Ok(());
-        }
-
-        // Verify signature
-        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
-        if public_key.verify(&message_bytes, &signature).is_err() {
-            warn!("PBFT: Invalid signature on PRE-PREPARE message from {}", sender);
             return Ok(());
         }
 
@@ -1231,7 +1232,14 @@ impl PbftConsensus {
         signature: Signature,
         public_key: VerifyingKey,
     ) -> Result<()> {
-        // SECURITY: Check for replay attacks FIRST
+        // SECURITY: Verify signature FIRST (before any other processing)
+        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
+        if public_key.verify(&message_bytes, &signature).is_err() {
+            warn!("PBFT: Invalid signature on PREPARE message from {} - rejecting", sender);
+            return Err(anyhow!("Invalid signature on PREPARE from {}", sender));
+        }
+
+        // SECURITY: Check for replay attacks (fast check to prevent DoS)
         let message_id = Self::generate_message_id("prepare", view, sequence, sender);
         if self.is_duplicate_message(&message_id).await {
             warn!("PBFT: Replay attack detected - duplicate PREPARE from {} (view={}, sequence={})", 
@@ -1243,13 +1251,6 @@ impl PbftConsensus {
 
         // Only accept PREPARE for current view/sequence
         if view != state.view || sequence != state.sequence {
-            return Ok(());
-        }
-
-        // Verify signature
-        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
-        if public_key.verify(&message_bytes, &signature).is_err() {
-            warn!("PBFT: Invalid signature on PREPARE message from {}", sender);
             return Ok(());
         }
 
@@ -1268,9 +1269,9 @@ impl PbftConsensus {
             });
 
         // Mark message as processed after storing
-        drop(state);  // Release lock before calling mark_message_processed
+        drop(state);
         self.mark_message_processed(message_id).await;
-        let mut state = self.pbft_state.write().await;  // Re-acquire lock
+        let mut state = self.pbft_state.write().await;
 
         // Check if we have enough PREPARE messages (2f+1)
         let authority_count = self.authority_keys.read().await.len();
@@ -1301,7 +1302,14 @@ impl PbftConsensus {
         signature: Signature,
         public_key: VerifyingKey,
     ) -> Result<()> {
-        // SECURITY: Check for replay attacks FIRST
+        // SECURITY: Verify signature FIRST (before any other processing)
+        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
+        if public_key.verify(&message_bytes, &signature).is_err() {
+            warn!("PBFT: Invalid signature on COMMIT message from {} - rejecting", sender);
+            return Err(anyhow!("Invalid signature on COMMIT from {}", sender));
+        }
+
+        // SECURITY: Check for replay attacks (fast check to prevent DoS)
         let message_id = Self::generate_message_id("commit", view, sequence, sender);
         if self.is_duplicate_message(&message_id).await {
             warn!("PBFT: Replay attack detected - duplicate COMMIT from {} (view={}, sequence={})", 
@@ -1313,13 +1321,6 @@ impl PbftConsensus {
 
         // Only accept COMMIT for current view/sequence
         if view != state.view || sequence != state.sequence {
-            return Ok(());
-        }
-
-        // Verify signature
-        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
-        if public_key.verify(&message_bytes, &signature).is_err() {
-            warn!("PBFT: Invalid signature on COMMIT message from {}", sender);
             return Ok(());
         }
 
@@ -1338,9 +1339,9 @@ impl PbftConsensus {
             });
 
         // Mark message as processed after storing
-        drop(state);  // Release lock before calling mark_message_processed
+        drop(state);
         self.mark_message_processed(message_id).await;
-        let mut state = self.pbft_state.write().await;  // Re-acquire lock
+        let mut state = self.pbft_state.write().await;
 
         // Check if we have enough COMMIT messages (2f+1)
         let authority_count = self.authority_keys.read().await.len();
