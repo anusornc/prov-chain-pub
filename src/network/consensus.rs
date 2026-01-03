@@ -635,9 +635,10 @@ impl PbftMessage {
     /// Verify the message signature
     pub fn verify_signature(&self) -> bool {
         let public_key = self.get_public_key();
-        let signature = self.get_signature().unwrap();
+        let Some(signature) = self.get_signature() else {
+            return false;
+        };
         let message_bytes = self.get_signing_bytes();
-
         public_key.verify(&message_bytes, signature).is_ok()
     }
 
