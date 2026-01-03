@@ -469,18 +469,74 @@ impl WalletManager {
         self.storage_dir.join(format!("{}.wallet", participant_id))
     }
 
-    /// Encrypt wallet data (simplified - in production use proper encryption)
+    /// Encrypt wallet data using ChaCha20-Poly1305 AEAD
+    /// 
+    /// SECURITY: This uses the wallet manager's encryption key with ChaCha20-Poly1305,
+    /// providing both confidentiality and integrity. Each encryption uses a unique
+    /// nonce to prevent nonce reuse attacks.
     fn encrypt_wallet_data(&self, wallet: &Wallet) -> Result<Vec<u8>> {
-        // In production, implement proper encryption
+        use chacha20poly1305::aead::{Aead, AeadCore, OsRng as AeadOsRng};
+        use chacha20poly1305::{ChaCha20Poly1305, KeyInit};
+        
+        // Serialize wallet to JSON
         let json_data = serde_json::to_string(wallet)?;
-        Ok(json_data.into_bytes())
+        
+        // Create cipher from encryption key
+        let key = &self.encryption_key;
+        let cipher = ChaCha20Poly1305::new(key.into());
+        
+        // Generate unique nonce for each encryption (critical for security)
+        let nonce = ChaCha20Poly1305::generate_nonce(&mut AeadOsRng);
+        
+        // Encrypt with AEAD (provides both encryption and authentication)
+        let ciphertext = cipher.encrypt(&nonce, json_data.as_bytes())
+            .map_err(|e| anyhow!("Wallet encryption failed: {}", e))?;
+        
+        // Format: [nonce (12 bytes)] [ciphertext (with auth tag)]
+        let mut result = Vec::with_capacity(nonce.len() + ciphertext.len());
+        result.extend_from_slice(&nonce);
+        result.extend_from_slice(&ciphertext);
+        
+        Ok(result)
     }
 
-    /// Decrypt wallet data (simplified - in production use proper decryption)
+    /// Decrypt wallet data using ChaCha20-Poly1305 AEAD
+    /// 
+    /// SECURITY: Verifies authentication tag during decryption, detecting any
+    /// tampering with the encrypted wallet file. Returns error if authentication fails.
     fn decrypt_wallet_data(&self, data: &[u8]) -> Result<Wallet> {
-        // In production, implement proper decryption
-        let json_str = String::from_utf8(data.to_vec())?;
-        let wallet: Wallet = serde_json::from_str(&json_str)?;
+        use chacha20poly1305::aead::Aead;
+        use chacha20poly1305::{ChaCha20Poly1305, KeyInit};
+        
+        // Validate minimum length (nonce + at least some ciphertext)
+        const NONCE_SIZE: usize = 12;
+        const MIN_CIPHERTEXT_SIZE: usize = 16; // Minimum for AEAD tag
+        
+        if data.len() < NONCE_SIZE + MIN_CIPHERTEXT_SIZE {
+            return Err(anyhow!(
+                "Invalid encrypted wallet: expected at least {} bytes, got {}",
+                NONCE_SIZE + MIN_CIPHERTEXT_SIZE,
+                data.len()
+            ));
+        }
+        
+        // Split into nonce and ciphertext
+        let (nonce_bytes, ciphertext) = data.split_at(NONCE_SIZE);
+        
+        // Create cipher from encryption key
+        let key = &self.encryption_key;
+        let cipher = ChaCha20Poly1305::new(key.into());
+        
+        // Decrypt and verify authentication tag
+        let plaintext = cipher.decrypt(nonce_bytes.into(), ciphertext)
+            .map_err(|e| anyhow!("Wallet decryption failed - file may be corrupted: {}", e))?;
+        
+        // Deserialize wallet
+        let json_str = String::from_utf8(plaintext)
+            .map_err(|e| anyhow!("Invalid wallet UTF-8: {}", e))?;
+        let wallet: Wallet = serde_json::from_str(&json_str)
+            .map_err(|e| anyhow!("Invalid wallet format: {}", e))?;
+        
         Ok(wallet)
     }
 

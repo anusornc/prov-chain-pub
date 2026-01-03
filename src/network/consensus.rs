@@ -6,7 +6,7 @@
 //! 
 //! It uses a trait-based approach to allow switching protocols via configuration.
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
@@ -744,6 +744,8 @@ pub struct PbftState {
     pub commit_certificates: HashMap<(u64, u64, String), HashMap<Uuid, PbftMessage>>,   // (view, sequence, block_hash) -> senders
     pub logged_prepared: HashSet<(u64, u64, String)>,  // (view, sequence, block_hash)
     pub logged_committed: HashSet<(u64, u64, String)>, // (view, sequence, block_hash)
+    /// Track processed message IDs to prevent replay attacks
+    pub processed_messages: HashSet<String>,
 }
 
 impl Default for PbftState {
@@ -758,6 +760,7 @@ impl Default for PbftState {
             commit_certificates: HashMap::new(),
             logged_prepared: HashSet::new(),
             logged_committed: HashSet::new(),
+            processed_messages: HashSet::new(),
         }
     }
 }
@@ -1103,6 +1106,38 @@ impl PbftConsensus {
         Ok(())
     }
 
+    /// Generate unique message ID for replay protection
+    /// 
+    /// Creates a deterministic ID from message components to detect duplicates.
+    /// Format: "{msg_type}-{view}-{sequence}-{sender}"
+    fn generate_message_id(msg_type: &str, view: u64, sequence: u64, sender: Uuid) -> String {
+        format!("{}-{}-{}-{}", msg_type, view, sequence, sender)
+    }
+
+    /// Check if a message has already been processed (replay attack protection)
+    async fn is_duplicate_message(&self, message_id: &str) -> bool {
+        let state = self.pbft_state.read().await;
+        state.processed_messages.contains(message_id)
+    }
+
+    /// Mark a message as processed to prevent replay attacks
+    async fn mark_message_processed(&self, message_id: String) {
+        let mut state = self.pbft_state.write().await;
+        state.processed_messages.insert(message_id);
+        
+        // Optional: Prune old messages to prevent unbounded growth
+        // Keep only messages from current view and previous view
+        let current_view = state.view;
+        state.processed_messages.retain(|id| {
+            // Extract view from message ID
+            id.split('-')
+                .nth(1)
+                .and_then(|v| v.parse::<u64>().ok())
+                .map(|v| v >= current_view.saturating_sub(1))
+                .unwrap_or(false)
+        });
+    }
+
     /// Handle incoming PBFT message
     pub async fn handle_pbft_message(&self, message: PbftMessage) -> Result<()> {
         match message {
@@ -1133,6 +1168,14 @@ impl PbftConsensus {
         signature: Signature,
         public_key: VerifyingKey,
     ) -> Result<()> {
+        // SECURITY: Check for replay attacks FIRST (before signature verification to prevent DoS)
+        let message_id = Self::generate_message_id("preprepare", view, sequence, sender);
+        if self.is_duplicate_message(&message_id).await {
+            warn!("PBFT: Replay attack detected - duplicate PRE-PREPARE from {} (view={}, sequence={})", 
+                  sender, view, sequence);
+            return Err(anyhow!("Duplicate PRE-PREPARE message from {}", sender));
+        }
+        
         let state = self.pbft_state.read().await;
 
         // Only accept PRE-PREPARE from primary
@@ -1160,6 +1203,9 @@ impl PbftConsensus {
 
         drop(state);
 
+        // Mark message as processed before updating state
+        self.mark_message_processed(message_id).await;
+
         // Update state
         {
             let mut state = self.pbft_state.write().await;
@@ -1185,6 +1231,14 @@ impl PbftConsensus {
         signature: Signature,
         public_key: VerifyingKey,
     ) -> Result<()> {
+        // SECURITY: Check for replay attacks FIRST
+        let message_id = Self::generate_message_id("prepare", view, sequence, sender);
+        if self.is_duplicate_message(&message_id).await {
+            warn!("PBFT: Replay attack detected - duplicate PREPARE from {} (view={}, sequence={})", 
+                  sender, view, sequence);
+            return Err(anyhow!("Duplicate PREPARE message from {}", sender));
+        }
+
         let mut state = self.pbft_state.write().await;
 
         // Only accept PREPARE for current view/sequence
@@ -1212,6 +1266,11 @@ impl PbftConsensus {
                 signature,
                 public_key,
             });
+
+        // Mark message as processed after storing
+        drop(state);  // Release lock before calling mark_message_processed
+        self.mark_message_processed(message_id).await;
+        let mut state = self.pbft_state.write().await;  // Re-acquire lock
 
         // Check if we have enough PREPARE messages (2f+1)
         let authority_count = self.authority_keys.read().await.len();
@@ -1242,6 +1301,14 @@ impl PbftConsensus {
         signature: Signature,
         public_key: VerifyingKey,
     ) -> Result<()> {
+        // SECURITY: Check for replay attacks FIRST
+        let message_id = Self::generate_message_id("commit", view, sequence, sender);
+        if self.is_duplicate_message(&message_id).await {
+            warn!("PBFT: Replay attack detected - duplicate COMMIT from {} (view={}, sequence={})", 
+                  sender, view, sequence);
+            return Err(anyhow!("Duplicate COMMIT message from {}", sender));
+        }
+
         let mut state = self.pbft_state.write().await;
 
         // Only accept COMMIT for current view/sequence
@@ -1269,6 +1336,11 @@ impl PbftConsensus {
                 signature,
                 public_key,
             });
+
+        // Mark message as processed after storing
+        drop(state);  // Release lock before calling mark_message_processed
+        self.mark_message_processed(message_id).await;
+        let mut state = self.pbft_state.write().await;  // Re-acquire lock
 
         // Check if we have enough COMMIT messages (2f+1)
         let authority_count = self.authority_keys.read().await.len();
