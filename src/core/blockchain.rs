@@ -979,10 +979,9 @@ impl Blockchain {
     /// Note: This is a placeholder for future implementation.
     /// Full key rotation requires blockchain consensus and persistence.
     #[allow(dead_code)]
-    pub fn rotate_signing_key(&mut self) -> Result<(), String> {
+    pub fn rotate_signing_key(&mut self) -> Result<()> {
         // Generate new signing key
-        let new_signing_key = crate::security::keys::generate_signing_key()
-            .map_err(|e| format!("Failed to generate new signing key: {}", e))?;
+        let new_signing_key = crate::security::keys::generate_signing_key()?;
         let new_public_key = new_signing_key.verifying_key();
         let new_validator_public_key = hex::encode(new_public_key.to_bytes());
 
@@ -1001,7 +1000,7 @@ impl Blockchain {
         );
 
         // TODO: Implement full key rotation with blockchain persistence
-        Err("Key rotation requires blockchain consensus and persistence layer".to_string())
+        Err(ProvChainError::Custom("Key rotation requires blockchain consensus and persistence layer".to_string()))
     }
 
     pub fn dump(&self) -> Result<String> {

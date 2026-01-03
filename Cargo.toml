@@ -44,12 +44,12 @@ lz4 = "1.24"
 base64 = "0.21"
 
 # Configuration management
-config = "0.13"
+config = "0.15"
 toml = "0.8"
 
 # Logging and monitoring
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = "0.3.20"
 
 # Web framework and HTTP server for Phase 2
 axum = { version = "0.7", features = ["ws"] }
@@ -85,12 +85,12 @@ lazy_static = "1.4"        # Static initialization
 num_cpus = "1.0"           # CPU core detection for thread pool sizing
 
 # Production Deployment dependencies for Phase 6
-prometheus = "0.13"        # Metrics collection
+prometheus = "0.14"        # Metrics collection (upgraded for protobuf>=3.7.2)
 sysinfo = "0.30"          # System information
 env_logger = "0.10"       # Environment-based logging
 log = "0.4"               # Logging facade
 opentelemetry = "0.21"    # Distributed tracing
-opentelemetry-jaeger = "0.20"  # Jaeger tracing backend
+opentelemetry-otlp = "0.14"  # OpenTelemetry OTLP exporter (replaces unmaintained jaeger)
 metrics = "0.22"          # Metrics collection framework
 metrics-exporter-prometheus = "0.13"  # Prometheus metrics exporter
 serde_yaml = "0.9"        # YAML configuration support

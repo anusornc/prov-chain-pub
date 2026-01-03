@@ -16,7 +16,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 /// JWT secret key (loaded from environment variable only for security)
-fn get_jwt_secret() -> Result<Vec<u8>, crate::error::WebError> {
+pub fn get_jwt_secret() -> Result<Vec<u8>, crate::error::WebError> {
     // Only use environment variable for security - no config file secrets
     if let Ok(secret) = std::env::var("JWT_SECRET") {
         if secret.len() < 32 {
@@ -283,12 +283,12 @@ impl AuthState {
 }
 
 /// Generate JWT token for authenticated user
-pub fn generate_token(username: &str, role: &ActorRole) -> Result<String, crate::error::WebError> {
-    // Try to get secret from config/context if available, otherwise fallback to env
-    // For now, we'll use the existing get_jwt_secret which handles env vars
-    // In a real app, we'd pass the secret in via context
-    let jwt_secret = get_jwt_secret()?;
-
+///
+/// # Parameters
+/// - `username`: The user's identifier
+/// - `role`: The user's role/permissions
+/// - `secret`: The JWT secret key (must be at least 32 bytes)
+pub fn generate_token(username: &str, role: &ActorRole, secret: &[u8]) -> Result<String, crate::error::WebError> {
     let expiration = Utc::now()
         .checked_add_signed(Duration::hours(24))
         .ok_or_else(|| {
@@ -307,7 +307,7 @@ pub fn generate_token(username: &str, role: &ActorRole) -> Result<String, crate:
     encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(&jwt_secret),
+        &EncodingKey::from_secret(secret),
     )
     .map_err(|e| {
         crate::error::WebError::AuthenticationFailed(format!("Token generation failed: {}", e))
@@ -315,15 +315,17 @@ pub fn generate_token(username: &str, role: &ActorRole) -> Result<String, crate:
 }
 
 /// Validate JWT token and extract claims
-pub fn validate_token(token: &str) -> Result<UserClaims, crate::error::WebError> {
-    let jwt_secret = get_jwt_secret()?;
-
+///
+/// # Parameters
+/// - `token`: The JWT token string to validate
+/// - `secret`: The JWT secret key (must be at least 32 bytes)
+pub fn validate_token(token: &str, secret: &[u8]) -> Result<UserClaims, crate::error::WebError> {
     // Configure validation to check expiration
     let mut validation = Validation::default();
     validation.leeway = 0; // No leeway for expiration
     validation.validate_exp = true; // Explicitly enable expiration validation
 
-    decode::<UserClaims>(token, &DecodingKey::from_secret(&jwt_secret), &validation)
+    decode::<UserClaims>(token, &DecodingKey::from_secret(secret), &validation)
         .map(|data| data.claims)
         .map_err(|e| {
             crate::error::WebError::AuthenticationFailed(format!("Token validation failed: {}", e))
@@ -335,12 +337,23 @@ pub async fn authenticate(
     State(auth_state): State<AuthState>,
     Json(auth_request): Json<AuthRequest>,
 ) -> Result<Json<AuthResponse>, (StatusCode, Json<ApiError>)> {
+    let jwt_secret = get_jwt_secret().map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                error: "jwt_secret_error".to_string(),
+                message: e.to_string(),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
     let users = auth_state.users.read().await;
 
     if let Some(user_info) = users.get(&auth_request.username) {
         // Use bcrypt to verify password
         match verify(&auth_request.password, &user_info.password_hash) {
-            Ok(true) => match generate_token(&auth_request.username, &user_info.role) {
+            Ok(true) => match generate_token(&auth_request.username, &user_info.role, &jwt_secret) {
                 Ok(token) => {
                     let expires_at = Utc::now() + Duration::hours(24);
                     Ok(Json(AuthResponse {
@@ -384,6 +397,17 @@ pub async fn auth_middleware(
     mut request: Request,
     next: Next,
 ) -> Result<Response, (StatusCode, Json<ApiError>)> {
+    let jwt_secret = get_jwt_secret().map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                error: "jwt_secret_error".to_string(),
+                message: "JWT secret not configured".to_string(),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
     let auth_header = request
         .headers()
         .get(AUTHORIZATION)
@@ -391,7 +415,7 @@ pub async fn auth_middleware(
 
     if let Some(auth_header) = auth_header {
         if let Some(token) = auth_header.strip_prefix("Bearer ") {
-            match validate_token(token) {
+            match validate_token(token, &jwt_secret) {
                 Ok(claims) => {
                     // Add user claims to request extensions
                     request.extensions_mut().insert(claims);
@@ -608,18 +632,16 @@ mod auth_security_tests {
     mod jwt_token_security {
         use super::*;
 
+        // Test secret constant - 32 bytes minimum for security
+        const TEST_JWT_SECRET: &[u8] = b"test-secret-for-unit-testing-must-be-32-chars";
+
         #[test]
         fn test_jwt_token_generation_valid_inputs() {
             // Test successful token generation with valid inputs
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
             let username = "testuser";
             let role = ActorRole::Admin;
 
-            let token = generate_token(username, &role);
+            let token = generate_token(username, &role, TEST_JWT_SECRET);
             assert!(
                 token.is_ok(),
                 "Token generation should succeed with valid inputs"
@@ -636,16 +658,11 @@ mod auth_security_tests {
         #[test]
         fn test_jwt_token_validation_success() {
             // Test successful token validation
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
             let username = "testuser";
             let role = ActorRole::Farmer;
-            let token = generate_token(username, &role).unwrap();
+            let token = generate_token(username, &role, TEST_JWT_SECRET).unwrap();
 
-            let validation_result = validate_token(&token);
+            let validation_result = validate_token(&token, TEST_JWT_SECRET);
             assert!(
                 validation_result.is_ok(),
                 "Token validation should succeed for valid token"
@@ -659,13 +676,6 @@ mod auth_security_tests {
         #[test]
         fn test_jwt_token_expiration_handling() {
             // Test token expiration
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
-            let jwt_secret = get_jwt_secret().unwrap();
-
             // Create an expired token
             let expired_claims = UserClaims {
                 sub: "testuser".to_string(),
@@ -676,12 +686,12 @@ mod auth_security_tests {
             let expired_token = encode(
                 &Header::default(),
                 &expired_claims,
-                &EncodingKey::from_secret(&jwt_secret),
+                &EncodingKey::from_secret(TEST_JWT_SECRET),
             )
             .unwrap();
 
             // Validation should fail for expired token
-            let validation_result = validate_token(&expired_token);
+            let validation_result = validate_token(&expired_token, TEST_JWT_SECRET);
             assert!(
                 validation_result.is_err(),
                 "Token validation should fail for expired token"
@@ -697,14 +707,9 @@ mod auth_security_tests {
         #[test]
         fn test_jwt_token_tampering_detection() {
             // Test that tampered tokens are rejected
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
             let username = "testuser";
             let role = ActorRole::Processor;
-            let original_token = generate_token(username, &role).unwrap();
+            let original_token = generate_token(username, &role, TEST_JWT_SECRET).unwrap();
 
             // Tamper with the token by changing a character in the payload
             let mut tampered_token = original_token.clone();
@@ -719,7 +724,7 @@ mod auth_security_tests {
             }
 
             // Validation should fail for tampered token
-            let validation_result = validate_token(&tampered_token);
+            let validation_result = validate_token(&tampered_token, TEST_JWT_SECRET);
             assert!(
                 validation_result.is_err(),
                 "Token validation should fail for tampered token"
@@ -729,19 +734,13 @@ mod auth_security_tests {
         #[test]
         fn test_jwt_token_invalid_signature_rejection() {
             // Test tokens with invalid signatures are rejected
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
             let username = "testuser";
             let role = ActorRole::Admin;
-            let valid_token = generate_token(username, &role).unwrap();
+            let valid_token = generate_token(username, &role, TEST_JWT_SECRET).unwrap();
 
-            // Change the JWT secret and try to validate with the wrong secret
-            env::set_var("JWT_SECRET", "different-secret-32-chars-long-minimum");
-
-            let validation_result = validate_token(&valid_token);
+            // Use a different secret for validation - should fail
+            const WRONG_SECRET: &[u8] = b"different-secret-32-chars-long-minimum";
+            let validation_result = validate_token(&valid_token, WRONG_SECRET);
             assert!(
                 validation_result.is_err(),
                 "Token validation should fail with wrong secret"
@@ -750,11 +749,6 @@ mod auth_security_tests {
 
         #[test]
         fn test_jwt_token_malformed_token_handling() {
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
             let malformed_tokens = vec![
                 "",
                 "invalid",
@@ -766,7 +760,7 @@ mod auth_security_tests {
             ];
 
             for malformed_token in malformed_tokens {
-                let validation_result = validate_token(malformed_token);
+                let validation_result = validate_token(malformed_token, TEST_JWT_SECRET);
                 assert!(
                     validation_result.is_err(),
                     "Token validation should fail for malformed token: {}",
@@ -777,6 +771,7 @@ mod auth_security_tests {
 
         #[test]
         fn test_jwt_token_secret_length_validation() {
+            // This test verifies that get_jwt_secret() properly validates secret length
             env::set_var("JWT_SECRET", "short");
 
             let secret_result = get_jwt_secret();
@@ -787,24 +782,21 @@ mod auth_security_tests {
 
             let error = secret_result.unwrap_err();
             assert!(matches!(error, crate::error::WebError::ServerError(_)));
+
+            // Clean up
+            env::remove_var("JWT_SECRET");
         }
 
         #[test]
         fn test_jwt_token_security_properties() {
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
             let username = "testuser";
             let role = ActorRole::Auditor;
-            let token = generate_token(username, &role).unwrap();
+            let token = generate_token(username, &role, TEST_JWT_SECRET).unwrap();
 
             // Decode and verify security properties
-            let jwt_secret = get_jwt_secret().unwrap();
             let decoded = decode::<UserClaims>(
                 &token,
-                &DecodingKey::from_secret(&jwt_secret),
+                &DecodingKey::from_secret(TEST_JWT_SECRET),
                 &Validation::default(),
             );
 
@@ -1408,13 +1400,11 @@ mod auth_security_tests {
     mod error_handling_security {
         use super::*;
 
+        // Test secret constant - 32 bytes minimum for security
+        const TEST_JWT_SECRET: &[u8] = b"test-secret-for-unit-testing-must-be-32-chars";
+
         #[test]
         fn test_jwt_error_message_security() {
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
             let invalid_tokens = vec![
                 "invalid",
                 "header.payload",
@@ -1422,7 +1412,7 @@ mod auth_security_tests {
             ];
 
             for token in invalid_tokens {
-                let result = validate_token(token);
+                let result = validate_token(token, TEST_JWT_SECRET);
                 assert!(
                     result.is_err(),
                     "Token validation should fail for invalid token: {}",
@@ -1496,19 +1486,17 @@ mod auth_security_tests {
         use super::*;
         use std::time::Instant;
 
+        // Test secret constant - 32 bytes minimum for security
+        const TEST_JWT_SECRET: &[u8] = b"test-secret-for-unit-testing-must-be-32-chars";
+
         #[test]
         fn test_jwt_token_generation_performance() {
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
             let username = "testuser";
             let role = ActorRole::Admin;
 
             let start = Instant::now();
             for _ in 0..100 {
-                let result = generate_token(username, &role);
+                let result = generate_token(username, &role, TEST_JWT_SECRET);
                 assert!(result.is_ok(), "Token generation should succeed");
             }
             let duration = start.elapsed();
@@ -1529,18 +1517,13 @@ mod auth_security_tests {
 
         #[test]
         fn test_jwt_token_validation_performance() {
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
             let username = "testuser";
             let role = ActorRole::Admin;
-            let token = generate_token(username, &role).unwrap();
+            let token = generate_token(username, &role, TEST_JWT_SECRET).unwrap();
 
             let start = Instant::now();
             for _ in 0..100 {
-                let result = validate_token(&token);
+                let result = validate_token(&token, TEST_JWT_SECRET);
                 assert!(result.is_ok(), "Token validation should succeed");
             }
             let duration = start.elapsed();
@@ -1638,26 +1621,21 @@ mod auth_security_tests {
 
         #[test]
         fn test_memory_usage_validation() {
-            env::set_var(
-                "JWT_SECRET",
-                "test-secret-for-unit-testing-must-be-32-chars",
-            );
-
             let mut tokens = Vec::new();
 
             for i in 0..1000 {
                 let username = format!("user{}", i);
-                let token = generate_token(&username, &ActorRole::Admin).unwrap();
+                let token = generate_token(&username, &ActorRole::Admin, TEST_JWT_SECRET).unwrap();
                 tokens.push(token);
             }
 
             for token in &tokens {
-                let result = validate_token(token);
+                let result = validate_token(token, TEST_JWT_SECRET);
                 assert!(result.is_ok(), "All tokens should validate successfully");
             }
 
             let long_username = "a".repeat(50);
-            let result = generate_token(&long_username, &ActorRole::Admin);
+            let result = generate_token(&long_username, &ActorRole::Admin, TEST_JWT_SECRET);
             assert!(result.is_ok(), "Long username should be handled correctly");
 
             let long_password = "a".repeat(128) + "A1!";
@@ -1675,6 +1653,10 @@ mod auth_security_tests {
 
     mod integration_security_tests {
         use super::*;
+
+        // Test secret constants for rotation simulation
+        const ORIGINAL_SECRET: &[u8] = b"original-secret-32-chars-long-minimum";
+        const NEW_SECRET: &[u8] = b"new-secret-32-chars-long-minimum-for-rotation";
 
         #[tokio::test]
         async fn test_full_user_lifecycle() {
@@ -1726,36 +1708,41 @@ mod auth_security_tests {
 
         #[test]
         fn test_jwt_secret_rotation_simulation() {
-            env::set_var("JWT_SECRET", "original-secret-32-chars-long-minimum");
-
             let username = "testuser";
             let role = ActorRole::Admin;
 
-            let original_token = generate_token(username, &role).unwrap();
+            // Generate token with original secret
+            let original_token = generate_token(username, &role, ORIGINAL_SECRET).unwrap();
 
-            let validation1 = validate_token(&original_token);
+            // Validate with original secret - should succeed
+            let validation1 = validate_token(&original_token, ORIGINAL_SECRET);
             assert!(
                 validation1.is_ok(),
                 "Token should validate with original secret"
             );
 
-            env::set_var(
-                "JWT_SECRET",
-                "new-secret-32-chars-long-minimum-for-rotation",
-            );
-
-            let validation2 = validate_token(&original_token);
+            // Try to validate with new secret - should fail
+            let validation2 = validate_token(&original_token, NEW_SECRET);
             assert!(
                 validation2.is_err(),
                 "Token should fail validation with new secret"
             );
 
-            let new_token = generate_token(username, &role).unwrap();
+            // Generate new token with new secret
+            let new_token = generate_token(username, &role, NEW_SECRET).unwrap();
 
-            let validation3 = validate_token(&new_token);
+            // Validate new token with new secret - should succeed
+            let validation3 = validate_token(&new_token, NEW_SECRET);
             assert!(
                 validation3.is_ok(),
                 "New token should validate with new secret"
+            );
+
+            // Original token should still fail with new secret
+            let validation4 = validate_token(&original_token, NEW_SECRET);
+            assert!(
+                validation4.is_err(),
+                "Original token should still fail with new secret"
             );
         }
 

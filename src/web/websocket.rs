@@ -2,7 +2,7 @@
 
 use crate::core::blockchain::Blockchain;
 use crate::error::WebError;
-use crate::web::auth::validate_token;
+use crate::web::auth::{validate_token, get_jwt_secret};
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -193,6 +193,14 @@ pub async fn websocket_handler(
     State(state): State<WebSocketState>,
     Query(query): Query<WebSocketAuthQuery>,
 ) -> Response {
+    // Get JWT secret for validation
+    let jwt_secret = match get_jwt_secret() {
+        Ok(secret) => secret,
+        Err(e) => {
+            return (StatusCode::INTERNAL_SERVER_ERROR, format!("JWT secret error: {}", e)).into_response();
+        }
+    };
+
     // Extract token from query parameter
     let token = if let Some(token) = query.token {
         token
@@ -202,7 +210,7 @@ pub async fn websocket_handler(
     };
 
     // Validate JWT token
-    match validate_token(&token) {
+    match validate_token(&token, jwt_secret.as_slice()) {
         Ok(_claims) => {
             // Token is valid, proceed with WebSocket connection
             ws.on_upgrade(move |socket| handle_websocket(socket, state))
