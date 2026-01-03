@@ -235,9 +235,7 @@ impl EntityExtractor for AgentExtractor {
             SELECT ?agent ?type ?label WHERE {
                 GRAPH ?g {
                     ?agent a ?type .
-                    ?agent a trace:TraceAgent .
                     OPTIONAL { ?agent rdfs:label ?label }
-                    OPTIONAL { ?agent prov:label ?label }
                     FILTER(?type = trace:Farmer || ?type = trace:Manufacturer || 
                            ?type = trace:LogisticsProvider || ?type = trace:Retailer || 
                            ?type = trace:Customer)
@@ -251,6 +249,7 @@ impl EntityExtractor for AgentExtractor {
                 if let (Some(agent), Some(agent_type)) = (sol.get("agent"), sol.get("type")) {
                     let type_name = agent_type
                         .to_string()
+                        .trim_matches(|c| c == '<' || c == '>')
                         .split('#')
                         .next_back()
                         .unwrap_or("Agent")

@@ -16,12 +16,21 @@ pub use transaction::*;
 #[derive(Clone)]
 pub struct AppState {
     pub blockchain: Arc<RwLock<Blockchain>>,
+    pub network_peers: Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl AppState {
     pub fn new(blockchain: Blockchain) -> Self {
         Self {
             blockchain: Arc::new(RwLock::new(blockchain)),
+            network_peers: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        }
+    }
+    
+    pub fn with_peers(blockchain: Blockchain, peer_count: u64) -> Self {
+        Self {
+            blockchain: Arc::new(RwLock::new(blockchain)),
+            network_peers: Arc::new(std::sync::atomic::AtomicU64::new(peer_count)),
         }
     }
 }

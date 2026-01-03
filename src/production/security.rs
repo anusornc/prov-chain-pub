@@ -1,9 +1,12 @@
 //! Security hardening and compliance for production deployment
 
 use crate::production::ProductionError;
+use jsonwebtoken::{decode, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::RwLock;
+use std::time::{Duration, Instant};
 
 /// Security configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,6 +115,21 @@ pub enum PolicyType {
     ApiAccess,
     DataAccess,
     NetworkAccess,
+}
+
+/// Claims for production JWT tokens
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductionClaims {
+    /// Subject (user ID or system identifier)
+    pub sub: String,
+    /// Issued at (timestamp)
+    pub iat: i64,
+    /// Expiration time (timestamp)
+    pub exp: i64,
+    /// Issuer
+    pub iss: String,
+    /// Role/permission level
+    pub role: Option<String>,
 }
 
 /// Security audit event
@@ -533,14 +551,126 @@ Generated: {}
     }
 }
 
-/// Security middleware for request validation
+
+/// Token bucket for rate limiting
+#[derive(Debug)]
+struct TokenBucket {
+    /// Current number of tokens available
+    tokens: f64,
+    /// Last time tokens were refilled
+    last_refill: Instant,
+}
+
+impl TokenBucket {
+    /// Create a new token bucket with full capacity
+    fn new(capacity: f64) -> Self {
+        Self {
+            tokens: capacity,
+            last_refill: Instant::now(),
+        }
+    }
+
+    /// Attempt to consume a token. Returns true if successful.
+    fn consume(&mut self, tokens_to_consume: f64, refill_rate: f64, capacity: f64) -> bool {
+        // Calculate time elapsed since last refill
+        let elapsed = self.last_refill.elapsed().as_secs_f64();
+        
+        // Refill tokens based on elapsed time
+        let tokens_to_add = elapsed * refill_rate;
+        self.tokens = (self.tokens + tokens_to_add).min(capacity);
+        self.last_refill = Instant::now();
+
+        // Check if we have enough tokens
+        if self.tokens >= tokens_to_consume {
+            self.tokens -= tokens_to_consume;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Get current token count (for testing/debugging)
+    fn token_count(&self) -> f64 {
+        self.tokens
+    }
+}
+
+/// Rate limiter using token bucket algorithm
+#[derive(Debug)]
+pub struct RateLimiter {
+    /// Per-IP token buckets
+    buckets: RwLock<HashMap<String, TokenBucket>>,
+    /// Maximum requests per minute
+    rate_limit_per_minute: u32,
+    /// Burst capacity (allows short bursts above normal rate)
+    burst_capacity: u32,
+}
+
+impl RateLimiter {
+    /// Create a new rate limiter
+    pub fn new(rate_limit_per_minute: u32, burst_capacity: u32) -> Self {
+        Self {
+            buckets: RwLock::new(HashMap::new()),
+            rate_limit_per_minute,
+            burst_capacity,
+        }
+    }
+
+    /// Check if a request from the given IP should be allowed
+    pub fn check_rate_limit(&self, client_ip: &str) -> bool {
+        // Calculate refill rate (tokens per second)
+        let refill_rate = self.rate_limit_per_minute as f64 / 60.0;
+        let capacity = self.burst_capacity as f64;
+
+        let mut buckets = self.buckets.write().unwrap();
+        
+        // Get or create token bucket for this IP
+        let bucket = buckets
+            .entry(client_ip.to_string())
+            .or_insert_with(|| TokenBucket::new(capacity));
+
+        // Attempt to consume one token
+        bucket.consume(1.0, refill_rate, capacity)
+    }
+
+    /// Get current bucket state for an IP (for testing)
+    pub fn get_token_count(&self, client_ip: &str) -> Option<f64> {
+        let buckets = self.buckets.read().unwrap();
+        buckets.get(client_ip).map(|b| b.token_count())
+    }
+
+    /// Remove stale entries to prevent memory leak (for testing/maintenance)
+    pub fn cleanup_stale_entries(&self, max_age: Duration) {
+        let mut buckets = self.buckets.write().unwrap();
+        let now = Instant::now();
+        
+        buckets.retain(|_, bucket| {
+            now.duration_since(bucket.last_refill) < max_age
+        });
+    }
+
+    /// Get current number of tracked IPs (for testing)
+    pub fn tracked_ip_count(&self) -> usize {
+        self.buckets.read().unwrap().len()
+    }
+}
+
 pub struct SecurityMiddleware {
     config: SecurityConfig,
+    rate_limiter: RateLimiter,
 }
 
 impl SecurityMiddleware {
     pub fn new(config: SecurityConfig) -> Self {
-        Self { config }
+        // Initialize rate limiter with configured limits
+        // Burst capacity is 2x the normal rate to allow short bursts
+        let burst_capacity = config.rate_limit_per_minute * 2;
+        let rate_limiter = RateLimiter::new(config.rate_limit_per_minute, burst_capacity);
+        
+        Self { 
+            config,
+            rate_limiter,
+        }
     }
 
     /// Validate request headers
@@ -556,20 +686,104 @@ impl SecurityMiddleware {
         Ok(())
     }
 
-    /// Check rate limits
+    /// Check rate limits using token bucket algorithm
     pub fn check_rate_limit(&self, client_ip: &str) -> Result<bool, ProductionError> {
-        if self.config.rate_limiting_enabled {
-            // In a real implementation, we would check rate limits
-            tracing::debug!("Checking rate limit for IP: {}", client_ip);
-            return Ok(true); // Allow for now
+        if !self.config.rate_limiting_enabled {
+            // Rate limiting disabled, allow all requests
+            return Ok(true);
         }
-        Ok(true)
+
+        // Check rate limit using token bucket algorithm
+        let allowed = self.rate_limiter.check_rate_limit(client_ip);
+        
+        tracing::debug!(
+            "Rate limit check for IP: {} - {}",
+            client_ip,
+            if allowed { "ALLOWED" } else { "BLOCKED" }
+        );
+
+        Ok(allowed)
     }
 
-    /// Validate JWT token
+
+    /// Get current token count for an IP (for testing/debugging)
+    pub fn get_rate_limit_token_count(&self, client_ip: &str) -> Option<f64> {
+        self.rate_limiter.get_token_count(client_ip)
+    }
+
+    /// Get number of IPs currently being tracked (for testing/maintenance)
+    pub fn tracked_ip_count(&self) -> usize {
+        self.rate_limiter.tracked_ip_count()
+    }
+
+    /// Clean up stale rate limit entries (for maintenance)
+    pub fn cleanup_stale_rate_limits(&self, max_age_secs: u64) {
+        self.rate_limiter.cleanup_stale_entries(Duration::from_secs(max_age_secs));
+    }
+
+    /// Validate JWT token with proper signature verification and expiration checking
     pub fn validate_jwt(&self, token: &str) -> Result<bool, ProductionError> {
-        // In a real implementation, we would validate the JWT token
-        tracing::debug!("Validating JWT token");
-        Ok(!token.is_empty())
+        // Reject empty tokens immediately
+        if token.is_empty() {
+            return Ok(false);
+        }
+
+        // Get JWT secret from environment variable (most secure) or config (fallback)
+        let jwt_secret = if let Ok(secret) = std::env::var("JWT_SECRET") {
+            if secret.len() < 32 {
+                return Err(ProductionError::Security(
+                    format!("JWT_SECRET from environment is too short ({} chars), minimum 32 required", secret.len())
+                ));
+            }
+            secret
+        } else {
+            // Fallback to config secret (with security warning)
+            if self.config.jwt_secret.len() < 32 {
+                return Err(ProductionError::Security(
+                    format!("Configured JWT secret is too short ({} chars), minimum 32 required. \
+                            Set JWT_SECRET environment variable for production!", self.config.jwt_secret.len())
+                ));
+            }
+
+            // Log warning about using config secret instead of environment variable
+            tracing::warn!("SECURITY WARNING: Using JWT secret from config instead of environment variable. \
+                           Set JWT_SECRET environment variable for better security.");
+
+            self.config.jwt_secret.clone()
+        };
+
+        // Configure validation to check signature and expiration
+        let mut validation = Validation::new(jsonwebtoken::Algorithm::HS256);
+        validation.leeway = 0; // No leeway for strict expiration checking
+        validation.validate_exp = true; // Check expiration
+
+        // Decode and verify the token
+        match decode::<ProductionClaims>(
+            token,
+            &DecodingKey::from_secret(jwt_secret.as_bytes()),
+            &validation,
+        ) {
+            Ok(_) => {
+                // Token is valid: signature verified, not expired, proper algorithm
+                tracing::debug!("JWT token validation successful");
+                Ok(true)
+            }
+            Err(e) => {
+                // Token is invalid: bad signature, expired, wrong algorithm, malformed, etc.
+                tracing::warn!("JWT token validation failed: {}", e);
+
+                // Classify error type for better logging
+                let error_msg = e.to_string().to_lowercase();
+                if error_msg.contains("expired") {
+                    tracing::warn!("JWT token has expired");
+                } else if error_msg.contains("signature") {
+                    tracing::warn!("JWT token has invalid signature");
+                } else if error_msg.contains("algorithm") {
+                    tracing::warn!("JWT token uses invalid algorithm");
+                }
+
+                Ok(false)
+            }
+        }
     }
 }

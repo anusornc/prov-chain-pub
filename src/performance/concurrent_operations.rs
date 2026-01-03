@@ -57,14 +57,14 @@ impl Worker {
                     }) => {
                         // Real CPU work: SHA-256 hashing
                         use sha2::{Sha256, Digest};
-                        let start = Instant::now();
                         let mut hasher = Sha256::new();
                         // Perform some repetitive work to simulate complexity
                         for _ in 0..1000 {
                             hasher.update(rdf_content.as_bytes());
                         }
                         let hash = format!("{:x}", hasher.finalize());
-                        let _ = result_sender.send((id, format!("{}_{:?}", hash, start.elapsed())));
+                        // Include task ID for test validation
+                        let _ = result_sender.send((id, format!("canon_hash_{}_{}", id, hash)));
                     }
                     Ok(Task::QueryExecution {
                         id,
@@ -77,7 +77,9 @@ impl Worker {
                         for _ in 0..2000 {
                             hasher.update(query.as_bytes());
                         }
-                        let results = format!("res_{:x}", hasher.finalize());
+                        let hash = format!("{:x}", hasher.finalize());
+                        // Include task ID for test validation
+                        let results = format!("query_results_{}_{}", id, hash);
                         let _ = result_sender.send((id, results));
                     }
                     Ok(Task::BlockValidation {

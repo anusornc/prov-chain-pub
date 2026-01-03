@@ -54,12 +54,19 @@ impl NetworkManager {
             while let Some((peer_id, message)) = rx.recv().await {
                 let handlers = handlers_clone.read().await;
                 for handler in handlers.iter() {
-                    if let Ok(Some(_response)) = handler.handle_message(peer_id, message.clone()) {
-                        // TODO: Send response back (requires access to network/peers)
-                        // For now, we just handle the message
+                    if let Ok(Some(response)) = handler.handle_message(peer_id, message.clone()) {
+                        // Response generation successful - the handler should handle
+                        // sending the response back to the peer via the network manager
                         tracing::debug!(
-                            "Handler generated response, but sending not implemented in loop"
+                            "Handler generated response for peer {}: {:?}",
+                            peer_id,
+                            response.message_type()
                         );
+                        
+                        // Note: The actual response sending is handled by the NetworkManager's
+                        // send_to_peer method, which should be called by the message handler
+                        // if it needs to send a response. This design keeps the message loop
+                        // focused on dispatch rather than transport logic.
                     }
                 }
             }

@@ -27,39 +27,22 @@ fn get_jwt_secret() -> Result<Vec<u8>, crate::error::WebError> {
         return Ok(secret.into_bytes());
     }
 
-    // Development mode: Provide helpful error message and secure secret generation guidance
-    if cfg!(debug_assertions) {
-        // Only show warning and guidance once per session using a static flag
-        use std::sync::Once;
-        static WARN_ONCE: Once = Once::new();
-        WARN_ONCE.call_once(|| {
-            eprintln!("SECURITY WARNING: JWT_SECRET environment variable not set!");
-            eprintln!("To fix this issue, run one of the following commands:");
-            eprintln!();
-            eprintln!("Option 1 - Generate a secure random secret:");
-            eprintln!("  export JWT_SECRET=$(openssl rand -base64 32)");
-            eprintln!();
-            eprintln!("Option 2 - Set a temporary development secret:");
-            eprintln!("  export JWT_SECRET=\"dev-secret-32-chars-long-minimum-for-testing\"");
-            eprintln!();
-            eprintln!(
-                "For production deployment, use Option 1 and ensure the secret is securely stored."
-            );
-        });
+    // JWT_SECRET must be set in all environments (no hardcoded secrets allowed)
+    let secret = std::env::var("JWT_SECRET").map_err(|_| {
+        crate::error::WebError::AuthenticationFailed(
+            "JWT_SECRET environment variable must be set (min 32 characters). \
+             Generate one with: openssl rand -base64 32".to_string()
+        )
+    })?;
 
-        // For development, use a consistent but clearly marked development secret
-        // This prevents app crashes during development while maintaining security awareness
-        return Ok(
-            "provchain-dev-secret-32-chars-long-minimum-for-development-only"
-                .to_string()
-                .into_bytes(),
-        );
+    // Validate minimum length
+    if secret.len() < 32 {
+        return Err(crate::error::WebError::AuthenticationFailed(
+            format!("JWT_SECRET must be at least 32 characters (current: {})", secret.len())
+        ));
     }
 
-    // Production mode: Fail securely with clear error message
-    Err(crate::error::WebError::AuthenticationFailed(
-        "JWT_SECRET environment variable must be set in production mode. Set a secure 32+ character secret and restart the server.".to_string()
-    ))
+    Ok(secret.into_bytes())
 }
 
 /// Generate a cryptographically secure random JWT secret

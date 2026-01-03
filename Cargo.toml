@@ -101,6 +101,7 @@ async-trait = "0.1"       # Async traits
 # OWL2 library for enhanced ontology support
 owl2-reasoner = { path = "./owl2-reasoner" }
 chacha20poly1305 = "0.10.1"
+argon2 = "0.5"  # Password-based key derivation for wallet encryption
 
 [dev-dependencies]
 tempfile = "3.8"

@@ -2,12 +2,14 @@
 
 use crate::core::blockchain::Blockchain;
 use crate::error::WebError;
+use crate::web::auth::validate_token;
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        State,
+        State, Query,
     },
-    response::Response,
+    http::StatusCode,
+    response::{IntoResponse, Response},
 };
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
@@ -180,12 +182,58 @@ impl WebSocketState {
     }
 }
 
-/// WebSocket upgrade handler
+/// WebSocket upgrade handler with JWT authentication
+#[derive(Debug, Deserialize)]
+pub struct WebSocketAuthQuery {
+    token: Option<String>,
+}
+
 pub async fn websocket_handler(
     ws: WebSocketUpgrade,
     State(state): State<WebSocketState>,
+    Query(query): Query<WebSocketAuthQuery>,
 ) -> Response {
-    ws.on_upgrade(move |socket| handle_websocket(socket, state))
+    // Extract token from query parameter
+    let token = if let Some(token) = query.token {
+        token
+    } else {
+        // Try to get token from Authorization header
+        return ws.on_upgrade(move |socket| handle_websocket_unauthenticated(socket, state));
+    };
+
+    // Validate JWT token
+    match validate_token(&token) {
+        Ok(_claims) => {
+            // Token is valid, proceed with WebSocket connection
+            ws.on_upgrade(move |socket| handle_websocket(socket, state))
+        }
+        Err(e) => {
+            // Token is invalid, return error
+            return (StatusCode::UNAUTHORIZED, format!("Invalid JWT token: {}", e)).into_response();
+        }
+    }
+}
+
+/// Handle unauthorized WebSocket connection (sends disconnect message)
+async fn handle_websocket_unauthenticated(socket: WebSocket, state: WebSocketState) {
+    let client_id = Uuid::new_v4().to_string();
+
+    // Split socket into sender and receiver
+    let (mut sender, mut _receiver) = socket.split();
+
+    // Send authentication failure message
+    let error_msg = WebSocketMessage::Error {
+        message: "Authentication required. Provide valid JWT token via ?token= query parameter.".to_string(),
+    };
+
+    if let Ok(msg_text) = serde_json::to_string(&error_msg) {
+        let _ = sender.send(Message::Text(msg_text)).await;
+    }
+
+    // Close the connection
+    let _ = sender.close().await;
+
+    state.remove_client(&client_id);
 }
 
 /// Handle individual WebSocket connection

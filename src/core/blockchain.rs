@@ -1,10 +1,11 @@
 use crate::error::{BlockchainError, ProvChainError, Result};
 use crate::governance::Governance;
 use crate::ontology::{OntologyConfig, OntologyManager, ShaclValidator};
+use crate::security::keys::generate_signing_key;
 use crate::storage::rdf_store::{RDFStore, StorageConfig};
 use crate::trace_optimization::{EnhancedTraceResult, EnhancedTraceabilitySystem};
 use chrono::Utc;
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use hex;
 use oxigraph::model::NamedNode;
 use serde::{Deserialize, Serialize};
@@ -92,6 +93,11 @@ pub struct Blockchain {
     pub ontology_manager: Option<OntologyManager>,
     pub shacl_validator: Option<ShaclValidator>,
     pub governance: Governance,
+    /// Signing key for this blockchain instance (used to sign blocks)
+    /// Note: Not serialized due to cryptographically secure key material
+    pub signing_key: SigningKey,
+    /// Public key (hex-encoded) for signature verification
+    pub validator_public_key: String,
 }
 
 impl Default for Blockchain {
@@ -103,12 +109,20 @@ impl Default for Blockchain {
 impl Blockchain {
     /// Create a new in-memory blockchain (for testing and development)
     pub fn new() -> Self {
+        // Generate signing key for this blockchain instance
+        let signing_key = generate_signing_key()
+            .expect("Failed to generate signing key");
+        let public_key = signing_key.verifying_key();
+        let validator_public_key = hex::encode(public_key.to_bytes());
+
         let mut bc = Blockchain {
             chain: Vec::new(),
             rdf_store: RDFStore::new(),
             ontology_manager: None,
             shacl_validator: None,
             governance: Governance::new(),
+            signing_key,
+            validator_public_key,
         };
 
         // Load the traceability ontology
@@ -136,12 +150,22 @@ impl Blockchain {
     pub fn new_persistent<P: AsRef<Path>>(data_dir: P) -> Result<Self> {
         let rdf_store = RDFStore::new_persistent(data_dir)?;
 
+        // Generate signing key for this blockchain instance
+        let signing_key = generate_signing_key()
+            .map_err(|e| ProvChainError::Blockchain(
+                BlockchainError::GenesisCreationFailed(format!("Failed to generate signing key: {}", e))
+            ))?;
+        let public_key = signing_key.verifying_key();
+        let validator_public_key = hex::encode(public_key.to_bytes());
+
         let mut bc = Blockchain {
             chain: Vec::new(),
             rdf_store,
             ontology_manager: None,
             shacl_validator: None,
             governance: Governance::new(),
+            signing_key,
+            validator_public_key,
         };
 
         // Load the traceability ontology
@@ -203,12 +227,22 @@ impl Blockchain {
     pub fn new_persistent_with_config(config: StorageConfig) -> Result<Self> {
         let rdf_store = RDFStore::new_persistent_with_config(config)?;
 
+        // Generate signing key for this blockchain instance
+        let signing_key = generate_signing_key()
+            .map_err(|e| ProvChainError::Blockchain(
+                BlockchainError::GenesisCreationFailed(format!("Failed to generate signing key: {}", e))
+            ))?;
+        let public_key = signing_key.verifying_key();
+        let validator_public_key = hex::encode(public_key.to_bytes());
+
         let mut bc = Blockchain {
             chain: Vec::new(),
             rdf_store,
             ontology_manager: None,
             shacl_validator: None,
             governance: Governance::new(),
+            signing_key,
+            validator_public_key,
         };
 
         // Load the traceability ontology
@@ -428,12 +462,22 @@ impl Blockchain {
 
     /// Create a new in-memory blockchain with ontology configuration
     pub fn new_with_ontology(ontology_config: OntologyConfig) -> Result<Self> {
+        // Generate signing key for this blockchain instance
+        let signing_key = generate_signing_key()
+            .map_err(|e| ProvChainError::Blockchain(
+                BlockchainError::GenesisCreationFailed(format!("Failed to generate signing key: {}", e))
+            ))?;
+        let public_key = signing_key.verifying_key();
+        let validator_public_key = hex::encode(public_key.to_bytes());
+
         let mut bc = Blockchain {
             chain: Vec::new(),
             rdf_store: RDFStore::new(),
             ontology_manager: None,
             shacl_validator: None,
             governance: Governance::new(),
+            signing_key,
+            validator_public_key,
         };
 
         // Initialize ontology manager and SHACL validator
@@ -461,12 +505,22 @@ impl Blockchain {
     ) -> Result<Self> {
         let rdf_store = RDFStore::new_persistent(data_dir)?;
 
+        // Generate signing key for this blockchain instance
+        let signing_key = generate_signing_key()
+            .map_err(|e| ProvChainError::Blockchain(
+                BlockchainError::GenesisCreationFailed(format!("Failed to generate signing key: {}", e))
+            ))?;
+        let public_key = signing_key.verifying_key();
+        let validator_public_key = hex::encode(public_key.to_bytes());
+
         let mut bc = Blockchain {
             chain: Vec::new(),
             rdf_store,
             ontology_manager: None,
             shacl_validator: None,
             governance: Governance::new(),
+            signing_key,
+            validator_public_key,
         };
 
         // Initialize ontology manager and SHACL validator
@@ -567,12 +621,22 @@ impl Blockchain {
         let rdf_store = RDFStore::restore_from_backup(backup_path, target_dir)
             .map_err(ProvChainError::Anyhow)?;
 
+        // Generate signing key for this blockchain instance
+        let signing_key = generate_signing_key()
+            .map_err(|e| ProvChainError::Blockchain(
+                BlockchainError::GenesisCreationFailed(format!("Failed to generate signing key: {}", e))
+            ))?;
+        let public_key = signing_key.verifying_key();
+        let validator_public_key = hex::encode(public_key.to_bytes());
+
         let mut bc = Blockchain {
             chain: Vec::new(),
             rdf_store,
             ontology_manager: None,
             shacl_validator: None,
             governance: Governance::new(),
+            signing_key,
+            validator_public_key,
         };
 
         // Load the chain from the restored store
@@ -604,10 +668,14 @@ impl Blockchain {
             "@prefix ex: <http://example.org/> . ex:genesis ex:type \"Genesis Block\".".into(),
             "0".into(),
             initial_state_root,
-            "GENESIS_VALIDATOR".to_string(),
+            self.validator_public_key.clone(),
         );
         block.encrypted_data = None;
-        block.signature = "GENESIS_SIGNATURE".to_string();
+
+        // Sign the genesis block with the blockchain's signing key
+        let signature = self.signing_key.sign(block.hash.as_bytes());
+        block.signature = hex::encode(signature.to_bytes());
+
         block
     }
 
@@ -679,6 +747,10 @@ impl Blockchain {
 
         let mut block = Block::new(index, data, previous_hash, state_root, validator);
         block.encrypted_data = None;
+
+        // Sign the block with the blockchain's signing key
+        let signature = self.signing_key.sign(block.hash.as_bytes());
+        block.signature = hex::encode(signature.to_bytes());
 
         Ok(block)
     }
@@ -762,13 +834,10 @@ impl Blockchain {
             ));
         }
 
-        // Recalculate hash after adding data to RDF store to ensure consistency
-        // Note: We modify the block here, which invalidates the signature if the hash changes!
-        // Ideally, the hash should be stable.
-        let mut final_block = block;
-        final_block.hash = final_block.calculate_hash_with_store(Some(&self.rdf_store));
-
-        self.chain.push(final_block);
+        // SECURITY FIX: Don't recalculate hash after signature verification
+        // The hash was already signed by the validator. Recalculating it would
+        // invalidate the signature. The signed hash must remain stable.
+        self.chain.push(block);
 
         // Persist changes to disk if using persistent storage
         if let Err(e) = self.rdf_store.save_to_disk() {
@@ -778,11 +847,9 @@ impl Blockchain {
         Ok(())
     }
 
-    /// Legacy add_block for backward compatibility (uses dummy validator)
+    /// Legacy add_block for backward compatibility
     pub fn add_block(&mut self, data: String) -> Result<()> {
-        let validator = "LEGACY_VALIDATOR".to_string();
-        let mut block = self.create_block_proposal(data, validator)?;
-        block.signature = "LEGACY_SIGNATURE".to_string();
+        let block = self.create_block_proposal(data, self.validator_public_key.clone())?;
         self.submit_signed_block(block)
     }
 
@@ -796,8 +863,9 @@ impl Blockchain {
                 return false;
             }
 
-            // Use RDF canonicalization for validation
-            let expected_hash = current.calculate_hash_with_store(Some(&self.rdf_store));
+            // SECURITY FIX: Use the same hash calculation as block creation (without RDF store)
+            // The hash stored in the block is the signed hash which is stable
+            let expected_hash = current.calculate_hash();
 
             if current.hash != expected_hash || current.previous_hash != prev.hash {
                 return false;

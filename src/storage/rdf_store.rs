@@ -1413,15 +1413,65 @@ impl RDFStore {
     }
 
     /// Calculate the state root hash representing the current state of the knowledge graph
+    /// Uses a Merkle tree approach over all RDF triples for efficient verification
     pub fn calculate_state_root(&self) -> String {
-        // For now, we'll use a simplified approach that only considers the store size
-        // In a production implementation, this would use a Merkle tree for efficiency
-        let mut hasher = Sha256::new();
+        use sha2::{Sha256, Digest};
         
-        // Use the store length as a simple proxy for state
-        let store_len = self.store.len().unwrap_or(0) as u64;
-        hasher.update(store_len.to_le_bytes());
-        format!("{:x}", hasher.finalize())
+        // Collect all triples in a deterministic order
+        let mut triple_hashes: Vec<String> = Vec::new();
+        
+        // Iterate over all quads in the store
+        for quad_result in self.store.iter() {
+            if let Ok(quad) = quad_result {
+                // Create a deterministic string representation of the quad
+                let quad_str = format!(
+                    "{}\n{}\n{}\n{}",
+                    quad.graph_name.to_string(),
+                    quad.subject.to_string(),
+                    quad.predicate.to_string(),
+                    quad.object.to_string()
+                );
+                
+                // Hash this quad
+                let mut hasher = Sha256::new();
+                hasher.update(quad_str.as_bytes());
+                let hash = format!("{:x}", hasher.finalize());
+                triple_hashes.push(hash);
+            }
+        }
+        
+        // Sort for deterministic ordering
+        triple_hashes.sort();
+        
+        // If no triples, return zero hash
+        if triple_hashes.is_empty() {
+            return format!("{:064x}", 0u64);
+        }
+        
+        // Build Merkle tree
+        while triple_hashes.len() > 1 {
+            let mut new_level = Vec::new();
+            
+            // Pair up hashes and combine them
+            for chunk in triple_hashes.chunks(2) {
+                if chunk.len() == 2 {
+                    // Combine two hashes
+                    let mut hasher = Sha256::new();
+                    hasher.update(chunk[0].as_bytes());
+                    hasher.update(chunk[1].as_bytes());
+                    let combined = format!("{:x}", hasher.finalize());
+                    new_level.push(combined);
+                } else {
+                    // Odd number of hashes, duplicate the last one
+                    new_level.push(chunk[0].clone());
+                }
+            }
+            
+            triple_hashes = new_level;
+        }
+        
+        // Return the root hash
+        triple_hashes[0].clone()
     }
 
     /// Get ontology class hierarchy information

@@ -7,6 +7,7 @@ use provchain_org::{
     demo_runner::run_demo_with_args,
     network::{consensus::ConsensusManager, NetworkManager},
     ontology::OntologyConfig,
+    security::keys::generate_signing_key,
     semantic::enhanced_owl2_demo::run_enhanced_owl2_demo,
     semantic::owl2_traceability::Owl2EnhancedTraceability,
     semantic::simple_owl2_test::simple_owl2_integration_test,
@@ -639,9 +640,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             info!("Shutting down...\n");
         }
         Commands::GenerateKey { out } => {
-            use ed25519_dalek::SigningKey;
-
-            let keypair = SigningKey::from_bytes(&rand::random::<[u8; 32]>());
+            // Use cryptographically secure key generation
+            let keypair = generate_signing_key()
+                .map_err(|e| format!("Failed to generate secure key: {e}\n"))?;
             let public_key = keypair.verifying_key();
 
             // Save private key to file

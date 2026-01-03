@@ -162,14 +162,10 @@ impl WebServer {
             .route("/auth/login", post(authenticate))
             .with_state(self.auth_state.clone());
 
-        // Public blockchain routes (no auth, uses AppState)
-        let public_blockchain_routes = Router::new()
-            .route("/api/trace", get(trace_path_api))
-            .route("/api/knowledge-graph", get(get_knowledge_graph))
-            .with_state(self.app_state.clone());
-
         // Protected routes (authentication required)
         let protected_routes = Router::new()
+            .route("/api/trace", get(trace_path_api))
+            .route("/api/knowledge-graph", get(get_knowledge_graph))
             .route("/api/blockchain/status", get(get_blockchain_status))
             .route("/api/blockchain/blocks", get(get_blocks))
             .route("/api/blockchain/blocks/:index", get(get_block))
@@ -224,7 +220,6 @@ impl WebServer {
         Router::new()
             .merge(websocket_routes)
             .merge(public_routes)
-            .merge(public_blockchain_routes)
             .merge(protected_routes)
             .nest_service("/", static_service)
             .layer(
@@ -249,7 +244,18 @@ impl WebServer {
                     ))
                     .layer(SetResponseHeaderLayer::if_not_present(
                         http::header::CONTENT_SECURITY_POLICY,
-                        http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"),
+                        http::HeaderValue::from_static(
+                            "default-src 'self'; \
+                             script-src 'self'; \
+                             style-src 'self' 'unsafe-inline'; \
+                             img-src 'self' data:; \
+                             connect-src 'self' ws: wss:; \
+                             font-src 'self'; \
+                             object-src 'none'; \
+                             base-uri 'self'; \
+                             form-action 'self'; \
+                             frame-ancestors 'none'"
+                        ),
                     ))
                     .into_inner()
             )

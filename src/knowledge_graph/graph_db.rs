@@ -409,7 +409,7 @@ impl GraphDatabase {
     }
 
     /// Calculate graph density
-    fn calculate_graph_density(&self) -> f64 {
+    pub fn calculate_graph_density(&self) -> f64 {
         let num_nodes = self.knowledge_graph.entities.len() as f64;
         let num_edges = self.knowledge_graph.relationships.len() as f64;
 
@@ -428,6 +428,16 @@ impl GraphDatabase {
     /// Get relationships from the knowledge graph
     pub fn get_relationships(&self) -> &Vec<KnowledgeRelationship> {
         &self.knowledge_graph.relationships
+    }
+
+    /// Get mutable reference to knowledge graph for entity linking
+    pub fn knowledge_graph_mut(&mut self) -> &mut KnowledgeGraph {
+        &mut self.knowledge_graph
+    }
+
+    /// Get reference to knowledge graph
+    pub fn knowledge_graph(&self) -> &KnowledgeGraph {
+        &self.knowledge_graph
     }
 }
 

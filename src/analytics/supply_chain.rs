@@ -392,25 +392,231 @@ impl SupplyChainAnalyzer {
         Ok(visibility_score)
     }
 
-    // Helper methods for risk analysis
-    fn analyze_supplier_risk(&self, _batch: &KnowledgeEntity) -> Result<f64> {
-        // Simplified risk calculation - in real system would analyze supplier history
-        Ok(0.2) // Low risk
+    fn analyze_supplier_risk(&self, batch: &KnowledgeEntity) -> Result<f64> {
+        // Analyze supplier risk based on supplier history and characteristics
+        // Find suppliers linked to this batch through relationships
+        
+        // For now, calculate risk based on batch properties
+        let mut risk_score = 0.1; // Base risk (low)
+        
+        // Check if batch is from a new supplier (no historical data)
+        let supplier_history = batch
+            .properties
+            .get("supplierHistory")
+            .and_then(|h| h.parse::<u32>().ok())
+            .unwrap_or(0);
+            
+        if supplier_history == 0 {
+            risk_score += 0.3; // Increase risk for unknown suppliers
+        } else if supplier_history < 10 {
+            risk_score += 0.1; // Slight increase for low history
+        }
+        
+        // Check if supplier has certifications
+        let has_certifications = batch
+            .properties
+            .get("certified")
+            .map(|c| c == "true")
+            .unwrap_or(false);
+            
+        if !has_certifications {
+            risk_score += 0.2; // Higher risk for uncertified suppliers
+        }
+        
+        // Check supplier location (imported goods have higher risk)
+        let is_imported = batch
+            .properties
+            .get("countryOfOrigin")
+            .map(|country| country != "US" && country != "USA" && country != "local")
+            .unwrap_or(false);
+            
+        if is_imported {
+            risk_score += 0.1; // Slight increase for imports
+        }
+        
+        // Normalize to 0-1 range
+        let normalized_risk = (risk_score / 1.0_f64).min(1.0_f64);
+        
+        tracing::debug!(
+            "Supplier risk for batch {}: {:.2} (history: {}, certified: {}, imported: {})",
+            batch.uri,
+            normalized_risk,
+            supplier_history,
+            has_certifications,
+            is_imported
+        );
+        
+        Ok(normalized_risk)
     }
 
-    fn analyze_transport_risk(&self, _batch: &KnowledgeEntity) -> Result<f64> {
-        // Simplified risk calculation - in real system would analyze transport conditions
-        Ok(0.3) // Low-medium risk
+    fn analyze_transport_risk(&self, batch: &KnowledgeEntity) -> Result<f64> {
+        // Analyze transportation risk based on distance, mode, and conditions
+        let mut risk_score = 0.15; // Base risk
+        
+        // Get transport mode
+        let transport_mode = batch
+            .properties
+            .get("transportMode")
+            .map(|s| s.as_str())
+            .unwrap_or("truck");
+        
+        // Different transport modes have different risk levels
+        match transport_mode {
+            "rail" | "ship" => risk_score += 0.0,     // Low risk
+            "truck" => risk_score += 0.05,             // Slight risk
+            "air" | "plane" => risk_score += 0.25,     // Higher risk
+            _ => risk_score += 0.10,                   // Unknown mode
+        }
+        
+        // Check if there are temperature requirements
+        let requires_temperature_control = batch
+            .properties
+            .get("temperatureMin")
+            .is_some();
+            
+        if requires_temperature_control {
+            risk_score += 0.10; // Higher risk for temperature-sensitive goods
+        }
+        
+        // Check transport duration (if available)
+        if let Some(duration_str) = batch.properties.get("duration") {
+            if let Ok(duration_hours) = duration_str.parse::<f64>() {
+                // Longer durations increase risk
+                if duration_hours > 48.0 {
+                    risk_score += 0.10;
+                } else if duration_hours > 24.0 {
+                    risk_score += 0.05;
+                }
+            }
+        }
+        
+        // Normalize to 0-1 range
+        let normalized_risk = (risk_score / 1.0_f64).min(1.0_f64);
+        
+        tracing::debug!(
+            "Transport risk for batch {}: {:.2} (mode: {}, temp_control: {})",
+            batch.uri,
+            normalized_risk,
+            transport_mode,
+            requires_temperature_control
+        );
+        
+        Ok(normalized_risk)
     }
 
-    fn analyze_quality_risk(&self, _batch: &KnowledgeEntity) -> Result<f64> {
-        // Simplified risk calculation - in real system would analyze quality test results
-        Ok(0.1) // Very low risk
+    fn analyze_quality_risk(&self, batch: &KnowledgeEntity) -> Result<f64> {
+        // Analyze quality risk based on product type and historical quality data
+        let mut risk_score = 0.1; // Base risk (low)
+        
+        // Check product type
+        let product_type = batch
+            .properties
+            .get("product")
+            .map(|p| p.to_lowercase())
+            .unwrap_or_default();
+        
+        // Perishable products have higher quality risk
+        if product_type.contains("fresh") || product_type.contains("dairy") || product_type.contains("meat") {
+            risk_score += 0.15;
+        } else if product_type.contains("frozen") {
+            risk_score += 0.10;
+        } else if product_type.contains("organic") {
+            risk_score += 0.05; // Organic has slightly higher variability risk
+        }
+        
+        // Check batch age
+        if let Some(production_date_str) = batch.properties.get("productionDate") {
+            if let Ok(production_date) = chrono::DateTime::parse_from_rfc3339(production_date_str) {
+                // Convert to UTC and calculate age
+                let production_date_utc = production_date.with_timezone(&chrono::Utc);
+                let age_days = (chrono::Utc::now() - production_date_utc).num_days();
+                
+                if age_days > 30 {
+                    risk_score += 0.15; // Older batches have higher quality risk
+                } else if age_days > 14 {
+                    risk_score += 0.08;
+                } else if age_days < 1 {
+                    risk_score += 0.02; // Very fresh batches have minimal risk
+                }
+            }
+        }
+        
+        // Check if quality checks exist
+        let has_quality_checks = self
+            .entities
+            .values()
+            .filter(|e| e.entity_type == "QualityCheck")
+            .any(|check| {
+                check.properties.get("batchId").map(|id| id == batch.properties.get("batchId").unwrap_or(&String::new())).unwrap_or(false)
+            });
+        
+        if !has_quality_checks {
+            risk_score += 0.20; // Higher risk if no quality checks performed
+        }
+        
+        // Normalize to 0-1 range
+        let normalized_risk = (risk_score / 1.0_f64).min(1.0_f64);
+        
+        tracing::debug!(
+            "Quality risk for batch {}: {:.2} (product: {}, checks: {})",
+            batch.uri,
+            normalized_risk,
+            product_type,
+            has_quality_checks
+        );
+        
+        Ok(normalized_risk)
     }
 
-    fn analyze_environmental_risk(&self, _batch: &KnowledgeEntity) -> Result<f64> {
-        // Simplified risk calculation - in real system would analyze environmental data
-        Ok(0.25) // Low risk
+    fn analyze_environmental_risk(&self, batch: &KnowledgeEntity) -> Result<f64> {
+        // Analyze environmental risk based on production conditions and location
+        let mut risk_score = 0.15; // Base risk
+        
+        // Check production location
+        let location = batch
+            .properties
+            .get("location")
+            .map(|l| l.to_lowercase())
+            .unwrap_or_default();
+        
+        // Certain locations may have higher environmental risks
+        if location.contains("flood") || location.contains("drought") {
+            risk_score += 0.20; // Natural disaster risk areas
+        } else if location.contains("tropical") {
+            risk_score += 0.10; // Tropical regions (higher pest/decay risk)
+        }
+        
+        // Check if organic (generally lower environmental risk from chemicals)
+        let is_organic = batch
+            .properties
+            .get("productionMethod")
+            .map(|m| m == "organic")
+            .unwrap_or(false);
+        
+        if !is_organic {
+            risk_score += 0.15; // Higher risk from chemical use
+        }
+        
+        // Check storage conditions
+        let has_storage_info = batch.properties.get("storageTemperature").is_some()
+            || batch.properties.get("storageHumidity").is_some();
+        
+        if !has_storage_info {
+            risk_score += 0.10; // Unknown storage conditions
+        }
+        
+        // Normalize to 0-1 range
+        let normalized_risk = (risk_score / 1.0_f64).min(1.0_f64);
+        
+        tracing::debug!(
+            "Environmental risk for batch {}: {:.2} (location: {}, organic: {})",
+            batch.uri,
+            normalized_risk,
+            location,
+            is_organic
+        );
+        
+        Ok(normalized_risk)
     }
 
     fn generate_risk_recommendations(
@@ -491,12 +697,56 @@ impl SupplyChainAnalyzer {
         &self,
         supplier: &KnowledgeEntity,
     ) -> Result<SupplierPerformance> {
-        // Simplified supplier performance calculation
-        let quality_score = 0.85;
-        let delivery_score = 0.9;
-        let compliance_score = 0.95;
-        let overall_score = (quality_score + delivery_score + compliance_score) / 3.0;
-
+        // Calculate supplier performance metrics from entity data and relationships
+        let mut quality_score = 0.85; // Default score
+        let mut delivery_score = 0.90;
+        let mut compliance_score = 0.95;
+        let mut total_orders = 10;
+        let mut on_time_deliveries = 9;
+        let mut quality_issues = 1;
+        
+        // Extract metrics from supplier properties if available
+        if let Some(avg_quality) = supplier.properties.get("averageQualityScore") {
+            quality_score = avg_quality.parse::<f64>().unwrap_or(0.85);
+        }
+        
+        if let Some(on_time_rate) = supplier.properties.get("onTimeDeliveryRate") {
+            delivery_score = on_time_rate.parse::<f64>().unwrap_or(0.90);
+        }
+        
+        if let Some(compliance_rate) = supplier.properties.get("complianceRate") {
+            compliance_score = compliance_rate.parse::<f64>().unwrap_or(0.95);
+        }
+        
+        if let Some(orders) = supplier.properties.get("totalOrders") {
+            total_orders = orders.parse::<usize>().unwrap_or(10);
+        }
+        
+        if let Some(on_time) = supplier.properties.get("onTimeDeliveries") {
+            on_time_deliveries = on_time.parse::<usize>().unwrap_or(
+                (total_orders as f64 * delivery_score) as usize
+            );
+        }
+        
+        if let Some(issues) = supplier.properties.get("qualityIssues") {
+            quality_issues = issues.parse::<usize>().unwrap_or(1);
+        }
+        
+        // Calculate overall score as weighted average
+        let overall_score = quality_score * 0.4 + delivery_score * 0.3 + compliance_score * 0.3;
+        
+        // Ensure on_time_deliveries doesn't exceed total_orders
+        on_time_deliveries = on_time_deliveries.min(total_orders);
+        
+        tracing::debug!(
+            "Supplier metrics for {}: quality={:.2}, delivery={:.2}, compliance={:.2}, overall={:.2}",
+            supplier.uri,
+            quality_score,
+            delivery_score,
+            compliance_score,
+            overall_score
+        );
+        
         Ok(SupplierPerformance {
             supplier_id: supplier.uri.clone(),
             supplier_name: supplier
@@ -509,15 +759,31 @@ impl SupplyChainAnalyzer {
             delivery_performance: delivery_score,
             compliance_score,
             risk_level: RiskLevel::from_score(1.0 - overall_score),
-            total_orders: 10, // Mock data
-            on_time_deliveries: 9,
-            quality_issues: 1,
+            total_orders,
+            on_time_deliveries,
+            quality_issues,
         })
     }
 
-    fn extract_quality_score(&self, _check: &KnowledgeEntity) -> f64 {
-        // Simplified quality score extraction
-        0.85 // Mock score
+    fn extract_quality_score(&self, check: &KnowledgeEntity) -> f64 {
+        // Extract quality score from QualityCheck entity properties
+        check
+            .properties
+            .get("score")
+            .and_then(|s| s.parse::<f64>().ok())
+            .unwrap_or_else(|| {
+                // If no score property, try to derive from result
+                check
+                    .properties
+                    .get("result")
+                    .map(|result| match result.to_lowercase().as_str() {
+                        "passed" | "pass" => 0.95,
+                        "failed" | "fail" => 0.25,
+                        "partial" | "conditional" => 0.60,
+                        _ => 0.70, // Default mid-range if unclear
+                    })
+                    .unwrap_or(0.70)
+            })
     }
 
     fn analyze_quality_trends(&self) -> Result<TrendAnalysis> {
@@ -530,14 +796,72 @@ impl SupplyChainAnalyzer {
         })
     }
 
-    fn check_certificate_validity(&self, _cert: &KnowledgeEntity) -> bool {
-        // Simplified certificate check
-        true
+    fn check_certificate_validity(&self, cert: &KnowledgeEntity) -> bool {
+        // Check certificate validity based on expiry date
+        let now = chrono::Utc::now();
+        
+        cert
+            .properties
+            .get("expiryDate")
+            .and_then(|expiry_str| chrono::DateTime::parse_from_rfc3339(expiry_str).ok())
+            .map(|expiry_date| {
+                let is_valid = expiry_date > now;
+                
+                if !is_valid {
+                    tracing::warn!(
+                        "Certificate {} expired on {}",
+                        cert.uri,
+                        expiry_date
+                    );
+                }
+                
+                is_valid
+            })
+            .unwrap_or(true) // If no expiry date, assume valid (might be a permanent certificate)
     }
 
-    fn check_activity_compliance(&self, _activity: &KnowledgeEntity) -> bool {
-        // Simplified compliance check
-        true
+    fn check_activity_compliance(&self, activity: &KnowledgeEntity) -> bool {
+        // Check activity compliance based on various requirements
+        let mut is_compliant = true;
+        
+        // Check if activity has required documentation
+        if activity.properties.get("documentationDate").is_none() {
+            // Only require documentation for certain activity types
+            if matches!(
+                activity.entity_type.as_str(),
+                "TransportActivity" | "ProcessingActivity"
+            ) {
+                tracing::warn!(
+                    "Activity {} missing required documentation",
+                    activity.uri
+                );
+                is_compliant = false;
+            }
+        }
+        
+        // Check if activity has temperature controls (for temperature-sensitive products)
+        if activity.properties.get("temperatureMin").is_none() 
+            && activity.properties.get("productType").map(|t| t.contains("fresh") || t.contains("perishable")).unwrap_or(false) {
+            tracing::warn!(
+                "Activity {} transporting perishable goods without temperature controls",
+                activity.uri
+            );
+            is_compliant = false;
+        }
+        
+        // Check regulatory compliance
+        if let Some(regulatory_status) = activity.properties.get("regulatoryStatus") {
+            if regulatory_status.to_lowercase() != "compliant" {
+                tracing::warn!(
+                    "Activity {} has non-compliant regulatory status: {}",
+                    activity.uri,
+                    regulatory_status
+                );
+                is_compliant = false;
+            }
+        }
+        
+        is_compliant
     }
 
     fn identify_critical_violations(&self) -> Result<Vec<String>> {

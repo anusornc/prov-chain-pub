@@ -9,6 +9,8 @@
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
+use rand::RngCore;
+use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -220,7 +222,10 @@ pub struct Wallet {
 impl Wallet {
     /// Create a new wallet for a participant
     pub fn new(participant: Participant) -> Self {
-        let signing_key = SigningKey::from_bytes(&rand::random::<[u8; 32]>());
+        // Use cryptographically secure key generation
+        let mut bytes = [0u8; 32];
+        OsRng.fill_bytes(&mut bytes);
+        let signing_key = SigningKey::from_bytes(&bytes);
         let public_key = signing_key.verifying_key();
 
         Self {
@@ -353,8 +358,10 @@ impl WalletManager {
             fs::create_dir_all(&storage_dir)?;
         }
 
+        // Use cryptographically secure random for encryption key
         // In production, this should be derived from user input or secure key management
-        let encryption_key = rand::random::<[u8; 32]>();
+        let mut encryption_key = [0u8; 32];
+        OsRng.fill_bytes(&mut encryption_key);
 
         Ok(Self {
             wallets: HashMap::new(),

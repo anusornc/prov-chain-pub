@@ -173,21 +173,235 @@ impl AlertManager {
     }
 
     async fn send_email_alert(&self, alert: &IntegrityAlert) -> Result<()> {
-        // TODO: Implement email notification
-        debug!("Email alert would be sent: {}", alert.message);
-        Ok(())
+        if let Some(email_config) = &self.email_config {
+            // Format email content
+            let subject = format!(
+                "[ProvChain Alert] {:?}",
+                alert.alert_type
+            );
+            
+            let _body = format!(
+                r#"
+Integrity Alert Notification
+===========================
+
+Timestamp: {}
+Alert Type: {:?}
+Message: {}
+
+Report Summary:
+- Overall Status: {:?}
+- Total Issues: {}
+- Critical Issues: {}
+- Warning Issues: {}
+- Auto-fixable Issues: {}
+
+Monitoring Statistics:
+- Total Checks: {}
+- Healthy Checks: {}
+- Warning Checks: {}
+- Critical Checks: {}
+- Health: {:.1}%
+
+Recommendations:
+- Review the integrity validation report for full details
+- Check the blockchain logs for affected blocks
+- Consider initiating repair procedures if critical
+
+This is an automated message from ProvChain Integrity Monitoring System.
+"#,
+                alert.timestamp.format("%Y-%m-%d %H:%M:%S UTC"),
+                alert.alert_type,
+                alert.message,
+                alert.report_summary.overall_status,
+                alert.report_summary.total_issues,
+                alert.report_summary.critical_issues,
+                alert.report_summary.warning_issues,
+                alert.report_summary.auto_fixable_issues,
+                alert.monitoring_stats.total_checks,
+                alert.monitoring_stats.healthy_checks,
+                alert.monitoring_stats.warning_checks,
+                alert.monitoring_stats.critical_checks,
+                if alert.monitoring_stats.total_checks > 0 {
+                    (alert.monitoring_stats.healthy_checks as f64 / alert.monitoring_stats.total_checks as f64) * 100.0
+                } else {
+                    0.0
+                }
+            );
+            
+            // In production, this would use an email library like lettre
+            // For now, we log the email that would be sent
+            info!(
+                "EMAIL ALERT - To: {} | Subject: {}",
+                email_config.recipients.join(", "),
+                subject
+            );
+            
+            // TODO: Implement actual email sending using lettre crate
+            // let email = Message::builder()
+            //     .from(email_config.username.parse()?)
+            //     .to(email_config.recipients[0].parse()?)
+            //     .subject(subject)
+            //     .body(body)?;
+            // 
+            // let mailer = SmtpTransport::relay(&email_config.smtp_server)?
+            //     .credentials(Credentials::new(
+            //         email_config.username.clone(),
+            //         email_config.password.clone(),
+            //     ))
+            //     .build();
+            // 
+            // mailer.send(&email).context("Failed to send email alert")?;
+            
+            Ok(())
+        } else {
+            debug!("Email alert would be sent (no email configured): {}", alert.message);
+            Ok(())
+        }
     }
 
     async fn send_webhook_alert(&self, alert: &IntegrityAlert) -> Result<()> {
-        // TODO: Implement webhook notification
-        debug!("Webhook alert would be sent: {}", alert.message);
-        Ok(())
+        if let Some(webhook_config) = &self.webhook_config {
+            // Calculate health percentage
+            let health_percent = if alert.monitoring_stats.total_checks > 0 {
+                (alert.monitoring_stats.healthy_checks as f64 / alert.monitoring_stats.total_checks as f64) * 100.0
+            } else {
+                0.0
+            };
+
+            // Prepare webhook payload
+            let _payload = serde_json::json!({
+                "timestamp": alert.timestamp.to_rfc3339(),
+                "alert_type": format!("{:?}", alert.alert_type),
+                "message": alert.message,
+                "report_summary": {
+                    "overall_status": format!("{:?}", alert.report_summary.overall_status),
+                    "total_issues": alert.report_summary.total_issues,
+                    "critical_issues": alert.report_summary.critical_issues,
+                    "warning_issues": alert.report_summary.warning_issues
+                },
+                "monitoring_stats": {
+                    "total_checks": alert.monitoring_stats.total_checks,
+                    "healthy_checks": alert.monitoring_stats.healthy_checks,
+                    "health_percent": health_percent
+                }
+            });
+
+            info!(
+                "WEBHOOK ALERT - URL: {}",
+                webhook_config.url
+            );
+
+            // TODO: Implement actual webhook HTTP POST using reqwest
+            // let client = reqwest::Client::new();
+            // let response = client
+            //     .post(&webhook_config.url)
+            //     .header("Content-Type", "application/json")
+            //     .header("Authorization", format!("Bearer {}", webhook_config.auth_token))
+            //     .json(&payload)
+            //     .send()
+            //     .await
+            //     .context("Failed to send webhook alert")?;
+            //
+            // if !response.status().is_success() {
+            //     anyhow::bail!("Webhook returned error status: {}", response.status());
+            // }
+
+            Ok(())
+        } else {
+            debug!("Webhook alert would be sent (no webhook configured): {}", alert.message);
+            Ok(())
+        }
     }
 
     async fn send_slack_alert(&self, alert: &IntegrityAlert) -> Result<()> {
-        // TODO: Implement Slack notification
-        debug!("Slack alert would be sent: {}", alert.message);
-        Ok(())
+        if let Some(_slack_config) = &self.slack_config {
+            // Calculate health percentage
+            let health_percent = if alert.monitoring_stats.total_checks > 0 {
+                (alert.monitoring_stats.healthy_checks as f64 / alert.monitoring_stats.total_checks as f64) * 100.0
+            } else {
+                0.0
+            };
+
+            // Prepare Slack message payload
+            let color = match alert.alert_type {
+                crate::integrity::monitor::AlertType::Critical => "#FF0000",
+                crate::integrity::monitor::AlertType::Warning => "#FFCC00",
+                crate::integrity::monitor::AlertType::Recovery => "#00CC00",
+                crate::integrity::monitor::AlertType::MonitoringFailure => "#FF6600",
+            };
+
+            let health_emoji = if health_percent >= 80.0 {
+                ":white_check_mark:"
+            } else if health_percent >= 50.0 {
+                ":warning:"
+            } else {
+                ":x:"
+            };
+
+            let _payload = serde_json::json!({
+                "username": "ProvChain Monitor",
+                "icon_emoji": ":shield:",
+                "attachments": vec![
+                    serde_json::json!({
+                        "color": color,
+                        "title": format!("ProvChain Integrity Alert - {:?}", alert.alert_type),
+                        "fields": vec![
+                            serde_json::json!({
+                                "title": "Status",
+                                "value": format!("{:?}", alert.report_summary.overall_status),
+                                "short": true
+                            }),
+                            serde_json::json!({
+                                "title": "Health",
+                                "value": format!("{} {:.1}%", health_emoji, health_percent),
+                                "short": true
+                            }),
+                            serde_json::json!({
+                                "title": "Timestamp",
+                                "value": alert.timestamp.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
+                                "short": true
+                            }),
+                            serde_json::json!({
+                                "title": "Critical Issues",
+                                "value": alert.report_summary.critical_issues,
+                                "short": true
+                            }),
+                            serde_json::json!({
+                                "title": "Message",
+                                "value": alert.message,
+                                "short": false
+                            })
+                        ],
+                        "footer": "ProvChain Integrity Monitoring",
+                        "ts": alert.timestamp.timestamp()
+                    })
+                ]
+            });
+
+            info!(
+                "SLACK ALERT - Webhook configured",
+            );
+
+            // TODO: Implement actual Slack webhook HTTP POST using reqwest
+            // let client = reqwest::Client::new();
+            // let response = client
+            //     .post(&slack_config.webhook_url)
+            //     .header("Content-Type", "application/json")
+            //     .json(&payload)
+            //     .send()
+            //     .await
+            //     .context("Failed to send Slack alert")?;
+            //
+            // if !response.status().is_success() {
+            //     anyhow::bail!("Slack webhook returned error status: {}", response.status());
+            // }
+
+            Ok(())
+        } else {
+            debug!("Slack alert would be sent (no Slack configured): {}", alert.message);
+            Ok(())
+        }
     }
 }
 
@@ -764,12 +978,41 @@ impl IntegrityMonitor {
 
     /// Get current monitoring statistics
     pub fn get_monitoring_statistics(&self) -> MonitoringStatistics {
-        // TODO: Phase 7 Implementation
-        // - Return current monitoring statistics
-        // - Include performance metrics
-        // - Provide trend analysis
+        let history = self.monitoring_history.lock().unwrap();
 
-        MonitoringStatistics::new()
+        // Calculate statistics from historical reports
+        let total_checks = history.reports.len();
+        let mut healthy_checks = 0;
+        let mut warning_checks = 0;
+        let mut critical_checks = 0;
+        let mut corrupted_checks = 0;
+        let mut failed_checks = 0;
+
+        for report in &history.reports {
+            match report.overall_status {
+                crate::integrity::IntegrityStatus::Healthy => healthy_checks += 1,
+                crate::integrity::IntegrityStatus::Warning => warning_checks += 1,
+                crate::integrity::IntegrityStatus::Critical => {
+                    critical_checks += 1;
+                    failed_checks += 1;
+                }
+                crate::integrity::IntegrityStatus::Corrupted => {
+                    corrupted_checks += 1;
+                    failed_checks += 1;
+                }
+            }
+        }
+
+        MonitoringStatistics {
+            total_checks,
+            healthy_checks,
+            warning_checks,
+            critical_checks,
+            corrupted_checks,
+            failed_checks,
+            total_check_time: Duration::from_secs(0),
+            last_check_time: None,
+        }
     }
 
     /// Perform on-demand integrity check
@@ -816,16 +1059,32 @@ impl IntegrityMonitor {
 
     /// Get current memory usage in bytes
     fn get_memory_usage(&self) -> usize {
-        // Simple memory usage estimation
-        // In a production system, this would use system APIs
-        std::mem::size_of::<Self>() + 1024 * 1024 // Base estimate + 1MB
+        use sysinfo::System;
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+
+        // Return total memory used by all processes
+        sys.used_memory() as usize
     }
 
     /// Get current CPU usage percentage
     fn get_cpu_usage(&self) -> f64 {
-        // Simple CPU usage estimation
-        // In a production system, this would use system APIs
-        0.0 // Placeholder
+        use sysinfo::System;
+
+        let mut sys = System::new_all();
+        sys.refresh_cpu();
+
+        // Calculate global CPU usage across all CPUs
+        let cpus = sys.cpus();
+        if cpus.is_empty() {
+            0.0
+        } else {
+            let usage_sum: f32 = cpus.iter()
+                .map(|cpu| cpu.cpu_usage())
+                .sum();
+            (usage_sum / cpus.len() as f32) as f64
+        }
     }
 
     /// Check for performance threshold violations

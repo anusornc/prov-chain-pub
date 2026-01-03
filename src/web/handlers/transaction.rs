@@ -102,18 +102,24 @@ pub async fn add_triple(
         match PrivacyManager::encrypt(&triple_data, &key, key_id) {
             Ok(encrypted) => {
                 let encrypted_json = serde_json::to_string(&encrypted).unwrap_or_default();
-                
+
+                // Clone validator public key before borrowing blockchain mutably
+                let validator_public_key = blockchain.validator_public_key.clone();
+
                 // Create a block with encrypted payload
                 // We use a placeholder for the public data to indicate it's encrypted
                 match blockchain.create_block_proposal(
-                    format!("@prefix prov: <http://provchain.org/core#> . prov:EncryptedData prov:hasKeyId \"{}\" .", key_id), 
-                    claims.sub.clone()
+                    format!("@prefix prov: <http://provchain.org/core#> . prov:EncryptedData prov:hasKeyId \"{}\" .", key_id),
+                    validator_public_key
                 ) {
                     Ok(mut block) => {
                         block.encrypted_data = Some(encrypted_json);
                         // Re-calculate hash to include encrypted data
                         block.hash = block.calculate_hash();
-                        block.signature = "SIMULATED_SIGNATURE".to_string(); // In real app, sign here
+                        // Re-sign the block with the new hash
+                        use ed25519_dalek::Signer;
+                        let signature = blockchain.signing_key.sign(block.hash.as_bytes());
+                        block.signature = hex::encode(signature.to_bytes());
                         
                         match blockchain.submit_signed_block(block) {
                             Ok(()) => {
