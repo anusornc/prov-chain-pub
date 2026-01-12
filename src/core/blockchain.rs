@@ -392,17 +392,16 @@ impl Blockchain {
         // Collect all triples from the specific graph
         let mut triples = Vec::new();
         let graph_name_ref = oxigraph::model::GraphNameRef::NamedNode((&graph_name).into());
-        for quad_result in
+        for quad in
             self.rdf_store
                 .store
                 .quads_for_pattern(None, None, None, Some(graph_name_ref))
+                .flatten()
         {
-            if let Ok(quad) = quad_result {
-                // Create a triple from the quad (without the graph component)
-                let triple =
-                    oxigraph::model::Triple::new(quad.subject, quad.predicate, quad.object);
-                triples.push(triple);
-            }
+            // Create a triple from the quad (without the graph component)
+            let triple =
+                oxigraph::model::Triple::new(quad.subject, quad.predicate, quad.object);
+            triples.push(triple);
         }
 
         println!("Found {} triples in graph '{}'", triples.len(), graph_uri);
@@ -431,9 +430,7 @@ impl Blockchain {
                 } // Simplified
             };
 
-            let predicate_str = match &triple.predicate {
-                node => format!("<{}>", node.as_str()),
-            };
+            let predicate_str = format!("<{}>", triple.predicate.as_str());
 
             let object_str = match &triple.object {
                 oxigraph::model::Term::NamedNode(node) => format!("<{}>", node.as_str()),

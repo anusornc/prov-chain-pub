@@ -311,12 +311,10 @@ impl SparqlConsistencyValidator {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
                 let mut query_count = 0;
                 for solution in solutions.flatten() {
-                    if let Some(count_term) = solution.get("count") {
-                        if let oxigraph::model::Term::Literal(literal) = count_term {
-                            if let Ok(count) = literal.value().parse::<usize>() {
-                                query_count = count;
-                                break;
-                            }
+                    if let Some(oxigraph::model::Term::Literal(literal)) = solution.get("count") {
+                        if let Ok(count) = literal.value().parse::<usize>() {
+                            query_count = count;
+                            break;
                         }
                     }
                 }
@@ -348,26 +346,19 @@ impl SparqlConsistencyValidator {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
                 let mut query_graph_count = 0;
                 for solution in solutions.flatten() {
-                    if let Some(count_term) = solution.get("count") {
-                        if let oxigraph::model::Term::Literal(literal) = count_term {
-                            if let Ok(count) = literal.value().parse::<usize>() {
-                                query_graph_count = count;
-                                break;
-                            }
+                    if let Some(oxigraph::model::Term::Literal(literal)) = solution.get("count") {
+                        if let Ok(count) = literal.value().parse::<usize>() {
+                            query_graph_count = count;
+                            break;
                         }
                     }
                 }
 
                 // Count distinct graphs through direct iteration
                 let mut direct_graphs = std::collections::HashSet::new();
-                for quad_result in rdf_store.store.iter() {
-                    if let Ok(quad) = quad_result {
-                        match &quad.graph_name {
-                            oxigraph::model::GraphName::NamedNode(node) => {
-                                direct_graphs.insert(node.as_str().to_string());
-                            }
-                            _ => {} // Skip default graph
-                        }
+                for quad in rdf_store.store.iter().flatten() {
+                    if let oxigraph::model::GraphName::NamedNode(node) = &quad.graph_name {
+                        direct_graphs.insert(node.as_str().to_string());
                     }
                 }
 
@@ -391,10 +382,8 @@ impl SparqlConsistencyValidator {
         match rdf_store.query(graph_enum_query) {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
                 for solution in solutions.flatten() {
-                    if let Some(graph_term) = solution.get("g") {
-                        if let oxigraph::model::Term::NamedNode(graph_node) = graph_term {
-                            discovered_graphs.push(graph_node.as_str().to_string());
-                        }
+                    if let Some(oxigraph::model::Term::NamedNode(graph_node)) = solution.get("g") {
+                        discovered_graphs.push(graph_node.as_str().to_string());
                     }
                 }
             }
@@ -414,12 +403,10 @@ impl SparqlConsistencyValidator {
                 oxigraph::sparql::QueryResults::Solutions(solutions) => {
                     let mut query_triple_count = 0;
                     for solution in solutions.flatten() {
-                        if let Some(count_term) = solution.get("count") {
-                            if let oxigraph::model::Term::Literal(literal) = count_term {
-                                if let Ok(count) = literal.value().parse::<usize>() {
-                                    query_triple_count = count;
-                                    break;
-                                }
+                        if let Some(oxigraph::model::Term::Literal(literal)) = solution.get("count") {
+                            if let Ok(count) = literal.value().parse::<usize>() {
+                                query_triple_count = count;
+                                break;
                             }
                         }
                     }
@@ -479,10 +466,8 @@ impl SparqlConsistencyValidator {
         match rdf_store.query(graph_enumeration_query) {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
                 for solution in solutions.flatten() {
-                    if let Some(graph_term) = solution.get("g") {
-                        if let oxigraph::model::Term::NamedNode(graph_node) = graph_term {
-                            discovered_graphs.push(graph_node.as_str().to_string());
-                        }
+                    if let Some(oxigraph::model::Term::NamedNode(graph_node)) = solution.get("g") {
+                        discovered_graphs.push(graph_node.as_str().to_string());
                     }
                 }
             }
@@ -866,11 +851,9 @@ impl SparqlConsistencyValidator {
                 rdf_store.query(graph_count_query)
             {
                 for solution in solutions.flatten() {
-                    if let Some(count_term) = solution.get("count") {
-                        if let oxigraph::model::Term::Literal(literal) = count_term {
-                            if let Ok(count) = literal.value().parse::<usize>() {
-                                return Ok(count);
-                            }
+                    if let Some(oxigraph::model::Term::Literal(literal)) = solution.get("count") {
+                        if let Ok(count) = literal.value().parse::<usize>() {
+                            return Ok(count);
                         }
                     }
                 }
@@ -884,11 +867,9 @@ impl SparqlConsistencyValidator {
                 rdf_store.query(block_count_query)
             {
                 for solution in solutions.flatten() {
-                    if let Some(count_term) = solution.get("count") {
-                        if let oxigraph::model::Term::Literal(literal) = count_term {
-                            if let Ok(count) = literal.value().parse::<usize>() {
-                                return Ok(count);
-                            }
+                    if let Some(oxigraph::model::Term::Literal(literal)) = solution.get("count") {
+                        if let Ok(count) = literal.value().parse::<usize>() {
+                            return Ok(count);
                         }
                     }
                 }
@@ -903,11 +884,9 @@ impl SparqlConsistencyValidator {
                 rdf_store.query(block_graph_query)
             {
                 for solution in solutions.flatten() {
-                    if let Some(count_term) = solution.get("count") {
-                        if let oxigraph::model::Term::Literal(literal) = count_term {
-                            if let Ok(count) = literal.value().parse::<usize>() {
-                                return Ok(count);
-                            }
+                    if let Some(oxigraph::model::Term::Literal(literal)) = solution.get("count") {
+                        if let Ok(count) = literal.value().parse::<usize>() {
+                            return Ok(count);
                         }
                     }
                 }
@@ -1001,12 +980,10 @@ impl SparqlConsistencyValidator {
         match rdf_store.query(block_query) {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
                 for solution in solutions.flatten() {
-                    if let Some(index_term) = solution.get("index") {
-                        if let oxigraph::model::Term::Literal(literal) = index_term {
-                            if let Ok(index) = literal.value().parse::<u64>() {
-                                expected_graphs
-                                    .push(format!("http://provchain.org/block/{}", index));
-                            }
+                    if let Some(oxigraph::model::Term::Literal(literal)) = solution.get("index") {
+                        if let Ok(index) = literal.value().parse::<u64>() {
+                            expected_graphs
+                                .push(format!("http://provchain.org/block/{}", index));
                         }
                     }
                 }

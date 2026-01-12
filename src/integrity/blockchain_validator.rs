@@ -284,17 +284,12 @@ impl BlockchainIntegrityValidator {
                                                 ) => {
                                                     let mut count = 0;
                                                     for sol in solutions.flatten() {
-                                                        if let Some(count_term) = sol.get("count") {
-                                                            if let oxigraph::model::Term::Literal(
-                                                                lit,
-                                                            ) = count_term
+                                                        if let Some(oxigraph::model::Term::Literal(lit)) = sol.get("count") {
+                                                            if let Ok(parsed_count) =
+                                                                lit.value().parse::<usize>()
                                                             {
-                                                                if let Ok(parsed_count) =
-                                                                    lit.value().parse::<usize>()
-                                                                {
-                                                                    count = parsed_count;
-                                                                    break;
-                                                                }
+                                                                count = parsed_count;
+                                                                break;
                                                             }
                                                         }
                                                     }
@@ -420,11 +415,9 @@ impl BlockchainIntegrityValidator {
             blockchain.rdf_store.query(query)
         {
             for sol in solutions.flatten() {
-                if let Some(index_term) = sol.get("index") {
-                    if let oxigraph::model::Term::Literal(lit) = index_term {
-                        if let Ok(index) = lit.value().parse::<u64>() {
-                            persistent_indices.push(index);
-                        }
+                if let Some(oxigraph::model::Term::Literal(lit)) = sol.get("index") {
+                    if let Ok(index) = lit.value().parse::<u64>() {
+                        persistent_indices.push(index);
                     }
                 }
             }
@@ -629,12 +622,10 @@ impl BlockchainIntegrityValidator {
                     temp_store.query(&temp_query)
                 {
                     for sol in solutions.flatten() {
-                        if let Some(count_term) = sol.get("count") {
-                            if let oxigraph::model::Term::Literal(lit) = count_term {
-                                if let Ok(count) = lit.value().parse::<usize>() {
-                                    temp_triple_count = count;
-                                    break;
-                                }
+                        if let Some(oxigraph::model::Term::Literal(lit)) = sol.get("count") {
+                            if let Ok(count) = lit.value().parse::<usize>() {
+                                temp_triple_count = count;
+                                break;
                             }
                         }
                     }
@@ -657,12 +648,10 @@ impl BlockchainIntegrityValidator {
                     blockchain.rdf_store.query(&main_query)
                 {
                     for sol in solutions.flatten() {
-                        if let Some(count_term) = sol.get("count") {
-                            if let oxigraph::model::Term::Literal(lit) = count_term {
-                                if let Ok(count) = lit.value().parse::<usize>() {
-                                    main_triple_count = count;
-                                    break;
-                                }
+                        if let Some(oxigraph::model::Term::Literal(lit)) = sol.get("count") {
+                            if let Ok(count) = lit.value().parse::<usize>() {
+                                main_triple_count = count;
+                                break;
                             }
                         }
                     }

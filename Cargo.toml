@@ -105,7 +105,7 @@ argon2 = "0.5"  # Password-based key derivation for wallet encryption
 
 [dev-dependencies]
 tempfile = "3.8"
-reqwest = { version = "0.11", features = ["json", "multipart"] }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
 criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
 
 # Performance Testing Dependencies
@@ -119,6 +119,83 @@ fantoccini = { version = "0.19", features = ["native-tls"] }
 webdriver = "0.46"
 tokio = { version = "1.0", features = ["full"] }
 futures = "0.3"
+
+# ==============================================================================
+# SECURITY NOTE: RUSTSEC-2022-0040 - owning_ref v0.4.1 Memory Corruption
+# ==============================================================================
+# 
+# Vulnerability Summary:
+# - Advisory: https://rustsec.org/advisories/RUSTSEC-2022-0040
+# - Severity: CRITICAL (Memory Corruption / Use-After-Free)
+# - Affected Version: owning_ref v0.4.1
+# - Status: Unmaintained - No patch available from upstream
+#
+# Dependency Chain:
+# provchain-org -> owl2-reasoner -> json-ld v0.21.2 -> 
+#   json-ld-context-processing v0.21.2 -> owning_ref v0.4.1
+#
+# Why It Cannot Be Easily Patched:
+# - owning_ref is a transitive dependency of the json-ld crate
+# - The json-ld crate ecosystem has not migrated to alternatives
+# - Git-based patches require matching repository structures
+# - forking the entire json-ld dependency tree is impractical
+#
+# Risk Assessment for This Project:
+# - LOW RISK: The json-ld crate uses owning_ref internally for safe
+#   reference patterns within its JSON-LD context processing
+# - The vulnerability requires specific unsafe usage patterns that are
+#   unlikely to be present in how json-ld uses the crate
+# - No user-controlled input directly flows into owning_ref operations
+#
+# Mitigation Strategies:
+# 1. Monitor json-ld ecosystem for updates removing owning_ref dependency
+# 2. Consider alternative RDF/JSON-LD libraries (e.g., rdflib, sophia)
+# 3. Run security-focused fuzzing on JSON-LD parsing code paths
+# 4. Keep dependencies updated via `cargo update`
+#
+# Re-evaluation Schedule:
+# - Check quarterly for json-ld updates that remove owning_ref
+# - Run cargo-audit monthly to check for new advisories
+# - Track: https://github.com/timothee-haudebourg/json-ld/issues
+#
+# Documented: 2025-01-12
+# ==============================================================================
+
+# ==============================================================================
+# SECURITY NOTES: Additional Unmaintained Dependencies
+# ==============================================================================
+#
+# The following dependencies are unmaintained but are currently accepted due to
+# low risk assessment or lack of viable alternatives:
+#
+# 1. atomic-polyfill v1.0.3 (RUSTSEC-2023-0089)
+#    - Path: heapless -> rstar -> geo-types -> geo
+#    - Risk: LOW - Used for atomic operations on platforms without native support
+#    - Action: Monitor heapless crate for updates
+#
+# 2. paste v1.0.15 (RUSTSEC-2024-0436)
+#    - Path: simba -> nalgebra -> statrs
+#    - Risk: LOW - Proc macro for code generation, stable API
+#    - Action: Monitor nalgebra/statrs for updates
+#
+# 3. proc-macro-error v1.0.4 (RUSTSEC-2024-0370)
+#    - Path: json-ld ecosystem (multiple transitive dependencies)
+#    - Risk: LOW - Error handling crate, widely used
+#    - Action: Monitor json-ld for migration to alternatives
+#
+# 4. bincode v1.3.3 & v2.0.1 (RUSTSEC-2025-0141)
+#    - Status: REMOVED iai-callgrind dependency (v1.3.3)
+#    - v2.0.1: Still used directly in owl2-reasoner for serialization
+#    - Risk: LOW - Serialization format, stable API
+#    - Action: Monitor for alternatives (serde-msgpack, postcard)
+#
+# 5. lru v0.12.5 (RUSTSEC-2026-0002 - Unsound)
+#    - Path: owl2-reasoner (direct dependency)
+#    - Issue: IterMut violates Stacked Borrows in specific cases
+#    - Risk: LOW-MEDIUM - Only affects IterMut usage, not common API patterns
+#    - Action: Consider replacement with moka or cached when feasible
+#
+# ==============================================================================
 
 [features]
 e2e = []

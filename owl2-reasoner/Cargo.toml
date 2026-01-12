@@ -62,7 +62,7 @@ rand = "0.8"
 glob = "0.3"
 
 # HTTP support for import resolution
-reqwest = { version = "0.11", features = ["json", "blocking"], optional = true }
+reqwest = { version = "0.12", features = ["json", "blocking"], optional = true }
 
 # Full JSON-LD 1.1 support
 json-ld = "0.21"
@@ -85,11 +85,10 @@ tempfile = "3.8"
 clap = { version = "4", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
 tokio = { version = "1.0", features = ["rt", "macros", "rt-multi-thread"] }
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.12", features = ["json"] }
 
 # Benchmarking and performance testing
 criterion = { version = "0.5", features = ["html_reports", "cargo_bench_support"] }
-iai-callgrind = "0.10"
 
 # Memory profiling
 memmap2 = "0.9"
@@ -149,10 +148,6 @@ harness = false
 
 [[bench]]
 name = "algorithmic_complexity"
-harness = false
-
-[[bench]]
-name = "iai_callgrind_bench"
 harness = false
 
 [[bench]]

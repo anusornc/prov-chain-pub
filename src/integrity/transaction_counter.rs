@@ -244,12 +244,10 @@ impl TransactionCountValidator {
             oxigraph::sparql::QueryResults::Solutions(solutions) => {
                 let mut count = 0;
                 for sol in solutions.flatten() {
-                    if let Some(count_term) = sol.get("count") {
-                        if let oxigraph::model::Term::Literal(lit) = count_term {
-                            if let Ok(parsed_count) = lit.value().parse::<usize>() {
-                                count = parsed_count;
-                                break;
-                            }
+                    if let Some(oxigraph::model::Term::Literal(lit)) = sol.get("count") {
+                        if let Ok(parsed_count) = lit.value().parse::<usize>() {
+                            count = parsed_count;
+                            break;
                         }
                     }
                 }
@@ -280,11 +278,9 @@ impl TransactionCountValidator {
             rdf_store.query(per_block_query)
         {
             for sol in solutions.flatten() {
-                if let Some(count_term) = sol.get("count") {
-                    if let oxigraph::model::Term::Literal(lit) = count_term {
-                        if let Ok(block_count) = lit.value().parse::<usize>() {
-                            per_block_total += block_count;
-                        }
+                if let Some(oxigraph::model::Term::Literal(lit)) = sol.get("count") {
+                    if let Ok(block_count) = lit.value().parse::<usize>() {
+                        per_block_total += block_count;
                     }
                 }
             }
@@ -426,12 +422,10 @@ impl TransactionCountValidator {
                 oxigraph::sparql::QueryResults::Solutions(solutions) => {
                     let mut count = 0;
                     for sol in solutions.flatten() {
-                        if let Some(count_term) = sol.get("count") {
-                            if let oxigraph::model::Term::Literal(lit) = count_term {
-                                if let Ok(parsed_count) = lit.value().parse::<usize>() {
-                                    count = parsed_count;
-                                    break;
-                                }
+                        if let Some(oxigraph::model::Term::Literal(lit)) = sol.get("count") {
+                            if let Ok(parsed_count) = lit.value().parse::<usize>() {
+                                count = parsed_count;
+                                break;
                             }
                         }
                     }
