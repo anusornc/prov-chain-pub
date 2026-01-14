@@ -1,7 +1,5 @@
 [byterover-mcp]
 
-[byterover-mcp]
-
 You are given two tools from Byterover MCP server, including
 ## 1. `byterover-store-knowledge`
 You `MUST` always use this tool when:

@@ -37,6 +37,9 @@ cargo bench
 
 # Run specific test suites
 cargo test --test load_tests --release
+
+# Run portable benchmark toolkit (Docker-based)
+cd benchmark-toolkit && ./run.sh
 ```
 
 ## Architecture Overview
@@ -56,6 +59,18 @@ cargo test --test load_tests --release
 - `src/web/` - REST API handlers with JWT auth
 - `src/knowledge_graph/` - Graph algorithms for traceability
 - `src/analytics/` - Performance monitoring and metrics
+
+### Benchmarking & Monitoring Infrastructure
+- `benchmark-toolkit/` - Portable Docker-based benchmark suite for performance testing
+  - Auto-detects hardware capabilities (4GB-32GB+ RAM)
+  - Hardware profiles: low, medium, high, ultra
+  - Compares ProvChain vs Neo4j performance
+  - Includes Prometheus metrics and Grafana dashboards
+  - Packageable for distribution (`package.sh`)
+- `monitoring/` - Production monitoring stack
+  - Prometheus metrics scraping configuration
+  - Grafana dashboards for benchmark comparison
+  - Jaeger distributed tracing integration
 
 ### Key Binaries
 - `provchain-org` (src/main.rs) - Main CLI application
@@ -124,17 +139,33 @@ cargo test --test load_tests --release
   - Corrupted block detection and metadata consistency
 
 ### Benchmarking
-- Criterion-based benchmarks in `benches/`
-- Performance toolkit in `benchmark-toolkit/`
+- Criterion-based micro-benchmarks in `benches/`
+- **Portable Benchmark Toolkit** (`benchmark-toolkit/`) - Docker-based performance testing
+  - One-command execution: `cd benchmark-toolkit && ./run.sh`
+  - Auto-detects hardware and selects optimal configuration
+  - Real-time Grafana dashboards at http://localhost:3000
+  - CSV/JSON results export for analysis
+  - Documentation: `BENCHMARKING.md` (central entry point)
+- **Research Benchmarks** (`docs/benchmarking/`) - Academic publication support
+  - Query Performance: SPARQL latency vs traditional systems
+  - Write Throughput: Transactions per second comparison
+  - Permission Overhead: Access control performance impact
+  - Cross-Chain Sync: Inter-chain data interchange speed
+  - Scalability: Performance vs dataset size analysis
 - Measures Goodput (successful TPS) and Latency
 - Note: iai-callgrind benchmark removed due to unmaintained bincode v1.3.3 dependency (RUSTSEC-2025-0141)
 
 ## Deployment
 
-### Docker
-- Multi-node deployment via `deploy/docker-compose.3node.yml`
-- Production deployment with `deploy/docker-compose.production.yml`
-- Prebuilt images available (see `deploy/QUICKSTART_PREBUILT.md`)
+### Docker Deployment
+- **Quick Start** (10 minutes): `deploy/README_QUICKSTART.md` - Single-node setup
+- **Multi-node**: `deploy/docker-compose.3node.yml` - 3-node cluster deployment
+- **Production**: `deploy/docker-compose.production.yml` - Full stack with monitoring
+- **Benchmark Comparison**: `deploy/docker-compose.benchmark-comparison.yml` - Performance testing
+- **Prebuilt Images**: `deploy/QUICKSTART_PREBUILT.md` - Deploy without building
+- **Build Script**: `deploy/build-docker-image.sh` - Custom image builds
+- **Hands-On Guide**: `deploy/HANDS_ON_DEPLOYMENT_GUIDE.md` (1431 lines) - Comprehensive deployment
+- **Architecture**: `deploy/DOCKER_DEPLOYMENT_ARCHITECTURE.md` (1090 lines) - System design
 
 ### Environment Variables
 - `JWT_SECRET` - Required for API authentication (32+ chars)
@@ -142,11 +173,34 @@ cargo test --test load_tests --release
 
 ## Documentation
 
-- Main docs in `docs/`
-- Architecture: `docs/ARCHITECTURE.md`
-- User manual: `docs/USER_MANUAL.md`
-- Benchmarking: `docs/benchmarking/`
-- Deployment: `docs/deployment/`
+### Central Documentation
+- **BENCHMARKING.md** - Central entry point for all performance testing resources
+  - Portable Benchmark Toolkit (recommended for most users)
+  - Documentation benchmarks (research-focused)
+  - Developer benchmarks (component-level)
+- **README.md** - Project overview with research objectives and quick start
+- **docs/README.md** - Main documentation index
+
+### User Guides
+- `docs/USER_MANUAL.md` - User manual hub
+- `docs/user-manual/` - Comprehensive user manual (255 lines)
+  - `00-quick-start/` - 10-minute setup, first transaction, overview
+  - `03-querying-data/query-library.md` - 30+ SPARQL query examples
+  - `05-configuration/network-setup.md` - Network configuration guide
+  - `08-troubleshooting/troubleshooting.md` - Common issues and solutions (913 lines)
+
+### Deployment Guides
+- `docs/deployment/HANDS_ON_DEPLOYMENT_GUIDE.md` - Step-by-step deployment (1431 lines)
+- `docs/deployment/DOCKER_DEPLOYMENT_ARCHITECTURE.md` - Architecture overview (1090 lines)
+- `docs/deployment/SETUP_INSTALLATION_GUIDE.md` - Installation instructions
+- `docs/deployment/COMPREHENSIVE_ANALYSIS_REPORT.md` - Deployment analysis
+
+### Benchmarking Documentation
+- `docs/benchmarking/README.md` - Research-focused benchmarking guide (309 lines)
+- `benchmark-toolkit/README.md` - Toolkit documentation (408 lines)
+- `benchmark-toolkit/QUICKSTART.md` - Quick reference card
+- `benchmark-toolkit/DEPLOYMENT_GUIDE.md` - Usage guide
+- `benchmark-toolkit/PORTABILITY.md` - Distribution guide
 
 ## Development Notes
 
@@ -156,6 +210,33 @@ cargo test --test load_tests --release
 - Cross-chain bridge uses lock-and-mint pattern with SHACL validation
 
 ### Recent Enhancements
+
+**Documentation & Benchmarking Infrastructure** (Commit 1bff4b0):
+- **Portable Benchmark Toolkit** - Complete Docker-based testing infrastructure
+  - Auto-detecting hardware profiles (low/medium/high/ultra)
+  - One-command execution with automatic optimization
+  - Real-time Grafana dashboards and Prometheus metrics
+  - Neo4j comparison for performance validation
+  - Packageable for distribution (`./package.sh`)
+- **Comprehensive User Manual** - Role-based documentation structure
+  - Quick start guides (10-minute setup, first transaction)
+  - SPARQL query library with 30+ ready-to-use examples
+  - Network setup and configuration guides
+  - Troubleshooting guide (913 lines)
+- **Deployment Documentation** - Multi-format deployment guides
+  - Quick start (10-minute single-node setup)
+  - Prebuilt image deployment guide
+  - Hands-on deployment guide (1431 lines)
+  - Docker deployment architecture (1090 lines)
+  - Multi-node cluster deployment
+- **Monitoring Stack** - Production observability
+  - Prometheus metrics scraping configuration
+  - Grafana dashboards for benchmark comparison
+  - Jaeger distributed tracing integration
+- **Test File Improvements** - Formatting and organization improvements
+  - `tests/wallet_encryption_tests.rs` - Enhanced readability
+  - `tests/key_rotation_tests.rs` - Minor formatting updates
+  - `tests/load_tests.rs` - Minor formatting updates
 
 **Integrity Validation System** (`src/integrity/`):
 - **Transaction Counter** - Parses RDF content to count actual triples/transactions
