@@ -210,8 +210,7 @@ mod rotation_tracking_tests {
         assert!(!blockchain.should_rotate_key());
         
         // Simulate blockchain operations (these shouldn't affect rotation state)
-        let keypair = generate_signing_key().unwrap();
-        let _block = blockchain.create_block("test data".to_string(), &keypair);
+        let _block = blockchain.add_block("test data".to_string());
         
         // Rotation state should be unchanged
         assert!(!blockchain.should_rotate_key());
@@ -358,9 +357,8 @@ mod edge_cases_tests {
         let original_interval = blockchain.key_rotation_interval_days;
         
         // Add blocks to blockchain (shouldn't affect rotation)
-        let keypair = generate_signing_key().unwrap();
         for i in 0..5 {
-            let _block = blockchain.create_block(format!("block {}", i), &keypair);
+            let _block = blockchain.add_block(format!("block {}", i));
         }
         
         // Rotation state should be unchanged

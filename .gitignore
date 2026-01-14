@@ -58,3 +58,6 @@ demo_*/wallets/
 demo_*/*/
 backup_ontology/
 docs/PAPER*.md
+
+# Claude Code auto-memory
+.claude/auto-memory/dirty-files

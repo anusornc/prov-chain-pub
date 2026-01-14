@@ -3,9 +3,12 @@ version: '3.8'
 services:
   # Main ProvChainOrg application
   provchain-org:
-    build:
-      context: .
-      dockerfile: Dockerfile.production
+    # Uncomment below to use prebuilt image from Docker Hub
+    image: anusornc/provchain-org:latest
+    # Comment out the 'build' section when using prebuilt image
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.production
     container_name: provchain-org
     restart: unless-stopped
     ports:

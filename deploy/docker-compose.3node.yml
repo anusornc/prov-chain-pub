@@ -3,9 +3,12 @@ version: '3.8'
 services:
   # Node 1
   node1:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.production
+    # Uncomment below to use prebuilt image from Docker Hub
+    image: anusornc/provchain-org:latest
+    # Comment out the 'build' section when using prebuilt image
+    # build:
+    #   context: ..
+    #   dockerfile: deploy/Dockerfile.production
     container_name: provchain-node1
     restart: unless-stopped
     ports:
@@ -28,9 +31,12 @@ services:
 
   # Node 2
   node2:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.production
+    # Uncomment below to use prebuilt image from Docker Hub
+    image: anusornc/provchain-org:latest
+    # Comment out the 'build' section when using prebuilt image
+    # build:
+    #   context: ..
+    #   dockerfile: deploy/Dockerfile.production
     container_name: provchain-node2
     restart: unless-stopped
     ports:
@@ -51,9 +57,12 @@ services:
 
   # Node 3
   node3:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.production
+    # Uncomment below to use prebuilt image from Docker Hub
+    image: anusornc/provchain-org:latest
+    # Comment out the 'build' section when using prebuilt image
+    # build:
+    #   context: ..
+    #   dockerfile: deploy/Dockerfile.production
     container_name: provchain-node3
     restart: unless-stopped
     ports:

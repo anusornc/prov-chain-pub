@@ -1,6 +1,21 @@
-# ProvChainOrg User Manual
+# ProvChain-Org User Manual
 
-Welcome to the ProvChainOrg User Manual. This guide provides step-by-step instructions for running the system, submitting supply chain data, and querying the blockchain.
+**📘 NEW: Comprehensive User Manual Available!**
+
+> **For complete, user-friendly documentation**, see the **[ProvChain User Manual](user-manual/)** - a comprehensive guide covering:
+> - 🚀 10-Minute Quick Start
+> - 📝 Submitting Transactions (with examples)
+> - 🔍 Query Library (30+ ready-to-use SPARQL queries)
+> - ⚙️ Configuration & Network Setup
+> - 🆘 Troubleshooting Guide
+> 
+> **[Go to User Manual →](user-manual/)**
+
+---
+
+## Quick Reference (Legacy)
+
+This page provides a quick reference for common operations. For detailed documentation, see the **[User Manual](user-manual/)**.
 
 ## Table of Contents
 
@@ -211,4 +226,45 @@ To view logs for a specific node (e.g., Node 1):
 ```bash
 docker logs -f provchain-node1
 ```
+
+---
+
+## 📚 Complete Documentation
+
+For comprehensive guides, tutorials, and reference material, see the **[ProvChain User Manual](user-manual/)**.
+
+### User Manual Sections
+
+| Section | Description | Link |
+|---------|-------------|------|
+| **Quick Start** | Get running in 10 minutes | [10-Minute Setup](user-manual/00-quick-start/10-minute-setup.md) |
+| **Overview** | What is ProvChain? | [Overview](user-manual/00-quick-start/overview.md) |
+| **First Transaction** | Submit your first data | [First Transaction](user-manual/00-quick-start/first-transaction.md) |
+| **Query Library** | 30+ SPARQL queries | [Query Library](user-manual/03-querying-data/query-library.md) |
+| **Network Setup** | Configure peers | [Network Setup](user-manual/05-configuration/network-setup.md) |
+| **Troubleshooting** | Solve problems | [Troubleshooting](user-manual/08-troubleshooting/troubleshooting.md) |
+
+---
+
+### Quick Links by Task
+
+**I want to...**
+- 🚀 Get started quickly: [10-Minute Quick Start](user-manual/00-quick-start/10-minute-setup.md)
+- 📝 Submit product data: [Submitting Product Batches](user-manual/02-submitting-data/product-batches.md)
+- 🔍 Query blockchain data: [Query Library](user-manual/03-querying-data/query-library.md)
+- ⚙️ Configure network peers: [Network Setup](user-manual/05-configuration/network-setup.md)
+- 🆘 Fix a problem: [Troubleshooting](user-manual/08-troubleshooting/troubleshooting.md)
+
+---
+
+### Developer Documentation
+
+For API reference, architecture, and developer guides:
+- [API Documentation](api/)
+- [Architecture Guide](ARCHITECTURE.md)
+- [Deployment Guide](deployment/)
+
+---
+
+**📖 Back to [User Manual](user-manual/)** | **🏠 Back to [Main README](../README.md)**
 

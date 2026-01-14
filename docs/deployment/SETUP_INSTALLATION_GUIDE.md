@@ -122,7 +122,7 @@ sudo apt-get update && sudo apt-get install -y \
 
 ```bash
 # On VM-1 (Authority Node)
-git clone https://github.com/yourusername/provchain-org.git
+git clone https://github.com/anusornc/provchain-org2.git
 cd provchain-org
 
 # Generate authority keypair
@@ -166,7 +166,7 @@ curl http://localhost:8080/health
 # Expected: {"status":"healthy"}
 
 # On VM-2 (Regular Node)
-git clone https://github.com/yourusername/provchain-org.git
+git clone https://github.com/anusornc/provchain-org2.git
 cd provchain-org
 
 # Copy authority public key from VM-1
@@ -222,7 +222,7 @@ sudo su - provchain
 cd /opt/provchain
 
 # Clone repository
-git clone https://github.com/yourusername/provchain-org.git
+git clone https://github.com/anusornc/provchain-org2.git
 cd provchain-org
 
 # Verify files
@@ -1420,7 +1420,7 @@ docker compose down && docker compose up -d
   - Docker: `docker logs provchain-node1`
   - Systemd: `journalctl -u provchain -n 100`
 
-- **GitHub Issues**: https://github.com/yourusername/provchain-org/issues
+- **GitHub Issues**: https://github.com/anusornc/provchain-org2/issues
 
 - **Comprehensive Analysis Report**: See `/home/cit/Documents/provchain-deployment/COMPREHENSIVE_ANALYSIS_REPORT.md` for detailed troubleshooting guide
 
@@ -1463,8 +1463,8 @@ curl http://10.0.1.10:8080/api/blockchain/dump | jq '.'
 
 **Support:**
 - Comprehensive docs: `COMPREHENSIVE_ANALYSIS_REPORT.md`
-- GitHub: https://github.com/yourusername/provchain-org
-- Issues: https://github.com/yourusername/provchain-org/issues
+- GitHub: https://github.com/anusornc/provchain-org2
+- Issues: https://github.com/anusornc/provchain-org2/issues
 
 ---
 

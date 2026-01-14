@@ -1,6 +1,6 @@
 # Multi-stage Docker build for ProvChainOrg production deployment
 # Stage 1: Build the Rust backend
-FROM rust:1.75-slim as backend-builder
+FROM rust:1.85-slim AS backend-builder
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libclang-dev \
     build-essential \
+    libfontconfig1-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -16,10 +17,15 @@ WORKDIR /app
 # Copy Cargo files for dependency caching
 COPY Cargo.toml Cargo.lock ./
 COPY owl2-reasoner/ ./owl2-reasoner/
+COPY benches/ ./benches/
+COPY tests/ ./tests/
 
-# Create dummy main.rs to build dependencies
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release --bin provchain-org
+# Create dummy files to pre-build dependencies
+RUN mkdir -p src/bin && \
+    echo "pub fn dummy() {}" > src/lib.rs && \
+    echo "fn main() {}" > src/main.rs && \
+    echo "fn main() {}" > src/bin/owl2_integration_test.rs
+RUN cargo build --release
 RUN rm -rf src
 
 # Copy source code and build the application
@@ -28,22 +34,23 @@ COPY ontologies/ ./ontologies/
 COPY config/ ./config/
 COPY queries/ ./queries/
 COPY shapes/ ./shapes/
+COPY deploy/docker-entrypoint.sh ./deploy/docker-entrypoint.sh
 
 # Build the final binary
 RUN cargo build --release --bin provchain-org
 
 # Stage 2: Build the frontend
-FROM node:18-alpine as frontend-builder
+FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
 # Copy package files for dependency caching
 COPY frontend/package*.json ./
-RUN npm ci --only=production
+RUN npm ci --legacy-peer-deps
 
 # Copy frontend source and build
 COPY frontend/ ./
-RUN npm run build
+RUN npx vite build --mode production
 
 # Stage 3: Production runtime
 FROM debian:bookworm-slim
@@ -54,6 +61,12 @@ RUN apt-get update && apt-get install -y \
     libssl3 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -r -s /bin/false -m -d /app provchain
+
+# Copy entrypoint script
+COPY --from=backend-builder /app/deploy/docker-entrypoint.sh /usr/local/bin/
+RUN chmod 755 /usr/local/bin/docker-entrypoint.sh && ls -la /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Set working directory
 WORKDIR /app
@@ -86,8 +99,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Set environment variables
 ENV RUST_LOG=info
-ENV JWT_SECRET=""
-ENV CONFIG_FILE=/app/config/production-deployment.toml
+# JWT_SECRET should be passed at runtime via -e JWT_SECRET=your-secret
 
 # Run the application
-CMD ["provchain-org", "--config", "/app/config/production-deployment.toml"]
+CMD ["provchain-org", "web-server", "--port", "8080"]

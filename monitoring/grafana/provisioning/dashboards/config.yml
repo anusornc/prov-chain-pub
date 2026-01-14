@@ -1,0 +1,11 @@
+# Grafana Dashboard Provisioning Configuration
+apiVersion: 1
+
+providers:
+  - name: 'Benchmark Dashboards'
+    orgId: 1
+    folder: 'Benchmarks'
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true

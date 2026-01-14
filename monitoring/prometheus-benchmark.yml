@@ -1,0 +1,54 @@
+# Prometheus Configuration for Benchmark Monitoring
+# Scrapes metrics from ProvChain-Org and Neo4j for comparison analysis
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+  external_labels:
+    monitor: 'provchain-benchmark'
+    benchmark: 'comparison-2024'
+
+# Alerting configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Rule files
+rule_files:
+  # - "benchmark_alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # ProvChain-Org Benchmark Instance
+  - job_name: 'provchain-benchmark'
+    static_configs:
+      - targets: ['provchain-benchmark:9090']
+        labels:
+          system: 'provchain'
+          instance: 'benchmark-1'
+    metrics_path: '/metrics'
+
+  # Neo4j Metrics (if available via exporter)
+  - job_name: 'neo4j-benchmark'
+    static_configs:
+      - targets: ['neo4j:2004']  # Neo4j doesn't have native Prometheus, would need exporter
+        labels:
+          system: 'neo4j'
+          instance: 'benchmark-1'
+    # Neo4j doesn't expose Prometheus metrics natively
+    # This is a placeholder for a Neo4j exporter if needed
+    metrics_path: '/metrics'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Benchmark Runner Metrics
+  - job_name: 'benchmark-runner'
+    static_configs:
+      - targets: ['benchmark-runner:8080']
+        labels:
+          component: 'orchestrator'
+    metrics_path: '/metrics'

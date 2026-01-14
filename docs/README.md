@@ -13,6 +13,58 @@ The documentation provides comprehensive coverage of:
 - **Business Use Cases**: Supply chain scenarios and value propositions
 - **Research Context**: Academic background and publication strategy
 
+## 📊 Benchmarking & Performance Testing
+
+The project includes comprehensive benchmarking infrastructure for performance evaluation and research publication.
+
+### Portable Benchmark Toolkit
+
+**Location**: [`../benchmark-toolkit/`](../benchmark-toolkit/)
+
+A self-contained, portable toolkit for running performance comparisons against traditional systems:
+- **Neo4j** (graph database)
+- **Ethereum** (blockchain)
+- **Hyperledger Fabric** (enterprise blockchain)
+- **FlureeDB** (RDF database)
+
+**Quick Start**:
+```bash
+cd ../benchmark-toolkit
+./run.sh
+```
+
+**Features**:
+- ✅ Auto-detects hardware (4GB-32GB+ RAM)
+- ✅ One-command execution
+- ✅ Portable (copy anywhere)
+- ✅ Real-time Grafana dashboards
+- ✅ CSV/JSON results export
+
+### Benchmarking Documentation
+
+- **Full Guide**: [Benchmark Toolkit README](../benchmark-toolkit/README.md)
+- **Quick Reference**: [Quick Start Card](../benchmark-toolkit/QUICKSTART.md)
+- **Portability**: [Deployment Guide](../benchmark-toolkit/PORTABILITY.md)
+- **Central Guide**: [Benchmarking Documentation](benchmarking/README.md)
+
+### Research Benchmarking
+
+Academic benchmarking for research publications:
+
+- **Planning**: [BENCHMARKING_PLAN.md](BENCHMARKING_PLAN.md) - Publication strategy for high-impact journals
+- **Methodology**: [Performance Testing Guide](performance-testing-guide.md) - Testing procedures and metrics
+- **Results**: [BENCHMARK_RESULTS_SUMMARY.md](BENCHMARK_RESULTS_SUMMARY.md) - Historical performance data
+- **Criterion Guide**: [CRITERION_BENCHMARKING_GUIDE.md](CRITERION_BENCHMARKING_GUIDE.md) - Component micro-benchmarks
+
+### Performance Metrics
+
+Comprehensive benchmarking coverage:
+- **Query Performance**: SPARQL latency and multi-hop traceability
+- **Write Throughput**: Transactions per second under various loads
+- **Permission Overhead**: Access control performance impact
+- **Cross-Chain Sync**: Inter-chain data interchange speed
+- **Scalability**: Performance vs dataset size analysis
+
 ## 🏗️ Documentation Structure
 
 ```
@@ -30,6 +82,10 @@ docs/
 │   ├── rdf-canonicalization.puml
 │   ├── supply-chain-flow.puml
 │   └── network-topology.puml
+├── benchmarking/            # NEW: Benchmarking documentation
+│   ├── README.md            # Central benchmarking guide
+│   ├── results/             # Benchmark results archive
+│   └── toolkit              # Symlink to portable toolkit
 └── overview/
     └── index.rst           # Project overview
 ```

@@ -1,0 +1,146 @@
+version: '3.8'
+
+# Quick Start Benchmark Comparison - ProvChain-Org vs Neo4j
+# Purpose: Rapid performance comparison using RDF/N-Triples datasets
+# Execution: docker-compose -f docker-compose.benchmark-comparison.yml up --abort-on-container-exit
+
+services:
+  # ProvChain-Org with embedded ontology
+  provchain-benchmark:
+    image: anusornc/provchain-org:latest
+    container_name: provchain-benchmark
+    restart: unless-stopped
+    ports:
+      - "8080:8080"   # API
+      - "9090:9090"   # Metrics
+    environment:
+      - RUST_LOG=info
+      - JWT_SECRET=benchmark-test-secret-key-min-32-chars-for-security-validation
+      - BENCHMARK_MODE=true
+      - CONSENSUS_PROTOCOL=poa
+    volumes:
+      - provchain_benchmark_data:/app/data
+      - ../benchmark:/benchmark:ro
+    networks:
+      - benchmark_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Neo4j Graph Database with SPARQL plugin
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: neo4j-benchmark
+    restart: unless-stopped
+    ports:
+      - "7474:7474"   # HTTP
+      - "7687:7687"   # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/benchmark_password
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+      - NEO4J_dbms_security_procedures_unrestricted=apoc*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*
+      # Enable SPARQL extension via APOC
+      - NEO4J_dbms_security_procedures_unrestricted=gds.*
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - ../benchmark/datasets:/import:ro
+    networks:
+      - benchmark_network
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "benchmark_password", "RETURN 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+
+  # Benchmark Runner - Automated orchestrator
+  benchmark-runner:
+    build:
+      context: ../benchmark
+      dockerfile: Dockerfile
+    container_name: benchmark-runner
+    restart: "no"
+    environment:
+      - PROVCHAIN_URL=http://provchain-benchmark:8080
+      - PROVCHAIN_METRICS=http://provchain-benchmark:9090
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=benchmark_password
+      - DATASET_PATH=/benchmark/datasets
+      - RESULTS_PATH=/benchmark/results
+    volumes:
+      - ../benchmark:/benchmark
+      - benchmark_results:/benchmark/results
+    networks:
+      - benchmark_network
+    depends_on:
+      provchain-benchmark:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: benchmark-prometheus
+    restart: unless-stopped
+    ports:
+      - "9092:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ../monitoring/prometheus-benchmark.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - benchmark_network
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: benchmark-grafana
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=benchmark
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - benchmark_network
+    depends_on:
+      - prometheus
+
+volumes:
+  provchain_benchmark_data:
+    driver: local
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
+  benchmark_results:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  benchmark_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16

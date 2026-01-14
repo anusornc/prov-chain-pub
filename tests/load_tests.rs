@@ -392,7 +392,9 @@ async fn run_api_load_test(config: LoadTestConfig, server_port: u16) -> Result<L
     let total_start_time = Instant::now();
 
     // Generate a token for the load test
-    let token = generate_token("load-test-user", &ActorRole::Admin).unwrap();
+    let jwt_secret = std::env::var("JWT_SECRET")
+        .unwrap_or_else(|_| "test-secret-for-load-testing-32-chars-long".to_string());
+    let token = generate_token("load-test-user", &ActorRole::Admin, jwt_secret.as_bytes()).unwrap();
 
     let mut handles = vec![];
 

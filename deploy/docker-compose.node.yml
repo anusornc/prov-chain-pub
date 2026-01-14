@@ -2,9 +2,12 @@ version: '3.8'
 
 services:
   provchain-node:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.production
+    # Uncomment below to use prebuilt image from Docker Hub
+    image: anusornc/provchain-org:latest
+    # Comment out the 'build' section when using prebuilt image
+    # build:
+    #   context: ..
+    #   dockerfile: deploy/Dockerfile.production
     container_name: provchain-node
     restart: unless-stopped
     ports:

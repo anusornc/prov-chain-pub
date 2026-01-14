@@ -85,6 +85,54 @@ export JWT_SECRET=$(openssl rand -base64 32)
 cargo test --test load_tests --release -- --ignored
 ```
 
+## 📊 Performance Benchmarking
+
+The project includes a **portable benchmark toolkit** for comprehensive performance evaluation against traditional systems (Neo4j, Ethereum, Hyperledger Fabric, etc.).
+
+### Quick Start
+
+```bash
+cd benchmark-toolkit
+./run.sh
+```
+
+The toolkit automatically:
+- Detects your hardware capabilities
+- Configures optimal settings
+- Runs comprehensive benchmarks
+- Generates comparison reports
+- Displays real-time visualizations
+
+### Key Features
+
+- **Auto-detection**: Adapts to 4GB-32GB+ RAM machines
+- **One-command execution**: No manual configuration needed
+- **Portable**: Copy anywhere, runs on any machine with Docker
+- **Comprehensive**: Query performance, write throughput, permission overhead
+
+### Results
+
+- **Grafana Dashboard**: http://localhost:3000 (real-time metrics)
+- **Summary Report**: `benchmark-toolkit/results/summary.md`
+- **Raw Data**: `benchmark-toolkit/results/benchmark_results.csv`
+
+### Hardware Profiles
+
+| Profile | RAM | Dataset | Time | Best For |
+|---------|-----|---------|------|----------|
+| **Low** | 4GB | 100 tx | ~5 min | Laptops |
+| **Medium** | 8GB | 1,000 tx | ~15 min | Standard ✅ |
+| **High** | 16GB | 5,000 tx | ~45 min | Workstations |
+| **Ultra** | 32GB+ | 10,000 tx | ~2 hours | Servers |
+
+### For Detailed Documentation
+
+See the [Benchmark Toolkit Guide](docs/benchmarking/) or visit:
+- 📘 [Full Documentation](benchmark-toolkit/README.md)
+- 🚀 [Quick Reference](benchmark-toolkit/QUICKSTART.md)
+- 📦 [Deployment Guide](benchmark-toolkit/DEPLOYMENT_GUIDE.md)
+- 🔄 [Portability Guide](benchmark-toolkit/PORTABILITY.md)
+
 ## ⚙️ Configuration
 
 The system is highly configurable via `config.toml`:

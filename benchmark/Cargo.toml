@@ -1,0 +1,71 @@
+[package]
+name = "benchmark-runner"
+version = "0.1.0"
+edition = "2021"
+authors = ["ProvChain-Org Research Team"]
+description = "Automated benchmark orchestrator comparing ProvChain-Org with other systems"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# HTTP clients
+reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false }
+surf = "2.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# RDF/SPARQL support
+sparql-client = "0.1"
+rio_api = "0.8"
+rio_turtle = "0.8"
+
+# Database clients (TODO: Add neo4rs = "0.9" when implementing Neo4j benchmarks)
+
+# Metrics and monitoring
+prometheus = { version = "0.13", features = ["process"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Command line parsing
+clap = { version = "4.4", features = ["derive", "env"] }
+
+# Statistics
+statrs = "0.16"
+
+# CSV output
+csv = "1.3"
+
+# UUID generation
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# Concurrent programming
+futures = "0.3"
+async-trait = "0.1"
+
+# Performance measurement
+criterion = "0.5"
+
+[[bin]]
+name = "benchmark-runner"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[dev-dependencies]
+mockito = "1.2"
