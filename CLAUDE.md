@@ -178,7 +178,8 @@ cd benchmark-toolkit && ./run.sh
   - Portable Benchmark Toolkit (recommended for most users)
   - Documentation benchmarks (research-focused)
   - Developer benchmarks (component-level)
-- **README.md** - Project overview with research objectives and quick start
+- **README.md** - Project overview with research objectives, quick start, and benchmark toolkit
+- **CONTRIBUTING.md** - Comprehensive contributor guide with development setup, coding standards, and PR process
 - **docs/README.md** - Main documentation index
 
 ### User Guides
@@ -188,6 +189,16 @@ cd benchmark-toolkit && ./run.sh
   - `03-querying-data/query-library.md` - 30+ SPARQL query examples
   - `05-configuration/network-setup.md` - Network configuration guide
   - `08-troubleshooting/troubleshooting.md` - Common issues and solutions (913 lines)
+
+### Architecture & Project Health
+- `docs/architecture/COMPONENT_OWNERSHIP.md` - Component ownership matrix and knowledge distribution
+  - Bus factor analysis (currently 1 - critical risk)
+  - Knowledge transfer priorities for consensus, OWL2 reasoning, and semantic layer
+  - Documentation gaps and action items
+- `docs/project-health/` - Project health analysis and improvement tracking
+  - `clippy_warnings_deep_dive.md` - Detailed analysis of 254 clippy warnings with categorization
+  - `dependency_analysis_deep_dive.md` - Comprehensive dependency health assessment (640 total, 67 direct)
+  - `linear_tasks_export.md` - Action items for Linear with priorities and estimates
 
 ### Deployment Guides
 - `docs/deployment/HANDS_ON_DEPLOYMENT_GUIDE.md` - Step-by-step deployment (1431 lines)
@@ -210,6 +221,33 @@ cd benchmark-toolkit && ./run.sh
 - Cross-chain bridge uses lock-and-mint pattern with SHACL validation
 
 ### Recent Enhancements
+
+**Project Health & Contributor Documentation** (2026-01-14):
+- **CONTRIBUTING.md** - Comprehensive contributor guide (200+ lines)
+  - Development setup with quick start instructions
+  - Project structure and key components overview
+  - Coding standards (Rust style, clippy linting)
+  - Testing guidelines and commit standards
+  - Pull request process and good first issues
+- **Component Ownership Matrix** - Architecture documentation for bus factor mitigation
+  - Critical: Current bus factor is 1 (single contributor risk)
+  - Component ownership breakdown: blockchain core, consensus, semantic layer, security, integrity, web layer
+  - Knowledge distribution assessment and transfer priorities
+  - Documentation gaps identified for consensus algorithms and OWL2 reasoning
+- **Project Health Analysis** - Deep dive into code quality and dependencies
+  - Clippy warnings: 254 total (55% auto-fixable, 29% high priority manual fixes)
+    - 70x "borrowed expression implements traits" (auto-fixable)
+    - 29x "unnecessary if let" in semantic reasoners (manual fix needed)
+    - 29x "field assignment outside initializer" (auto-fixable)
+    - 13x "unused result" (high priority - error suppression risk)
+  - Dependency health: 58/100 score, 640 transitive dependencies
+    - 1 CRITICAL (owning_ref v0.4.1 - LOW risk for this project)
+    - 1 UNSOUND (lru v0.12.5 - safe with current usage)
+    - 3 UNMAINTAINED (accepted risk, documented in Cargo.toml)
+  - Linear action items export with priorities and estimates
+    - Critical: Address bus factor, fix 77 remaining clippy warnings
+    - High: Security documentation, automated dependency updates
+    - Medium: lru replacement evaluation, test coverage measurement
 
 **Documentation & Benchmarking Infrastructure** (Commit 1bff4b0):
 - **Portable Benchmark Toolkit** - Complete Docker-based testing infrastructure
@@ -246,10 +284,12 @@ cd benchmark-toolkit && ./run.sh
   - Fallback to line counting for unparseable content
 - **Blockchain Validator** - Comprehensive blockchain integrity checking
   - Chain reconstruction validation from persistent RDF store
+  - SPARQL-based block metadata extraction and validation
   - Block hash integrity verification with RDF canonicalization
   - Missing block detection and corrupted block identification
-  - Metadata consistency checks (timestamp, hash, previous_hash)
-  - SPARQL-based block data extraction and round-trip validation
+  - Metadata consistency checks (timestamp, hash, previous_hash, data_graph_iri)
+  - Graph naming consistency validation (expected vs actual URIs)
+  - Round-trip validation for RDF data extraction
 
 **Enhanced OWL2 Reasoner** (`src/semantic/owl2_enhanced_reasoner.rs`):
 - Full OWL2 feature support beyond basic reasoning:

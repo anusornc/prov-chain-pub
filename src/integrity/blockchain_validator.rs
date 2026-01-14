@@ -693,7 +693,7 @@ impl BlockchainIntegrityValidator {
                 blockchain.rdf_store.query(&metadata_query)
             {
                 let mut metadata_found = false;
-                for sol in solutions.flatten() {
+                if let Some(sol) = solutions.flatten().next() {
                     metadata_found = true;
 
                     // Check timestamp consistency
@@ -737,8 +737,6 @@ impl BlockchainIntegrityValidator {
                             block_corrupted = true;
                         }
                     }
-
-                    break;
                 }
                 if !metadata_found {
                     if self.verbose_logging {

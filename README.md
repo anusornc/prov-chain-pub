@@ -169,6 +169,16 @@ The project includes a comprehensive verification suite:
 - [Architecture Guide](docs/ARCHITECTURE.md) - Detailed design patterns.
 - [User Manual](docs/USER_MANUAL.md) - End-user instructions.
 
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- Development setup instructions
+- Coding standards and guidelines
+- Pull request process
+- Good first issues
+
+**⚠️ Urgent**: We're looking for contributors to help reduce bus factor risk. See [Component Ownership](docs/architecture/COMPONENT_OWNERSHIP.md) for details.
+
 ## License
 
 This project is licensed under the MIT License.
