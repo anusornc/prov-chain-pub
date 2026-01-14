@@ -4,14 +4,18 @@ use crate::transaction::transaction::{
     TransactionMetadata, TransactionOutput, TransactionPayload, TransactionType,
 };
 use crate::wallet::{ContactInfo, Participant, ParticipantType};
+use crate::web::handlers::utils::{validate_literal, validate_uri};
 use crate::web::handlers::AppState;
 use crate::web::models::{
     AddTripleRequest, ApiError, CreateTransactionRequest, CreateTransactionResponse,
     SignTransactionRequest, SignTransactionResponse, SubmitTransactionRequest,
     SubmitTransactionResponse, UserClaims, WalletRegistrationRequest, WalletRegistrationResponse,
 };
-use crate::web::handlers::utils::{validate_literal, validate_uri};
-use axum::{extract::{Extension, State}, http::StatusCode, Json};
+use axum::{
+    extract::{Extension, State},
+    http::StatusCode,
+    Json,
+};
 use chrono::Utc;
 
 /// Add new triple to blockchain with SHACL validation
@@ -98,7 +102,7 @@ pub async fn add_triple(
         // For this thesis demonstration, we generate a key on the fly if one isn't found,
         // effectively simulating that the user has provided a valid key ID.
         let key = PrivacyManager::generate_key(); // Simulation of retrieving key for 'key_id'
-        
+
         match PrivacyManager::encrypt(&triple_data, &key, key_id) {
             Ok(encrypted) => {
                 let encrypted_json = serde_json::to_string(&encrypted).unwrap_or_default();
@@ -120,7 +124,7 @@ pub async fn add_triple(
                         use ed25519_dalek::Signer;
                         let signature = blockchain.signing_key.sign(block.hash.as_bytes());
                         block.signature = hex::encode(signature.to_bytes());
-                        
+
                         match blockchain.submit_signed_block(block) {
                             Ok(()) => {
                                 let block_hash = blockchain.chain.last().map(|b| b.hash.clone()).unwrap_or_default();
@@ -158,7 +162,7 @@ pub async fn add_triple(
                         ));
                     }
                 }
-            },
+            }
             Err(e) => {
                 return Err((
                     StatusCode::INTERNAL_SERVER_ERROR,
@@ -378,8 +382,7 @@ pub async fn sign_transaction(
 
     println!(
         "Signed transaction {} with participant {}",
-        tx_id,
-        participant_id
+        tx_id, participant_id
     );
 
     Ok(Json(response))
@@ -432,19 +435,24 @@ pub async fn register_wallet(
         id: uuid::Uuid::new_v4(),
         name: request.name,
         participant_type,
-        contact_info: request.contact_info.map(|c| ContactInfo {
-            email: c.email,
-            phone: c.phone,
-            address: c.address,
-            website: c.website,
-        }).unwrap_or(ContactInfo {
-            email: None,
-            phone: None,
-            address: None,
-            website: None,
-        }),
+        contact_info: request
+            .contact_info
+            .map(|c| ContactInfo {
+                email: c.email,
+                phone: c.phone,
+                address: c.address,
+                website: c.website,
+            })
+            .unwrap_or(ContactInfo {
+                email: None,
+                phone: None,
+                address: None,
+                website: None,
+            }),
         location: request.location,
-        permissions: crate::wallet::ParticipantPermissions::for_type(&crate::wallet::ParticipantType::Producer), // Simplified
+        permissions: crate::wallet::ParticipantPermissions::for_type(
+            &crate::wallet::ParticipantType::Producer,
+        ), // Simplified
         certificates: vec![],
         registered_at: Utc::now(),
         last_activity: None,
@@ -453,10 +461,10 @@ pub async fn register_wallet(
     };
 
     let participant_id = participant.id.to_string();
-    
+
     // In a real implementation, we'd add to a wallet manager
     // For now, we simulate success
-    
+
     Ok(Json(WalletRegistrationResponse {
         participant_id,
         public_key: "SIMULATED_PUBLIC_KEY".to_string(),

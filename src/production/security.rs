@@ -551,7 +551,6 @@ Generated: {}
     }
 }
 
-
 /// Token bucket for rate limiting
 #[derive(Debug)]
 struct TokenBucket {
@@ -574,7 +573,7 @@ impl TokenBucket {
     fn consume(&mut self, tokens_to_consume: f64, refill_rate: f64, capacity: f64) -> bool {
         // Calculate time elapsed since last refill
         let elapsed = self.last_refill.elapsed().as_secs_f64();
-        
+
         // Refill tokens based on elapsed time
         let tokens_to_add = elapsed * refill_rate;
         self.tokens = (self.tokens + tokens_to_add).min(capacity);
@@ -623,7 +622,7 @@ impl RateLimiter {
         let capacity = self.burst_capacity as f64;
 
         let mut buckets = self.buckets.write().unwrap();
-        
+
         // Get or create token bucket for this IP
         let bucket = buckets
             .entry(client_ip.to_string())
@@ -643,10 +642,8 @@ impl RateLimiter {
     pub fn cleanup_stale_entries(&self, max_age: Duration) {
         let mut buckets = self.buckets.write().unwrap();
         let now = Instant::now();
-        
-        buckets.retain(|_, bucket| {
-            now.duration_since(bucket.last_refill) < max_age
-        });
+
+        buckets.retain(|_, bucket| now.duration_since(bucket.last_refill) < max_age);
     }
 
     /// Get current number of tracked IPs (for testing)
@@ -666,8 +663,8 @@ impl SecurityMiddleware {
         // Burst capacity is 2x the normal rate to allow short bursts
         let burst_capacity = config.rate_limit_per_minute * 2;
         let rate_limiter = RateLimiter::new(config.rate_limit_per_minute, burst_capacity);
-        
-        Self { 
+
+        Self {
             config,
             rate_limiter,
         }
@@ -695,7 +692,7 @@ impl SecurityMiddleware {
 
         // Check rate limit using token bucket algorithm
         let allowed = self.rate_limiter.check_rate_limit(client_ip);
-        
+
         tracing::debug!(
             "Rate limit check for IP: {} - {}",
             client_ip,
@@ -704,7 +701,6 @@ impl SecurityMiddleware {
 
         Ok(allowed)
     }
-
 
     /// Get current token count for an IP (for testing/debugging)
     pub fn get_rate_limit_token_count(&self, client_ip: &str) -> Option<f64> {
@@ -718,7 +714,8 @@ impl SecurityMiddleware {
 
     /// Clean up stale rate limit entries (for maintenance)
     pub fn cleanup_stale_rate_limits(&self, max_age_secs: u64) {
-        self.rate_limiter.cleanup_stale_entries(Duration::from_secs(max_age_secs));
+        self.rate_limiter
+            .cleanup_stale_entries(Duration::from_secs(max_age_secs));
     }
 
     /// Validate JWT token with proper signature verification and expiration checking
@@ -731,23 +728,27 @@ impl SecurityMiddleware {
         // Get JWT secret from environment variable (most secure) or config (fallback)
         let jwt_secret = if let Ok(secret) = std::env::var("JWT_SECRET") {
             if secret.len() < 32 {
-                return Err(ProductionError::Security(
-                    format!("JWT_SECRET from environment is too short ({} chars), minimum 32 required", secret.len())
-                ));
+                return Err(ProductionError::Security(format!(
+                    "JWT_SECRET from environment is too short ({} chars), minimum 32 required",
+                    secret.len()
+                )));
             }
             secret
         } else {
             // Fallback to config secret (with security warning)
             if self.config.jwt_secret.len() < 32 {
-                return Err(ProductionError::Security(
-                    format!("Configured JWT secret is too short ({} chars), minimum 32 required. \
-                            Set JWT_SECRET environment variable for production!", self.config.jwt_secret.len())
-                ));
+                return Err(ProductionError::Security(format!(
+                    "Configured JWT secret is too short ({} chars), minimum 32 required. \
+                            Set JWT_SECRET environment variable for production!",
+                    self.config.jwt_secret.len()
+                )));
             }
 
             // Log warning about using config secret instead of environment variable
-            tracing::warn!("SECURITY WARNING: Using JWT secret from config instead of environment variable. \
-                           Set JWT_SECRET environment variable for better security.");
+            tracing::warn!(
+                "SECURITY WARNING: Using JWT secret from config instead of environment variable. \
+                           Set JWT_SECRET environment variable for better security."
+            );
 
             self.config.jwt_secret.clone()
         };

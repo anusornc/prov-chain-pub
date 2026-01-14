@@ -7,11 +7,11 @@
 //! - Invalid signatures are rejected
 //! - Message tampering is detected
 
-use provchain_org::network::consensus::PbftMessage;
-use provchain_org::core::blockchain::Block;
-use provchain_org::security::keys::generate_signing_key;
-use ed25519_dalek::SigningKey;
 use ed25519_dalek::Signer;
+use ed25519_dalek::SigningKey;
+use provchain_org::core::blockchain::Block;
+use provchain_org::network::consensus::PbftMessage;
+use provchain_org::security::keys::generate_signing_key;
 use uuid::Uuid;
 
 fn create_test_block(index: u64, data: &str) -> Block {
@@ -53,14 +53,7 @@ mod message_creation_tests {
         let block = create_test_block(1, "test data");
         let block_hash = block.hash.clone();
 
-        let msg = PbftMessage::create_pre_prepare(
-            0,
-            1,
-            block_hash,
-            block,
-            sender,
-            &keypair
-        );
+        let msg = PbftMessage::create_pre_prepare(0, 1, block_hash, block, sender, &keypair);
 
         assert!(msg.verify_signature());
         assert_eq!(msg.get_sender(), sender);
@@ -112,14 +105,8 @@ mod signature_verification_tests {
         let sender = Uuid::new_v4();
         let block = create_test_block(1, "test");
 
-        let msg = PbftMessage::create_pre_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            block,
-            sender,
-            &keypair
-        );
+        let msg =
+            PbftMessage::create_pre_prepare(0, 1, "hash".to_string(), block, sender, &keypair);
 
         assert!(msg.verify_signature(), "Valid signature should verify");
     }
@@ -129,13 +116,7 @@ mod signature_verification_tests {
         let keypair = generate_signing_key().unwrap();
         let sender = Uuid::new_v4();
 
-        let msg = PbftMessage::create_prepare(
-            0,
-            1,
-            "block_hash".to_string(),
-            sender,
-            &keypair
-        );
+        let msg = PbftMessage::create_prepare(0, 1, "block_hash".to_string(), sender, &keypair);
 
         assert!(msg.verify_signature());
     }
@@ -145,13 +126,7 @@ mod signature_verification_tests {
         let keypair = generate_signing_key().unwrap();
         let sender = Uuid::new_v4();
 
-        let msg = PbftMessage::create_commit(
-            0,
-            1,
-            "block_hash".to_string(),
-            sender,
-            &keypair
-        );
+        let msg = PbftMessage::create_commit(0, 1, "block_hash".to_string(), sender, &keypair);
 
         assert!(msg.verify_signature());
     }
@@ -179,12 +154,12 @@ mod tamper_detection_tests {
 
         // Create valid message
         let mut msg = PbftMessage::create_pre_prepare(
-            0,  // Original view
+            0, // Original view
             1,
             "hash".to_string(),
             block,
             sender,
-            &keypair
+            &keypair,
         );
 
         // Tamper with view number
@@ -193,7 +168,10 @@ mod tamper_detection_tests {
         }
 
         // Signature should no longer verify
-        assert!(!msg.verify_signature(), "Tampered message should fail verification");
+        assert!(
+            !msg.verify_signature(),
+            "Tampered message should fail verification"
+        );
     }
 
     #[test]
@@ -203,14 +181,17 @@ mod tamper_detection_tests {
 
         let mut msg = PbftMessage::create_prepare(
             0,
-            1,  // Original sequence
+            1, // Original sequence
             "block_hash".to_string(),
             sender,
-            &keypair
+            &keypair,
         );
 
         // Tamper with sequence number
-        if let PbftMessage::Prepare { ref mut sequence, .. } = msg {
+        if let PbftMessage::Prepare {
+            ref mut sequence, ..
+        } = msg
+        {
             *sequence = 999; // Tampered
         }
 
@@ -225,13 +206,16 @@ mod tamper_detection_tests {
         let mut msg = PbftMessage::create_commit(
             0,
             1,
-            "original_hash".to_string(),  // Original hash
+            "original_hash".to_string(), // Original hash
             sender,
-            &keypair
+            &keypair,
         );
 
         // Tamper with block_hash
-        if let PbftMessage::Commit { ref mut block_hash, .. } = msg {
+        if let PbftMessage::Commit {
+            ref mut block_hash, ..
+        } = msg
+        {
             *block_hash = "tampered_hash".to_string();
         }
 
@@ -259,10 +243,7 @@ mod invalid_signature_tests {
     use super::*;
     use ed25519_dalek::{Signature, VerifyingKey};
 
-    fn create_block_with_signature(
-        signature: Signature,
-        public_key: VerifyingKey,
-    ) -> PbftMessage {
+    fn create_block_with_signature(signature: Signature, public_key: VerifyingKey) -> PbftMessage {
         PbftMessage::PrePrepare {
             view: 0,
             sequence: 1,
@@ -311,8 +292,7 @@ mod invalid_signature_tests {
         let block = create_test_block(1, "test");
 
         // Sign with keypair1 but use keypair2's public key
-        let message_bytes = format!("{}-{}-{}-{}", 0, 1, "hash", sender)
-            .into_bytes();
+        let message_bytes = format!("{}-{}-{}-{}", 0, 1, "hash", sender).into_bytes();
         let signature = keypair1.sign(&message_bytes);
 
         let msg = PbftMessage::PrePrepare {
@@ -339,14 +319,8 @@ mod public_key_extraction_tests {
         let sender = Uuid::new_v4();
         let block = create_test_block(1, "test");
 
-        let msg = PbftMessage::create_pre_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            block,
-            sender,
-            &keypair
-        );
+        let msg =
+            PbftMessage::create_pre_prepare(0, 1, "hash".to_string(), block, sender, &keypair);
 
         let extracted_key = msg.get_public_key();
         assert_eq!(*extracted_key, keypair.verifying_key());
@@ -357,13 +331,7 @@ mod public_key_extraction_tests {
         let keypair = generate_signing_key().unwrap();
         let sender = Uuid::new_v4();
 
-        let msg = PbftMessage::create_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            sender,
-            &keypair
-        );
+        let msg = PbftMessage::create_prepare(0, 1, "hash".to_string(), sender, &keypair);
 
         let extracted_key = msg.get_public_key();
         assert_eq!(*extracted_key, keypair.verifying_key());
@@ -374,13 +342,7 @@ mod public_key_extraction_tests {
         let keypair = generate_signing_key().unwrap();
         let sender = Uuid::new_v4();
 
-        let msg = PbftMessage::create_commit(
-            0,
-            1,
-            "hash".to_string(),
-            sender,
-            &keypair
-        );
+        let msg = PbftMessage::create_commit(0, 1, "hash".to_string(), sender, &keypair);
 
         let extracted_key = msg.get_public_key();
         assert_eq!(*extracted_key, keypair.verifying_key());
@@ -413,24 +375,12 @@ mod sender_extraction_tests {
             "hash".to_string(),
             create_test_block(1, "test"),
             sender,
-            &keypair
+            &keypair,
         );
 
-        let prepare = PbftMessage::create_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            sender,
-            &keypair
-        );
+        let prepare = PbftMessage::create_prepare(0, 1, "hash".to_string(), sender, &keypair);
 
-        let commit = PbftMessage::create_commit(
-            0,
-            1,
-            "hash".to_string(),
-            sender,
-            &keypair
-        );
+        let commit = PbftMessage::create_commit(0, 1, "hash".to_string(), sender, &keypair);
 
         let view_change = PbftMessage::create_view_change(1, sender, &keypair);
 
@@ -440,7 +390,6 @@ mod sender_extraction_tests {
         assert_eq!(view_change.get_sender(), sender);
     }
 }
-
 
 #[cfg(test)]
 mod replay_protection_tests {
@@ -455,22 +404,28 @@ mod replay_protection_tests {
     fn test_message_id_format_pre_prepare() {
         let sender = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
         let msg_id = generate_message_id("preprepare", 0, 1, sender);
-        
-        assert_eq!(msg_id, "preprepare-0-1-550e8400-e29b-41d4-a716-446655440000");
+
+        assert_eq!(
+            msg_id,
+            "preprepare-0-1-550e8400-e29b-41d4-a716-446655440000"
+        );
     }
 
     #[test]
     fn test_message_id_uniqueness() {
         let sender = Uuid::new_v4();
-        
+
         let id1 = generate_message_id("preprepare", 0, 1, sender);
         let id2 = generate_message_id("preprepare", 0, 2, sender);
         let id3 = generate_message_id("prepare", 0, 1, sender);
         let id4 = generate_message_id("preprepare", 1, 1, sender);
-        
+
         // All should be different
         assert_ne!(id1, id2, "Different sequence should produce different IDs");
-        assert_ne!(id1, id3, "Different message type should produce different IDs");
+        assert_ne!(
+            id1, id3,
+            "Different message type should produce different IDs"
+        );
         assert_ne!(id1, id4, "Different view should produce different IDs");
     }
 
@@ -479,43 +434,37 @@ mod replay_protection_tests {
         let keypair = generate_signing_key().unwrap();
         let sender = Uuid::new_v4();
         let block = create_test_block(1, "test");
-        
+
         let msg1 = PbftMessage::create_pre_prepare(
             0,
             1,
             "hash".to_string(),
             block.clone(),
             sender,
-            &keypair
+            &keypair,
         );
-        
-        let msg2 = PbftMessage::create_pre_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            block,
-            sender,
-            &keypair
-        );
-        
+
+        let msg2 =
+            PbftMessage::create_pre_prepare(0, 1, "hash".to_string(), block, sender, &keypair);
+
         // Same parameters should produce same message ID
         let id1 = generate_message_id("preprepare", 0, 1, sender);
         let id2 = generate_message_id("preprepare", 0, 1, sender);
-        
+
         assert_eq!(id1, id2, "Duplicate messages should have same ID");
     }
 
     #[test]
     fn test_message_id_includes_all_critical_fields() {
         let sender = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
-        
+
         // Test all message types
         let pre_prepare_id = generate_message_id("preprepare", 5, 100, sender);
         assert!(pre_prepare_id.contains("preprepare"));
         assert!(pre_prepare_id.contains("5"));
         assert!(pre_prepare_id.contains("100"));
         assert!(pre_prepare_id.contains("550e8400"));
-        
+
         let prepare_id = generate_message_id("prepare", 1, 2, sender);
         assert!(prepare_id.contains("prepare"));
         assert!(prepare_id.contains("1"));
@@ -526,20 +475,23 @@ mod replay_protection_tests {
     fn test_different_sender_different_message_id() {
         let sender1 = Uuid::new_v4();
         let sender2 = Uuid::new_v4();
-        
+
         let id1 = generate_message_id("preprepare", 0, 1, sender1);
         let id2 = generate_message_id("preprepare", 0, 1, sender2);
-        
-        assert_ne!(id1, id2, "Different senders should produce different message IDs");
+
+        assert_ne!(
+            id1, id2,
+            "Different senders should produce different message IDs"
+        );
     }
 
     #[test]
     fn test_message_id_is_deterministic() {
         let sender = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
-        
+
         let id1 = generate_message_id("commit", 10, 20, sender);
         let id2 = generate_message_id("commit", 10, 20, sender);
-        
+
         assert_eq!(id1, id2, "Message ID generation should be deterministic");
     }
 
@@ -547,23 +499,29 @@ mod replay_protection_tests {
     fn test_message_id_format_is_parseable() {
         let sender = Uuid::new_v4();
         let msg_id = generate_message_id("viewchange", 3, 7, sender);
-        
+
         // Should contain hyphens as separators
         let parts: Vec<&str> = msg_id.split('-').collect();
-        assert!(parts.len() >= 5, "Message ID should have at least 5 parts separated by hyphens");
-        
+        assert!(
+            parts.len() >= 5,
+            "Message ID should have at least 5 parts separated by hyphens"
+        );
+
         // Last part should be a valid UUID
         let last_part = parts.last().unwrap();
-        assert!(Uuid::parse_str(last_part).is_ok(), "Last part should be a UUID");
+        assert!(
+            Uuid::parse_str(last_part).is_ok(),
+            "Last part should be a UUID"
+        );
     }
 
     #[test]
     fn test_view_change_message_id() {
         let sender = Uuid::new_v4();
-        
+
         // View change has different format (only view and sender)
         let msg_id = generate_message_id("viewchange", 5, 0, sender);
-        
+
         assert!(msg_id.contains("viewchange"));
         assert!(msg_id.contains("5"));
         assert!(msg_id.contains(&sender.to_string()));
@@ -572,12 +530,15 @@ mod replay_protection_tests {
     #[test]
     fn test_replay_protection_across_views() {
         let sender = Uuid::new_v4();
-        
+
         // Same sequence in different views
         let view0_id = generate_message_id("prepare", 0, 10, sender);
         let view1_id = generate_message_id("prepare", 1, 10, sender);
-        
-        assert_ne!(view0_id, view1_id, "Same sequence in different views should have different IDs");
+
+        assert_ne!(
+            view0_id, view1_id,
+            "Same sequence in different views should have different IDs"
+        );
     }
 }
 
@@ -594,23 +555,17 @@ mod signature_verification_order_tests {
         // 2. Check for replay attacks (hashset lookup)
         // 3. Check authorization (if needed)
         // 4. Process the message (expensive operations)
-        
+
         let keypair = generate_signing_key().unwrap();
         let sender = Uuid::new_v4();
         let block = create_test_block(1, "test");
-        
-        let msg = PbftMessage::create_pre_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            block,
-            sender,
-            &keypair
-        );
-        
+
+        let msg =
+            PbftMessage::create_pre_prepare(0, 1, "hash".to_string(), block, sender, &keypair);
+
         // Signature should be verifiable
         assert!(msg.verify_signature());
-        
+
         // If signature verification failed, we should reject immediately
         // without checking replay or doing any expensive processing
     }
@@ -620,24 +575,18 @@ mod signature_verification_order_tests {
         let keypair = generate_signing_key().unwrap();
         let sender = Uuid::new_v4();
         let block = create_test_block(1, "test");
-        
-        let mut msg = PbftMessage::create_pre_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            block,
-            sender,
-            &keypair
-        );
-        
+
+        let mut msg =
+            PbftMessage::create_pre_prepare(0, 1, "hash".to_string(), block, sender, &keypair);
+
         // Tamper with the message (which invalidates the signature)
         if let PbftMessage::PrePrepare { ref mut view, .. } = msg {
             *view = 999;
         }
-        
+
         // Signature verification should fail
         assert!(!msg.verify_signature());
-        
+
         // In the implementation, this failure happens before:
         // - Replay protection checks
         // - Authorization checks
@@ -648,35 +597,35 @@ mod signature_verification_order_tests {
     #[test]
     fn test_signature_verification_is_fast() {
         use std::time::Instant;
-        
+
         let keypair = generate_signing_key().unwrap();
         let sender = Uuid::new_v4();
         let block = create_test_block(1, "test");
-        
-        let msg = PbftMessage::create_pre_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            block,
-            sender,
-            &keypair
-        );
-        
+
+        let msg =
+            PbftMessage::create_pre_prepare(0, 1, "hash".to_string(), block, sender, &keypair);
+
         let iterations = 10000;
         let start = Instant::now();
-        
+
         for _ in 0..iterations {
             let _ = msg.verify_signature();
         }
-        
+
         let duration = start.elapsed();
         let per_verification = duration.as_micros() as f64 / iterations as f64;
-        
-        println!("Signature verification: {} iterations in {:?}", iterations, duration);
+
+        println!(
+            "Signature verification: {} iterations in {:?}",
+            iterations, duration
+        );
         println!("Average: {:.2} μs per verification", per_verification);
-        
+
         // Ed25519 verification should be very fast (< 100μs)
-        assert!(per_verification < 100.0, "Signature verification should be fast");
+        assert!(
+            per_verification < 100.0,
+            "Signature verification should be fast"
+        );
     }
 }
 
@@ -696,17 +645,11 @@ mod signing_consistency_tests {
             "hash".to_string(),
             block.clone(),
             sender,
-            &keypair
+            &keypair,
         );
 
-        let msg2 = PbftMessage::create_pre_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            block,
-            sender,
-            &keypair
-        );
+        let msg2 =
+            PbftMessage::create_pre_prepare(0, 1, "hash".to_string(), block, sender, &keypair);
 
         // Same message should produce same signature
         let sig1 = msg1.get_signature();
@@ -727,17 +670,11 @@ mod signing_consistency_tests {
             "hash".to_string(),
             block.clone(),
             sender1,
-            &keypair
+            &keypair,
         );
 
-        let msg2 = PbftMessage::create_pre_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            block,
-            sender2,
-            &keypair
-        );
+        let msg2 =
+            PbftMessage::create_pre_prepare(0, 1, "hash".to_string(), block, sender2, &keypair);
 
         // Different senders should produce different signatures
         let sig1 = msg1.get_signature();
@@ -751,21 +688,9 @@ mod signing_consistency_tests {
         let keypair2 = generate_signing_key().unwrap();
         let sender = Uuid::new_v4();
 
-        let msg1 = PbftMessage::create_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            sender,
-            &keypair1
-        );
+        let msg1 = PbftMessage::create_prepare(0, 1, "hash".to_string(), sender, &keypair1);
 
-        let msg2 = PbftMessage::create_prepare(
-            0,
-            1,
-            "hash".to_string(),
-            sender,
-            &keypair2
-        );
+        let msg2 = PbftMessage::create_prepare(0, 1, "hash".to_string(), sender, &keypair2);
 
         // Different keypairs should produce different signatures
         let sig1 = msg1.get_signature();

@@ -482,22 +482,20 @@ impl OptimizedQueryEngine {
 
         // Match object
         match &pattern.object {
-            PatternTerm::Variable(var) => {
-                match axiom.object() {
-                    PropertyAssertionObject::Named(iri) => {
-                         binding.add_binding(var.clone(), QueryValue::IRI((**iri).clone()));
-                    }
-                    _ => return None,
+            PatternTerm::Variable(var) => match axiom.object() {
+                PropertyAssertionObject::Named(iri) => {
+                    binding.add_binding(var.clone(), QueryValue::IRI((**iri).clone()));
                 }
-            }
-            PatternTerm::IRI(iri) => {
-                 match axiom.object() {
-                    PropertyAssertionObject::Named(obj_iri) => {
-                         if *iri != **obj_iri { return None; }
+                _ => return None,
+            },
+            PatternTerm::IRI(iri) => match axiom.object() {
+                PropertyAssertionObject::Named(obj_iri) => {
+                    if *iri != **obj_iri {
+                        return None;
                     }
-                    _ => return None,
-                 }
-            }
+                }
+                _ => return None,
+            },
             _ => return None,
         }
 
@@ -800,7 +798,6 @@ mod tests {
 
         assert!(result.is_ok());
         let _query_result = result.unwrap();
-        
     }
 
     #[test]
@@ -820,7 +817,7 @@ mod tests {
         let query_result = result.unwrap();
 
         // Should have executed successfully (may have 0 results depending on test data)
-        
+
         assert!(query_result.variables.contains(&"?s".to_string()));
     }
 
@@ -845,7 +842,7 @@ mod tests {
         let _query_result = result.unwrap();
 
         // Should have executed join optimization
-        
+
         if engine.config().enable_join_pooling {
             let stats = engine.get_performance_stats();
             assert!(stats.join_pool_hits + stats.join_pool_misses > 0);
@@ -944,7 +941,6 @@ mod tests {
 
         let stats = engine.get_performance_stats();
         assert!(stats.memory_efficiency_ratio >= 0.0);
-        
     }
 
     #[test]
@@ -1206,7 +1202,6 @@ mod tests {
 
         let _final_stats = engine.get_performance_stats();
         // Stats should be accessible from multiple threads
-        
     }
 
     #[test]
@@ -1225,7 +1220,10 @@ mod tests {
 
             // Stats should be consistent
             assert!(stats.queries_executed >= i + 1);
-            assert!(stats.cache_hits + stats.cache_misses + stats.adaptive_index_hits >= stats.queries_executed);
+            assert!(
+                stats.cache_hits + stats.cache_misses + stats.adaptive_index_hits
+                    >= stats.queries_executed
+            );
 
             // Should never exceed 100% accuracy
             assert!(stats.prediction_accuracy >= 0.0 && stats.prediction_accuracy <= 100.0);

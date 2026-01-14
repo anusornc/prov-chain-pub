@@ -5,8 +5,8 @@
 
 use anyhow::Result;
 use ed25519_dalek::SigningKey;
-use rand::RngCore;
 use rand::rngs::OsRng;
+use rand::RngCore;
 
 /// Generate a new Ed25519 signing key using cryptographically secure RNG
 ///

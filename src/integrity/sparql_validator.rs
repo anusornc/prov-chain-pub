@@ -403,7 +403,8 @@ impl SparqlConsistencyValidator {
                 oxigraph::sparql::QueryResults::Solutions(solutions) => {
                     let mut query_triple_count = 0;
                     for solution in solutions.flatten() {
-                        if let Some(oxigraph::model::Term::Literal(literal)) = solution.get("count") {
+                        if let Some(oxigraph::model::Term::Literal(literal)) = solution.get("count")
+                        {
                             if let Ok(count) = literal.value().parse::<usize>() {
                                 query_triple_count = count;
                                 break;
@@ -982,8 +983,7 @@ impl SparqlConsistencyValidator {
                 for solution in solutions.flatten() {
                     if let Some(oxigraph::model::Term::Literal(literal)) = solution.get("index") {
                         if let Ok(index) = literal.value().parse::<u64>() {
-                            expected_graphs
-                                .push(format!("http://provchain.org/block/{}", index));
+                            expected_graphs.push(format!("http://provchain.org/block/{}", index));
                         }
                     }
                 }

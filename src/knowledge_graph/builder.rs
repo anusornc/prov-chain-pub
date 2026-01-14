@@ -206,7 +206,10 @@ impl EntityExtractor for ProductBatchExtractor {
                     }
 
                     let entity = KnowledgeEntity {
-                        uri: batch.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        uri: batch
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
                         entity_type: "ProductBatch".to_string(),
                         label: sol.get("label").map(|l| l.to_string()),
                         properties,
@@ -256,7 +259,10 @@ impl EntityExtractor for AgentExtractor {
                         .to_string();
 
                     let entity = KnowledgeEntity {
-                        uri: agent.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        uri: agent
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
                         entity_type: type_name,
                         label: sol.get("label").map(|l| l.to_string()),
                         properties: HashMap::new(),
@@ -312,7 +318,10 @@ impl EntityExtractor for ActivityExtractor {
                         .to_string();
 
                     let entity = KnowledgeEntity {
-                        uri: activity.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        uri: activity
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
                         entity_type: type_name,
                         label: None,
                         properties,
@@ -353,9 +362,18 @@ impl RelationshipExtractor for ProvenanceRelationshipExtractor {
                     (sol.get("subject"), sol.get("predicate"), sol.get("object"))
                 {
                     let relationship = KnowledgeRelationship {
-                        subject: subject.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
-                        predicate: predicate.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
-                        object: object.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        subject: subject
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
+                        predicate: predicate
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
+                        object: object
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
                         confidence_score: 0.95,
                         temporal_info: None,
                     };
@@ -398,9 +416,15 @@ impl RelationshipExtractor for TemporalRelationshipExtractor {
                         .ok();
 
                     let relationship = KnowledgeRelationship {
-                        subject: activity1.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        subject: activity1
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
                         predicate: "http://provchain.org/trace#precedes".to_string(),
-                        object: activity2.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        object: activity2
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
                         confidence_score: 0.8,
                         temporal_info,
                     };
@@ -438,9 +462,18 @@ impl RelationshipExtractor for SupplyChainRelationshipExtractor {
                     (sol.get("subject"), sol.get("predicate"), sol.get("object"))
                 {
                     let relationship = KnowledgeRelationship {
-                        subject: subject.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
-                        predicate: predicate.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
-                        object: object.to_string().trim_matches(|c| c == '<' || c == '>').to_string(),
+                        subject: subject
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
+                        predicate: predicate
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
+                        object: object
+                            .to_string()
+                            .trim_matches(|c| c == '<' || c == '>')
+                            .to_string(),
                         confidence_score: 0.9,
                         temporal_info: None,
                     };

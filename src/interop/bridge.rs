@@ -12,7 +12,7 @@
 use crate::core::blockchain::Blockchain;
 use crate::ontology::ShaclValidator;
 use anyhow::{anyhow, Result};
-use ed25519_dalek::{Signature, Signer, Verifier, VerifyingKey, SigningKey};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -71,33 +71,49 @@ impl BridgeManager {
     }
 
     /// Register a trusted authority for a foreign network
-    pub async fn add_trusted_authority(&self, network_id: &str, public_key_bytes: &[u8]) -> Result<()> {
-        let key = VerifyingKey::from_bytes(public_key_bytes.try_into().map_err(|_| anyhow!("Invalid key length"))?)
-            .map_err(|_| anyhow!("Invalid key"))?;
-        
+    pub async fn add_trusted_authority(
+        &self,
+        network_id: &str,
+        public_key_bytes: &[u8],
+    ) -> Result<()> {
+        let key = VerifyingKey::from_bytes(
+            public_key_bytes
+                .try_into()
+                .map_err(|_| anyhow!("Invalid key length"))?,
+        )
+        .map_err(|_| anyhow!("Invalid key"))?;
+
         let mut authorities = self.trusted_foreign_authorities.write().await;
-        authorities.entry(network_id.to_string()).or_default().push(key);
+        authorities
+            .entry(network_id.to_string())
+            .or_default()
+            .push(key);
         Ok(())
     }
 
     /// Generate a proof for a local transaction to be sent elsewhere
-    pub async fn export_proof(&self, block_index: u64, transfer_id: Uuid, signing_key: &SigningKey) -> Result<CrossChainProof> {
+    pub async fn export_proof(
+        &self,
+        block_index: u64,
+        transfer_id: Uuid,
+        signing_key: &SigningKey,
+    ) -> Result<CrossChainProof> {
         let blockchain = self.blockchain.read().await;
-        
+
         // Find the block
-        let block = blockchain.chain.iter().find(|b| b.index == block_index)
+        let block = blockchain
+            .chain
+            .iter()
+            .find(|b| b.index == block_index)
             .ok_or_else(|| anyhow!("Block {} not found", block_index))?;
 
         // Reconstruct what we sign: index|timestamp|state_root|payload
         let signed_data = format!(
             "{}|{}|{}|{}",
-            block.index,
-            block.timestamp,
-            block.state_root,
-            block.data
+            block.index, block.timestamp, block.state_root, block.data
         );
         let signature = signing_key.sign(signed_data.as_bytes());
-        
+
         // Construct the message object
         let message = CrossChainMessage {
             source_network_id: "local-net".to_string(), // Should come from config
@@ -111,7 +127,10 @@ impl BridgeManager {
             message,
             block_index: block.index,
             state_root: block.state_root.clone(),
-            authority_signatures: vec![("primary-authority".to_string(), signature.to_bytes().to_vec())],
+            authority_signatures: vec![(
+                "primary-authority".to_string(),
+                signature.to_bytes().to_vec(),
+            )],
         })
     }
 
@@ -119,11 +138,20 @@ impl BridgeManager {
     pub async fn import_proof(&self, proof: &CrossChainProof) -> Result<bool> {
         // 1. Check if we trust the source network
         let authorities = self.trusted_foreign_authorities.read().await;
-        let trusted_keys = authorities.get(&proof.message.source_network_id)
-            .ok_or_else(|| anyhow!("Unknown source network: {}", proof.message.source_network_id))?;
+        let trusted_keys = authorities
+            .get(&proof.message.source_network_id)
+            .ok_or_else(|| {
+                anyhow!(
+                    "Unknown source network: {}",
+                    proof.message.source_network_id
+                )
+            })?;
 
         if trusted_keys.is_empty() {
-            return Err(anyhow!("No trusted authorities for network {}", proof.message.source_network_id));
+            return Err(anyhow!(
+                "No trusted authorities for network {}",
+                proof.message.source_network_id
+            ));
         }
 
         // 2. Verify signatures
@@ -131,18 +159,20 @@ impl BridgeManager {
         // index|timestamp|state_root|payload
         let signed_data = format!(
             "{}|{}|{}|{}",
-            proof.block_index,
-            proof.message.timestamp,
-            proof.state_root,
-            proof.message.payload
+            proof.block_index, proof.message.timestamp, proof.state_root, proof.message.payload
         );
         let signed_bytes = signed_data.as_bytes();
 
         let mut valid_signature_found = false;
 
         for (_auth_id, sig_bytes) in &proof.authority_signatures {
-            let signature = Signature::from_bytes(sig_bytes.as_slice().try_into().map_err(|_| anyhow!("Invalid signature length"))?);
-            
+            let signature = Signature::from_bytes(
+                sig_bytes
+                    .as_slice()
+                    .try_into()
+                    .map_err(|_| anyhow!("Invalid signature length"))?,
+            );
+
             // Check if any of our trusted keys for this network match this signature
             for trusted_key in trusted_keys {
                 if trusted_key.verify(signed_bytes, &signature).is_ok() {
@@ -150,7 +180,7 @@ impl BridgeManager {
                     break;
                 }
             }
-            
+
             if valid_signature_found {
                 break;
             }
@@ -160,16 +190,19 @@ impl BridgeManager {
             // 3. SHACL Validation (if configured)
             if let Some(validator) = &self.shacl_validator {
                 tracing::info!("Validating cross-chain payload with SHACL...");
-                // Note: We assume payload is RDF Turtle data here. 
+                // Note: We assume payload is RDF Turtle data here.
                 // If it's not (e.g. JSON), validation might fail or need parsing adjustment.
                 match validator.validate_transaction(&proof.message.payload) {
                     Ok(report) => {
                         if !report.is_valid {
-                            tracing::warn!("❌ SHACL Validation Failed for cross-chain transfer: {:?}", report.violations);
+                            tracing::warn!(
+                                "❌ SHACL Validation Failed for cross-chain transfer: {:?}",
+                                report.violations
+                            );
                             return Ok(false); // Reject invalid data
                         }
                         tracing::info!("✅ SHACL Validation Passed");
-                    },
+                    }
                     Err(e) => {
                         tracing::error!("SHACL Validation Error: {}", e);
                         // Decide policy: fail closed?
@@ -181,17 +214,17 @@ impl BridgeManager {
             // 4. Process the payload (Mint/Unlock)
             // In a complete implementation, this would trigger an atomic operation
             // to add the cross-chain data to the local state.
-            
+
             tracing::info!(
-                "✅ Successfully verified cross-chain transfer {} from {}", 
-                proof.message.transfer_id, 
+                "✅ Successfully verified cross-chain transfer {} from {}",
+                proof.message.transfer_id,
                 proof.message.source_network_id
             );
             Ok(true)
         } else {
             tracing::warn!(
-                "❌ Failed to verify cross-chain transfer {} from {}: No valid signatures", 
-                proof.message.transfer_id, 
+                "❌ Failed to verify cross-chain transfer {} from {}: No valid signatures",
+                proof.message.transfer_id,
                 proof.message.source_network_id
             );
             Ok(false)
@@ -203,17 +236,17 @@ impl BridgeManager {
 mod tests {
     use super::*;
     use crate::core::blockchain::Blockchain;
-    
+
     #[tokio::test]
     async fn test_bridge_structure() {
         let blockchain = Arc::new(RwLock::new(Blockchain::new()));
         let bridge = BridgeManager::new(blockchain);
-        
+
         // Setup a dummy foreign key
         let _key_bytes = [0u8; 32]; // Invalid key but sufficient for structure test if we don't parse it deeply
-        // actually ed25519 needs valid point.
-        // We'll skip adding authority and just check instantiation
-        
+                                    // actually ed25519 needs valid point.
+                                    // We'll skip adding authority and just check instantiation
+
         assert!(bridge.trusted_foreign_authorities.read().await.is_empty());
     }
 }

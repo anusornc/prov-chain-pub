@@ -326,7 +326,7 @@ impl SustainabilityTracker {
     fn calculate_production_emissions(&self, batch: &KnowledgeEntity) -> Result<f64> {
         // Calculate production emissions based on batch properties
         // Formula: base_emission * quantity * process_factor
-        
+
         // Get quantity from batch properties (default to 1 unit if not specified)
         let quantity = batch
             .properties
@@ -343,11 +343,11 @@ impl SustainabilityTracker {
 
         // Base emission factors per unit (kg CO2e per kg of product)
         let emission_factor = match production_method {
-            "organic" => 1.2,    // Organic farming has lower emissions
-            "sustainable" => 1.5, // Sustainable practices
+            "organic" => 1.2,      // Organic farming has lower emissions
+            "sustainable" => 1.5,  // Sustainable practices
             "conventional" => 2.0, // Conventional farming
             "intensive" => 2.8,    // Intensive farming (highest emissions)
-            _ => 2.0,             // Default to conventional
+            _ => 2.0,              // Default to conventional
         };
 
         // Calculate total emissions
@@ -367,7 +367,7 @@ impl SustainabilityTracker {
     fn calculate_transport_emissions(&self, batch: &KnowledgeEntity) -> Result<f64> {
         // Calculate transport emissions based on distance, mode, and load
         // Formula: distance * emission_factor_per_km * (load_weight / truck_capacity)
-        
+
         // Get batch quantity for weight calculation
         let quantity = batch
             .properties
@@ -390,13 +390,13 @@ impl SustainabilityTracker {
 
         // Emission factors per ton-km (kg CO2e per ton-km)
         let emission_factor_per_ton_km = match transport_mode {
-            "electric_truck" => 0.08,  // Electric truck (lowest)
-            "rail" => 0.05,             // Rail transport (very low)
-            "ship" => 0.01,             // Shipping (very low)
-            "truck" => 0.12,            // Standard truck
-            "air" => 0.50,              // Air freight (highest)
-            "plane" => 0.50,            // Plane (same as air)
-            _ => 0.12,                 // Default to truck
+            "electric_truck" => 0.08, // Electric truck (lowest)
+            "rail" => 0.05,           // Rail transport (very low)
+            "ship" => 0.01,           // Shipping (very low)
+            "truck" => 0.12,          // Standard truck
+            "air" => 0.50,            // Air freight (highest)
+            "plane" => 0.50,          // Plane (same as air)
+            _ => 0.12,                // Default to truck
         };
 
         // Calculate emissions
@@ -419,7 +419,7 @@ impl SustainabilityTracker {
     fn calculate_packaging_emissions(&self, batch: &KnowledgeEntity) -> Result<f64> {
         // Calculate packaging emissions based on packaging type and quantity
         // Formula: packaging_emission_factor * quantity
-        
+
         // Get batch quantity
         let quantity = batch
             .properties
@@ -436,15 +436,15 @@ impl SustainabilityTracker {
 
         // Emission factors per unit (kg CO2e per kg of packaging)
         let packaging_factor = match packaging_type {
-            "none" => 0.0,             // No packaging
-            "minimal" => 0.05,         // Minimal packaging (paper wrap)
-            "paper" => 0.10,           // Paper-based packaging
-            "cardboard" => 0.15,       // Cardboard box
-            "plastic" => 0.25,         // Standard plastic packaging
-            "glass" => 0.30,           // Glass container
-            "metal" => 0.40,           // Metal/tin container
-            "composite" => 0.35,       // Composite packaging
-            _ => 0.25,                 // Default to plastic
+            "none" => 0.0,       // No packaging
+            "minimal" => 0.05,   // Minimal packaging (paper wrap)
+            "paper" => 0.10,     // Paper-based packaging
+            "cardboard" => 0.15, // Cardboard box
+            "plastic" => 0.25,   // Standard plastic packaging
+            "glass" => 0.30,     // Glass container
+            "metal" => 0.40,     // Metal/tin container
+            "composite" => 0.35, // Composite packaging
+            _ => 0.25,           // Default to plastic
         };
 
         // Calculate packaging emissions
@@ -468,11 +468,11 @@ impl SustainabilityTracker {
     fn calculate_carbon_offsets(&self, batch: &KnowledgeEntity) -> Result<f64> {
         // Calculate carbon offsets from carbon offset certificates associated with the batch
         // Look for Certificate entities with type "CarbonOffset" linked to this batch
-        
+
         // In a real implementation, we would:
         // 1. Find certificates linked to this batch via relationships
         // 2. Sum the offset amounts from those certificates
-        
+
         // For now, check if batch has a carbonOffset property
         let offset_amount = batch
             .properties
@@ -495,8 +495,10 @@ impl SustainabilityTracker {
                 .properties
                 .get("quantity")
                 .and_then(|q| q.parse::<f64>().ok())
-                .unwrap_or(1.0)) * energy_per_kg * (renewable_energy / 100.0);
-            
+                .unwrap_or(1.0))
+                * energy_per_kg
+                * (renewable_energy / 100.0);
+
             renewable_kwh * 0.5 // 0.5 kg CO2e offset per kWh of renewable energy
         } else {
             0.0
@@ -520,13 +522,20 @@ impl SustainabilityTracker {
         // Calculate total carbon offsets across all batches
         let mut total_offsets = 0.0;
 
-        for batch in self.entities.values().filter(|e| e.entity_type == "ProductBatch") {
+        for batch in self
+            .entities
+            .values()
+            .filter(|e| e.entity_type == "ProductBatch")
+        {
             // Calculate offsets for each batch
             let batch_offsets = self.calculate_carbon_offsets(batch)?;
             total_offsets += batch_offsets;
         }
 
-        tracing::debug!("Total carbon offsets across all batches: {} kg CO2e", total_offsets);
+        tracing::debug!(
+            "Total carbon offsets across all batches: {} kg CO2e",
+            total_offsets
+        );
 
         Ok(total_offsets)
     }

@@ -8,17 +8,14 @@
 //! - Decryption fails with corrupted or invalid data
 //! - Encryption key requirements are enforced
 
-use provchain_org::wallet::{Wallet, Participant};
-use provchain_org::security::encryption::PrivacyManager;
 use chacha20poly1305::aead::{Aead, AeadCore, OsRng as AeadOsRng};
 use chacha20poly1305::{ChaCha20Poly1305, KeyInit};
+use provchain_org::security::encryption::PrivacyManager;
+use provchain_org::wallet::{Participant, Wallet};
 
 /// Helper to create a test wallet
 fn create_test_wallet() -> Wallet {
-    let participant = Participant::new_farmer(
-        "Test Farm".to_string(),
-        "Test Location".to_string()
-    );
+    let participant = Participant::new_farmer("Test Farm".to_string(), "Test Location".to_string());
     Wallet::new(participant)
 }
 
@@ -26,7 +23,8 @@ fn create_test_wallet() -> Wallet {
 fn manual_encrypt(data: &[u8], key: &chacha20poly1305::Key) -> Result<Vec<u8>, String> {
     let cipher = ChaCha20Poly1305::new(key);
     let nonce = ChaCha20Poly1305::generate_nonce(&mut AeadOsRng);
-    let ciphertext = cipher.encrypt(&nonce, data)
+    let ciphertext = cipher
+        .encrypt(&nonce, data)
         .map_err(|e| format!("Encryption failed: {}", e))?;
 
     let mut result = Vec::with_capacity(12 + ciphertext.len());
@@ -43,7 +41,8 @@ fn manual_decrypt(encrypted_data: &[u8], key: &chacha20poly1305::Key) -> Result<
 
     let (nonce, ciphertext) = encrypted_data.split_at(12);
     let cipher = ChaCha20Poly1305::new(key);
-    let plaintext = cipher.decrypt(nonce.into(), ciphertext)
+    let plaintext = cipher
+        .decrypt(nonce.into(), ciphertext)
         .map_err(|e| format!("Decryption failed: {}", e))?;
     Ok(plaintext)
 }
@@ -204,7 +203,10 @@ mod tampering_detection_tests {
         encrypted.push(0x43);
 
         let result = manual_decrypt(&encrypted, &key);
-        assert!(result.is_err(), "Data with extra bytes should fail authentication");
+        assert!(
+            result.is_err(),
+            "Data with extra bytes should fail authentication"
+        );
     }
 
     #[test]
@@ -233,7 +235,11 @@ mod key_requirements_tests {
         let nonce1 = ChaCha20Poly1305::generate_nonce(&mut AeadOsRng);
         let nonce2 = ChaCha20Poly1305::generate_nonce(&mut AeadOsRng);
 
-        assert_eq!(nonce1.len(), 12, "ChaCha20-Poly1305 uses 96-bit (12-byte) nonces");
+        assert_eq!(
+            nonce1.len(),
+            12,
+            "ChaCha20-Poly1305 uses 96-bit (12-byte) nonces"
+        );
         assert_eq!(nonce2.len(), 12);
 
         // Nonces should be different
@@ -258,10 +264,7 @@ mod edge_cases_tests {
 
     #[test]
     fn test_minimal_wallet_encryption() {
-        let participant = Participant::new_farmer(
-            String::new(),
-            String::new()
-        );
+        let participant = Participant::new_farmer(String::new(), String::new());
         let wallet = Wallet::new(participant);
 
         let key = PrivacyManager::generate_key();
@@ -276,10 +279,7 @@ mod edge_cases_tests {
 
     #[test]
     fn test_large_wallet_data() {
-        let participant = Participant::new_farmer(
-            "a".repeat(1000),
-            "Test Location".to_string()
-        );
+        let participant = Participant::new_farmer("a".repeat(1000), "Test Location".to_string());
         let wallet = Wallet::new(participant);
 
         let key = PrivacyManager::generate_key();
@@ -294,10 +294,7 @@ mod edge_cases_tests {
 
     #[test]
     fn test_unicode_wallet_data() {
-        let participant = Participant::new_farmer(
-            "地址测试🔐".to_string(),
-            "测试位置".to_string()
-        );
+        let participant = Participant::new_farmer("地址测试🔐".to_string(), "测试位置".to_string());
         let wallet = Wallet::new(participant);
 
         let key = PrivacyManager::generate_key();
@@ -318,7 +315,7 @@ mod edge_cases_tests {
     fn test_special_characters_in_wallet() {
         let participant = Participant::new_farmer(
             "\\\"'\t\n\r\x00\x1F".to_string(),
-            "Test Location".to_string()
+            "Test Location".to_string(),
         );
         let wallet = Wallet::new(participant);
 

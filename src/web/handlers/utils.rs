@@ -1,5 +1,5 @@
+use chrono::{NaiveDate, Utc};
 use regex::Regex;
-use chrono::{Utc, NaiveDate};
 
 /// Input validation functions
 pub fn validate_uri(uri: &str) -> Result<(), String> {
@@ -48,7 +48,10 @@ pub fn validate_literal(literal: &str) -> Result<(), String> {
 /// Validate string length
 pub fn validate_string_length(s: &str, max_len: usize, field_name: &str) -> Result<(), String> {
     if s.len() > max_len {
-        return Err(format!("{} exceeds maximum length of {}", field_name, max_len));
+        return Err(format!(
+            "{} exceeds maximum length of {}",
+            field_name, max_len
+        ));
     }
     Ok(())
 }
@@ -57,7 +60,10 @@ pub fn validate_string_length(s: &str, max_len: usize, field_name: &str) -> Resu
 pub fn validate_block_index(index: u64) -> Result<(), String> {
     const MAX_BLOCK_INDEX: u64 = 1_000_000_000;
     if index > MAX_BLOCK_INDEX {
-        return Err(format!("Block index {} exceeds maximum {}", index, MAX_BLOCK_INDEX));
+        return Err(format!(
+            "Block index {} exceeds maximum {}",
+            index, MAX_BLOCK_INDEX
+        ));
     }
     Ok(())
 }
@@ -71,7 +77,9 @@ pub fn validate_product_id(id: &str) -> Result<(), String> {
     // Only allow alphanumeric, hyphens, underscores
     let id_regex = Regex::new(r"^[a-zA-Z0-9_-]+$").unwrap();
     if !id_regex.is_match(id) {
-        return Err("Product ID contains invalid characters (only a-zA-Z0-9_- allowed)".to_string());
+        return Err(
+            "Product ID contains invalid characters (only a-zA-Z0-9_- allowed)".to_string(),
+        );
     }
 
     Ok(())
@@ -94,8 +102,21 @@ pub fn validate_date_format(date_str: &str) -> Result<NaiveDate, String> {
 
     // Check for dangerous patterns that could indicate injection attempts
     let dangerous_patterns = [
-        "'", "\"", ";", "--", "/*", "*/", "UNION", "SELECT", "DROP",
-        "OR", "AND", "<script", "javascript:", "xp_", "declare",
+        "'",
+        "\"",
+        ";",
+        "--",
+        "/*",
+        "*/",
+        "UNION",
+        "SELECT",
+        "DROP",
+        "OR",
+        "AND",
+        "<script",
+        "javascript:",
+        "xp_",
+        "declare",
     ];
     let date_upper = date_str.to_uppercase();
     for pattern in dangerous_patterns {
@@ -110,12 +131,14 @@ pub fn validate_date_format(date_str: &str) -> Result<NaiveDate, String> {
 }
 
 /// Validate date range is reasonable
-pub fn validate_date_range(start_date: &str, end_date: &str) -> Result<(NaiveDate, NaiveDate), String> {
-    let start = validate_date_format(start_date)
-        .map_err(|e| format!("Invalid start_date: {}", e))?;
+pub fn validate_date_range(
+    start_date: &str,
+    end_date: &str,
+) -> Result<(NaiveDate, NaiveDate), String> {
+    let start =
+        validate_date_format(start_date).map_err(|e| format!("Invalid start_date: {}", e))?;
 
-    let end = validate_date_format(end_date)
-        .map_err(|e| format!("Invalid end_date: {}", e))?;
+    let end = validate_date_format(end_date).map_err(|e| format!("Invalid end_date: {}", e))?;
 
     // Ensure start <= end
     if start > end {
@@ -146,9 +169,5 @@ pub fn validate_date_range(start_date: &str, end_date: &str) -> Result<(NaiveDat
 
 /// Sanitize date string by extracting only YYYY-MM-DD portion
 pub fn sanitize_date_string(date_str: &str) -> String {
-    date_str
-        .split('T')
-        .next()
-        .unwrap_or("")
-        .to_string()
+    date_str.split('T').next().unwrap_or("").to_string()
 }

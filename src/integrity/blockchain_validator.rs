@@ -284,7 +284,10 @@ impl BlockchainIntegrityValidator {
                                                 ) => {
                                                     let mut count = 0;
                                                     for sol in solutions.flatten() {
-                                                        if let Some(oxigraph::model::Term::Literal(lit)) = sol.get("count") {
+                                                        if let Some(
+                                                            oxigraph::model::Term::Literal(lit),
+                                                        ) = sol.get("count")
+                                                        {
                                                             if let Ok(parsed_count) =
                                                                 lit.value().parse::<usize>()
                                                             {

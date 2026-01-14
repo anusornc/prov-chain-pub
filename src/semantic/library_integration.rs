@@ -5,8 +5,8 @@
 
 use anyhow::{Context, Result};
 use owl2_reasoner::parser::TurtleParser;
-use owl2_reasoner::OntologyParser;
 use owl2_reasoner::reasoning::tableaux::{ReasoningConfig, TableauxReasoner};
+use owl2_reasoner::OntologyParser;
 use std::fs;
 use tracing::info;
 
@@ -20,7 +20,8 @@ pub fn check_consistency(ontology_path: &str) -> Result<bool> {
 
     // Parse the ontology
     let parser = TurtleParser::new();
-    let ontology = parser.parse_str(&ontology_content)
+    let ontology = parser
+        .parse_str(&ontology_content)
         .map_err(|e| anyhow::anyhow!("Failed to parse ontology: {}", e))?;
 
     // Configure reasoner
@@ -39,7 +40,8 @@ pub fn check_consistency(ontology_path: &str) -> Result<bool> {
     let mut reasoner = TableauxReasoner::with_config(ontology, config);
 
     // Check consistency
-    let is_consistent = reasoner.is_consistent()
+    let is_consistent = reasoner
+        .is_consistent()
         .map_err(|e| anyhow::anyhow!("Reasoning failed: {}", e))?;
 
     Ok(is_consistent)
@@ -55,12 +57,14 @@ pub fn validate_ontology(ontology_path: &str) -> Result<owl2_reasoner::AcademicV
 
     // Parse the ontology
     let parser = TurtleParser::new();
-    let ontology = parser.parse_str(&ontology_content)
+    let ontology = parser
+        .parse_str(&ontology_content)
         .map_err(|e| anyhow::anyhow!("Failed to parse ontology: {}", e))?;
 
     // Validate
     let validator = owl2_reasoner::AcademicValidator::new();
-    let report = validator.validate(&ontology)
+    let report = validator
+        .validate(&ontology)
         .map_err(|e| anyhow::anyhow!("Validation failed: {}", e))?;
 
     Ok(report)

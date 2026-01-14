@@ -10,10 +10,10 @@
 //! - TLS configuration
 //! - Security headers
 
-use provchain_org::production::security::{ProductionClaims, SecurityConfig};
 use provchain_org::production::security::{
     AuditEventType, AuditResult, SecurityAuditEvent, SecurityManager, SecurityMiddleware,
 };
+use provchain_org::production::security::{ProductionClaims, SecurityConfig};
 use provchain_org::production::ProductionError;
 use std::collections::HashMap;
 use std::time::SystemTime;
@@ -392,12 +392,14 @@ mod security_manager_tests {
 
         // Log some test events
         for _ in 0..10 {
-            let event = create_test_audit_event(AuditEventType::Authentication, AuditResult::Success);
+            let event =
+                create_test_audit_event(AuditEventType::Authentication, AuditResult::Success);
             manager.log_audit_event(event).await.unwrap();
         }
 
         for _ in 0..5 {
-            let event = create_test_audit_event(AuditEventType::Authorization, AuditResult::Failure);
+            let event =
+                create_test_audit_event(AuditEventType::Authorization, AuditResult::Failure);
             manager.log_audit_event(event).await.unwrap();
         }
 
@@ -672,7 +674,12 @@ mod jwt_validation_tests {
             let result = middleware.validate_jwt(token);
             assert!(result.is_ok(), "Should handle malformed token: {}", token);
             // Should be invalid because token is malformed
-            assert_eq!(result.unwrap(), false, "Malformed token should be rejected: {}", token);
+            assert_eq!(
+                result.unwrap(),
+                false,
+                "Malformed token should be rejected: {}",
+                token
+            );
         }
     }
 
@@ -756,7 +763,10 @@ mod jwt_validation_tests {
         let result = middleware.validate_jwt(&valid_token);
 
         // Should fail because secret is too short
-        assert!(result.is_err(), "Should reject short config secret when JWT_SECRET env var is not set");
+        assert!(
+            result.is_err(),
+            "Should reject short config secret when JWT_SECRET env var is not set"
+        );
     }
 
     #[test]
@@ -817,11 +827,17 @@ mod rate_limiting_tests {
 
         // Next requests should be blocked
         let blocked_result = middleware.check_rate_limit(ip).unwrap();
-        assert!(!blocked_result, "Should block after burst capacity exhausted");
+        assert!(
+            !blocked_result,
+            "Should block after burst capacity exhausted"
+        );
 
         // Verify token count is low
         let token_count = middleware.get_rate_limit_token_count(ip).unwrap();
-        assert!(token_count < 1.0, "Token count should be near zero after burst");
+        assert!(
+            token_count < 1.0,
+            "Token count should be near zero after burst"
+        );
     }
 
     #[test]
@@ -864,16 +880,25 @@ mod rate_limiting_tests {
         }
 
         // Should be blocked
-        assert!(!middleware.check_rate_limit(ip).unwrap(), "Should be blocked after exhaustion");
+        assert!(
+            !middleware.check_rate_limit(ip).unwrap(),
+            "Should be blocked after exhaustion"
+        );
 
         // Wait for token refill (1 second)
         thread::sleep(Duration::from_secs(1));
 
         // Should now have 1 token available
-        assert!(middleware.check_rate_limit(ip).unwrap(), "Should allow after token refill");
+        assert!(
+            middleware.check_rate_limit(ip).unwrap(),
+            "Should allow after token refill"
+        );
 
         // Should be blocked again
-        assert!(!middleware.check_rate_limit(ip).unwrap(), "Should be blocked after using refilled token");
+        assert!(
+            !middleware.check_rate_limit(ip).unwrap(),
+            "Should be blocked after using refilled token"
+        );
     }
 
     #[test]
@@ -891,10 +916,16 @@ mod rate_limiting_tests {
         }
 
         // IP1 should be blocked
-        assert!(!middleware.check_rate_limit(ip1).unwrap(), "IP1 should be blocked");
+        assert!(
+            !middleware.check_rate_limit(ip1).unwrap(),
+            "IP1 should be blocked"
+        );
 
         // IP2 should still be allowed
-        assert!(middleware.check_rate_limit(ip2).unwrap(), "IP2 should be allowed");
+        assert!(
+            middleware.check_rate_limit(ip2).unwrap(),
+            "IP2 should be allowed"
+        );
 
         // Verify tracked IPs
         assert_eq!(middleware.tracked_ip_count(), 2, "Should track both IPs");
@@ -919,7 +950,11 @@ mod rate_limiting_tests {
             for _ in 0..10 {
                 let result = middleware.check_rate_limit(ip);
                 assert!(result.is_ok(), "IPv6 address {} should be handled", ip);
-                assert!(result.unwrap(), "IPv6 address {} should be allowed initially", ip);
+                assert!(
+                    result.unwrap(),
+                    "IPv6 address {} should be allowed initially",
+                    ip
+                );
             }
 
             // Should be blocked after burst
@@ -928,7 +963,11 @@ mod rate_limiting_tests {
         }
 
         // Verify all IPs are tracked separately
-        assert_eq!(middleware.tracked_ip_count(), 4, "Should track all IPv6 addresses separately");
+        assert_eq!(
+            middleware.tracked_ip_count(),
+            4,
+            "Should track all IPv6 addresses separately"
+        );
     }
 
     #[test]
@@ -942,7 +981,10 @@ mod rate_limiting_tests {
         // Even after many requests, should always be allowed
         for _ in 0..1000 {
             let result = middleware.check_rate_limit(ip).unwrap();
-            assert!(result, "Should allow all requests when rate limiting disabled");
+            assert!(
+                result,
+                "Should allow all requests when rate limiting disabled"
+            );
         }
 
         // Token count should be None since rate limiting is disabled
@@ -969,7 +1011,11 @@ mod rate_limiting_tests {
         middleware.cleanup_stale_rate_limits(0);
 
         // All entries should be cleaned up
-        assert_eq!(middleware.tracked_ip_count(), 0, "Should clean up all stale entries");
+        assert_eq!(
+            middleware.tracked_ip_count(),
+            0,
+            "Should clean up all stale entries"
+        );
     }
 
     #[test]
@@ -988,23 +1034,41 @@ mod rate_limiting_tests {
         }
 
         // Both should be blocked
-        assert!(!middleware.check_rate_limit(ip1).unwrap(), "IP1 should be blocked");
-        assert!(!middleware.check_rate_limit(ip2).unwrap(), "IP2 should be blocked");
+        assert!(
+            !middleware.check_rate_limit(ip1).unwrap(),
+            "IP1 should be blocked"
+        );
+        assert!(
+            !middleware.check_rate_limit(ip2).unwrap(),
+            "IP2 should be blocked"
+        );
 
         // Wait 1 second for partial refill
         thread::sleep(Duration::from_secs(1));
 
         // Both should have ~0.17 tokens (10/60 per second)
         // Not enough for a full request
-        assert!(!middleware.check_rate_limit(ip1).unwrap(), "IP1 should still be blocked after 1 second");
-        assert!(!middleware.check_rate_limit(ip2).unwrap(), "IP2 should still be blocked after 1 second");
+        assert!(
+            !middleware.check_rate_limit(ip1).unwrap(),
+            "IP1 should still be blocked after 1 second"
+        );
+        assert!(
+            !middleware.check_rate_limit(ip2).unwrap(),
+            "IP2 should still be blocked after 1 second"
+        );
 
         // Wait 6 more seconds (7 total = ~1.17 tokens each)
         thread::sleep(Duration::from_secs(6));
 
         // Now both should have enough tokens
-        assert!(middleware.check_rate_limit(ip1).unwrap(), "IP1 should be allowed after refill");
-        assert!(middleware.check_rate_limit(ip2).unwrap(), "IP2 should be allowed after refill");
+        assert!(
+            middleware.check_rate_limit(ip1).unwrap(),
+            "IP1 should be allowed after refill"
+        );
+        assert!(
+            middleware.check_rate_limit(ip2).unwrap(),
+            "IP2 should be allowed after refill"
+        );
     }
 
     #[test]
@@ -1031,7 +1095,10 @@ mod rate_limiting_tests {
 
         // Token count should decrease
         let after_count = middleware.get_rate_limit_token_count(ip).unwrap();
-        assert!(after_count < initial_count, "Token count should decrease after requests");
+        assert!(
+            after_count < initial_count,
+            "Token count should decrease after requests"
+        );
         assert!(after_count > 100.0, "Should still have tokens left");
     }
 }
@@ -1080,9 +1147,18 @@ mod input_sanitization_tests {
         let manager = SecurityManager::new(config).unwrap();
 
         let mut details = HashMap::new();
-        details.insert("key\nwith\nnewlines".to_string(), "value\twith\ttabs".to_string());
-        details.insert("key\"with\"quotes".to_string(), "value'with'apostrophes".to_string());
-        details.insert("key<with>brackets".to_string(), "value&with&ampersands".to_string());
+        details.insert(
+            "key\nwith\nnewlines".to_string(),
+            "value\twith\ttabs".to_string(),
+        );
+        details.insert(
+            "key\"with\"quotes".to_string(),
+            "value'with'apostrophes".to_string(),
+        );
+        details.insert(
+            "key<with>brackets".to_string(),
+            "value&with&ampersands".to_string(),
+        );
 
         let event = SecurityAuditEvent {
             timestamp: chrono::Utc::now(),
@@ -1200,9 +1276,18 @@ mod compliance_tests {
 
         // Log security violations
         let violations = vec![
-            (AuditEventType::SecurityViolation, "Invalid credentials".to_string()),
-            (AuditEventType::SecurityViolation, "Rate limit exceeded".to_string()),
-            (AuditEventType::SecurityViolation, "Suspicious activity detected".to_string()),
+            (
+                AuditEventType::SecurityViolation,
+                "Invalid credentials".to_string(),
+            ),
+            (
+                AuditEventType::SecurityViolation,
+                "Rate limit exceeded".to_string(),
+            ),
+            (
+                AuditEventType::SecurityViolation,
+                "Suspicious activity detected".to_string(),
+            ),
         ];
 
         for (event_type, action) in violations {
@@ -1321,7 +1406,8 @@ mod performance_tests {
             let manager_clone = manager.clone();
             let handle = tokio::spawn(async move {
                 for _j in 0..100 {
-                    let event = create_test_audit_event(AuditEventType::DataAccess, AuditResult::Success);
+                    let event =
+                        create_test_audit_event(AuditEventType::DataAccess, AuditResult::Success);
                     manager_clone.log_audit_event(event).await.unwrap();
                 }
             });

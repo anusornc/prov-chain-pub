@@ -48,22 +48,21 @@ impl PrivacyManager {
     /// Decrypt data using a shared secret key
     pub fn decrypt(encrypted: &EncryptedData, key: &[u8; 32]) -> Result<String> {
         let cipher = ChaCha20Poly1305::new(key.into());
-        
-        let nonce_bytes = hex::decode(&encrypted.nonce)
-            .map_err(|_| anyhow!("Invalid nonce hex"))?;
+
+        let nonce_bytes =
+            hex::decode(&encrypted.nonce).map_err(|_| anyhow!("Invalid nonce hex"))?;
         let nonce = Nonce::from_slice(&nonce_bytes);
 
-        let ciphertext_bytes = hex::decode(&encrypted.ciphertext)
-            .map_err(|_| anyhow!("Invalid ciphertext hex"))?;
+        let ciphertext_bytes =
+            hex::decode(&encrypted.ciphertext).map_err(|_| anyhow!("Invalid ciphertext hex"))?;
 
         let plaintext = cipher
             .decrypt(nonce, ciphertext_bytes.as_ref())
             .map_err(|e| anyhow!("Decryption failed: {}", e))?;
 
-        String::from_utf8(plaintext)
-            .map_err(|e| anyhow!("Invalid UTF-8 in decrypted data: {}", e))
+        String::from_utf8(plaintext).map_err(|e| anyhow!("Invalid UTF-8 in decrypted data: {}", e))
     }
-    
+
     /// Generate a new random 32-byte key
     pub fn generate_key() -> [u8; 32] {
         let mut key = [0u8; 32];
@@ -80,15 +79,13 @@ mod tests {
     fn test_encryption_decryption() {
         let key = PrivacyManager::generate_key();
         let data = "Sensitive Supply Chain Data: Batch #123 contains strict IP.";
-        
-        let encrypted = PrivacyManager::encrypt(data, &key, "group_a")
-            .expect("Encryption failed");
-            
+
+        let encrypted = PrivacyManager::encrypt(data, &key, "group_a").expect("Encryption failed");
+
         assert_ne!(encrypted.ciphertext, data);
-        
-        let decrypted = PrivacyManager::decrypt(&encrypted, &key)
-            .expect("Decryption failed");
-            
+
+        let decrypted = PrivacyManager::decrypt(&encrypted, &key).expect("Decryption failed");
+
         assert_eq!(decrypted, data);
     }
 
@@ -97,10 +94,9 @@ mod tests {
         let key1 = PrivacyManager::generate_key();
         let key2 = PrivacyManager::generate_key();
         let data = "Sensitive Data";
-        
-        let encrypted = PrivacyManager::encrypt(data, &key1, "group_a")
-            .unwrap();
-            
+
+        let encrypted = PrivacyManager::encrypt(data, &key1, "group_a").unwrap();
+
         let result = PrivacyManager::decrypt(&encrypted, &key2);
         assert!(result.is_err(), "Decryption should fail with wrong key");
     }

@@ -175,11 +175,8 @@ impl AlertManager {
     async fn send_email_alert(&self, alert: &IntegrityAlert) -> Result<()> {
         if let Some(email_config) = &self.email_config {
             // Format email content
-            let subject = format!(
-                "[ProvChain Alert] {:?}",
-                alert.alert_type
-            );
-            
+            let subject = format!("[ProvChain Alert] {:?}", alert.alert_type);
+
             let _body = format!(
                 r#"
 Integrity Alert Notification
@@ -223,12 +220,14 @@ This is an automated message from ProvChain Integrity Monitoring System.
                 alert.monitoring_stats.warning_checks,
                 alert.monitoring_stats.critical_checks,
                 if alert.monitoring_stats.total_checks > 0 {
-                    (alert.monitoring_stats.healthy_checks as f64 / alert.monitoring_stats.total_checks as f64) * 100.0
+                    (alert.monitoring_stats.healthy_checks as f64
+                        / alert.monitoring_stats.total_checks as f64)
+                        * 100.0
                 } else {
                     0.0
                 }
             );
-            
+
             // In production, this would use an email library like lettre
             // For now, we log the email that would be sent
             info!(
@@ -236,26 +235,29 @@ This is an automated message from ProvChain Integrity Monitoring System.
                 email_config.recipients.join(", "),
                 subject
             );
-            
+
             // TODO: Implement actual email sending using lettre crate
             // let email = Message::builder()
             //     .from(email_config.username.parse()?)
             //     .to(email_config.recipients[0].parse()?)
             //     .subject(subject)
             //     .body(body)?;
-            // 
+            //
             // let mailer = SmtpTransport::relay(&email_config.smtp_server)?
             //     .credentials(Credentials::new(
             //         email_config.username.clone(),
             //         email_config.password.clone(),
             //     ))
             //     .build();
-            // 
+            //
             // mailer.send(&email).context("Failed to send email alert")?;
-            
+
             Ok(())
         } else {
-            debug!("Email alert would be sent (no email configured): {}", alert.message);
+            debug!(
+                "Email alert would be sent (no email configured): {}",
+                alert.message
+            );
             Ok(())
         }
     }
@@ -264,7 +266,9 @@ This is an automated message from ProvChain Integrity Monitoring System.
         if let Some(webhook_config) = &self.webhook_config {
             // Calculate health percentage
             let health_percent = if alert.monitoring_stats.total_checks > 0 {
-                (alert.monitoring_stats.healthy_checks as f64 / alert.monitoring_stats.total_checks as f64) * 100.0
+                (alert.monitoring_stats.healthy_checks as f64
+                    / alert.monitoring_stats.total_checks as f64)
+                    * 100.0
             } else {
                 0.0
             };
@@ -287,10 +291,7 @@ This is an automated message from ProvChain Integrity Monitoring System.
                 }
             });
 
-            info!(
-                "WEBHOOK ALERT - URL: {}",
-                webhook_config.url
-            );
+            info!("WEBHOOK ALERT - URL: {}", webhook_config.url);
 
             // TODO: Implement actual webhook HTTP POST using reqwest
             // let client = reqwest::Client::new();
@@ -309,7 +310,10 @@ This is an automated message from ProvChain Integrity Monitoring System.
 
             Ok(())
         } else {
-            debug!("Webhook alert would be sent (no webhook configured): {}", alert.message);
+            debug!(
+                "Webhook alert would be sent (no webhook configured): {}",
+                alert.message
+            );
             Ok(())
         }
     }
@@ -318,7 +322,9 @@ This is an automated message from ProvChain Integrity Monitoring System.
         if let Some(_slack_config) = &self.slack_config {
             // Calculate health percentage
             let health_percent = if alert.monitoring_stats.total_checks > 0 {
-                (alert.monitoring_stats.healthy_checks as f64 / alert.monitoring_stats.total_checks as f64) * 100.0
+                (alert.monitoring_stats.healthy_checks as f64
+                    / alert.monitoring_stats.total_checks as f64)
+                    * 100.0
             } else {
                 0.0
             };
@@ -379,9 +385,7 @@ This is an automated message from ProvChain Integrity Monitoring System.
                 ]
             });
 
-            info!(
-                "SLACK ALERT - Webhook configured",
-            );
+            info!("SLACK ALERT - Webhook configured",);
 
             // TODO: Implement actual Slack webhook HTTP POST using reqwest
             // let client = reqwest::Client::new();
@@ -399,7 +403,10 @@ This is an automated message from ProvChain Integrity Monitoring System.
 
             Ok(())
         } else {
-            debug!("Slack alert would be sent (no Slack configured): {}", alert.message);
+            debug!(
+                "Slack alert would be sent (no Slack configured): {}",
+                alert.message
+            );
             Ok(())
         }
     }
@@ -1080,9 +1087,7 @@ impl IntegrityMonitor {
         if cpus.is_empty() {
             0.0
         } else {
-            let usage_sum: f32 = cpus.iter()
-                .map(|cpu| cpu.cpu_usage())
-                .sum();
+            let usage_sum: f32 = cpus.iter().map(|cpu| cpu.cpu_usage()).sum();
             (usage_sum / cpus.len() as f32) as f64
         }
     }

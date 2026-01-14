@@ -222,7 +222,20 @@ cd benchmark-toolkit && ./run.sh
 
 ### Recent Enhancements
 
-**Project Health & Contributor Documentation** (2026-01-14):
+**Source Code Enhancements** (Commit 65ac20e):
+- **Transaction Handlers** (`src/web/handlers/transaction.rs`)
+  - Enhanced triple validation with URI and literal validation
+  - Privacy key encryption support via `privacy_key_id` parameter
+  - ChaCha20-Poly1305 encrypted block submission workflow
+  - Secure block signing and hash recalculation for encrypted data
+  - Improved error handling with specific error codes
+- **Blockchain Validator** (`src/integrity/blockchain_validator.rs`)
+  - Enhanced SPARQL-based chain reconstruction validation
+  - Graph naming consistency checks (expected vs actual URIs)
+  - RDF round-trip validation (extracted vs parsed triples)
+  - Comprehensive metadata validation (timestamp, hash, previous_hash)
+
+**Project Health & Contributor Documentation** (Commit 65ac20e):
 - **CONTRIBUTING.md** - Comprehensive contributor guide (200+ lines)
   - Development setup with quick start instructions
   - Project structure and key components overview
@@ -275,6 +288,13 @@ cd benchmark-toolkit && ./run.sh
   - `tests/wallet_encryption_tests.rs` - Enhanced readability
   - `tests/key_rotation_tests.rs` - Minor formatting updates
   - `tests/load_tests.rs` - Minor formatting updates
+
+**Transaction Handler Enhancements** (`src/web/handlers/transaction.rs`):
+- Enhanced triple validation with URI and literal validation via `validate_uri()` and `validate_literal()`
+- Privacy key encryption support via `privacy_key_id` parameter
+- ChaCha20-Poly1305 encrypted block submission workflow
+- Secure block signing and hash recalculation for encrypted data
+- Improved error handling with specific error codes and messages
 
 **Integrity Validation System** (`src/integrity/`):
 - **Transaction Counter** - Parses RDF content to count actual triples/transactions

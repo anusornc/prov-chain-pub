@@ -1265,13 +1265,19 @@ impl RDFStore {
         // Optimize: pre-index triples by blank nodes to avoid O(n^2) lookups
         let mut bnode_to_triples_as_subject = HashMap::new();
         let mut bnode_to_triples_as_object = HashMap::new();
-        
+
         for (i, triple) in triples.iter().enumerate() {
             if let Subject::BlankNode(bn) = &triple.subject {
-                bnode_to_triples_as_subject.entry(bn.as_str().to_string()).or_insert_with(Vec::new).push(i);
+                bnode_to_triples_as_subject
+                    .entry(bn.as_str().to_string())
+                    .or_insert_with(Vec::new)
+                    .push(i);
             }
             if let Term::BlankNode(bn) = &triple.object {
-                bnode_to_triples_as_object.entry(bn.as_str().to_string()).or_insert_with(Vec::new).push(i);
+                bnode_to_triples_as_object
+                    .entry(bn.as_str().to_string())
+                    .or_insert_with(Vec::new)
+                    .push(i);
             }
         }
 
@@ -1415,11 +1421,11 @@ impl RDFStore {
     /// Calculate the state root hash representing the current state of the knowledge graph
     /// Uses a Merkle tree approach over all RDF triples for efficient verification
     pub fn calculate_state_root(&self) -> String {
-        use sha2::{Sha256, Digest};
-        
+        use sha2::{Digest, Sha256};
+
         // Collect all triples in a deterministic order
         let mut triple_hashes: Vec<String> = Vec::new();
-        
+
         // Iterate over all quads in the store
         for quad_result in self.store.iter() {
             if let Ok(quad) = quad_result {
@@ -1431,7 +1437,7 @@ impl RDFStore {
                     quad.predicate.to_string(),
                     quad.object.to_string()
                 );
-                
+
                 // Hash this quad
                 let mut hasher = Sha256::new();
                 hasher.update(quad_str.as_bytes());
@@ -1439,19 +1445,19 @@ impl RDFStore {
                 triple_hashes.push(hash);
             }
         }
-        
+
         // Sort for deterministic ordering
         triple_hashes.sort();
-        
+
         // If no triples, return zero hash
         if triple_hashes.is_empty() {
             return format!("{:064x}", 0u64);
         }
-        
+
         // Build Merkle tree
         while triple_hashes.len() > 1 {
             let mut new_level = Vec::new();
-            
+
             // Pair up hashes and combine them
             for chunk in triple_hashes.chunks(2) {
                 if chunk.len() == 2 {
@@ -1466,10 +1472,10 @@ impl RDFStore {
                     new_level.push(chunk[0].clone());
                 }
             }
-            
+
             triple_hashes = new_level;
         }
-        
+
         // Return the root hash
         triple_hashes[0].clone()
     }

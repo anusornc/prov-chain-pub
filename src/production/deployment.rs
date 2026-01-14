@@ -1,9 +1,9 @@
 //! Deployment automation and orchestration for production
-//! 
+//!
 //! # ⚠️ ARCHITECTURAL SIMULATION ⚠️
-//! This module provides a high-fidelity simulation of deployment strategies 
-//! (Blue-Green, Canary, Rolling) for architectural demonstration and 
-//! performance modeling. In a live production environment, these methods 
+//! This module provides a high-fidelity simulation of deployment strategies
+//! (Blue-Green, Canary, Rolling) for architectural demonstration and
+//! performance modeling. In a live production environment, these methods
 //! would interact with container orchestrators like Kubernetes or cloud APIs.
 
 use crate::production::ProductionError;
@@ -297,7 +297,10 @@ impl DeploymentManager {
         &self,
         deployment_id: &str,
     ) -> Result<(), ProductionError> {
-        tracing::info!("Executing blue-green deployment simulation for {}", deployment_id);
+        tracing::info!(
+            "Executing blue-green deployment simulation for {}",
+            deployment_id
+        );
 
         // Update deployment status
         self.update_deployment_status(deployment_id, DeploymentStatus::InProgress)

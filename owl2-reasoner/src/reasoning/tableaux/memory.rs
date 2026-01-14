@@ -973,7 +973,8 @@ impl LockFreeMemoryManager {
         interner.insert(s_hash, leaked);
 
         // Update stats
-        self.total_bytes_allocated.fetch_add(s.len(), Ordering::Relaxed);
+        self.total_bytes_allocated
+            .fetch_add(s.len(), Ordering::Relaxed);
         LOCAL_ARENA_COUNT.fetch_add(1, Ordering::Relaxed);
 
         Ok(LockFreeArenaNode {
@@ -1679,7 +1680,7 @@ mod tests {
         assert_eq!(stats.allocated_constraints, 0);
         assert_eq!(stats.total_bytes_allocated, 0);
         // Arena count might be non-zero due to static thread locals
-        
+
         assert_eq!(stats.string_intern_count, 0);
     }
 
@@ -2103,7 +2104,6 @@ mod tests {
         let _stats = manager.get_stats();
         // Note: The exact string_intern_count depends on implementation details
         // of how strings are tracked in the interner
-        
     }
 
     #[test]
@@ -2182,7 +2182,7 @@ mod tests {
                 if stats.total_allocations() > 0 {
                     assert!(stats.avg_allocation_size() > 0.0);
                     assert!(stats.total_bytes_allocated > 0);
-                    
+
                 }
             }
 

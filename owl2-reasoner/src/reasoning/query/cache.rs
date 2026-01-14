@@ -1637,11 +1637,11 @@ mod tests {
         for _ in 0..10 {
             let _ = index.get_or_create(&pattern);
         }
-        
+
         // Manually record more accesses if needed to ensure access_count >= threshold
         let pattern_hash = index.compute_pattern_hash(&pattern);
         for _ in 0..10 {
-             index.record_access(&pattern_hash, Duration::from_millis(1));
+            index.record_access(&pattern_hash, Duration::from_millis(1));
         }
 
         let hot_patterns = index.get_hot_patterns();

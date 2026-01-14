@@ -418,9 +418,15 @@ mod tests {
 
         // Verify cold chain integrity
         let environmental_conditions = &trace_report.blockchain_trace.environmental_conditions;
-        println!("Temperature readings found: {}", environmental_conditions.len());
+        println!(
+            "Temperature readings found: {}",
+            environmental_conditions.len()
+        );
         for (i, reading) in environmental_conditions.iter().enumerate() {
-            println!("  Reading {}: temp={:?}, humidity={:?}", i, reading.temperature, reading.humidity);
+            println!(
+                "  Reading {}: temp={:?}, humidity={:?}",
+                i, reading.temperature, reading.humidity
+            );
         }
 
         let _temperature_violations = environmental_conditions
@@ -688,7 +694,10 @@ mod tests {
 
     // Helper functions for test data creation
 
-    fn create_large_knowledge_graph_with_duplicates(size: usize, duplicate_rate: f64) -> Result<KnowledgeGraph> {
+    fn create_large_knowledge_graph_with_duplicates(
+        size: usize,
+        duplicate_rate: f64,
+    ) -> Result<KnowledgeGraph> {
         use provchain_org::knowledge_graph::{KnowledgeEntity, KnowledgeRelationship};
 
         let mut graph = KnowledgeGraph::new();
@@ -774,18 +783,66 @@ mod tests {
 
         // Create entities at different supply chain tiers
         let entity_data = vec![
-            ("FARM_001", "Producer", "Green Valley Farm",
-             vec![("name", "Green Valley Farm"), ("type", "Farm"), ("location", "California")]),
-            ("PROCESSOR_001", "Processor", "FreshPack Processing",
-             vec![("name", "FreshPack Processing"), ("type", "Processing"), ("capacity", "10000 tons/day")]),
-            ("DISTRIBUTOR_001", "Distributor", "Regional Cold Chain",
-             vec![("name", "Regional Cold Chain"), ("type", "Distribution"), ("fleet", "50 refrigerated trucks")]),
-            ("RETAILER_001", "Retailer", "FreshMart Stores",
-             vec![("name", "FreshMart Stores"), ("type", "Retail"), ("stores", "150 locations")]),
-            ("SUPPLIER_A", "Supplier", "Global Ingredients Inc",
-             vec![("name", "Global Ingredients"), ("type", "Supplier"), ("certification", "ISO 9001")]),
-            ("SUPPLIER_B", "Supplier", "Quality Packaging Ltd",
-             vec![("name", "Quality Packaging"), ("type", "Packaging"), ("sustainability", "100% recyclable")]),
+            (
+                "FARM_001",
+                "Producer",
+                "Green Valley Farm",
+                vec![
+                    ("name", "Green Valley Farm"),
+                    ("type", "Farm"),
+                    ("location", "California"),
+                ],
+            ),
+            (
+                "PROCESSOR_001",
+                "Processor",
+                "FreshPack Processing",
+                vec![
+                    ("name", "FreshPack Processing"),
+                    ("type", "Processing"),
+                    ("capacity", "10000 tons/day"),
+                ],
+            ),
+            (
+                "DISTRIBUTOR_001",
+                "Distributor",
+                "Regional Cold Chain",
+                vec![
+                    ("name", "Regional Cold Chain"),
+                    ("type", "Distribution"),
+                    ("fleet", "50 refrigerated trucks"),
+                ],
+            ),
+            (
+                "RETAILER_001",
+                "Retailer",
+                "FreshMart Stores",
+                vec![
+                    ("name", "FreshMart Stores"),
+                    ("type", "Retail"),
+                    ("stores", "150 locations"),
+                ],
+            ),
+            (
+                "SUPPLIER_A",
+                "Supplier",
+                "Global Ingredients Inc",
+                vec![
+                    ("name", "Global Ingredients"),
+                    ("type", "Supplier"),
+                    ("certification", "ISO 9001"),
+                ],
+            ),
+            (
+                "SUPPLIER_B",
+                "Supplier",
+                "Quality Packaging Ltd",
+                vec![
+                    ("name", "Quality Packaging"),
+                    ("type", "Packaging"),
+                    ("sustainability", "100% recyclable"),
+                ],
+            ),
         ];
 
         for (uri, entity_type, label, props) in entity_data {
@@ -833,9 +890,10 @@ mod tests {
     fn create_temporal_supply_chain_data() -> Result<Vec<String>> {
         // Create time-series supply chain data
         let mut temporal_data = Vec::new();
-        
+
         for day in 0..5 {
-            let data = format!(r#"
+            let data = format!(
+                r#"
                 @prefix ex: <http://example.org/> .
                 @prefix prov: <http://www.w3.org/ns/prov#> .
                 @prefix food: <http://foodsafety.org/> .
@@ -849,17 +907,26 @@ mod tests {
                 ex:TemporalEvent{:03} a food:SupplyChainEvent ;
                     food:timestamp "2024-01-{:02}T{:02}:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
                     food:temperature {} .
-            "#, day, day, day, day, day + 10, day * 6, day % 24, 4.0 + day as f64 * 0.5);
+            "#,
+                day,
+                day,
+                day,
+                day,
+                day + 10,
+                day * 6,
+                day % 24,
+                4.0 + day as f64 * 0.5
+            );
             temporal_data.push(data);
         }
-        
+
         Ok(temporal_data)
     }
 
     fn create_food_safety_blockchain() -> Result<Blockchain> {
         // Create blockchain for food safety testing (FSMA compliance)
         let mut blockchain = Blockchain::new();
-        
+
         // Genesis block with farm origin
         let genesis_data = r#"
             @prefix ex: <http://example.org/> .
@@ -880,7 +947,7 @@ mod tests {
                 prov:startedAtTime "2024-01-15T06:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         "#;
         blockchain.add_block(genesis_data.to_string())?;
-        
+
         // Processing block - washing and packing
         let processing_data = r#"
             @prefix ex: <http://example.org/> .
@@ -903,7 +970,7 @@ mod tests {
                 prov:used ex:ModifiedAtmosphereSystem001 .
         "#;
         blockchain.add_block(processing_data.to_string())?;
-        
+
         // Distribution block - cold chain tracking
         let distribution_data = r#"
             @prefix ex: <http://example.org/> .
@@ -933,7 +1000,7 @@ mod tests {
                 prov:generatedAtTime "2024-01-15T20:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         "#;
         blockchain.add_block(distribution_data.to_string())?;
-        
+
         // Retail block - store receipt
         let retail_data = r#"
             @prefix ex: <http://example.org/> .
@@ -948,14 +1015,14 @@ mod tests {
                 prov:startedAtTime "2024-01-16T08:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         "#;
         blockchain.add_block(retail_data.to_string())?;
-        
+
         Ok(blockchain)
     }
 
     fn create_electronics_supply_chain_blockchain() -> Result<Blockchain> {
         // Create blockchain for electronics supply chain (conflict minerals compliance)
         let mut blockchain = Blockchain::new();
-        
+
         // Mining origin block
         let mining_data = r#"
             @prefix ex: <http://example.org/> .
@@ -976,7 +1043,7 @@ mod tests {
                 prov:startedAtTime "2024-01-10T08:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         "#;
         blockchain.add_block(mining_data.to_string())?;
-        
+
         // Smelter block
         let smelter_data = r#"
             @prefix ex: <http://example.org/> .
@@ -999,7 +1066,7 @@ mod tests {
                 prov:startedAtTime "2024-01-12T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         "#;
         blockchain.add_block(smelter_data.to_string())?;
-        
+
         // Component manufacturing block
         let component_data = r#"
             @prefix ex: <http://example.org/> .
@@ -1022,7 +1089,7 @@ mod tests {
                 prov:startedAtTime "2024-01-14T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         "#;
         blockchain.add_block(component_data.to_string())?;
-        
+
         // PCB assembly block
         let pcb_data = r#"
             @prefix ex: <http://example.org/> .
@@ -1043,14 +1110,14 @@ mod tests {
                 prov:startedAtTime "2024-01-16T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         "#;
         blockchain.add_block(pcb_data.to_string())?;
-        
+
         Ok(blockchain)
     }
 
     fn create_pharmaceutical_blockchain() -> Result<Blockchain> {
         // Create blockchain for pharmaceutical cold chain testing
         let mut blockchain = Blockchain::new();
-        
+
         // API manufacturing block
         let api_manufacturing_data = r#"
             @prefix ex: <http://example.org/> .
@@ -1074,7 +1141,7 @@ mod tests {
                 pharma:fdaApproval "NDA-123456" .
         "#;
         blockchain.add_block(api_manufacturing_data.to_string())?;
-        
+
         // Drug formulation block
         let formulation_data = r#"
             @prefix ex: <http://example.org/> .
@@ -1096,7 +1163,7 @@ mod tests {
                 pharma:temperatureControlled "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
         "#;
         blockchain.add_block(formulation_data.to_string())?;
-        
+
         // Fill and finish block
         let fill_finish_data = r#"
             @prefix ex: <http://example.org/> .
@@ -1122,12 +1189,13 @@ mod tests {
                 pharma:environmentalMonitoring "continuous" .
         "#;
         blockchain.add_block(fill_finish_data.to_string())?;
-        
+
         // Cold chain logistics blocks
         for i in 1..=5 {
             let hour = 8 + (i * 4);
             let temp = 3.0 + (i as f64 * 0.3);
-            let cold_chain_data = format!(r#"
+            let cold_chain_data = format!(
+                r#"
             @prefix ex: <http://example.org/> .
             @prefix prov: <http://www.w3.org/ns/prov#> .
             @prefix pharma: <http://pharmaceutical.org/> .
@@ -1139,10 +1207,12 @@ mod tests {
                 pharma:location "Cold Chain Transport - Leg {}" ;
                 pharma:withinSpec "true"^^<http://www.w3.org/2001/XMLSchema#boolean> ;
                 prov:generatedAtTime "2024-01-15T{:02}:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-        "#, i, temp, i, hour);
+        "#,
+                i, temp, i, hour
+            );
             blockchain.add_block(cold_chain_data)?;
         }
-        
+
         // Regulatory approval block
         let regulatory_data = r#"
             @prefix ex: <http://example.org/> .
@@ -1163,7 +1233,7 @@ mod tests {
                 pharma:releasedBy "Qualified Person (QP)" .
         "#;
         blockchain.add_block(regulatory_data.to_string())?;
-        
+
         Ok(blockchain)
     }
 
@@ -1255,18 +1325,30 @@ mod tests {
 
     fn create_historical_quality_events() -> Result<HashMap<String, Vec<QualityEvent>>> {
         let mut historical_data = HashMap::new();
-        
+
         // Add quality events for different batches
         let batches = vec![
             ("BATCH_2024_001", 0.95, None),
-            ("BATCH_2024_002", 0.92, Some("Minor temperature excursion".to_string())),
-            ("BATCH_2024_003", 0.35, Some("Quality failure - contamination".to_string())),
+            (
+                "BATCH_2024_002",
+                0.92,
+                Some("Minor temperature excursion".to_string()),
+            ),
+            (
+                "BATCH_2024_003",
+                0.35,
+                Some("Quality failure - contamination".to_string()),
+            ),
             ("BATCH_2024_004", 0.89, None),
             ("BATCH_2024_005", 0.97, None),
             ("KNOWN_GOOD_BATCH", 0.99, None),
-            ("KNOWN_BAD_BATCH", 0.15, Some("Multiple quality violations".to_string())),
+            (
+                "KNOWN_BAD_BATCH",
+                0.15,
+                Some("Multiple quality violations".to_string()),
+            ),
         ];
-        
+
         for (batch_id, score, issue) in batches {
             let event = QualityEvent {
                 batch_id: batch_id.to_string(),
@@ -1276,14 +1358,16 @@ mod tests {
             };
             historical_data.insert(batch_id.to_string(), vec![event]);
         }
-        
+
         Ok(historical_data)
     }
 
-    fn create_multi_industry_traceability_engine(blockchains: Vec<Blockchain>) -> Result<MultiIndustryTraceabilityEngine> {
+    fn create_multi_industry_traceability_engine(
+        blockchains: Vec<Blockchain>,
+    ) -> Result<MultiIndustryTraceabilityEngine> {
         // Create cross-industry mappings
         let mut cross_industry_mappings = HashMap::new();
-        
+
         cross_industry_mappings.insert(
             "Global Packaging Solutions".to_string(),
             vec![
@@ -1292,7 +1376,7 @@ mod tests {
                 "http://conflictminerals.org/packaging/003".to_string(),
             ],
         );
-        
+
         cross_industry_mappings.insert(
             "Cold Chain Logistics Inc".to_string(),
             vec![
@@ -1300,7 +1384,7 @@ mod tests {
                 "http://pharmaceutical.org/logistics/002".to_string(),
             ],
         );
-        
+
         cross_industry_mappings.insert(
             "Quality Testing Labs".to_string(),
             vec![
@@ -1309,7 +1393,7 @@ mod tests {
                 "http://conflictminerals.org/testing/003".to_string(),
             ],
         );
-        
+
         Ok(MultiIndustryTraceabilityEngine {
             blockchains,
             cross_industry_mappings,
@@ -1368,13 +1452,18 @@ impl TraceabilityEngine {
         let mut materials: Vec<Material> = Vec::new();
         let mut supply_chain_depth = 0;
         let mut conflict_mineral_risk = 0.0;
-        
+
         // Parse blockchain blocks to extract traceability data
         for block in &self.blockchain.chain {
             let data = &block.data;
-            
+
             // Extract origin information
-            if data.contains("farm") || data.contains("Farm") || data.contains("mine") || data.contains("Mine") || data.contains("Facility") {
+            if data.contains("farm")
+                || data.contains("Farm")
+                || data.contains("mine")
+                || data.contains("Mine")
+                || data.contains("Facility")
+            {
                 // Try to extract from prefixed property format (e.g., food:origin "...")
                 if let Some(start) = data.find("food:origin \"") {
                     if let Some(end) = data[start + 13..].find('"') {
@@ -1392,10 +1481,13 @@ impl TraceabilityEngine {
                     origin = Some("GMP Facility A, Germany".to_string());
                 }
             }
-            
+
             // Extract processing steps
-            if data.contains("ProcessingEvent") || data.contains("ManufacturingEvent") 
-               || data.contains("SmeltingEvent") || data.contains("FormulationEvent") {
+            if data.contains("ProcessingEvent")
+                || data.contains("ManufacturingEvent")
+                || data.contains("SmeltingEvent")
+                || data.contains("FormulationEvent")
+            {
                 if let Some(start) = data.find("processType \"") {
                     if let Some(end) = data[start + 12..].find('"') {
                         processing_steps.push(data[start + 12..start + 12 + end].to_string());
@@ -1408,7 +1500,7 @@ impl TraceabilityEngine {
                     processing_steps.push("Aseptic Formulation".to_string());
                 }
             }
-            
+
             // Extract distribution points
             if data.contains("DistributionEvent") || data.contains("RetailEvent") {
                 if let Some(start) = data.find("destination \"") {
@@ -1425,12 +1517,15 @@ impl TraceabilityEngine {
                     distribution_points.push("FreshMart Stores #1234".to_string());
                 }
             }
-            
+
             // Extract environmental conditions
             if data.contains("temperature") {
                 let lines: Vec<&str> = data.lines().collect();
                 for line in &lines {
-                    if line.contains("food:temperature") || line.contains("pharma:temperature") || line.contains("storageTemperature") {
+                    if line.contains("food:temperature")
+                        || line.contains("pharma:temperature")
+                        || line.contains("storageTemperature")
+                    {
                         let parts: Vec<&str> = line.split_whitespace().collect();
                         // Temperature is typically after the property name
                         // Format: "prefix:temperature value ;" or "storageTemperature value ;"
@@ -1439,10 +1534,16 @@ impl TraceabilityEngine {
                             if let Ok(temp) = part.parse::<f64>() {
                                 // Found a numeric value that could be temperature
                                 let humidity = if data.contains("humidity") {
-                                    if let Some(h_line) = lines.iter().find(|l| l.contains("humidity")) {
-                                        let h_parts: Vec<&str> = h_line.split_whitespace().collect();
+                                    if let Some(h_line) =
+                                        lines.iter().find(|l| l.contains("humidity"))
+                                    {
+                                        let h_parts: Vec<&str> =
+                                            h_line.split_whitespace().collect();
                                         // Find first numeric value in humidity line
-                                        h_parts.iter().find_map(|s| s.parse::<f64>().ok()).unwrap_or(65.0)
+                                        h_parts
+                                            .iter()
+                                            .find_map(|s| s.parse::<f64>().ok())
+                                            .unwrap_or(65.0)
                                     } else {
                                         65.0
                                     }
@@ -1459,7 +1560,7 @@ impl TraceabilityEngine {
                     }
                 }
             }
-            
+
             // Extract certifications
             if data.contains("certification") || data.contains("Certification") {
                 if data.contains("SMELTER_CERTIFICATION") || data.contains("RMAP") {
@@ -1473,13 +1574,13 @@ impl TraceabilityEngine {
                     });
                 }
             }
-            
+
             // Extract due diligence records
             if data.contains("dueDiligence") || data.contains("audit") || data.contains("Audit") {
                 due_diligence_records.push("Conflict Minerals Audit Report".to_string());
                 due_diligence_records.push("Supplier Declaration Form".to_string());
             }
-            
+
             // Extract materials
             if data.contains("materialType") || data.contains("material ") {
                 if data.contains("Tantalum") {
@@ -1500,20 +1601,28 @@ impl TraceabilityEngine {
                     });
                 }
             }
-            
+
             // Extract ingredient batches (API, components)
             if data.contains("ActivePharmaceuticalIngredient") || data.contains("componentType") {
                 if let Some(start) = data.find("batchId \"") {
                     if let Some(end) = data[start + 10..].find('"') {
                         ingredient_batches.push(IngredientBatch {
-                            batch_type: if data.contains("API") { "API" } else { "Component" }.to_string(),
+                            batch_type: if data.contains("API") {
+                                "API"
+                            } else {
+                                "Component"
+                            }
+                            .to_string(),
                         });
                     }
                 }
             }
-            
+
             // Extract regulatory approvals
-            if data.contains("RegulatoryApproval") || data.contains("FDA") || data.contains("approval") {
+            if data.contains("RegulatoryApproval")
+                || data.contains("FDA")
+                || data.contains("approval")
+            {
                 if let Some(start) = data.find("authority \"") {
                     if let Some(end) = data[start + 11..].find('"') {
                         regulatory_approvals.push(RegulatoryApproval {
@@ -1530,9 +1639,9 @@ impl TraceabilityEngine {
                     });
                 }
             }
-            
+
             supply_chain_depth += 1;
-            
+
             // Calculate conflict mineral risk (lower is better)
             if data.contains("conflictFree \"true\"") {
                 conflict_mineral_risk = 0.0;
@@ -1540,7 +1649,7 @@ impl TraceabilityEngine {
                 conflict_mineral_risk = 1.0;
             }
         }
-        
+
         // Extract immediate suppliers and customers
         if !processing_steps.is_empty() {
             immediate_suppliers.push(processing_steps.first().cloned().unwrap_or_default());
@@ -1549,7 +1658,7 @@ impl TraceabilityEngine {
         if !distribution_points.is_empty() {
             immediate_customers.push(distribution_points.first().cloned().unwrap_or_default());
         }
-        
+
         // Ensure we have at least one environmental reading
         if environmental_conditions.is_empty() {
             environmental_conditions.push(EnvironmentalReading {
@@ -1557,14 +1666,14 @@ impl TraceabilityEngine {
                 humidity: Some(75.0),
             });
         }
-        
+
         // Ensure we have at least one certification if electronics
         if materials.iter().any(|m| m.material_type == "tantalum") && certifications.is_empty() {
             certifications.push(Certification {
                 cert_type: "SMELTER_CERTIFICATION".to_string(),
             });
         }
-        
+
         Ok(TraceabilityReport {
             blockchain_trace: BlockchainTrace {
                 origin,
@@ -1621,7 +1730,7 @@ impl GraphAnalytics {
         if !self.affected_products_cache.is_empty() {
             return self.affected_products_cache.clone();
         }
-        
+
         // Generate realistic affected products list
         vec![
             "Packaged Salad Mix - Family Size".to_string(),
@@ -1669,28 +1778,28 @@ impl GraphQualityValidator {
 
     pub fn validate_graph_quality(&self) -> Result<GraphQualityReport> {
         let stats = self.graph_db.get_graph_statistics();
-        
+
         // Calculate graph density
         let density = self.graph_db.calculate_graph_density();
-        
+
         // Calculate clustering coefficient (simplified)
         let clustering_coefficient = if stats.average_degree > 0.0 {
             0.65 / (1.0 + stats.average_degree * 0.1)
         } else {
             0.0
         };
-        
+
         // Average path length (estimate based on graph size)
         let average_path_length = if stats.num_entities > 1 {
             (stats.num_entities as f64).ln() / (1.0 + density.ln())
         } else {
             0.0
         };
-        
+
         // Entity resolution metrics
         let entity_resolution_precision = 0.92;
         let entity_resolution_recall = 0.88;
-        
+
         // Anomalies
         let anomalies = if density < 0.01 {
             vec!["Low graph density - sparse connections".to_string()]
@@ -1699,11 +1808,13 @@ impl GraphQualityValidator {
         } else {
             Vec::new()
         };
-        
+
         // Overall score
-        let overall_score = (entity_resolution_precision + entity_resolution_recall 
-            + (1.0 - anomalies.len() as f64 * 0.1)) / 3.0;
-        
+        let overall_score = (entity_resolution_precision
+            + entity_resolution_recall
+            + (1.0 - anomalies.len() as f64 * 0.1))
+            / 3.0;
+
         Ok(GraphQualityReport {
             density,
             clustering_coefficient,
@@ -1739,19 +1850,24 @@ impl GraphStreamProcessor {
         block_index: usize,
     ) -> Result<GraphUpdateReport> {
         let start = Instant::now();
-        
+
         // Parse block data and extract entities
         let mut entities_added = 0;
         let mut relationships_added = 0;
         let mut significant_changes = Vec::new();
-        
+
         // Simple RDF parsing for entities
         for line in block_data.lines() {
             if line.contains(" a ") && !line.trim().is_empty() {
                 let parts: Vec<&str> = line.split_whitespace().collect();
                 if !parts.is_empty() && parts[0].starts_with("ex:") {
                     let entity_uri = parts[0].replace("ex:", "http://example.org/");
-                    if self.graph_db.get_entities().iter().all(|e| e.1.uri != entity_uri) {
+                    if self
+                        .graph_db
+                        .get_entities()
+                        .iter()
+                        .all(|e| e.1.uri != entity_uri)
+                    {
                         entities_added += 1;
                     }
                 }
@@ -1761,29 +1877,33 @@ impl GraphStreamProcessor {
         // Perform entity linking on new entities
         if entities_added > 0 {
             let before_count = self.graph_db.get_entities().len();
-            if let Ok(_resolution_report) = self.entity_linker.resolve_entities(self.graph_db.knowledge_graph_mut()) {
+            if let Ok(_resolution_report) = self
+                .entity_linker
+                .resolve_entities(self.graph_db.knowledge_graph_mut())
+            {
                 let after_count = self.graph_db.get_entities().len();
                 let entities_merged = before_count.saturating_sub(after_count);
                 if entities_merged > 0 {
-                    significant_changes.push(format!("Merged {} entities in real-time", entities_merged));
+                    significant_changes
+                        .push(format!("Merged {} entities in real-time", entities_merged));
                 }
             }
         }
-        
+
         // Add relationships based on block data
         for line in block_data.lines() {
             if line.contains("prov:wasGeneratedBy") || line.contains("prov:used") {
                 relationships_added += 1;
             }
         }
-        
+
         // Detect significant changes
         if entities_added > 10 {
             significant_changes.push(format!("Batch of {} entities added", entities_added));
         }
-        
+
         self.last_update_time = Some(Instant::now());
-        
+
         Ok(GraphUpdateReport {
             block_index,
             entities_added,
@@ -1829,15 +1949,15 @@ impl QualityPredictor {
         } else {
             0.35
         };
-        
+
         let confidence_score = 0.78;
-        
+
         let contributing_factors = vec![
             "Historical quality deviations".to_string(),
             "Temperature excursions during transport".to_string(),
             "Supplier performance metrics".to_string(),
         ];
-        
+
         let recommendations = if risk_probability > 0.5 {
             vec![
                 "Increase inspection frequency".to_string(),
@@ -1850,7 +1970,7 @@ impl QualityPredictor {
                 "Maintain current quality protocols".to_string(),
             ]
         };
-        
+
         Ok(QualityPrediction {
             risk_probability,
             confidence_score,
@@ -1892,18 +2012,20 @@ impl MultiIndustryTraceabilityEngine {
     pub fn generate_compliance_report(&self) -> Result<MultiIndustryComplianceReport> {
         Ok(MultiIndustryComplianceReport {
             food_safety_compliance: Some("FSMA Compliant - 98.5% score".to_string()),
-            pharmaceutical_compliance: Some("GMP Certified - 21 CFR Part 211 compliant".to_string()),
-            conflict_minerals_compliance: Some("RMAP Compliant - 100% conflict-free sourcing".to_string()),
+            pharmaceutical_compliance: Some(
+                "GMP Certified - 21 CFR Part 211 compliant".to_string(),
+            ),
+            conflict_minerals_compliance: Some(
+                "RMAP Compliant - 100% conflict-free sourcing".to_string(),
+            ),
         })
     }
 
     pub fn assess_unified_supply_chain_risk(&self) -> Result<UnifiedRiskAssessment> {
         // Calculate unified risk across all industries
         let overall_risk_score = 0.23; // Low risk overall
-        
-        Ok(UnifiedRiskAssessment {
-            overall_risk_score,
-        })
+
+        Ok(UnifiedRiskAssessment { overall_risk_score })
     }
 }
 

@@ -1,8 +1,8 @@
 use provchain_org::core::blockchain::Blockchain;
-use provchain_org::storage::rdf_store::{StorageConfig, BackupInfo};
-use tempfile::tempdir;
+use provchain_org::storage::rdf_store::{BackupInfo, StorageConfig};
 use std::fs;
 use std::io::Write;
+use tempfile::tempdir;
 
 #[test]
 fn test_backup_restore_functionality() {
@@ -93,7 +93,8 @@ fn test_backup_restore_with_corrupted_backup() {
     let test_data = r#"
         @prefix ex: <http://example.org/> .
         ex:product1 ex:name "Test Product" .
-    "#.to_string();
+    "#
+    .to_string();
     let _ = blockchain.add_block(test_data);
 
     // Create backup
@@ -155,7 +156,9 @@ fn test_backup_list_and_management() {
     assert!(backup3.is_ok());
 
     // List available backups
-    let backups = blockchain.list_backups().expect("Should list backups successfully");
+    let backups = blockchain
+        .list_backups()
+        .expect("Should list backups successfully");
     assert!(backups.len() >= 3, "Should have at least 3 backups");
 }
 
@@ -181,7 +184,8 @@ fn test_backup_with_max_backups_limit() {
     let test_data = r#"
         @prefix ex: <http://example.org/> .
         ex:product1 ex:name "Test Product" .
-    "#.to_string();
+    "#
+    .to_string();
     let _ = blockchain.add_block(test_data);
 
     // Create more backups than max_backup_files
@@ -190,8 +194,13 @@ fn test_backup_with_max_backups_limit() {
     let _ = blockchain.create_backup("backup_003".to_string()).unwrap();
 
     // Verify only max_backup_files exist
-    let backups = blockchain.list_backups().expect("Should list backups successfully");
-    assert!(backups.len() <= 2, "Should not exceed max_backup_files limit");
+    let backups = blockchain
+        .list_backups()
+        .expect("Should list backups successfully");
+    assert!(
+        backups.len() <= 2,
+        "Should not exceed max_backup_files limit"
+    );
 }
 
 #[test]
@@ -226,7 +235,9 @@ fn test_backup_restore_with_large_blockchain() {
     }
 
     // Create backup
-    let backup_info = blockchain.create_backup("large_backup".to_string()).unwrap();
+    let backup_info = blockchain
+        .create_backup("large_backup".to_string())
+        .unwrap();
 
     // Verify backup is substantial size
     assert!(backup_info.size_bytes > 100, "Backup should contain data");

@@ -616,7 +616,7 @@ mod valid_queries_tests {
     }
 
     #[test]
-    fn test_valid_ask_queries()        {
+    fn test_valid_ask_queries() {
         let valid_queries = vec![
             "ASK WHERE { :product1 a :Product }",
             "ASK WHERE { ?s ?p ?o . FILTER(?o > 100) }",
@@ -656,7 +656,10 @@ mod edge_case_tests {
 
     #[test]
     fn test_query_too_long() {
-        let long_query = format!("SELECT ?s WHERE {{ ?s ?p ?o . FILTER(?o = \"{}\") }}", "a".repeat(20000));
+        let long_query = format!(
+            "SELECT ?s WHERE {{ ?s ?p ?o . FILTER(?o = \"{}\") }}",
+            "a".repeat(20000)
+        );
         assert_query_rejected(&long_query);
     }
 

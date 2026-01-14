@@ -25,7 +25,9 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         properties: vec![
             ("location".to_string(), "California".to_string()),
             ("certified".to_string(), "true".to_string()),
-        ].into_iter().collect(),
+        ]
+        .into_iter()
+        .collect(),
         confidence_score: 1.0,
     };
     graph.add_entity(farmer);
@@ -40,7 +42,9 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
             ("product".to_string(), "Organic Tomatoes".to_string()),
             ("quantity".to_string(), "1000".to_string()),
             ("productionDate".to_string(), "2025-01-01".to_string()),
-        ].into_iter().collect(),
+        ]
+        .into_iter()
+        .collect(),
         confidence_score: 1.0,
     };
     graph.add_entity(batch);
@@ -54,7 +58,9 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
             ("checkDate".to_string(), "2025-01-02".to_string()),
             ("result".to_string(), "passed".to_string()),
             ("score".to_string(), "0.92".to_string()),
-        ].into_iter().collect(),
+        ]
+        .into_iter()
+        .collect(),
         confidence_score: 1.0,
     };
     graph.add_entity(quality_check);
@@ -69,7 +75,9 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
             ("from".to_string(), "California".to_string()),
             ("to".to_string(), "New York".to_string()),
             ("duration".to_string(), "48".to_string()),
-        ].into_iter().collect(),
+        ]
+        .into_iter()
+        .collect(),
         confidence_score: 1.0,
     };
     graph.add_entity(transport);
@@ -83,7 +91,9 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
             ("issueDate".to_string(), "2024-01-01".to_string()),
             ("expiryDate".to_string(), "2025-12-31".to_string()),
             ("type".to_string(), "Organic".to_string()),
-        ].into_iter().collect(),
+        ]
+        .into_iter()
+        .collect(),
         confidence_score: 1.0,
     };
     graph.add_entity(certificate);
@@ -332,11 +342,12 @@ mod supply_chain_analytics_tests {
         for check in &compliance.compliance_checks {
             assert!(!check.check_type.is_empty());
             assert!(!check.entity_id.is_empty());
-            assert!(matches!(check.status,
-                ComplianceStatus::Compliant |
-                ComplianceStatus::NonCompliant |
-                ComplianceStatus::Pending |
-                ComplianceStatus::Unknown
+            assert!(matches!(
+                check.status,
+                ComplianceStatus::Compliant
+                    | ComplianceStatus::NonCompliant
+                    | ComplianceStatus::Pending
+                    | ComplianceStatus::Unknown
             ));
         }
     }
@@ -445,17 +456,16 @@ mod sustainability_analytics_tests {
         let kg = create_test_knowledge_graph();
         let tracker = SustainabilityTracker::new(&kg);
 
-        let footprint = tracker.calculate_batch_carbon_footprint("BATCH-001").unwrap();
+        let footprint = tracker
+            .calculate_batch_carbon_footprint("BATCH-001")
+            .unwrap();
 
         assert_eq!(footprint.entity_id, "urn:provchain:entity:batch:1");
         assert!(footprint.total_co2_equivalent_kg >= 0.0);
         assert!(!footprint.emissions_by_source.is_empty());
 
         // Verify emissions add up to total
-        let calculated_total: f64 = footprint.emissions_by_source
-            .iter()
-            .map(|e| e.co2_kg)
-            .sum();
+        let calculated_total: f64 = footprint.emissions_by_source.iter().map(|e| e.co2_kg).sum();
 
         assert!((calculated_total - footprint.total_co2_equivalent_kg).abs() < 0.01);
 
@@ -473,7 +483,9 @@ mod sustainability_analytics_tests {
         let kg = create_test_knowledge_graph();
         let tracker = SustainabilityTracker::new(&kg);
 
-        let footprint = tracker.calculate_batch_carbon_footprint("BATCH-001").unwrap();
+        let footprint = tracker
+            .calculate_batch_carbon_footprint("BATCH-001")
+            .unwrap();
 
         // Carbon intensity should be positive
         assert!(footprint.carbon_intensity > 0.0);
@@ -557,11 +569,13 @@ mod sustainability_analytics_tests {
         assert!(waste.landfill_waste_kg >= 0.0);
 
         // Verify waste accounting
-        let accounted_for = waste.recycled_waste_kg + waste.composted_waste_kg + waste.landfill_waste_kg;
+        let accounted_for =
+            waste.recycled_waste_kg + waste.composted_waste_kg + waste.landfill_waste_kg;
         assert!((accounted_for - waste.total_waste_kg).abs() < 0.01);
 
         // Verify diversion rate calculation
-        let expected_diversion = ((waste.recycled_waste_kg + waste.composted_waste_kg) / waste.total_waste_kg) * 100.0;
+        let expected_diversion =
+            ((waste.recycled_waste_kg + waste.composted_waste_kg) / waste.total_waste_kg) * 100.0;
         assert!((waste.waste_diversion_rate - expected_diversion).abs() < 0.1);
     }
 
@@ -610,8 +624,20 @@ mod analytics_engine_tests {
         let report = engine.generate_comprehensive_report().unwrap();
 
         // Should generate all report sections
-        assert!(report.sustainability_metrics.carbon_footprint.total_co2_equivalent_kg >= 0.0);
-        assert_eq!(report.predictive_insights.demand_forecast.forecast_period_days, 30);
+        assert!(
+            report
+                .sustainability_metrics
+                .carbon_footprint
+                .total_co2_equivalent_kg
+                >= 0.0
+        );
+        assert_eq!(
+            report
+                .predictive_insights
+                .demand_forecast
+                .forecast_period_days,
+            30
+        );
         assert!(report.summary.total_entities > 0);
         assert!(!report.summary.key_insights.is_empty());
     }
@@ -628,9 +654,9 @@ mod analytics_engine_tests {
             uri: "urn:provchain:entity:test:1".to_string(),
             entity_type: "TestEntity".to_string(),
             label: Some("Test".to_string()),
-            properties: vec![
-                ("test".to_string(), "value".to_string()),
-            ].into_iter().collect(),
+            properties: vec![("test".to_string(), "value".to_string())]
+                .into_iter()
+                .collect(),
             confidence_score: 1.0,
         };
         kg1.add_entity(new_entity);

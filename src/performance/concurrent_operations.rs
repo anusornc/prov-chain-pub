@@ -56,7 +56,7 @@ impl Worker {
                         result_sender,
                     }) => {
                         // Real CPU work: SHA-256 hashing
-                        use sha2::{Sha256, Digest};
+                        use sha2::{Digest, Sha256};
                         let mut hasher = Sha256::new();
                         // Perform some repetitive work to simulate complexity
                         for _ in 0..1000 {
@@ -72,7 +72,7 @@ impl Worker {
                         result_sender,
                     }) => {
                         // Real CPU work: SHA-256 hashing
-                        use sha2::{Sha256, Digest};
+                        use sha2::{Digest, Sha256};
                         let mut hasher = Sha256::new();
                         for _ in 0..2000 {
                             hasher.update(query.as_bytes());
@@ -88,7 +88,7 @@ impl Worker {
                         result_sender,
                     }) => {
                         // Real CPU work: SHA-256 hashing
-                        use sha2::{Sha256, Digest};
+                        use sha2::{Digest, Sha256};
                         let mut hasher = Sha256::new();
                         for _ in 0..500 {
                             hasher.update(block_data.as_bytes());

@@ -1,9 +1,9 @@
 //! Multi-protocol Consensus Mechanism
-//! 
+//!
 //! This module implements a configurable consensus layer supporting:
 //! - Proof-of-Authority (PoA)
 //! - PBFT (Simplified Simulation)
-//! 
+//!
 //! It uses a trait-based approach to allow switching protocols via configuration.
 
 use anyhow::{anyhow, Result};
@@ -156,9 +156,16 @@ impl ProofOfAuthority {
         for key_str in &config.authority_keys {
             if let Ok(key_bytes) = hex::decode(key_str) {
                 if key_bytes.len() == 32 {
-                    if let Ok(public_key) = VerifyingKey::from_bytes(&key_bytes.try_into().map_err(|_| anyhow::anyhow!("Invalid key length"))?) {
+                    if let Ok(public_key) = VerifyingKey::from_bytes(
+                        &key_bytes
+                            .try_into()
+                            .map_err(|_| anyhow::anyhow!("Invalid key length"))?,
+                    ) {
                         let authority_id = Uuid::new_v4();
-                        authority_keys.write().await.insert(authority_id, public_key);
+                        authority_keys
+                            .write()
+                            .await
+                            .insert(authority_id, public_key);
                     }
                 }
             }
@@ -189,9 +196,13 @@ impl ProofOfAuthority {
             if std::path::Path::new(file_path).exists() {
                 let key_data = std::fs::read(file_path)
                     .map_err(|e| anyhow::anyhow!("Failed to read authority key file: {}", e))?;
-                
+
                 if key_data.len() == 32 {
-                    let keypair = SigningKey::from_bytes(&key_data.try_into().map_err(|_| anyhow::anyhow!("Invalid key length"))?);
+                    let keypair = SigningKey::from_bytes(
+                        &key_data
+                            .try_into()
+                            .map_err(|_| anyhow::anyhow!("Invalid key length"))?,
+                    );
                     info!("Loaded authority keypair from {}", file_path);
                     return Ok(keypair);
                 } else {
@@ -215,9 +226,8 @@ impl ProofOfAuthority {
 
     async fn start_authority_duties(self: Arc<Self>) -> Result<()> {
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(
-                self.config.block_interval,
-            ));
+            let mut interval =
+                tokio::time::interval(tokio::time::Duration::from_secs(self.config.block_interval));
             loop {
                 interval.tick().await;
                 if let Err(e) = self.try_create_block().await {
@@ -250,20 +260,26 @@ impl ProofOfAuthority {
 
     async fn should_create_block(&self) -> Result<bool> {
         // Acquire both locks atomically to prevent race condition
-        let (authority_state, authority_keys) = tokio::join!(
-            self.authority_state.read(),
-            self.authority_keys.read()
-        );
+        let (authority_state, authority_keys) =
+            tokio::join!(self.authority_state.read(), self.authority_keys.read());
 
         let now = Utc::now();
         let time_since_last = now.signed_duration_since(authority_state.last_block_time);
-        if time_since_last < Duration::seconds(self.config.block_interval as i64) { return Ok(false); }
-        if authority_keys.is_empty() { return Ok(false); }
+        if time_since_last < Duration::seconds(self.config.block_interval as i64) {
+            return Ok(false);
+        }
+        if authority_keys.is_empty() {
+            return Ok(false);
+        }
 
         let our_authority_id = if let Some(keypair) = &self.authority_keypair {
             let public_key = keypair.verifying_key();
-            authority_keys.iter().find_map(|(id, key)| if key == &public_key { Some(*id) } else { None })
-        } else { None };
+            authority_keys
+                .iter()
+                .find_map(|(id, key)| if key == &public_key { Some(*id) } else { None })
+        } else {
+            None
+        };
 
         if let Some(our_id) = our_authority_id {
             if let Some(current_authority) = authority_state.current_authority {
@@ -281,11 +297,14 @@ impl ProofOfAuthority {
     }
 
     async fn create_and_propose_block_internal(&self) -> Result<()> {
-        let keypair = self.authority_keypair.as_ref().ok_or_else(|| anyhow::anyhow!("No authority keypair"))?;
+        let keypair = self
+            .authority_keypair
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No authority keypair"))?;
         let block = self.create_block().await?;
         let block_data = self.serialize_block_for_signing(&block)?;
         let signature = keypair.sign(&block_data);
-        
+
         let proposal = BlockProposal {
             block: block.clone(),
             signature,
@@ -306,19 +325,27 @@ impl ProofOfAuthority {
         let mut authority_state = self.authority_state.write().await;
         authority_state.last_block_time = Utc::now();
         authority_state.current_round += 1;
-        
+
         // Simple rotation
         if !authority_state.authority_rotation_order.is_empty() {
-            authority_state.current_authority_index = (authority_state.current_authority_index + 1) 
+            authority_state.current_authority_index = (authority_state.current_authority_index + 1)
                 % authority_state.authority_rotation_order.len();
-             if authority_state.current_authority_index < authority_state.authority_rotation_order.len() {
-                authority_state.current_authority = Some(authority_state.authority_rotation_order[authority_state.current_authority_index]);
-             }
+            if authority_state.current_authority_index
+                < authority_state.authority_rotation_order.len()
+            {
+                authority_state.current_authority = Some(
+                    authority_state.authority_rotation_order
+                        [authority_state.current_authority_index],
+                );
+            }
         }
-        
+
         // Stats
         if let Some(current_authority) = authority_state.current_authority {
-            if let Some(performance) = authority_state.authority_performance.get_mut(&current_authority) {
+            if let Some(performance) = authority_state
+                .authority_performance
+                .get_mut(&current_authority)
+            {
                 performance.blocks_created += 1;
                 performance.last_activity = Utc::now();
             }
@@ -329,10 +356,13 @@ impl ProofOfAuthority {
     }
 
     fn serialize_block_for_signing(&self, block: &Block) -> Result<Vec<u8>> {
-        let data = format!("{}
+        let data = format!(
+            "{}
 {}
 {}
-{}", block.index, block.timestamp, block.previous_hash, block.data);
+{}",
+            block.index, block.timestamp, block.previous_hash, block.data
+        );
         Ok(data.into_bytes())
     }
 
@@ -344,18 +374,21 @@ impl ProofOfAuthority {
         self.network.broadcast_message(announcement).await?;
         Ok(())
     }
-    
+
     async fn update_authority_performance(&self) -> Result<()> {
         let mut authority_state = self.authority_state.write().await;
         let now = Utc::now();
         let authority_keys = self.authority_keys.read().await;
         for authority_id in authority_keys.keys() {
-            let performance = authority_state.authority_performance.entry(*authority_id).or_insert_with(|| AuthorityPerformance {
-                blocks_created: 0,
-                missed_slots: 0,
-                last_activity: now,
-                reputation: 1.0,
-            });
+            let performance = authority_state
+                .authority_performance
+                .entry(*authority_id)
+                .or_insert_with(|| AuthorityPerformance {
+                    blocks_created: 0,
+                    missed_slots: 0,
+                    last_activity: now,
+                    reputation: 1.0,
+                });
             let total_slots = performance.blocks_created + performance.missed_slots;
             if total_slots > 0 {
                 performance.reputation = performance.blocks_created as f64 / total_slots as f64;
@@ -364,14 +397,26 @@ impl ProofOfAuthority {
         Ok(())
     }
 
-    async fn validate_block_structure(&self, block: &Block, blockchain: &Blockchain) -> Result<bool> {
+    async fn validate_block_structure(
+        &self,
+        block: &Block,
+        blockchain: &Blockchain,
+    ) -> Result<bool> {
         let expected_index = blockchain.chain.len() as u64;
-        if block.index != expected_index { return Ok(false); }
+        if block.index != expected_index {
+            return Ok(false);
+        }
         if let Some(prev_block) = blockchain.chain.last() {
-            if block.previous_hash != prev_block.hash { return Ok(false); }
-        } else if block.previous_hash != "0".repeat(64) { return Ok(false); }
+            if block.previous_hash != prev_block.hash {
+                return Ok(false);
+            }
+        } else if block.previous_hash != "0".repeat(64) {
+            return Ok(false);
+        }
         let expected_hash = block.calculate_hash_with_store(Some(&blockchain.rdf_store));
-        if block.hash != expected_hash { return Ok(false); }
+        if block.hash != expected_hash {
+            return Ok(false);
+        }
         Ok(true)
     }
 
@@ -382,10 +427,14 @@ impl ProofOfAuthority {
             .with_timezone(&Utc);
         let now = Utc::now();
         let time_diff = block_time.signed_duration_since(now);
-        if time_diff > Duration::seconds(30) { return Ok(false); }
-        
+        if time_diff > Duration::seconds(30) {
+            return Ok(false);
+        }
+
         let time_since_last = block_time.signed_duration_since(authority_state.last_block_time);
-        if time_since_last < Duration::seconds(self.config.block_interval as i64 / 2) { return Ok(false); }
+        if time_since_last < Duration::seconds(self.config.block_interval as i64 / 2) {
+            return Ok(false);
+        }
         Ok(true)
     }
 }
@@ -401,44 +450,44 @@ impl ConsensusProtocol for ProofOfAuthority {
         // HACK: We can't clone 'self' here easily if it's just &self.
         // We might need to restructure start() to not rely on 'self' in the background task if possible,
         // OR rely on the caller to handle the spawning.
-        
+
         // Actually, since we are moving to a trait object, 'self' in start is just a reference.
         // The common pattern is to have an inner struct wrapped in Arc that is cheap to clone.
         // Let's modify ProofOfAuthority to be a cheap clone wrapper around an Inner struct?
-        // Or just Clone the Arc fields. 
-        
+        // Or just Clone the Arc fields.
+
         // Since ProofOfAuthority has Arc fields, cloning it is cheap!
-        // But we can't clone &self to Self if we don't know the concrete type? 
-        // We do know it here. 
-        
+        // But we can't clone &self to Self if we don't know the concrete type?
+        // We do know it here.
+
         // Wait, async_trait creates a BoxFuture.
         // We can create a clone of our fields and move them into the task.
-        
+
         if self.config.is_authority {
-             // We need to run background tasks.
-             // We can construct a new instance of Self (since it's just Arcs) and move it.
-             let clone = Self {
-                 config: self.config.clone(),
-                 authority_keypair: self.authority_keypair.clone(), // This one is not Arc... SigningKey is small copy? No. 
-                 // SigningKey is Copy? No. It's Clone.
-                 authority_keys: self.authority_keys.clone(),
-                 network: self.network.clone(),
-                 blockchain: self.blockchain.clone(),
-                 authority_state: self.authority_state.clone(),
-             };
-             let arc_clone = Arc::new(clone);
-             arc_clone.start_authority_duties().await?;
-             // arc_clone.start_authority_monitoring().await; // Reuse same clone? no, move occurs.
+            // We need to run background tasks.
+            // We can construct a new instance of Self (since it's just Arcs) and move it.
+            let clone = Self {
+                config: self.config.clone(),
+                authority_keypair: self.authority_keypair.clone(), // This one is not Arc... SigningKey is small copy? No.
+                // SigningKey is Copy? No. It's Clone.
+                authority_keys: self.authority_keys.clone(),
+                network: self.network.clone(),
+                blockchain: self.blockchain.clone(),
+                authority_state: self.authority_state.clone(),
+            };
+            let arc_clone = Arc::new(clone);
+            arc_clone.start_authority_duties().await?;
+            // arc_clone.start_authority_monitoring().await; // Reuse same clone? no, move occurs.
         }
-        
+
         // Monitoring
         let clone_mon = Self {
-                 config: self.config.clone(),
-                 authority_keypair: self.authority_keypair.clone(),
-                 authority_keys: self.authority_keys.clone(),
-                 network: self.network.clone(),
-                 blockchain: self.blockchain.clone(),
-                 authority_state: self.authority_state.clone(),
+            config: self.config.clone(),
+            authority_keypair: self.authority_keypair.clone(),
+            authority_keys: self.authority_keys.clone(),
+            network: self.network.clone(),
+            blockchain: self.blockchain.clone(),
+            authority_state: self.authority_state.clone(),
         };
         let arc_clone_mon = Arc::new(clone_mon);
         arc_clone_mon.start_authority_monitoring().await;
@@ -454,32 +503,58 @@ impl ConsensusProtocol for ProofOfAuthority {
         } else {
             ("0".repeat(64), 0)
         };
-        let state_root = self.blockchain.read().await.rdf_store.calculate_state_root();
+        let state_root = self
+            .blockchain
+            .read()
+            .await
+            .rdf_store
+            .calculate_state_root();
         let rdf_data = format!(
             "<http://provchain.org/block/{}> <http://provchain.org/timestamp> \"{}\" .\n<http://provchain.org/block/{}> <http://provchain.org/authority> \"{}\" .",
             index, Utc::now().to_rfc3339(), index, self.network.node_id
         );
-        Ok(Block::new(index, rdf_data, previous_hash, state_root, self.network.node_id.to_string()))
+        Ok(Block::new(
+            index,
+            rdf_data,
+            previous_hash,
+            state_root,
+            self.network.node_id.to_string(),
+        ))
     }
 
     async fn validate_block_proposal(&self, proposal: &BlockProposal) -> Result<bool> {
         debug!("PoA: Validating block proposal {}", proposal.block.index);
         let authority_keys = self.authority_keys.read().await;
-        let is_known = authority_keys.values().any(|key| *key == proposal.authority_key);
-        if !is_known { warn!("Unknown authority"); return Ok(false); }
-        
+        let is_known = authority_keys
+            .values()
+            .any(|key| *key == proposal.authority_key);
+        if !is_known {
+            warn!("Unknown authority");
+            return Ok(false);
+        }
+
         let block_data = self.serialize_block_for_signing(&proposal.block)?;
-        if proposal.authority_key.verify(&block_data, &proposal.signature).is_err() {
-            warn!("Invalid signature"); return Ok(false);
+        if proposal
+            .authority_key
+            .verify(&block_data, &proposal.signature)
+            .is_err()
+        {
+            warn!("Invalid signature");
+            return Ok(false);
         }
-        
+
         let blockchain = self.blockchain.read().await;
-        if !self.validate_block_structure(&proposal.block, &blockchain).await? {
-            warn!("Invalid structure"); return Ok(false);
+        if !self
+            .validate_block_structure(&proposal.block, &blockchain)
+            .await?
+        {
+            warn!("Invalid structure");
+            return Ok(false);
         }
-        
+
         if !self.validate_block_timing(proposal).await? {
-            warn!("Invalid timing"); return Ok(false);
+            warn!("Invalid timing");
+            return Ok(false);
         }
         Ok(true)
     }
@@ -499,7 +574,10 @@ impl ConsensusProtocol for ProofOfAuthority {
     }
 
     async fn add_authority(&self, authority_id: Uuid, public_key: VerifyingKey) -> Result<()> {
-        self.authority_keys.write().await.insert(authority_id, public_key);
+        self.authority_keys
+            .write()
+            .await
+            .insert(authority_id, public_key);
         Ok(())
     }
 
@@ -614,21 +692,30 @@ impl PbftMessage {
     /// Get bytes to sign for each message type
     fn get_signing_bytes(&self) -> Vec<u8> {
         match self {
-            PbftMessage::PrePrepare { view, sequence, block_hash, sender, .. } => {
-                format!("{}-{}-{}-{}", view, sequence, block_hash, sender)
-                    .into_bytes()
-            }
-            PbftMessage::Prepare { view, sequence, block_hash, sender, .. } => {
-                format!("{}-{}-{}-{}", view, sequence, block_hash, sender)
-                    .into_bytes()
-            }
-            PbftMessage::Commit { view, sequence, block_hash, sender, .. } => {
-                format!("{}-{}-{}-{}", view, sequence, block_hash, sender)
-                    .into_bytes()
-            }
-            PbftMessage::ViewChange { new_view, sender, .. } => {
-                format!("{}-{}", new_view, sender).into_bytes()
-            }
+            PbftMessage::PrePrepare {
+                view,
+                sequence,
+                block_hash,
+                sender,
+                ..
+            } => format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes(),
+            PbftMessage::Prepare {
+                view,
+                sequence,
+                block_hash,
+                sender,
+                ..
+            } => format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes(),
+            PbftMessage::Commit {
+                view,
+                sequence,
+                block_hash,
+                sender,
+                ..
+            } => format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes(),
+            PbftMessage::ViewChange {
+                new_view, sender, ..
+            } => format!("{}-{}", new_view, sender).into_bytes(),
         }
     }
 
@@ -651,8 +738,7 @@ impl PbftMessage {
         sender: Uuid,
         keypair: &SigningKey,
     ) -> Self {
-        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender)
-            .into_bytes();
+        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
         let signature = keypair.sign(&message_bytes);
         let public_key = keypair.verifying_key();
 
@@ -675,8 +761,7 @@ impl PbftMessage {
         sender: Uuid,
         keypair: &SigningKey,
     ) -> Self {
-        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender)
-            .into_bytes();
+        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
         let signature = keypair.sign(&message_bytes);
         let public_key = keypair.verifying_key();
 
@@ -698,8 +783,7 @@ impl PbftMessage {
         sender: Uuid,
         keypair: &SigningKey,
     ) -> Self {
-        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender)
-            .into_bytes();
+        let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
         let signature = keypair.sign(&message_bytes);
         let public_key = keypair.verifying_key();
 
@@ -714,11 +798,7 @@ impl PbftMessage {
     }
 
     /// Create a signed ViewChange message
-    pub fn create_view_change(
-        new_view: u64,
-        sender: Uuid,
-        keypair: &SigningKey,
-    ) -> Self {
+    pub fn create_view_change(new_view: u64, sender: Uuid, keypair: &SigningKey) -> Self {
         let message_bytes = format!("{}-{}", new_view, sender).into_bytes();
         let signature = keypair.sign(&message_bytes);
         let public_key = keypair.verifying_key();
@@ -741,8 +821,8 @@ pub struct PbftState {
     pub current_block: Option<Block>,
     pub current_block_hash: Option<String>,
     pub prepare_certificates: HashMap<(u64, u64, String), HashMap<Uuid, PbftMessage>>, // (view, sequence, block_hash) -> senders
-    pub commit_certificates: HashMap<(u64, u64, String), HashMap<Uuid, PbftMessage>>,   // (view, sequence, block_hash) -> senders
-    pub logged_prepared: HashSet<(u64, u64, String)>,  // (view, sequence, block_hash)
+    pub commit_certificates: HashMap<(u64, u64, String), HashMap<Uuid, PbftMessage>>, // (view, sequence, block_hash) -> senders
+    pub logged_prepared: HashSet<(u64, u64, String)>, // (view, sequence, block_hash)
     pub logged_committed: HashSet<(u64, u64, String)>, // (view, sequence, block_hash)
     /// Track processed message IDs to prevent replay attacks
     pub processed_messages: HashSet<String>,
@@ -784,8 +864,10 @@ impl PbftConsensus {
     ) -> Result<Self> {
         let node_id = network.node_id;
         let authority_keypair = if config.is_authority {
-            Some(generate_signing_key()
-                .map_err(|e| anyhow::anyhow!("Failed to generate authority key: {}", e))?)
+            Some(
+                generate_signing_key()
+                    .map_err(|e| anyhow::anyhow!("Failed to generate authority key: {}", e))?,
+            )
         } else {
             None
         };
@@ -794,7 +876,11 @@ impl PbftConsensus {
         for key_str in &config.authority_keys {
             if let Ok(key_bytes) = hex::decode(key_str) {
                 if key_bytes.len() == 32 {
-                    if let Ok(public_key) = VerifyingKey::from_bytes(&key_bytes.try_into().map_err(|_| anyhow::anyhow!("Invalid key length"))?) {
+                    if let Ok(public_key) = VerifyingKey::from_bytes(
+                        &key_bytes
+                            .try_into()
+                            .map_err(|_| anyhow::anyhow!("Invalid key length"))?,
+                    ) {
                         let authority_id = Uuid::new_v4();
                         authority_keys.insert(authority_id, public_key);
                     }
@@ -803,8 +889,12 @@ impl PbftConsensus {
         }
 
         // Determine if we're primary (simple deterministic selection based on node ID)
-        let is_primary = authority_keys.is_empty() ||
-            authority_keys.keys().min().map(|min_id| *min_id == node_id).unwrap_or(false);
+        let is_primary = authority_keys.is_empty()
+            || authority_keys
+                .keys()
+                .min()
+                .map(|min_id| *min_id == node_id)
+                .unwrap_or(false);
 
         Ok(Self {
             config,
@@ -839,21 +929,21 @@ impl PbftConsensus {
         let mut sorted_ids: Vec<Uuid> = authority_keys.keys().copied().collect();
         sorted_ids.sort();
         let primary_index = (view as usize) % sorted_ids.len();
-        sorted_ids.get(primary_index).map(|id| *id == self.node_id).unwrap_or(false)
+        sorted_ids
+            .get(primary_index)
+            .map(|id| *id == self.node_id)
+            .unwrap_or(false)
     }
 
     /// Send a PREPARE message to all nodes
     async fn send_prepare(&self, view: u64, sequence: u64, block_hash: String) -> Result<()> {
-        let keypair = self.authority_keypair.as_ref()
+        let keypair = self
+            .authority_keypair
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No signing key available"))?;
-        
-        let prepare_msg = PbftMessage::create_prepare(
-            view,
-            sequence,
-            block_hash.clone(),
-            self.node_id,
-            keypair,
-        );
+
+        let prepare_msg =
+            PbftMessage::create_prepare(view, sequence, block_hash.clone(), self.node_id, keypair);
 
         // Broadcast to network
         self.broadcast_pbft_message(prepare_msg.clone()).await?;
@@ -863,22 +953,22 @@ impl PbftConsensus {
         let key = (view, sequence, block_hash);
         state.logged_prepared.insert(key);
 
-        debug!("PBFT: Sent PREPARE for view={}, sequence={}", view, sequence);
+        debug!(
+            "PBFT: Sent PREPARE for view={}, sequence={}",
+            view, sequence
+        );
         Ok(())
     }
 
     /// Send a COMMIT message to all nodes
     async fn send_commit(&self, view: u64, sequence: u64, block_hash: String) -> Result<()> {
-        let keypair = self.authority_keypair.as_ref()
+        let keypair = self
+            .authority_keypair
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No signing key available"))?;
-        
-        let commit_msg = PbftMessage::create_commit(
-            view,
-            sequence,
-            block_hash.clone(),
-            self.node_id,
-            keypair,
-        );
+
+        let commit_msg =
+            PbftMessage::create_commit(view, sequence, block_hash.clone(), self.node_id, keypair);
 
         // Broadcast to network
         self.broadcast_pbft_message(commit_msg.clone()).await?;
@@ -929,8 +1019,13 @@ impl ConsensusProtocol for PbftConsensus {
         info!("Starting PBFT Consensus");
         let state = self.pbft_state.read().await;
         let authority_keys = self.authority_keys.read().await;
-        info!("PBFT: Node {}, View={}, Primary={}, Authorities={}",
-            self.node_id, state.view, self.is_primary, authority_keys.len());
+        info!(
+            "PBFT: Node {}, View={}, Primary={}, Authorities={}",
+            self.node_id,
+            state.view,
+            self.is_primary,
+            authority_keys.len()
+        );
 
         // Start PBFT consensus loop if we're an authority
         if self.config.is_authority {
@@ -958,14 +1053,25 @@ impl ConsensusProtocol for PbftConsensus {
         } else {
             ("0".repeat(64), 0)
         };
-        let state_root = self.blockchain.read().await.rdf_store.calculate_state_root();
+        let state_root = self
+            .blockchain
+            .read()
+            .await
+            .rdf_store
+            .calculate_state_root();
 
         let rdf_data = format!(
             "<http://provchain.org/block/{}> <http://provchain.org/consensus> \"PBFT\" .",
             index
         );
 
-        Ok(Block::new(index, rdf_data, previous_hash, state_root, self.network.node_id.to_string()))
+        Ok(Block::new(
+            index,
+            rdf_data,
+            previous_hash,
+            state_root,
+            self.network.node_id.to_string(),
+        ))
     }
 
     async fn validate_block_proposal(&self, proposal: &BlockProposal) -> Result<bool> {
@@ -974,8 +1080,10 @@ impl ConsensusProtocol for PbftConsensus {
 
         // 1. Check if we're in the correct view
         if proposal.block.index < state.sequence {
-            debug!("PBFT: Old proposal, index {} < current sequence {}",
-                proposal.block.index, state.sequence);
+            debug!(
+                "PBFT: Old proposal, index {} < current sequence {}",
+                proposal.block.index, state.sequence
+            );
             return Ok(false);
         }
 
@@ -986,20 +1094,27 @@ impl ConsensusProtocol for PbftConsensus {
         }
 
         // 3. Verify the authority that signed the block is known
-        let is_known_authority = authority_keys.values().any(|key| *key == proposal.authority_key);
+        let is_known_authority = authority_keys
+            .values()
+            .any(|key| *key == proposal.authority_key);
         if !is_known_authority {
             debug!("PBFT: Unknown authority in proposal");
             return Ok(false);
         }
 
         // 4. Verify signature
-        let block_data = format!("{}{}{}{}",
+        let block_data = format!(
+            "{}{}{}{}",
             proposal.block.index,
             proposal.block.timestamp,
             proposal.block.previous_hash,
             proposal.block.data
         );
-        if proposal.authority_key.verify(block_data.as_bytes(), &proposal.signature).is_err() {
+        if proposal
+            .authority_key
+            .verify(block_data.as_bytes(), &proposal.signature)
+            .is_err()
+        {
             debug!("PBFT: Invalid signature");
             return Ok(false);
         }
@@ -1010,7 +1125,10 @@ impl ConsensusProtocol for PbftConsensus {
             return Ok(false);
         }
 
-        debug!("PBFT: Block proposal {} validated successfully", proposal.block.index);
+        debug!(
+            "PBFT: Block proposal {} validated successfully",
+            proposal.block.index
+        );
         Ok(true)
     }
 
@@ -1076,7 +1194,9 @@ impl PbftConsensus {
         let sequence = state.sequence;
         drop(state);
 
-        let keypair = self.authority_keypair.as_ref()
+        let keypair = self
+            .authority_keypair
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No signing key available"))?;
 
         let pre_prepare_msg = PbftMessage::create_pre_prepare(
@@ -1107,7 +1227,7 @@ impl PbftConsensus {
     }
 
     /// Generate unique message ID for replay protection
-    /// 
+    ///
     /// Creates a deterministic ID from message components to detect duplicates.
     /// Format: "{msg_type}-{view}-{sequence}-{sender}"
     fn generate_message_id(msg_type: &str, view: u64, sequence: u64, sender: Uuid) -> String {
@@ -1124,7 +1244,7 @@ impl PbftConsensus {
     async fn mark_message_processed(&self, message_id: String) {
         let mut state = self.pbft_state.write().await;
         state.processed_messages.insert(message_id);
-        
+
         // Optional: Prune old messages to prevent unbounded growth
         // Keep only messages from current view and previous view
         let current_view = state.view;
@@ -1141,16 +1261,45 @@ impl PbftConsensus {
     /// Handle incoming PBFT message
     pub async fn handle_pbft_message(&self, message: PbftMessage) -> Result<()> {
         match message {
-            PbftMessage::PrePrepare { view, sequence, block_hash, block, sender, signature, public_key } => {
-                self.handle_pre_prepare(view, sequence, block_hash, block, sender, signature, public_key).await?;
+            PbftMessage::PrePrepare {
+                view,
+                sequence,
+                block_hash,
+                block,
+                sender,
+                signature,
+                public_key,
+            } => {
+                self.handle_pre_prepare(
+                    view, sequence, block_hash, block, sender, signature, public_key,
+                )
+                .await?;
             }
-            PbftMessage::Prepare { view, sequence, block_hash, sender, signature, public_key } => {
-                self.handle_prepare(view, sequence, block_hash, sender, signature, public_key).await?;
+            PbftMessage::Prepare {
+                view,
+                sequence,
+                block_hash,
+                sender,
+                signature,
+                public_key,
+            } => {
+                self.handle_prepare(view, sequence, block_hash, sender, signature, public_key)
+                    .await?;
             }
-            PbftMessage::Commit { view, sequence, block_hash, sender, signature, public_key } => {
-                self.handle_commit(view, sequence, block_hash, sender, signature, public_key).await?;
+            PbftMessage::Commit {
+                view,
+                sequence,
+                block_hash,
+                sender,
+                signature,
+                public_key,
+            } => {
+                self.handle_commit(view, sequence, block_hash, sender, signature, public_key)
+                    .await?;
             }
-            PbftMessage::ViewChange { new_view, sender, .. } => {
+            PbftMessage::ViewChange {
+                new_view, sender, ..
+            } => {
                 self.handle_view_change(new_view, sender).await?;
             }
         }
@@ -1172,7 +1321,10 @@ impl PbftConsensus {
         // This prevents invalid messages from passing authorization checks
         let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
         if public_key.verify(&message_bytes, &signature).is_err() {
-            warn!("PBFT: Invalid signature on PRE-PREPARE message from {} - rejecting", sender);
+            warn!(
+                "PBFT: Invalid signature on PRE-PREPARE message from {} - rejecting",
+                sender
+            );
             return Err(anyhow!("Invalid signature on PRE-PREPARE from {}", sender));
         }
 
@@ -1183,7 +1335,7 @@ impl PbftConsensus {
                   sender, view, sequence);
             return Err(anyhow!("Duplicate PRE-PREPARE message from {}", sender));
         }
-        
+
         let state = self.pbft_state.read().await;
 
         // Only accept PRE-PREPARE from primary (authorization check)
@@ -1235,15 +1387,20 @@ impl PbftConsensus {
         // SECURITY: Verify signature FIRST (before any other processing)
         let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
         if public_key.verify(&message_bytes, &signature).is_err() {
-            warn!("PBFT: Invalid signature on PREPARE message from {} - rejecting", sender);
+            warn!(
+                "PBFT: Invalid signature on PREPARE message from {} - rejecting",
+                sender
+            );
             return Err(anyhow!("Invalid signature on PREPARE from {}", sender));
         }
 
         // SECURITY: Check for replay attacks (fast check to prevent DoS)
         let message_id = Self::generate_message_id("prepare", view, sequence, sender);
         if self.is_duplicate_message(&message_id).await {
-            warn!("PBFT: Replay attack detected - duplicate PREPARE from {} (view={}, sequence={})", 
-                  sender, view, sequence);
+            warn!(
+                "PBFT: Replay attack detected - duplicate PREPARE from {} (view={}, sequence={})",
+                sender, view, sequence
+            );
             return Err(anyhow!("Duplicate PREPARE message from {}", sender));
         }
 
@@ -1256,17 +1413,21 @@ impl PbftConsensus {
 
         // Store the PREPARE certificate
         let key = (view, sequence, block_hash.clone());
-        state.prepare_certificates
+        state
+            .prepare_certificates
             .entry(key.clone())
             .or_insert_with(HashMap::new)
-            .insert(sender, PbftMessage::Prepare {
-                view,
-                sequence,
-                block_hash: block_hash.clone(),
+            .insert(
                 sender,
-                signature,
-                public_key,
-            });
+                PbftMessage::Prepare {
+                    view,
+                    sequence,
+                    block_hash: block_hash.clone(),
+                    sender,
+                    signature,
+                    public_key,
+                },
+            );
 
         // Mark message as processed after storing
         drop(state);
@@ -1276,7 +1437,11 @@ impl PbftConsensus {
         // Check if we have enough PREPARE messages (2f+1)
         let authority_count = self.authority_keys.read().await.len();
         let required = self.required_quorum(authority_count);
-        let prepare_count = state.prepare_certificates.get(&key).map(|m| m.len()).unwrap_or(0);
+        let prepare_count = state
+            .prepare_certificates
+            .get(&key)
+            .map(|m| m.len())
+            .unwrap_or(0);
 
         if prepare_count >= required && !state.logged_prepared.contains(&key) {
             state.logged_prepared.insert(key.clone());
@@ -1305,15 +1470,20 @@ impl PbftConsensus {
         // SECURITY: Verify signature FIRST (before any other processing)
         let message_bytes = format!("{}-{}-{}-{}", view, sequence, block_hash, sender).into_bytes();
         if public_key.verify(&message_bytes, &signature).is_err() {
-            warn!("PBFT: Invalid signature on COMMIT message from {} - rejecting", sender);
+            warn!(
+                "PBFT: Invalid signature on COMMIT message from {} - rejecting",
+                sender
+            );
             return Err(anyhow!("Invalid signature on COMMIT from {}", sender));
         }
 
         // SECURITY: Check for replay attacks (fast check to prevent DoS)
         let message_id = Self::generate_message_id("commit", view, sequence, sender);
         if self.is_duplicate_message(&message_id).await {
-            warn!("PBFT: Replay attack detected - duplicate COMMIT from {} (view={}, sequence={})", 
-                  sender, view, sequence);
+            warn!(
+                "PBFT: Replay attack detected - duplicate COMMIT from {} (view={}, sequence={})",
+                sender, view, sequence
+            );
             return Err(anyhow!("Duplicate COMMIT message from {}", sender));
         }
 
@@ -1326,17 +1496,21 @@ impl PbftConsensus {
 
         // Store the COMMIT certificate
         let key = (view, sequence, block_hash.clone());
-        state.commit_certificates
+        state
+            .commit_certificates
             .entry(key.clone())
             .or_insert_with(HashMap::new)
-            .insert(sender, PbftMessage::Commit {
-                view,
-                sequence,
-                block_hash: block_hash.clone(),
+            .insert(
                 sender,
-                signature,
-                public_key,
-            });
+                PbftMessage::Commit {
+                    view,
+                    sequence,
+                    block_hash: block_hash.clone(),
+                    sender,
+                    signature,
+                    public_key,
+                },
+            );
 
         // Mark message as processed after storing
         drop(state);
@@ -1346,7 +1520,11 @@ impl PbftConsensus {
         // Check if we have enough COMMIT messages (2f+1)
         let authority_count = self.authority_keys.read().await.len();
         let required = self.required_quorum(authority_count);
-        let commit_count = state.commit_certificates.get(&key).map(|m| m.len()).unwrap_or(0);
+        let commit_count = state
+            .commit_certificates
+            .get(&key)
+            .map(|m| m.len())
+            .unwrap_or(0);
 
         if commit_count >= required && !state.logged_committed.contains(&key) {
             state.logged_committed.insert(key.clone());
@@ -1371,7 +1549,10 @@ impl PbftConsensus {
         let mut state = self.pbft_state.write().await;
 
         if new_view > state.view {
-            info!("PBFT: View change from {} to {} (triggered by {})", state.view, new_view, sender);
+            info!(
+                "PBFT: View change from {} to {} (triggered by {})",
+                state.view, new_view, sender
+            );
             state.view = new_view;
             state.phase = PbftPhase::Idle;
             state.current_block = None;
@@ -1394,7 +1575,10 @@ impl PbftConsensus {
         state.current_block = None;
         state.current_block_hash = None;
 
-        info!("PBFT: Executed block {} at sequence {}", block.index, state.sequence);
+        info!(
+            "PBFT: Executed block {} at sequence {}",
+            block.index, state.sequence
+        );
         Ok(())
     }
 }
@@ -1448,12 +1632,12 @@ mod tests {
 
         assert_eq!(stats.protocol_type, "PoA");
     }
-    
+
     #[tokio::test]
     async fn test_pbft_switching() {
         let mut config = ConsensusConfig::default();
         config.consensus_type = "pbft".to_string();
-        
+
         let node_config = NodeConfig::default();
         let network = Arc::new(NetworkManager::new(node_config));
         let blockchain = Arc::new(RwLock::new(Blockchain::new()));

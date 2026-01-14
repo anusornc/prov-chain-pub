@@ -17,7 +17,7 @@ use tracing::{debug, info};
 pub struct Block {
     pub index: u64,
     pub timestamp: String,
-    pub data: String, // RDF in Turtle format
+    pub data: String,                   // RDF in Turtle format
     pub encrypted_data: Option<String>, // JSON-serialized EncryptedData
     pub previous_hash: String,
     pub hash: String,
@@ -78,7 +78,12 @@ impl Block {
         let encrypted_part = self.encrypted_data.as_deref().unwrap_or("");
         let record = format!(
             "{0}{1}{2}{3}{4}{5}",
-            self.index, self.timestamp, rdf_hash, self.previous_hash, self.validator, encrypted_part
+            self.index,
+            self.timestamp,
+            rdf_hash,
+            self.previous_hash,
+            self.validator,
+            encrypted_part
         );
         let mut hasher = Sha256::new();
         hasher.update(record.as_bytes());
@@ -114,8 +119,7 @@ impl Blockchain {
     /// Create a new in-memory blockchain (for testing and development)
     pub fn new() -> Self {
         // Generate signing key for this blockchain instance
-        let signing_key = generate_signing_key()
-            .expect("Failed to generate signing key");
+        let signing_key = generate_signing_key().expect("Failed to generate signing key");
         let public_key = signing_key.verifying_key();
         let validator_public_key = hex::encode(public_key.to_bytes());
 
@@ -157,10 +161,12 @@ impl Blockchain {
         let rdf_store = RDFStore::new_persistent(data_dir)?;
 
         // Generate signing key for this blockchain instance
-        let signing_key = generate_signing_key()
-            .map_err(|e| ProvChainError::Blockchain(
-                BlockchainError::GenesisCreationFailed(format!("Failed to generate signing key: {}", e))
-            ))?;
+        let signing_key = generate_signing_key().map_err(|e| {
+            ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(format!(
+                "Failed to generate signing key: {}",
+                e
+            )))
+        })?;
         let public_key = signing_key.verifying_key();
         let validator_public_key = hex::encode(public_key.to_bytes());
 
@@ -236,10 +242,12 @@ impl Blockchain {
         let rdf_store = RDFStore::new_persistent_with_config(config)?;
 
         // Generate signing key for this blockchain instance
-        let signing_key = generate_signing_key()
-            .map_err(|e| ProvChainError::Blockchain(
-                BlockchainError::GenesisCreationFailed(format!("Failed to generate signing key: {}", e))
-            ))?;
+        let signing_key = generate_signing_key().map_err(|e| {
+            ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(format!(
+                "Failed to generate signing key: {}",
+                e
+            )))
+        })?;
         let public_key = signing_key.verifying_key();
         let validator_public_key = hex::encode(public_key.to_bytes());
 
@@ -332,8 +340,9 @@ impl Blockchain {
                     let previous_hash = prev_hash_term.to_string().trim_matches('"').to_string();
                     let validator = validator_term.to_string().trim_matches('"').to_string();
                     let signature = signature_term.to_string().trim_matches('"').to_string();
-                    
-                    let encrypted_data = sol.get("encryptedData")
+
+                    let encrypted_data = sol
+                        .get("encryptedData")
                         .map(|t| t.to_string().trim_matches('"').to_string());
 
                     // Extract RDF data from the block's graph
@@ -392,15 +401,14 @@ impl Blockchain {
         // Collect all triples from the specific graph
         let mut triples = Vec::new();
         let graph_name_ref = oxigraph::model::GraphNameRef::NamedNode((&graph_name).into());
-        for quad in
-            self.rdf_store
-                .store
-                .quads_for_pattern(None, None, None, Some(graph_name_ref))
-                .flatten()
+        for quad in self
+            .rdf_store
+            .store
+            .quads_for_pattern(None, None, None, Some(graph_name_ref))
+            .flatten()
         {
             // Create a triple from the quad (without the graph component)
-            let triple =
-                oxigraph::model::Triple::new(quad.subject, quad.predicate, quad.object);
+            let triple = oxigraph::model::Triple::new(quad.subject, quad.predicate, quad.object);
             triples.push(triple);
         }
 
@@ -470,10 +478,12 @@ impl Blockchain {
     /// Create a new in-memory blockchain with ontology configuration
     pub fn new_with_ontology(ontology_config: OntologyConfig) -> Result<Self> {
         // Generate signing key for this blockchain instance
-        let signing_key = generate_signing_key()
-            .map_err(|e| ProvChainError::Blockchain(
-                BlockchainError::GenesisCreationFailed(format!("Failed to generate signing key: {}", e))
-            ))?;
+        let signing_key = generate_signing_key().map_err(|e| {
+            ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(format!(
+                "Failed to generate signing key: {}",
+                e
+            )))
+        })?;
         let public_key = signing_key.verifying_key();
         let validator_public_key = hex::encode(public_key.to_bytes());
 
@@ -515,10 +525,12 @@ impl Blockchain {
         let rdf_store = RDFStore::new_persistent(data_dir)?;
 
         // Generate signing key for this blockchain instance
-        let signing_key = generate_signing_key()
-            .map_err(|e| ProvChainError::Blockchain(
-                BlockchainError::GenesisCreationFailed(format!("Failed to generate signing key: {}", e))
-            ))?;
+        let signing_key = generate_signing_key().map_err(|e| {
+            ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(format!(
+                "Failed to generate signing key: {}",
+                e
+            )))
+        })?;
         let public_key = signing_key.verifying_key();
         let validator_public_key = hex::encode(public_key.to_bytes());
 
@@ -633,10 +645,12 @@ impl Blockchain {
             .map_err(ProvChainError::Anyhow)?;
 
         // Generate signing key for this blockchain instance
-        let signing_key = generate_signing_key()
-            .map_err(|e| ProvChainError::Blockchain(
-                BlockchainError::GenesisCreationFailed(format!("Failed to generate signing key: {}", e))
-            ))?;
+        let signing_key = generate_signing_key().map_err(|e| {
+            ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(format!(
+                "Failed to generate signing key: {}",
+                e
+            )))
+        })?;
         let public_key = signing_key.verifying_key();
         let validator_public_key = hex::encode(public_key.to_bytes());
 
@@ -943,16 +957,17 @@ impl Blockchain {
     }
 
     /// Check if the signing key needs to be rotated based on age
-    /// 
+    ///
     /// Returns true if the key is older than the configured rotation interval.
     /// This helps prevent long-term exposure of a single key.
     pub fn should_rotate_key(&self) -> bool {
-        let rotation_threshold = self.last_key_rotation + chrono::Duration::days(self.key_rotation_interval_days as i64);
+        let rotation_threshold =
+            self.last_key_rotation + chrono::Duration::days(self.key_rotation_interval_days as i64);
         chrono::Utc::now() > rotation_threshold
     }
 
     /// Get days since last key rotation
-    /// 
+    ///
     /// Useful for monitoring and alerting on key age.
     pub fn days_since_key_rotation(&self) -> i64 {
         let duration = chrono::Utc::now() - self.last_key_rotation;
@@ -965,14 +980,14 @@ impl Blockchain {
     }
 
     /// Rotate the signing key (for future use - requires persistence)
-    /// 
+    ///
     /// SECURITY: Key rotation limits exposure if a key is compromised.
     /// In production, this would:
     /// 1. Generate a new signing key
     /// 2. Publish the old key's deprecation to the blockchain
     /// 3. Update all dependent systems
     /// 4. Archive the old key securely
-    /// 
+    ///
     /// Note: This is a placeholder for future implementation.
     /// Full key rotation requires blockchain consensus and persistence.
     #[allow(dead_code)]
@@ -997,7 +1012,9 @@ impl Blockchain {
         );
 
         // TODO: Implement full key rotation with blockchain persistence
-        Err(ProvChainError::Custom("Key rotation requires blockchain consensus and persistence layer".to_string()))
+        Err(ProvChainError::Custom(
+            "Key rotation requires blockchain consensus and persistence layer".to_string(),
+        ))
     }
 
     pub fn dump(&self) -> Result<String> {

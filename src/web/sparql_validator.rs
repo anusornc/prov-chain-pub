@@ -79,7 +79,9 @@ impl SparqlValidator {
         let has_describe = query_upper.starts_with("DESCRIBE");
 
         // Check for update operations (not allowed via API)
-        let update_keywords = ["INSERT", "DELETE", "LOAD", "CLEAR", "CREATE", "DROP", "COPY", "MOVE", "ADD"];
+        let update_keywords = [
+            "INSERT", "DELETE", "LOAD", "CLEAR", "CREATE", "DROP", "COPY", "MOVE", "ADD",
+        ];
         for keyword in &update_keywords {
             if query_upper.contains(keyword) {
                 return Err(anyhow!(
@@ -105,7 +107,9 @@ impl SparqlValidator {
 
         // Must have at least one valid query type
         if !has_select && !has_ask && !has_construct && !has_describe {
-            return Err(anyhow!("Query must start with SELECT, ASK, CONSTRUCT, or DESCRIBE"));
+            return Err(anyhow!(
+                "Query must start with SELECT, ASK, CONSTRUCT, or DESCRIBE"
+            ));
         }
 
         Ok(())
@@ -118,16 +122,33 @@ impl SparqlValidator {
 
         // Sensitive property patterns that should not be accessible via API
         let sensitive_properties = [
-            "password", "passwd", "pwd", "token", "secret", "credential",
-            "hash", "salt", "key", "private", "auth", "login", "session",
-            "csrf", "jwt", "bearer", "cookie", "api_key", "apikey",
+            "password",
+            "passwd",
+            "pwd",
+            "token",
+            "secret",
+            "credential",
+            "hash",
+            "salt",
+            "key",
+            "private",
+            "auth",
+            "login",
+            "session",
+            "csrf",
+            "jwt",
+            "bearer",
+            "cookie",
+            "api_key",
+            "apikey",
         ];
 
         // Check if sensitive properties appear in property position (after ? or :)
         for sensitive in &sensitive_properties {
             // Pattern 1: :sensitive or ?sensitive (as property)
-            if query_lower.contains(&format!(":{}", sensitive)) || 
-               query_lower.contains(&format!("?{}", sensitive)) {
+            if query_lower.contains(&format!(":{}", sensitive))
+                || query_lower.contains(&format!("?{}", sensitive))
+            {
                 // Additional check: is this actually being used as a property?
                 if self.is_used_as_property(query, sensitive) {
                     return Err(anyhow!(
@@ -138,8 +159,9 @@ impl SparqlValidator {
             }
 
             // Pattern 2: String literals containing sensitive data in FILTER/regex
-            if query_lower.contains(sensitive) && 
-               (query_upper.contains("FILTER") || query_upper.contains("REGEX")) {
+            if query_lower.contains(sensitive)
+                && (query_upper.contains("FILTER") || query_upper.contains("REGEX"))
+            {
                 return Err(anyhow!(
                     "Potential injection attempt: sensitive property '{}' in FILTER/REGEX",
                     sensitive
@@ -191,16 +213,14 @@ impl SparqlValidator {
 
         // Check for dangerous BIND functions
         let dangerous_functions = [
-            ("MD5", "Hash function"), ("SHA1", "Hash function"), 
-            ("SHA256", "Hash function"), ("ENCRYPT", "Encryption"),
+            ("MD5", "Hash function"),
+            ("SHA1", "Hash function"),
+            ("SHA256", "Hash function"),
+            ("ENCRYPT", "Encryption"),
         ];
         for (func, desc) in &dangerous_functions {
             if query_upper.contains(func) && query_upper.contains("BIND") {
-                return Err(anyhow!(
-                    "Use of {} in BIND is not allowed ({})",
-                    func,
-                    desc
-                ));
+                return Err(anyhow!("Use of {} in BIND is not allowed ({})", func, desc));
             }
         }
 
@@ -210,21 +230,22 @@ impl SparqlValidator {
     /// Check if a sensitive term is being used as a property
     fn is_used_as_property(&self, query: &str, sensitive: &str) -> bool {
         let query_lower = query.to_lowercase();
-        
+
         // Check if sensitive word appears right after : or ? in property position
-        let patterns = [
-            format!(":{}", sensitive),
-            format!("?{}", sensitive),
-        ];
+        let patterns = [format!(":{}", sensitive), format!("?{}", sensitive)];
 
         for pattern in patterns {
             if let Some(pos) = query_lower.find(&pattern) {
                 // Check if it's followed by common property patterns
                 let after = &query_lower[pos + pattern.len()..];
-                if after.starts_with(" ") || after.starts_with("\t") || 
-                   after.starts_with(";") || after.starts_with("}") ||
-                   after.starts_with("|") || after.starts_with("/") ||
-                   after.starts_with("^") {
+                if after.starts_with(" ")
+                    || after.starts_with("\t")
+                    || after.starts_with(";")
+                    || after.starts_with("}")
+                    || after.starts_with("|")
+                    || after.starts_with("/")
+                    || after.starts_with("^")
+                {
                     return true;
                 }
             }
@@ -236,20 +257,19 @@ impl SparqlValidator {
     /// Check for unsafe GRAPH patterns
     fn check_unsafe_graph_patterns(&self, query: &str) -> bool {
         let query_upper = query.to_uppercase();
-        
+
         // Allow GRAPH with variable but not with specific IRIs
-        let has_graph_variable = query_upper.contains("GRAPH ?G") || 
-                                query_upper.contains("GRAPH ?GRAPH");
-        
+        let has_graph_variable =
+            query_upper.contains("GRAPH ?G") || query_upper.contains("GRAPH ?GRAPH");
+
         // Check for hardcoded IRIs in GRAPH
         if query_upper.contains("GRAPH <") {
             // Check if it's a safe IRI pattern
             let unsafe_iris = [
-                "ADMIN", "SECRET", "PASSWORD", "AUTH", "CONFIG",
-                "PRIVATE", "INTERNAL", "SYSTEM", "METADATA",
-                "../", "./", "\\.\\.", // Path traversal
+                "ADMIN", "SECRET", "PASSWORD", "AUTH", "CONFIG", "PRIVATE", "INTERNAL", "SYSTEM",
+                "METADATA", "../", "./", "\\.\\.", // Path traversal
             ];
-            
+
             for unsafe_pattern in &unsafe_iris {
                 if query_upper.contains(unsafe_pattern) {
                     return true;

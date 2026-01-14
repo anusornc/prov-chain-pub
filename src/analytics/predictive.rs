@@ -378,24 +378,22 @@ impl PredictiveAnalyzer {
     fn calculate_forecast_accuracy(&self) -> f64 {
         // Calculate forecast accuracy based on historical data
         // Compare actual historical values with what the model would have predicted
-        
+
         if self.historical_data.len() < 10 {
             return 0.75; // Default accuracy for insufficient data
         }
-        
+
         // Simple accuracy calculation: measure variance as proxy for predictability
         let values: Vec<f64> = self.historical_data.iter().map(|p| p.value).collect();
         let mean = values.iter().sum::<f64>() / values.len() as f64;
-        
-        let variance = values.iter()
-            .map(|v| (v - mean).powi(2))
-            .sum::<f64>() / values.len() as f64;
-        
+
+        let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
+
         let std_dev = variance.sqrt();
-        
+
         // Calculate coefficient of variation (CV)
         let cv = if mean > 0.0 { std_dev / mean } else { 1.0 };
-        
+
         // Lower CV means more predictable (higher accuracy)
         // Map CV to accuracy: CV=0 -> 0.95 accuracy, CV=1 -> 0.50 accuracy
         let accuracy = if cv < 0.1 {
@@ -407,30 +405,30 @@ impl PredictiveAnalyzer {
         } else {
             0.50 - (cv - 0.6) * 0.25 // Min 0.25 accuracy for highly volatile data
         };
-        
+
         let accuracy = accuracy.max(0.25).min(0.98);
-        
+
         tracing::debug!(
             "Forecast accuracy: {:.2} (mean: {:.2}, cv: {:.2})",
             accuracy,
             mean,
             cv
         );
-        
+
         accuracy
     }
 
     fn calculate_quality_risk_score(&self, batch: &KnowledgeEntity) -> Result<f64> {
         // Calculate quality risk score based on batch characteristics and historical data
         let mut risk_score = 0.0;
-        
+
         // Check batch age
         if let Some(production_date_str) = batch.properties.get("productionDate") {
             if let Ok(production_date) = chrono::DateTime::parse_from_rfc3339(production_date_str) {
                 // Convert to UTC and calculate age
                 let production_date_utc = production_date.with_timezone(&chrono::Utc);
                 let age_days = (chrono::Utc::now() - production_date_utc).num_days();
-                
+
                 // Older batches have higher risk
                 if age_days > 60 {
                     risk_score += 0.30;
@@ -441,7 +439,7 @@ impl PredictiveAnalyzer {
                 }
             }
         }
-        
+
         // Check if quality checks exist
         let has_quality_check = self
             .entities
@@ -449,33 +447,37 @@ impl PredictiveAnalyzer {
             .filter(|e| e.entity_type == "QualityCheck")
             .any(|check| {
                 check.properties.get("batchId") == batch.properties.get("batchId")
-                    && check.properties.get("result").map(|r| r != "passed").unwrap_or(false)
+                    && check
+                        .properties
+                        .get("result")
+                        .map(|r| r != "passed")
+                        .unwrap_or(false)
             });
-        
+
         if has_quality_check {
             risk_score += 0.40; // High risk if previous quality issues
         }
-        
+
         // Check product type
         let product = batch
             .properties
             .get("product")
             .map(|p| p.to_lowercase())
             .unwrap_or_default();
-        
+
         if product.contains("fresh") || product.contains("perishable") {
             risk_score += 0.15; // Higher risk for perishables
         }
-        
+
         // Normalize to 0-1 range
         let normalized_risk = (risk_score / 1.0_f64).min(1.0_f64);
-        
+
         tracing::debug!(
             "Quality risk score for batch {}: {:.2}",
             batch.uri,
             normalized_risk
         );
-        
+
         Ok(normalized_risk)
     }
 
@@ -512,37 +514,37 @@ impl PredictiveAnalyzer {
     fn calculate_supplier_quality_risk(&self, supplier: &KnowledgeEntity) -> Result<f64> {
         // Calculate supplier quality risk based on supplier characteristics
         let mut risk_score = 0.0;
-        
+
         // Check if supplier is certified
         let is_certified = supplier
             .properties
             .get("certified")
             .map(|c| c == "true")
             .unwrap_or(false);
-        
+
         if !is_certified {
             risk_score += 0.30; // Higher risk for uncertified suppliers
         }
-        
+
         // Check supplier type
         match supplier.entity_type.as_str() {
             "Manufacturer" => risk_score += 0.05,
             "LogisticsProvider" => risk_score += 0.10,
             "Farmer" | "Producer" => risk_score += 0.15, // Higher variability
-            _ => risk_score += 0.10, // Unknown type
+            _ => risk_score += 0.10,                     // Unknown type
         }
-        
+
         // Check supplier location (imports may have higher risk)
         let location = supplier
             .properties
             .get("location")
             .map(|l| l.to_lowercase())
             .unwrap_or_default();
-        
+
         if !location.contains("local") && !location.contains("us") && !location.contains("usa") {
             risk_score += 0.15; // Import risk
         }
-        
+
         // Check for performance metrics
         if let Some(quality_rate) = supplier.properties.get("qualityRate") {
             if let Ok(rate) = quality_rate.parse::<f64>() {
@@ -553,10 +555,10 @@ impl PredictiveAnalyzer {
                 }
             }
         }
-        
+
         // Normalize to 0-1 range
         let normalized_risk = (risk_score / 1.0_f64).min(1.0_f64);
-        
+
         tracing::debug!(
             "Supplier quality risk for {}: {:.2} (certified: {}, type: {})",
             supplier.uri,
@@ -564,7 +566,7 @@ impl PredictiveAnalyzer {
             is_certified,
             supplier.entity_type
         );
-        
+
         Ok(normalized_risk)
     }
 }

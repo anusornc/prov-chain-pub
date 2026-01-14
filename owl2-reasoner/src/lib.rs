@@ -157,4 +157,4 @@ pub use reasoning::{
     OwlReasoner, PatternTerm, QueryEngine, QueryPattern, Reasoner, SimpleReasoner, TriplePattern,
 };
 // pub use test_data_generator::*;
-pub use validation::academic_validation::{AcademicValidator, AcademicValidationReport};
+pub use validation::academic_validation::{AcademicValidationReport, AcademicValidator};

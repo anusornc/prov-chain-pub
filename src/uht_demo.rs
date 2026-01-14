@@ -418,7 +418,8 @@ impl UHTDemo {
 
         // Create blocks with all pending transactions
         // Use UHT processor as the validator for this block
-        self.blockchain.create_block(10, self.participants.uht_processor)?; // Process up to 10 transactions per block
+        self.blockchain
+            .create_block(10, self.participants.uht_processor)?; // Process up to 10 transactions per block
 
         // Save to disk
         self.blockchain.save_to_disk()?;

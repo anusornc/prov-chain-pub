@@ -3,8 +3,8 @@
 //! This module provides validation components specifically designed for
 //! academic publication and peer review validation.
 
-use crate::OwlResult;
 use crate::ontology::Ontology;
+use crate::OwlResult;
 use serde::{Deserialize, Serialize};
 
 /// Academic validator for checking ontology quality
@@ -27,10 +27,14 @@ impl AcademicValidator {
         let axiom_count = ontology.axiom_count();
         if axiom_count < 10 {
             report.completeness_score = 0.2;
-            report.recommendations.push("Ontology is very small. Consider adding more axioms.".to_string());
+            report
+                .recommendations
+                .push("Ontology is very small. Consider adding more axioms.".to_string());
         } else if axiom_count < 50 {
             report.completeness_score = 0.5;
-            report.recommendations.push("Ontology is relatively small.".to_string());
+            report
+                .recommendations
+                .push("Ontology is relatively small.".to_string());
         } else {
             report.completeness_score = 0.9;
         }
@@ -40,12 +44,14 @@ impl AcademicValidator {
         // Here we just check if we have subclass axioms relative to class count.
         let class_count = ontology.classes().len();
         let subclass_axioms = ontology.subclass_axioms().len();
-        
+
         if class_count > 0 {
             let connectivity_ratio = subclass_axioms as f64 / class_count as f64;
             if connectivity_ratio < 0.5 {
                 report.structural_score = 0.4;
-                report.recommendations.push("Low connectivity detected. Many classes may be orphaned.".to_string());
+                report
+                    .recommendations
+                    .push("Low connectivity detected. Many classes may be orphaned.".to_string());
             } else {
                 report.structural_score = 0.85;
             }

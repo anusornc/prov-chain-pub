@@ -26,7 +26,7 @@ impl AppState {
             network_peers: Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }
     }
-    
+
     pub fn with_peers(blockchain: Blockchain, peer_count: u64) -> Self {
         Self {
             blockchain: Arc::new(RwLock::new(blockchain)),

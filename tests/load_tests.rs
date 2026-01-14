@@ -8,9 +8,9 @@
 
 use anyhow::Result;
 use provchain_org::core::blockchain::Blockchain;
-use provchain_org::web::server::WebServer;
 use provchain_org::web::auth::generate_token;
 use provchain_org::web::models::ActorRole;
+use provchain_org::web::server::WebServer;
 use reqwest::Client;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -114,10 +114,10 @@ async fn test_concurrent_api_user_simulation() -> Result<()> {
     tokio::time::sleep(Duration::from_secs(5)).await;
 
     let config = LoadTestConfig {
-        concurrent_users: 20,                  // Reduced from 100
-        requests_per_user: 10,                 // Reduced from 10
-        duration_seconds: 30,                  // Same
-        ramp_up_time: Duration::from_secs(5),  // Reduced
+        concurrent_users: 20,                 // Reduced from 100
+        requests_per_user: 10,                // Reduced from 10
+        duration_seconds: 30,                 // Same
+        ramp_up_time: Duration::from_secs(5), // Reduced
         think_time: Duration::from_millis(200),
     };
 
@@ -262,10 +262,10 @@ async fn test_scalability_endurance() -> Result<()> {
     println!("Starting Scalability Endurance Test...");
 
     let config = LoadTestConfig {
-        concurrent_users: 50,                  // Reduced from 200
-        requests_per_user: 20,                 // Reduced from 200
-        duration_seconds: 30,                  // Reduced from 60
-        ramp_up_time: Duration::from_secs(5),  // Reduced
+        concurrent_users: 50,                 // Reduced from 200
+        requests_per_user: 20,                // Reduced from 200
+        duration_seconds: 30,                 // Reduced from 60
+        ramp_up_time: Duration::from_secs(5), // Reduced
         think_time: Duration::from_millis(100),
     };
 
@@ -374,13 +374,13 @@ async fn run_transaction_load_test(config: LoadTestConfig) -> Result<LoadTestRes
 
     let total_duration = total_start_time.elapsed().as_secs_f64();
     let mut final_results = results.lock().unwrap().clone();
-    
+
     // Calculate final throughput and goodput based on total duration
     if total_duration > 0.0 {
         final_results.throughput = final_results.total_requests as f64 / total_duration;
         final_results.goodput = final_results.successful_requests as f64 / total_duration;
     }
-    
+
     Ok(final_results)
 }
 
@@ -478,13 +478,13 @@ async fn run_api_load_test(config: LoadTestConfig, server_port: u16) -> Result<L
 
     let total_duration = total_start_time.elapsed().as_secs_f64();
     let mut final_results = results.lock().unwrap().clone();
-    
+
     // Calculate final throughput and goodput
     if total_duration > 0.0 {
         final_results.throughput = final_results.total_requests as f64 / total_duration;
         final_results.goodput = final_results.successful_requests as f64 / total_duration;
     }
-    
+
     Ok(final_results)
 }
 
@@ -568,13 +568,13 @@ async fn run_traceability_load_test(config: LoadTestConfig) -> Result<LoadTestRe
 
     let total_duration = total_start_time.elapsed().as_secs_f64();
     let mut final_results = results.lock().unwrap().clone();
-    
+
     // Calculate final throughput and goodput
     if total_duration > 0.0 {
         final_results.throughput = final_results.total_requests as f64 / total_duration;
         final_results.goodput = final_results.successful_requests as f64 / total_duration;
     }
-    
+
     Ok(final_results)
 }
 
@@ -652,13 +652,13 @@ async fn run_supply_chain_load_test() -> Result<LoadTestResults> {
 
     let total_duration = total_start_time.elapsed().as_secs_f64();
     let mut final_results = results.lock().unwrap().clone();
-    
+
     // Calculate final throughput and goodput
     if total_duration > 0.0 {
         final_results.throughput = final_results.total_requests as f64 / total_duration;
         final_results.goodput = final_results.successful_requests as f64 / total_duration;
     }
-    
+
     Ok(final_results)
 }
 
@@ -745,13 +745,13 @@ async fn run_ontology_reasoning_load_test(config: LoadTestConfig) -> Result<Load
 
     let total_duration = total_start_time.elapsed().as_secs_f64();
     let mut final_results = results.lock().unwrap().clone();
-    
+
     // Calculate final throughput and goodput
     if total_duration > 0.0 {
         final_results.throughput = final_results.total_requests as f64 / total_duration;
         final_results.goodput = final_results.successful_requests as f64 / total_duration;
     }
-    
+
     Ok(final_results)
 }
 
@@ -839,13 +839,13 @@ async fn run_endurance_load_test(config: LoadTestConfig) -> Result<LoadTestResul
 
     let total_duration = total_start_time.elapsed().as_secs_f64();
     let mut final_results = results.lock().unwrap().clone();
-    
+
     // Calculate final throughput and goodput
     if total_duration > 0.0 {
         final_results.throughput = final_results.total_requests as f64 / total_duration;
         final_results.goodput = final_results.successful_requests as f64 / total_duration;
     }
-    
+
     Ok(final_results)
 }
 

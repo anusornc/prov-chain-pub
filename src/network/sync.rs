@@ -519,5 +519,3 @@ mod tests {
         assert_eq!(stats.sync_peers_count, 0);
     }
 }
-
-

@@ -93,7 +93,9 @@ impl Governance {
 
     /// Vote on a proposal
     pub fn vote(&mut self, proposal_id: Uuid, voter: String, vote_for: bool) -> Result<()> {
-        let proposal = self.proposals.get_mut(&proposal_id)
+        let proposal = self
+            .proposals
+            .get_mut(&proposal_id)
             .ok_or_else(|| anyhow::anyhow!("Proposal not found"))?;
 
         // Check if voter is a validator
@@ -103,7 +105,10 @@ impl Governance {
 
         // Check if proposal is still active
         if proposal.status != ProposalStatus::Active {
-            return Err(anyhow::anyhow!("Proposal is not active (status: {:?})", proposal.status));
+            return Err(anyhow::anyhow!(
+                "Proposal is not active (status: {:?})",
+                proposal.status
+            ));
         }
 
         // Check if voting deadline has passed
@@ -144,14 +149,17 @@ impl Governance {
 
     /// Get all active proposals
     pub fn get_active_proposals(&self) -> Vec<&Proposal> {
-        self.proposals.values()
+        self.proposals
+            .values()
             .filter(|p| p.status == ProposalStatus::Active)
             .collect()
     }
 
     /// Execute an accepted proposal
     pub fn execute_proposal(&mut self, proposal_id: Uuid) -> Result<()> {
-        let proposal = self.proposals.get_mut(&proposal_id)
+        let proposal = self
+            .proposals
+            .get_mut(&proposal_id)
             .ok_or_else(|| anyhow::anyhow!("Proposal not found"))?;
 
         if proposal.status != ProposalStatus::Accepted {
@@ -168,7 +176,9 @@ impl Governance {
             }
             ProposalType::ValidatorRemoval { public_key } => {
                 if self.validator_set.len() <= self.min_validators {
-                    return Err(anyhow::anyhow!("Cannot remove validator: minimum limit reached"));
+                    return Err(anyhow::anyhow!(
+                        "Cannot remove validator: minimum limit reached"
+                    ));
                 }
                 self.validator_set.remove(public_key);
             }
@@ -197,7 +207,7 @@ impl Governance {
             max_validators: 100,
             proposals: HashMap::new(),
             voting_period: Duration::days(7), // 7 day voting period
-            required_quorum: 3, // Require at least 3 votes
+            required_quorum: 3,               // Require at least 3 votes
         }
     }
 

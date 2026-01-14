@@ -62,7 +62,7 @@ impl NetworkManager {
                             peer_id,
                             response.message_type()
                         );
-                        
+
                         // Note: The actual response sending is handled by the NetworkManager's
                         // send_to_peer method, which should be called by the message handler
                         // if it needs to send a response. This design keeps the message loop

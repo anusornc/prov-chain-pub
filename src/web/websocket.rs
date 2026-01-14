@@ -2,11 +2,11 @@
 
 use crate::core::blockchain::Blockchain;
 use crate::error::WebError;
-use crate::web::auth::{validate_token, get_jwt_secret};
+use crate::web::auth::{get_jwt_secret, validate_token};
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        State, Query,
+        Query, State,
     },
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -197,7 +197,11 @@ pub async fn websocket_handler(
     let jwt_secret = match get_jwt_secret() {
         Ok(secret) => secret,
         Err(e) => {
-            return (StatusCode::INTERNAL_SERVER_ERROR, format!("JWT secret error: {}", e)).into_response();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("JWT secret error: {}", e),
+            )
+                .into_response();
         }
     };
 
@@ -217,7 +221,11 @@ pub async fn websocket_handler(
         }
         Err(e) => {
             // Token is invalid, return error
-            return (StatusCode::UNAUTHORIZED, format!("Invalid JWT token: {}", e)).into_response();
+            return (
+                StatusCode::UNAUTHORIZED,
+                format!("Invalid JWT token: {}", e),
+            )
+                .into_response();
         }
     }
 }
@@ -231,7 +239,8 @@ async fn handle_websocket_unauthenticated(socket: WebSocket, state: WebSocketSta
 
     // Send authentication failure message
     let error_msg = WebSocketMessage::Error {
-        message: "Authentication required. Provide valid JWT token via ?token= query parameter.".to_string(),
+        message: "Authentication required. Provide valid JWT token via ?token= query parameter."
+            .to_string(),
     };
 
     if let Ok(msg_text) = serde_json::to_string(&error_msg) {

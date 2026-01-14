@@ -452,7 +452,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let _blockchain = create_blockchain_with_ontology(ontology)?;
 
             info!("Running OWL2 integration and enhanced features demo...\n");
-            
+
             println!("\n--- Phase 1: Simple Integration Test ---\n");
             if let Err(e) = simple_owl2_integration_test() {
                 eprintln!("OWL2 integration test failed: {}\n", e);
@@ -504,8 +504,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Commands::AdvancedOwl2 { ontology } => {
             use provchain_org::semantic::library_integration::{
-                check_consistency,
-                validate_ontology,
+                check_consistency, validate_ontology,
             };
 
             println!("=== Advanced OWL2 Reasoning ===\n");

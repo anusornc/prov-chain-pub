@@ -31,15 +31,17 @@ pub fn get_jwt_secret() -> Result<Vec<u8>, crate::error::WebError> {
     let secret = std::env::var("JWT_SECRET").map_err(|_| {
         crate::error::WebError::AuthenticationFailed(
             "JWT_SECRET environment variable must be set (min 32 characters). \
-             Generate one with: openssl rand -base64 32".to_string()
+             Generate one with: openssl rand -base64 32"
+                .to_string(),
         )
     })?;
 
     // Validate minimum length
     if secret.len() < 32 {
-        return Err(crate::error::WebError::AuthenticationFailed(
-            format!("JWT_SECRET must be at least 32 characters (current: {})", secret.len())
-        ));
+        return Err(crate::error::WebError::AuthenticationFailed(format!(
+            "JWT_SECRET must be at least 32 characters (current: {})",
+            secret.len()
+        )));
     }
 
     Ok(secret.into_bytes())
@@ -97,7 +99,11 @@ impl AuthState {
     /// Initialize with default users ONLY if ALLOW_DEFAULT_USERS env var is set (for development)
     pub fn new_with_defaults() -> Self {
         // Only allow default users in development if explicitly requested AND demo mode is on
-        if !cfg!(debug_assertions) || std::env::var("PROVCHAIN_DEMO_MODE").map(|v| v != "1").unwrap_or(true) {
+        if !cfg!(debug_assertions)
+            || std::env::var("PROVCHAIN_DEMO_MODE")
+                .map(|v| v != "1")
+                .unwrap_or(true)
+        {
             eprintln!("SECURITY: Default users are disabled. Set PROVCHAIN_DEMO_MODE=1 in development to enable demo users.");
             return Self::new();
         }
@@ -288,7 +294,11 @@ impl AuthState {
 /// - `username`: The user's identifier
 /// - `role`: The user's role/permissions
 /// - `secret`: The JWT secret key (must be at least 32 bytes)
-pub fn generate_token(username: &str, role: &ActorRole, secret: &[u8]) -> Result<String, crate::error::WebError> {
+pub fn generate_token(
+    username: &str,
+    role: &ActorRole,
+    secret: &[u8],
+) -> Result<String, crate::error::WebError> {
     let expiration = Utc::now()
         .checked_add_signed(Duration::hours(24))
         .ok_or_else(|| {
@@ -353,24 +363,26 @@ pub async fn authenticate(
     if let Some(user_info) = users.get(&auth_request.username) {
         // Use bcrypt to verify password
         match verify(&auth_request.password, &user_info.password_hash) {
-            Ok(true) => match generate_token(&auth_request.username, &user_info.role, &jwt_secret) {
-                Ok(token) => {
-                    let expires_at = Utc::now() + Duration::hours(24);
-                    Ok(Json(AuthResponse {
-                        token,
-                        expires_at,
-                        user_role: user_info.role.to_string(),
-                    }))
+            Ok(true) => {
+                match generate_token(&auth_request.username, &user_info.role, &jwt_secret) {
+                    Ok(token) => {
+                        let expires_at = Utc::now() + Duration::hours(24);
+                        Ok(Json(AuthResponse {
+                            token,
+                            expires_at,
+                            user_role: user_info.role.to_string(),
+                        }))
+                    }
+                    Err(_) => Err((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(ApiError {
+                            error: "token_generation_failed".to_string(),
+                            message: "Failed to generate authentication token".to_string(),
+                            timestamp: Utc::now(),
+                        }),
+                    )),
                 }
-                Err(_) => Err((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        error: "token_generation_failed".to_string(),
-                        message: "Failed to generate authentication token".to_string(),
-                        timestamp: Utc::now(),
-                    }),
-                )),
-            },
+            }
             Ok(false) | Err(_) => Err((
                 StatusCode::UNAUTHORIZED,
                 Json(ApiError {

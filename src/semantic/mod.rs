@@ -20,21 +20,21 @@
 #[cfg(test)]
 pub mod debug_ontology;
 pub mod enhanced_owl2_demo;
+pub mod library_integration;
 pub mod owl2_enhanced_reasoner;
 pub mod owl2_integration;
 pub mod owl2_traceability;
 pub mod owl_reasoner;
 pub mod shacl_validator;
-pub mod library_integration;
 pub mod simple_owl2_test;
 
 // Re-exports for convenience
+pub use enhanced_owl2_demo::run_enhanced_owl2_demo;
 pub use owl2_enhanced_reasoner::{
     InferredGraph, Owl2EnhancedReasoner, QualifiedCardinalityRestriction,
 };
 pub use owl2_integration::test_owl2_integration;
 pub use owl2_traceability::Owl2EnhancedTraceability;
 pub use owl_reasoner::{OwlReasoner, OwlReasonerConfig, ValidationResult};
-pub use enhanced_owl2_demo::run_enhanced_owl2_demo;
 pub use shacl_validator::ShaclValidator;
 pub use simple_owl2_test::simple_owl2_integration_test;

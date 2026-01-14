@@ -1,11 +1,11 @@
 use crate::trace_optimization::EnhancedTraceResult;
+use crate::web::handlers::utils::validate_sparql_query;
 use crate::web::handlers::AppState;
 use crate::web::models::{
     AnalyticsQueryParams, ApiError, BlockInfo, EnhancedTraceQueryParams, EnvironmentalData,
     KnowledgeGraphParams, ProductTrace, ProductsQueryParams, SparqlQueryRequest,
     SparqlQueryResponse, TraceQueryParams,
 };
-use crate::web::handlers::utils::{validate_sparql_query};
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -36,15 +36,18 @@ pub async fn get_blockchain_status(
     let (avg_block_time, tps) = if blockchain.chain.len() > 2 {
         let sample_size = std::cmp::min(blockchain.chain.len() - 1, 10);
         let recent_blocks = &blockchain.chain[blockchain.chain.len() - sample_size..];
-        
+
         let first_recent = chrono::DateTime::parse_from_rfc3339(&recent_blocks[0].timestamp)
             .map(|dt| dt.with_timezone(&Utc))
             .unwrap_or_else(|_| Utc::now());
-        let last_recent = chrono::DateTime::parse_from_rfc3339(&recent_blocks[recent_blocks.len()-1].timestamp)
-            .map(|dt| dt.with_timezone(&Utc))
-            .unwrap_or_else(|_| Utc::now());
-        
-        let total_duration = last_recent.signed_duration_since(first_recent).num_seconds();
+        let last_recent =
+            chrono::DateTime::parse_from_rfc3339(&recent_blocks[recent_blocks.len() - 1].timestamp)
+                .map(|dt| dt.with_timezone(&Utc))
+                .unwrap_or_else(|_| Utc::now());
+
+        let total_duration = last_recent
+            .signed_duration_since(first_recent)
+            .num_seconds();
         if total_duration > 0 {
             let avg = total_duration as f64 / (sample_size - 1) as f64;
             let current_tps = (sample_size - 1) as f64 / total_duration as f64;
@@ -318,9 +321,7 @@ pub async fn delete_sparql_query(_id: Path<String>) -> StatusCode {
     StatusCode::NO_CONTENT
 }
 
-pub async fn toggle_favorite_sparql_query(
-    Path(id): Path<String>,
-) -> Json<serde_json::Value> {
+pub async fn toggle_favorite_sparql_query(Path(id): Path<String>) -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "id": id,
         "toggled": true
@@ -1160,7 +1161,7 @@ pub async fn validate_item(
 
     // Perform comprehensive validation
     let chain_valid = blockchain.is_valid();
-    
+
     // Signature validation: check block signatures
     let signature_valid = if !blockchain.chain.is_empty() {
         // Check if blocks have valid signatures
@@ -1171,48 +1172,50 @@ pub async fn validate_item(
     } else {
         false
     };
-    
+
     let chain_intact = chain_valid;
-    
+
     // Data consistency checks
     let data_consistent = if !blockchain.chain.is_empty() {
         // Check data consistency across blocks
-        let all_blocks_valid = blockchain.chain.iter()
+        let all_blocks_valid = blockchain
+            .chain
+            .iter()
             .all(|block| !block.data.is_empty() && block.data.len() < 10_000_000);
-        
+
         // Verify state roots match (if available)
-        let state_roots_valid = blockchain.chain.iter()
+        let state_roots_valid = blockchain
+            .chain
+            .iter()
             .all(|block| block.state_root.len() >= 16);
-        
+
         all_blocks_valid && state_roots_valid
     } else {
         false
     };
-    
+
     // Timestamp validation: check for reasonable timestamps
     let timestamp_valid = if !blockchain.chain.is_empty() {
         let now = Utc::now().timestamp();
-        let all_timestamps_valid = blockchain.chain.iter()
-            .all(|block| {
-                // Parse timestamp string to DateTime
-                let block_ts = match chrono::DateTime::parse_from_rfc3339(&block.timestamp) {
-                    Ok(dt) => dt.timestamp(),
-                    Err(_) => return false,
-                };
-                // Timestamp should be reasonable: not in far future, not too old
-                block_ts <= now + 300 && block_ts >= now - 86400 * 365
-            });
+        let all_timestamps_valid = blockchain.chain.iter().all(|block| {
+            // Parse timestamp string to DateTime
+            let block_ts = match chrono::DateTime::parse_from_rfc3339(&block.timestamp) {
+                Ok(dt) => dt.timestamp(),
+                Err(_) => return false,
+            };
+            // Timestamp should be reasonable: not in far future, not too old
+            block_ts <= now + 300 && block_ts >= now - 86400 * 365
+        });
 
         // Check chronological ordering
-        let timestamps_ordered = blockchain.chain.windows(2)
-            .all(|w| {
-                let ts1 = chrono::DateTime::parse_from_rfc3339(&w[0].timestamp).ok();
-                let ts2 = chrono::DateTime::parse_from_rfc3339(&w[1].timestamp).ok();
-                match (ts1, ts2) {
-                    (Some(t1), Some(t2)) => t1 <= t2,
-                    _ => false,
-                }
-            });
+        let timestamps_ordered = blockchain.chain.windows(2).all(|w| {
+            let ts1 = chrono::DateTime::parse_from_rfc3339(&w[0].timestamp).ok();
+            let ts2 = chrono::DateTime::parse_from_rfc3339(&w[1].timestamp).ok();
+            match (ts1, ts2) {
+                (Some(t1), Some(t2)) => t1 <= t2,
+                _ => false,
+            }
+        });
 
         all_timestamps_valid && timestamps_ordered
     } else {
@@ -1545,7 +1548,10 @@ pub async fn execute_sparql_query(
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 error: "query_too_long".to_string(),
-                message: format!("SPARQL query exceeds maximum length of {} characters", MAX_QUERY_LENGTH),
+                message: format!(
+                    "SPARQL query exceeds maximum length of {} characters",
+                    MAX_QUERY_LENGTH
+                ),
                 timestamp: Utc::now(),
             }),
         ));
@@ -1589,7 +1595,10 @@ pub async fn execute_sparql_query(
             StatusCode::REQUEST_TIMEOUT,
             Json(ApiError {
                 error: "query_timeout".to_string(),
-                message: format!("SPARQL query exceeded maximum execution time of {}ms (actual: {}ms)", MAX_QUERY_EXECUTION_TIME_MS, execution_time),
+                message: format!(
+                    "SPARQL query exceeded maximum execution time of {}ms (actual: {}ms)",
+                    MAX_QUERY_EXECUTION_TIME_MS, execution_time
+                ),
                 timestamp: Utc::now(),
             }),
         ));
@@ -1610,7 +1619,10 @@ pub async fn execute_sparql_query(
             for solution in solutions {
                 // Enforce result set size limit to prevent memory exhaustion
                 if result_count >= MAX_RESULT_SET_SIZE {
-                    eprintln!("Warning: SPARQL query exceeded maximum result set size of {}", MAX_RESULT_SET_SIZE);
+                    eprintln!(
+                        "Warning: SPARQL query exceeded maximum result set size of {}",
+                        MAX_RESULT_SET_SIZE
+                    );
                     break;
                 }
                 match solution {
@@ -1771,7 +1783,7 @@ pub async fn trace_path_api(
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let _blockchain = app_state.blockchain.read().await;
     let batch_id = params.batch_id.unwrap_or_else(|| "unknown".to_string());
-    
+
     // Simulate finding a trace path
     Ok(Json(serde_json::json!({
         "batch_id": batch_id,

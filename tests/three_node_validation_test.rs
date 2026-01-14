@@ -38,14 +38,12 @@ data_dir = "./"
     .unwrap();
 
     let binary_path = env!("CARGO_BIN_EXE_provchain-org");
-    let mut authority_node = std::process::Command::new(
-        binary_path,
-    )
-    .current_dir(authority_dir.path())
-    .stdout(Stdio::piped())
-    .stderr(Stdio::piped())
-    .spawn()
-    .expect("Failed to start authority node");
+    let mut authority_node = std::process::Command::new(binary_path)
+        .current_dir(authority_dir.path())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("Failed to start authority node");
 
     // Give the authority node a moment to start
     thread::sleep(Duration::from_secs(10));
@@ -70,14 +68,12 @@ data_dir = "./"
     )
     .unwrap();
 
-    let mut node2 = std::process::Command::new(
-        binary_path,
-    )
-    .current_dir(node2_dir.path())
-    .stdout(Stdio::piped())
-    .stderr(Stdio::piped())
-    .spawn()
-    .expect("Failed to start node 2");
+    let mut node2 = std::process::Command::new(binary_path)
+        .current_dir(node2_dir.path())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("Failed to start node 2");
 
     // Regular Node 3
     let node3_config_path = node3_dir.path().join("config.toml");
@@ -99,14 +95,12 @@ data_dir = "./"
     )
     .unwrap();
 
-    let mut node3 = std::process::Command::new(
-        binary_path,
-    )
-    .current_dir(node3_dir.path())
-    .stdout(Stdio::piped())
-    .stderr(Stdio::piped())
-    .spawn()
-    .expect("Failed to start node 3");
+    let mut node3 = std::process::Command::new(binary_path)
+        .current_dir(node3_dir.path())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("Failed to start node 3");
 
     // Give the regular nodes a moment to start and connect
     thread::sleep(Duration::from_secs(20));
@@ -121,13 +115,11 @@ ex:subject ex:predicate ex:object ."#
     )
     .unwrap();
 
-    let add_block_output = std::process::Command::new(
-        binary_path,
-    )
-    .current_dir(authority_dir.path())
-    .args(["add-file", test_data_path.to_str().unwrap()])
-    .output()
-    .expect("Failed to add block");
+    let add_block_output = std::process::Command::new(binary_path)
+        .current_dir(authority_dir.path())
+        .args(["add-file", test_data_path.to_str().unwrap()])
+        .output()
+        .expect("Failed to add block");
 
     assert!(add_block_output.status.success());
 
@@ -136,49 +128,41 @@ ex:subject ex:predicate ex:object ."#
 
     // 4. Validate Blockchain Integrity
     for dir in &[&authority_dir, &node2_dir, &node3_dir] {
-        let validate_output = std::process::Command::new(
-            binary_path,
-        )
-        .current_dir(dir.path())
-        .arg("validate")
-        .output()
-        .expect("Failed to validate node");
+        let validate_output = std::process::Command::new(binary_path)
+            .current_dir(dir.path())
+            .arg("validate")
+            .output()
+            .expect("Failed to validate node");
         assert!(validate_output.status.success());
     }
 
-    let authority_dump_output = std::process::Command::new(
-        binary_path,
-    )
-    .current_dir(authority_dir.path())
-    .arg("dump")
-    .output()
-    .expect("Failed to dump authority node");
+    let authority_dump_output = std::process::Command::new(binary_path)
+        .current_dir(authority_dir.path())
+        .arg("dump")
+        .output()
+        .expect("Failed to dump authority node");
     let authority_dump_str = String::from_utf8_lossy(&authority_dump_output.stdout);
     let authority_dump: Vec<Value> = authority_dump_str
         .split('}')
         .filter_map(|s| serde_json::from_str(s).ok())
         .collect();
 
-    let node2_dump_output = std::process::Command::new(
-        binary_path,
-    )
-    .current_dir(node2_dir.path())
-    .arg("dump")
-    .output()
-    .expect("Failed to dump node 2");
+    let node2_dump_output = std::process::Command::new(binary_path)
+        .current_dir(node2_dir.path())
+        .arg("dump")
+        .output()
+        .expect("Failed to dump node 2");
     let node2_dump_str = String::from_utf8_lossy(&node2_dump_output.stdout);
     let node2_dump: Vec<Value> = node2_dump_str
         .split('}')
         .filter_map(|s| serde_json::from_str(s).ok())
         .collect();
 
-    let node3_dump_output = std::process::Command::new(
-        binary_path,
-    )
-    .current_dir(node3_dir.path())
-    .arg("dump")
-    .output()
-    .expect("Failed to dump node 3");
+    let node3_dump_output = std::process::Command::new(binary_path)
+        .current_dir(node3_dir.path())
+        .arg("dump")
+        .output()
+        .expect("Failed to dump node 3");
     let node3_dump_str = String::from_utf8_lossy(&node3_dump_output.stdout);
     let node3_dump: Vec<Value> = node3_dump_str
         .split('}')
