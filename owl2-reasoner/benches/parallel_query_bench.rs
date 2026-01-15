@@ -92,27 +92,40 @@ fn create_union_test_ontology(size: usize, union_branches: usize) -> Ontology {
 }
 
 fn create_union_query_pattern(union_branches: usize) -> QueryPattern {
-    let mut patterns = Vec::new();
-
-    for i in 0..union_branches {
-        let class_iri = match i {
-            0 => "http://example.org/Person",
-            1 => "http://example.org/Employee",
-            2 => "http://example.org/Manager",
-            _ => "http://example.org/Department",
-        };
-
-        let pattern = QueryPattern::BasicGraphPattern(vec![TriplePattern {
+    // Helper function to create a basic pattern for a class
+    let create_class_pattern = |class_iri: &str| -> QueryPattern {
+        QueryPattern::BasicGraphPattern(vec![TriplePattern {
             subject: PatternTerm::Variable("?person".to_string()),
             predicate: PatternTerm::IRI(
                 IRI::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap(),
             ),
             object: PatternTerm::IRI(IRI::new(class_iri).unwrap()),
-        }]);
-        patterns.push(pattern);
-    }
+        }])
+    };
 
-    QueryPattern::UnionPattern(patterns)
+    let class_iris = vec![
+        "http://example.org/Person",
+        "http://example.org/Employee",
+        "http://example.org/Manager",
+        "http://example.org/Department",
+    ];
+
+    // Create nested union from multiple patterns
+    let patterns: Vec<QueryPattern> = (0..union_branches)
+        .map(|i| {
+            let class_iri = class_iris[i % class_iris.len()];
+            create_class_pattern(class_iri)
+        })
+        .collect();
+
+    // Reduce to nested union: Union { left: A, right: Union { left: B, right: C } }
+    patterns
+        .into_iter()
+        .reduce(|left, right| QueryPattern::Union {
+            left: Box::new(left),
+            right: Box::new(right),
+        })
+        .unwrap_or_else(|| create_class_pattern("http://example.org/Person"))
 }
 
 fn bench_sequential_vs_parallel(c: &mut Criterion) {
@@ -131,22 +144,22 @@ fn bench_sequential_vs_parallel(c: &mut Criterion) {
                 &(&ontology, &query_pattern),
                 |b, (ontology, pattern)| {
                     b.iter(|| {
-                        let mut engine = QueryEngine::with_config(
+                        let engine = QueryEngine::with_config(
                             (*ontology).clone(),
                             QueryConfig {
                                 enable_reasoning: false,
                                 max_results: None,
                                 timeout: None,
-                                enable_caching: false, // Disable caching for accurate measurement
+                                enable_caching: false,
                                 cache_size: None,
-                                enable_parallel: false, // Sequential execution
-                                max_parallel_threads: None,
-                                parallel_threshold: 1,
-                                use_memory_pool: true,
+                                enable_parallel: false,
+                                enable_optimization: false,
+                                max_memory: None,
+                                batch_size: 100,
                             },
                         );
 
-                        black_box(engine.execute_query_sequential(black_box(pattern)).unwrap());
+                        black_box(engine.execute(black_box(pattern)).unwrap());
                     });
                 },
             );
@@ -157,22 +170,22 @@ fn bench_sequential_vs_parallel(c: &mut Criterion) {
                 &(&ontology, &query_pattern),
                 |b, (ontology, pattern)| {
                     b.iter(|| {
-                        let mut engine = QueryEngine::with_config(
+                        let engine = QueryEngine::with_config(
                             (*ontology).clone(),
                             QueryConfig {
                                 enable_reasoning: false,
                                 max_results: None,
                                 timeout: None,
-                                enable_caching: false, // Disable caching for accurate measurement
+                                enable_caching: false,
                                 cache_size: None,
-                                enable_parallel: true, // Parallel execution
-                                max_parallel_threads: Some(4), // Use 4 threads
-                                parallel_threshold: 1,
-                                use_memory_pool: true,
+                                enable_parallel: true,
+                                enable_optimization: true,
+                                max_memory: Some(1024 * 1024),
+                                batch_size: 100,
                             },
                         );
 
-                        black_box(engine.execute_query_parallel(black_box(pattern)).unwrap());
+                        black_box(engine.execute(black_box(pattern)).unwrap());
                     });
                 },
             );
@@ -194,7 +207,7 @@ fn bench_parallel_thread_scaling(c: &mut Criterion) {
             &(threads, &ontology, &query_pattern),
             |b, (threads, ontology, pattern)| {
                 b.iter(|| {
-                    let mut engine = QueryEngine::with_config(
+                    let engine = QueryEngine::with_config(
                         (*ontology).clone(),
                         QueryConfig {
                             enable_reasoning: false,
@@ -203,13 +216,13 @@ fn bench_parallel_thread_scaling(c: &mut Criterion) {
                             enable_caching: false,
                             cache_size: None,
                             enable_parallel: true,
-                            max_parallel_threads: Some(**threads),
-                            parallel_threshold: 1,
-                            use_memory_pool: true,
+                            enable_optimization: true,
+                            max_memory: Some(1024 * 1024),
+                            batch_size: 100,
                         },
                     );
 
-                    black_box(engine.execute_query_parallel(black_box(pattern)).unwrap());
+                    black_box(engine.execute(black_box(pattern)).unwrap());
                 });
             },
         );
@@ -232,7 +245,7 @@ fn bench_parallel_threshold_effectiveness(c: &mut Criterion) {
             &(&ontology, &query_pattern),
             |b, (ontology, pattern)| {
                 b.iter(|| {
-                    let mut engine = QueryEngine::with_config(
+                    let engine = QueryEngine::with_config(
                         (*ontology).clone(),
                         QueryConfig {
                             enable_reasoning: false,
@@ -241,13 +254,13 @@ fn bench_parallel_threshold_effectiveness(c: &mut Criterion) {
                             enable_caching: false,
                             cache_size: None,
                             enable_parallel: true,
-                            max_parallel_threads: Some(4),
-                            parallel_threshold: 8, // High threshold
-                            use_memory_pool: true,
+                            enable_optimization: true,
+                            max_memory: Some(1024 * 1024),
+                            batch_size: 100,
                         },
                     );
 
-                    black_box(engine.execute_query(black_box(pattern)).unwrap());
+                    black_box(engine.execute(black_box(pattern)).unwrap());
                 });
             },
         );
@@ -258,7 +271,7 @@ fn bench_parallel_threshold_effectiveness(c: &mut Criterion) {
             &(&ontology, &query_pattern),
             |b, (ontology, pattern)| {
                 b.iter(|| {
-                    let mut engine = QueryEngine::with_config(
+                    let engine = QueryEngine::with_config(
                         (*ontology).clone(),
                         QueryConfig {
                             enable_reasoning: false,
@@ -267,13 +280,13 @@ fn bench_parallel_threshold_effectiveness(c: &mut Criterion) {
                             enable_caching: false,
                             cache_size: None,
                             enable_parallel: true,
-                            max_parallel_threads: Some(4),
-                            parallel_threshold: 2, // Low threshold
-                            use_memory_pool: true,
+                            enable_optimization: true,
+                            max_memory: Some(1024 * 1024),
+                            batch_size: 100,
                         },
                     );
 
-                    black_box(engine.execute_query(black_box(pattern)).unwrap());
+                    black_box(engine.execute(black_box(pattern)).unwrap());
                 });
             },
         );
@@ -290,7 +303,7 @@ fn bench_memory_pool_effectiveness(c: &mut Criterion) {
     // With memory pool
     group.bench_function("with_memory_pool", |b| {
         b.iter(|| {
-            let mut engine = QueryEngine::with_config(
+            let engine = QueryEngine::with_config(
                 ontology.clone(),
                 QueryConfig {
                     enable_reasoning: false,
@@ -299,15 +312,15 @@ fn bench_memory_pool_effectiveness(c: &mut Criterion) {
                     enable_caching: false,
                     cache_size: None,
                     enable_parallel: true,
-                    max_parallel_threads: Some(4),
-                    parallel_threshold: 1,
-                    use_memory_pool: true,
+                    enable_optimization: true,
+                    max_memory: Some(1024 * 1024),
+                    batch_size: 100,
                 },
             );
 
             black_box(
                 engine
-                    .execute_query_parallel(black_box(&query_pattern))
+                    .execute(black_box(&query_pattern))
                     .unwrap(),
             );
         });
@@ -316,7 +329,7 @@ fn bench_memory_pool_effectiveness(c: &mut Criterion) {
     // Without memory pool
     group.bench_function("without_memory_pool", |b| {
         b.iter(|| {
-            let mut engine = QueryEngine::with_config(
+            let engine = QueryEngine::with_config(
                 ontology.clone(),
                 QueryConfig {
                     enable_reasoning: false,
@@ -325,15 +338,15 @@ fn bench_memory_pool_effectiveness(c: &mut Criterion) {
                     enable_caching: false,
                     cache_size: None,
                     enable_parallel: true,
-                    max_parallel_threads: Some(4),
-                    parallel_threshold: 1,
-                    use_memory_pool: false,
+                    enable_optimization: true,
+                    max_memory: Some(1024 * 1024),
+                    batch_size: 100,
                 },
             );
 
             black_box(
                 engine
-                    .execute_query_parallel(black_box(&query_pattern))
+                    .execute(black_box(&query_pattern))
                     .unwrap(),
             );
         });

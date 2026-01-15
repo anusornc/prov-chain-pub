@@ -30,7 +30,7 @@ pub fn bench_simple_queries(c: &mut Criterion) {
 
     for size in [10, 50, 100, 500].iter() {
         let ontology = create_query_ontology(*size);
-        let mut engine = QueryEngine::new(ontology);
+        let engine = QueryEngine::new(ontology);
         let pattern = QueryPattern::BasicGraphPattern(vec![TriplePattern {
             subject: PatternTerm::Variable("s".into()),
             predicate: PatternTerm::Variable("p".into()),
@@ -39,7 +39,7 @@ pub fn bench_simple_queries(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("simple_select", size), size, |b, _| {
             b.iter(|| {
-                let result = engine.execute_query(black_box(&pattern));
+                let result = engine.execute(black_box(&pattern));
                 let _ = black_box(result);
             })
         });
@@ -54,7 +54,7 @@ pub fn bench_class_queries(c: &mut Criterion) {
 
     for size in [10, 50, 100, 500].iter() {
         let ontology = create_query_ontology(*size);
-        let mut engine = QueryEngine::new(ontology);
+        let engine = QueryEngine::new(ontology);
         let rdf_type = IRI::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap();
         let class0 = IRI::new("http://example.org/Class0").unwrap();
         let pattern = QueryPattern::BasicGraphPattern(vec![TriplePattern {
@@ -65,7 +65,7 @@ pub fn bench_class_queries(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("class_type_query", size), size, |b, _| {
             b.iter(|| {
-                let result = engine.execute_query(black_box(&pattern));
+                let result = engine.execute(black_box(&pattern));
                 let _ = black_box(result);
             })
         });
@@ -80,7 +80,7 @@ pub fn bench_subclass_queries(c: &mut Criterion) {
 
     for size in [10, 50, 100, 500].iter() {
         let ontology = create_query_ontology(*size);
-        let mut engine = QueryEngine::new(ontology);
+        let engine = QueryEngine::new(ontology);
         let rdfs_subclass = IRI::new("http://www.w3.org/2000/01/rdf-schema#subClassOf").unwrap();
         let class0 = IRI::new("http://example.org/Class0").unwrap();
         let pattern = QueryPattern::BasicGraphPattern(vec![TriplePattern {
@@ -91,7 +91,7 @@ pub fn bench_subclass_queries(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("subclass_query", size), size, |b, _| {
             b.iter(|| {
-                let result = engine.execute_query(black_box(&pattern));
+                let result = engine.execute(black_box(&pattern));
                 let _ = black_box(result);
             })
         });

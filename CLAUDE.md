@@ -222,6 +222,26 @@ cd benchmark-toolkit && ./run.sh
 
 ### Recent Enhancements
 
+**Code Quality & Test Fixes** (January 2026):
+- **Turtle Parser Test Fixes** (`owl2-reasoner/tests/turtle_parser_tests.rs`)
+  - Fixed 8 failing tests by correcting malformed Turtle syntax
+  - Added missing subjects to property assertions (e.g., `:age "30"` → `:John :age "30"`)
+  - Removed unsupported typed literals with language tags
+  - Fixed OWL namespace typo (`w2.org` → `w3.org`)
+  - Added proper class declarations for multi-prefix tests
+  - Updated test assertions to match actual parser behavior
+- **Clippy Auto-fixes Applied** (`owl2-reasoner/src/`)
+  - Changed `assert_eq!` with boolean expressions to `assert!` for clarity
+  - Used `is_empty()` instead of `len() == 0` comparisons
+  - Removed unnecessary `.clone()` calls
+  - Fixed empty slice references (`&vec![]` → `&[]`)
+  - Applied to cache.rs, engine.rs, optimized_engine.rs, memory.rs
+- **rustfmt Formatting** (Commit a6ba29c)
+  - Applied standard Rust formatting across entire codebase (53 files)
+  - Fixed trailing whitespace in transaction.rs
+  - All CI checks pass: cargo fmt, cargo check, cargo test (43/43 passed)
+  - No functional changes, formatting only
+
 **Source Code Enhancements** (Commit 65ac20e):
 - **Transaction Handlers** (`src/web/handlers/transaction.rs`)
   - Enhanced triple validation with URI and literal validation

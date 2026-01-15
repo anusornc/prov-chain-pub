@@ -673,6 +673,10 @@ impl Default for OptimizedQueryEngine {
     }
 }
 
+// Thread safety implementations
+unsafe impl Send for OptimizedQueryEngine {}
+unsafe impl Sync for OptimizedQueryEngine {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1219,7 +1223,7 @@ mod tests {
             let stats = engine.get_performance_stats();
 
             // Stats should be consistent
-            assert!(stats.queries_executed >= i + 1);
+            assert!(stats.queries_executed > i);
             assert!(
                 stats.cache_hits + stats.cache_misses + stats.adaptive_index_hits
                     >= stats.queries_executed
@@ -1308,7 +1312,3 @@ mod tests {
         }
     }
 }
-
-// Thread safety implementations
-unsafe impl Send for OptimizedQueryEngine {}
-unsafe impl Sync for OptimizedQueryEngine {}

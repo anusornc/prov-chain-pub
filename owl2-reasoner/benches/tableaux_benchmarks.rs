@@ -296,20 +296,9 @@ pub fn bench_tableaux_expansion(c: &mut Criterion) {
             },
         );
 
-        let rules = ExpansionRules::new();
-        group.bench_with_input(
-            BenchmarkId::new("rule_selection", complexity),
-            complexity,
-            |b, _| {
-                b.iter(|| {
-                    let mut test_engine = ExpansionEngine::new();
-                    let context = &mut test_engine.context;
-                    if let Some(rule) = rules.get_next_rule(context) {
-                        black_box(rule);
-                    }
-                })
-            },
-        );
+        // Note: The rule_selection benchmark has been removed because the current
+        // ExpansionEngine API no longer exposes the context field directly.
+        // Rule selection is now handled internally during expansion.
     }
 
     group.finish();

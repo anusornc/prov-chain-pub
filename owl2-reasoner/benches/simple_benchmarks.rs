@@ -148,7 +148,7 @@ fn bench_simple_queries(c: &mut Criterion) {
 
     for size in [10, 50, 100].iter() {
         let ontology = create_hierarchy_ontology(*size);
-        let mut engine = QueryEngine::new(ontology);
+        let engine = QueryEngine::new(ontology);
 
         let pattern = QueryPattern::BasicGraphPattern(vec![TriplePattern {
             subject: PatternTerm::Variable("s".into()),
@@ -158,7 +158,7 @@ fn bench_simple_queries(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("simple_select", size), size, |b, _| {
             b.iter(|| {
-                let result = engine.execute_query(black_box(&pattern));
+                let result = engine.execute(black_box(&pattern));
                 let _ = black_box(result);
             })
         });

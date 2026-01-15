@@ -1934,7 +1934,7 @@ mod tests {
         assert_eq!(arena_node1.get().id, arena_node2.get().id);
 
         // Test Clone trait
-        let arena_node3 = arena_node1.clone();
+        let arena_node3 = arena_node1;
         assert_eq!(arena_node1.get().id, arena_node3.get().id);
     }
 
@@ -2039,7 +2039,7 @@ mod tests {
         // Test with different constraint types
         let string_constraint = "string_constraint";
         let number_constraint = 42i32;
-        let tuple_constraint = (true, 3.14);
+        let tuple_constraint = (true, std::f64::consts::PI);
 
         let _arena_str = manager
             .allocate_constraint(string_constraint)

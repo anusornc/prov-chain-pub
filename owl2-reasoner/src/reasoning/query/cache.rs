@@ -1345,7 +1345,7 @@ mod tests {
 
         assert_eq!(table.len(), 0);
         assert!(table.is_empty());
-        assert!(!table.contains_key(&vec![]));
+        assert!(!table.contains_key(&[]));
     }
 
     #[test]
@@ -1433,7 +1433,7 @@ mod tests {
         let join_results2 = table2.hash_join(&left_bindings, &matching_right, &common_vars);
 
         // Should have matches for x0 and x1
-        assert!(join_results2.len() > 0);
+        assert!(!join_results2.is_empty());
     }
 
     #[test]

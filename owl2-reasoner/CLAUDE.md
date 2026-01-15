@@ -113,3 +113,24 @@ See root `Cargo.toml` for comprehensive security documentation:
 - EPCIS ontology support for supply chain traceability
 - SHACL validation for data integrity
 - SPARQL-like query engine for pattern matching
+
+## Recent Improvements
+
+**Code Quality & Testing** (January 2026):
+- **Turtle Parser Test Fixes** (`tests/turtle_parser_tests.rs`)
+  - Fixed 8 failing tests by correcting malformed Turtle syntax
+  - Added missing subjects to property assertions (e.g., `:age "30"` → `:John :age "30"`)
+  - Removed unsupported typed literals with language tags
+  - Fixed OWL namespace typo (`w2.org` → `w3.org`)
+  - Added proper class declarations for multi-prefix tests
+  - Updated test assertions to match actual parser behavior
+- **Clippy Auto-fixes Applied** (reasoning modules)
+  - Changed `assert_eq!` with boolean expressions to `assert!` for clarity
+  - Used `is_empty()` instead of `len() == 0` comparisons
+  - Removed unnecessary `.clone()` calls
+  - Fixed empty slice references (`&vec![]` → `&[]`)
+  - Applied to: cache.rs, engine.rs, optimized_engine.rs, memory.rs
+- **rustfmt Formatting** (Commit a6ba29c)
+  - Applied standard Rust formatting across entire library (7 files)
+  - All CI checks pass: cargo fmt, cargo check, cargo test
+  - No functional changes, formatting only

@@ -5,6 +5,7 @@ use owl2_reasoner::ontology::Ontology;
 use owl2_reasoner::reasoning::query::*;
 use owl2_reasoner::{Class, NamedIndividual, ObjectProperty};
 use std::sync::Arc;
+use std::time::Duration;
 
 fn create_test_ontology(size: usize) -> Ontology {
     let mut ontology = Ontology::new();
@@ -180,26 +181,26 @@ fn benchmark_query_performance(c: &mut Criterion) {
         let config_optimized = QueryConfig {
             enable_reasoning: false,
             max_results: Some(1000),
-            timeout: Some(30000),
+            timeout: Some(Duration::from_millis(30000)),
             enable_caching: true,
-            cache_size: Some(1000),
-            enable_parallel: false, // Disabled due to Sync trait issues
-            max_parallel_threads: Some(4),
-            parallel_threshold: 10,
-            use_memory_pool: true,
+            cache_size: Some(std::num::NonZeroUsize::new(1000).unwrap()),
+            enable_parallel: false,
+            enable_optimization: true,
+            max_memory: Some(1024 * 1024),
+            batch_size: 100,
         };
 
         // Test with optimizations disabled
         let config_baseline = QueryConfig {
             enable_reasoning: false,
             max_results: Some(1000),
-            timeout: Some(30000),
+            timeout: Some(Duration::from_millis(30000)),
             enable_caching: false,
             cache_size: None,
             enable_parallel: false,
-            max_parallel_threads: Some(4),
-            parallel_threshold: 10,
-            use_memory_pool: false,
+            enable_optimization: false,
+            max_memory: Some(1024 * 1024),
+            batch_size: 100,
         };
 
         for (i, pattern) in query_patterns.iter().enumerate() {
@@ -208,8 +209,8 @@ fn benchmark_query_performance(c: &mut Criterion) {
                 &(ontology.clone(), pattern.clone(), config_optimized.clone()),
                 |b, (ont, pat, conf)| {
                     b.iter(|| {
-                        let mut engine = QueryEngine::with_config(ont.clone(), conf.clone());
-                        let result = engine.execute_query(black_box(pat)).unwrap();
+                        let engine = QueryEngine::with_config(ont.clone(), conf.clone());
+                        let result = engine.execute(black_box(pat)).unwrap();
                         black_box(result)
                     })
                 },
@@ -220,8 +221,8 @@ fn benchmark_query_performance(c: &mut Criterion) {
                 &(ontology.clone(), pattern.clone(), config_baseline.clone()),
                 |b, (ont, pat, conf)| {
                     b.iter(|| {
-                        let mut engine = QueryEngine::with_config(ont.clone(), conf.clone());
-                        let result = engine.execute_query(black_box(pat)).unwrap();
+                        let engine = QueryEngine::with_config(ont.clone(), conf.clone());
+                        let result = engine.execute(black_box(pat)).unwrap();
                         black_box(result)
                     })
                 },
@@ -241,32 +242,32 @@ fn benchmark_cache_performance(c: &mut Criterion) {
     let config_with_cache = QueryConfig {
         enable_reasoning: false,
         max_results: Some(1000),
-        timeout: Some(30000),
+        timeout: Some(Duration::from_millis(30000)),
         enable_caching: true,
-        cache_size: Some(1000),
+        cache_size: Some(std::num::NonZeroUsize::new(1000).unwrap()),
         enable_parallel: false,
-        max_parallel_threads: Some(4),
-        parallel_threshold: 10,
-        use_memory_pool: true,
+        enable_optimization: true,
+        max_memory: Some(1024 * 1024),
+        batch_size: 100,
     };
 
     let config_without_cache = QueryConfig {
         enable_reasoning: false,
         max_results: Some(1000),
-        timeout: Some(30000),
+        timeout: Some(Duration::from_millis(30000)),
         enable_caching: false,
         cache_size: None,
         enable_parallel: false,
-        max_parallel_threads: Some(4),
-        parallel_threshold: 10,
-        use_memory_pool: true,
+        enable_optimization: false,
+        max_memory: Some(1024 * 1024),
+        batch_size: 100,
     };
 
     // First query (cache miss)
     group.bench_function("first_query_with_cache", |b| {
         b.iter(|| {
-            let mut engine = QueryEngine::with_config(ontology.clone(), config_with_cache.clone());
-            let result = engine.execute_query(black_box(pattern)).unwrap();
+            let engine = QueryEngine::with_config(ontology.clone(), config_with_cache.clone());
+            let result = engine.execute(black_box(pattern)).unwrap();
             black_box(result)
         })
     });
@@ -274,11 +275,11 @@ fn benchmark_cache_performance(c: &mut Criterion) {
     // Repeated query (cache hit)
     group.bench_function("repeated_query_with_cache", |b| {
         b.iter(|| {
-            let mut engine = QueryEngine::with_config(ontology.clone(), config_with_cache.clone());
+            let engine = QueryEngine::with_config(ontology.clone(), config_with_cache.clone());
             // Execute once to populate cache
-            let _ = engine.execute_query(pattern).unwrap();
+            let _ = engine.execute(pattern).unwrap();
             // Execute again (should hit cache)
-            let result = engine.execute_query(black_box(pattern)).unwrap();
+            let result = engine.execute(black_box(pattern)).unwrap();
             black_box(result)
         })
     });
@@ -286,9 +287,9 @@ fn benchmark_cache_performance(c: &mut Criterion) {
     // Same query without cache
     group.bench_function("repeated_query_without_cache", |b| {
         b.iter(|| {
-            let mut engine =
+            let engine =
                 QueryEngine::with_config(ontology.clone(), config_without_cache.clone());
-            let result = engine.execute_query(black_box(pattern)).unwrap();
+            let result = engine.execute(black_box(pattern)).unwrap();
             black_box(result)
         })
     });
@@ -327,8 +328,8 @@ fn benchmark_index_performance(c: &mut Criterion) {
             &(ontology.clone(), indexed_query),
             |b, (ont, query)| {
                 b.iter(|| {
-                    let mut engine = QueryEngine::new(ont.clone());
-                    let result = engine.execute_query(black_box(query)).unwrap();
+                    let engine = QueryEngine::new(ont.clone());
+                    let result = engine.execute(black_box(query)).unwrap();
                     black_box(result)
                 })
             },
@@ -339,8 +340,8 @@ fn benchmark_index_performance(c: &mut Criterion) {
             &(ontology.clone(), non_indexed_query),
             |b, (ont, query)| {
                 b.iter(|| {
-                    let mut engine = QueryEngine::new(ont.clone());
-                    let result = engine.execute_query(black_box(query)).unwrap();
+                    let engine = QueryEngine::new(ont.clone());
+                    let result = engine.execute(black_box(query)).unwrap();
                     black_box(result)
                 })
             },
@@ -359,10 +360,10 @@ fn benchmark_pattern_compilation(c: &mut Criterion) {
     // Test pattern compilation caching
     group.bench_function("pattern_compilation_with_cache", |b| {
         b.iter(|| {
-            let mut engine = QueryEngine::new(ontology.clone());
+            let engine = QueryEngine::new(ontology.clone());
             // Execute multiple times to test pattern caching
             for _ in 0..10 {
-                let result = engine.execute_query(black_box(pattern)).unwrap();
+                let result = engine.execute(black_box(pattern)).unwrap();
                 black_box(result);
             }
         })
@@ -372,8 +373,8 @@ fn benchmark_pattern_compilation(c: &mut Criterion) {
     group.bench_function("pattern_compilation_without_cache", |b| {
         b.iter(|| {
             for _ in 0..10 {
-                let mut engine = QueryEngine::new(ontology.clone());
-                let result = engine.execute_query(black_box(pattern)).unwrap();
+                let engine = QueryEngine::new(ontology.clone());
+                let result = engine.execute(black_box(pattern)).unwrap();
                 black_box(result);
             }
         })

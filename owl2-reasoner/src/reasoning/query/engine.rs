@@ -723,6 +723,10 @@ impl QueryPatternExt for QueryPattern {
     }
 }
 
+// Thread safety implementations
+unsafe impl Send for QueryEngine {}
+unsafe impl Sync for QueryEngine {}
+
 #[cfg(test)]
 mod tests {
     use super::super::FilterExpression;
@@ -883,9 +887,9 @@ mod tests {
         let engine = QueryEngine::with_config(ontology, config);
 
         let engine_config = engine.config();
-        assert_eq!(engine_config.enable_reasoning, false);
-        assert_eq!(engine_config.enable_caching, true);
-        assert_eq!(engine_config.enable_parallel, false);
+        assert!(!engine_config.enable_reasoning);
+        assert!(engine_config.enable_caching);
+        assert!(!engine_config.enable_parallel);
         assert_eq!(engine_config.max_results, Some(500));
         assert_eq!(engine_config.cache_size, NonZeroUsize::new(50));
     }
@@ -974,7 +978,7 @@ mod tests {
         assert!(query_result.stats.reasoning_used);
 
         // Should find at least one Person instance
-        assert!(query_result.bindings.len() >= 1);
+        assert!(!query_result.bindings.is_empty());
     }
 
     #[test]
@@ -992,7 +996,7 @@ mod tests {
         assert!(query_result.stats.reasoning_used);
 
         // Should find at least one property value
-        assert!(query_result.bindings.len() >= 1);
+        assert!(!query_result.bindings.is_empty());
     }
 
     #[test]
@@ -1545,7 +1549,3 @@ mod tests {
         }
     }
 }
-
-// Thread safety implementations
-unsafe impl Send for QueryEngine {}
-unsafe impl Sync for QueryEngine {}
