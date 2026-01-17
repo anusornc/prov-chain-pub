@@ -1432,10 +1432,10 @@ impl RDFStore {
                 // Create a deterministic string representation of the quad
                 let quad_str = format!(
                     "{}\n{}\n{}\n{}",
-                    quad.graph_name.to_string(),
-                    quad.subject.to_string(),
-                    quad.predicate.to_string(),
-                    quad.object.to_string()
+                    quad.graph_name,
+                    quad.subject,
+                    quad.predicate,
+                    quad.object
                 );
 
                 // Hash this quad

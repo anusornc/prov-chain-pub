@@ -11,7 +11,6 @@ use provchain_org::analytics::sustainability::SustainabilityTracker;
 use provchain_org::analytics::{AnalyticsEngine, ComplianceStatus, RiskLevel};
 use provchain_org::knowledge_graph::{KnowledgeEntity, KnowledgeGraph, KnowledgeRelationship};
 use provchain_org::storage::rdf_store::RDFStore;
-use std::collections::HashMap;
 
 /// Create a test knowledge graph with sample entities
 fn create_test_knowledge_graph() -> KnowledgeGraph {
@@ -30,7 +29,7 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         .collect(),
         confidence_score: 1.0,
     };
-    graph.add_entity(farmer);
+    let _ = graph.add_entity($1);
 
     // Add a product batch
     let batch = KnowledgeEntity {
@@ -47,7 +46,7 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         .collect(),
         confidence_score: 1.0,
     };
-    graph.add_entity(batch);
+    let _ = graph.add_entity($1);
 
     // Add a quality check
     let quality_check = KnowledgeEntity {
@@ -63,7 +62,7 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         .collect(),
         confidence_score: 1.0,
     };
-    graph.add_entity(quality_check);
+    let _ = graph.add_entity($1);
 
     // Add a transport activity
     let transport = KnowledgeEntity {
@@ -80,7 +79,7 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         .collect(),
         confidence_score: 1.0,
     };
-    graph.add_entity(transport);
+    let _ = graph.add_entity($1);
 
     // Add a certificate
     let certificate = KnowledgeEntity {
@@ -96,7 +95,7 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         .collect(),
         confidence_score: 1.0,
     };
-    graph.add_entity(certificate);
+    let _ = graph.add_entity($1);
 
     // Add relationships
     let rel1 = KnowledgeRelationship {

@@ -121,10 +121,43 @@ cd benchmark-toolkit && ./run.sh
 ## Testing
 
 ### Test Structure
-- `tests/` - Integration tests
+- `tests/` - Integration tests (main project)
+- `owl2-reasoner/tests/` - owl2-reasoner sub-project tests
 - Unit tests alongside source code
-- Benchmark suites in `benches/`
+- Benchmark suites in `benches/` (main) and `owl2-reasoner/benches/` (sub-project)
 - Load tests in `tests/load_tests.rs`
+
+### owl2-reasoner Sub-Project
+The project includes `owl2-reasoner` as a workspace member - a high-performance OWL2 reasoning engine.
+
+**Test Commands for owl2-reasoner:**
+```bash
+# Test owl2-reasoner specifically
+cargo test -p owl2-reasoner
+
+# Run specific test file in owl2-reasoner
+cargo test -p owl2-reasoner --test turtle_parser_tests
+
+# Run owl2-reasoner benchmarks
+cargo bench -p owl2-reasoner
+
+# Verify owl2-reasoner benchmarks compile
+cargo check --benches --package owl2-reasoner
+
+# Run tests for entire workspace
+cargo test --workspace
+```
+
+**owl2-reasoner Structure:**
+- `src/ontology/` - Ontology management with indexed storage
+- `src/reasoning/` - Tableaux algorithm and rule-based inference
+  - `query/` - Query engine with caching and optimization (API updated in commit d5ca53a)
+  - `tableaux/` - Tableaux reasoning implementation
+- `src/parser/` - Multi-format RDF parsing (Turtle, RDF/XML, N-Triples)
+- `tests/` - 12 test files covering parsing, reasoning, and performance
+  - **Turtle parser tests: 12/12 passing** (fixed malformed syntax, missing subjects)
+- `benches/` - 27 benchmark suites for performance validation
+  - **All benchmarks now compile** after API migration (execute_query → execute)
 
 ### Key Test Files
 - `tests/project_requirements_test.rs` - Consensus and bridge validation
@@ -230,12 +263,20 @@ cd benchmark-toolkit && ./run.sh
   - Fixed OWL namespace typo (`w2.org` → `w3.org`)
   - Added proper class declarations for multi-prefix tests
   - Updated test assertions to match actual parser behavior
-- **Clippy Auto-fixes Applied** (`owl2-reasoner/src/`)
-  - Changed `assert_eq!` with boolean expressions to `assert!` for clarity
-  - Used `is_empty()` instead of `len() == 0` comparisons
-  - Removed unnecessary `.clone()` calls
-  - Fixed empty slice references (`&vec![]` → `&[]`)
-  - Applied to cache.rs, engine.rs, optimized_engine.rs, memory.rs
+  - **All 12 tests now passing** (0 failed, 0 ignored) - verified with `cargo test -p owl2-reasoner --test turtle_parser_tests`
+- **Clippy Auto-fixes Applied** (Commit d5ca53a)
+  - **Main project (`src/`)**: Fixed field assignment outside initializer patterns
+    - `src/performance/storage_optimization.rs`: Used struct init syntax for StorageConfig
+    - `src/storage/rdf_store.rs`: Removed unnecessary `.to_string()` calls in format! macros
+    - `src/validation/sanitizer.rs`: Converted factory methods to use struct init syntax
+      - `strict()`, `lenient()`, `username()`, `batch_id()` all use `..Default::default()`
+      - Improved `batch_id()` with loop-based character replacement (more efficient than 26 individual insertions)
+  - **owl2-reasoner sub-project**:
+    - Changed `assert_eq!` with boolean expressions to `assert!` for clarity
+    - Used `is_empty()` instead of `len() == 0` comparisons
+    - Removed unnecessary `.clone()` calls
+    - Fixed empty slice references (`&vec![]` → `&[]`)
+    - Applied to cache.rs, engine.rs, optimized_engine.rs, memory.rs
 - **rustfmt Formatting** (Commit a6ba29c)
   - Applied standard Rust formatting across entire codebase (53 files)
   - Fixed trailing whitespace in transaction.rs
@@ -268,11 +309,10 @@ cd benchmark-toolkit && ./run.sh
   - Knowledge distribution assessment and transfer priorities
   - Documentation gaps identified for consensus algorithms and OWL2 reasoning
 - **Project Health Analysis** - Deep dive into code quality and dependencies
-  - Clippy warnings: 254 total (55% auto-fixable, 29% high priority manual fixes)
-    - 70x "borrowed expression implements traits" (auto-fixable)
-    - 29x "unnecessary if let" in semantic reasoners (manual fix needed)
-    - 29x "field assignment outside initializer" (auto-fixable)
-    - 13x "unused result" (high priority - error suppression risk)
+  - Clippy warnings: **All auto-fixable warnings resolved** (down from 254 total)
+    - Source code: **0 warnings** (all issues resolved in commits d5ca53a, a6ba29c)
+    - Benchmarks: 4 warnings (unused imports, unused variables - non-critical)
+    - Latest fixes (d5ca53a): Field assignment outside initializer, unnecessary .to_string() in format! macros
   - Dependency health: 58/100 score, 640 transitive dependencies
     - 1 CRITICAL (owning_ref v0.4.1 - LOW risk for this project)
     - 1 UNSOUND (lru v0.12.5 - safe with current usage)

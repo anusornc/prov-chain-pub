@@ -38,69 +38,56 @@ impl Default for SanitizationConfig {
 impl SanitizationConfig {
     /// Create a strict sanitization config for security-sensitive inputs
     pub fn strict() -> Self {
-        let mut config = Self::default();
-        config.strip_html = true;
-        config.normalize_whitespace = true;
-        config.remove_control_chars = true;
-        config.max_length = Some(1000);
-        config
+        Self {
+            strip_html: true,
+            normalize_whitespace: true,
+            remove_control_chars: true,
+            max_length: Some(1000),
+            ..Default::default()
+        }
     }
 
     /// Create a lenient config for content that may contain formatting
     pub fn lenient() -> Self {
-        let mut config = Self::default();
-        config.strip_html = false;
-        config.normalize_whitespace = false;
-        config.remove_control_chars = false;
-        config
+        Self {
+            strip_html: false,
+            normalize_whitespace: false,
+            remove_control_chars: false,
+            ..Default::default()
+        }
     }
 
     /// Create config for usernames
     pub fn username() -> Self {
-        let mut config = Self::default();
-        config.strip_html = true;
-        config.normalize_whitespace = true;
-        config.to_lowercase = true;
-        config.remove_control_chars = true;
-        config.max_length = Some(32);
-        config
+        Self {
+            strip_html: true,
+            normalize_whitespace: true,
+            to_lowercase: true,
+            remove_control_chars: true,
+            max_length: Some(32),
+            ..Default::default()
+        }
     }
 
     /// Create config for batch IDs
     pub fn batch_id() -> Self {
-        let mut config = Self::default();
-        config.strip_html = true;
-        config.normalize_whitespace = true;
-        config.remove_control_chars = true;
-        config.max_length = Some(20);
+        let mut config = Self {
+            strip_html: true,
+            normalize_whitespace: true,
+            remove_control_chars: true,
+            max_length: Some(20),
+            ..Default::default()
+        };
 
         // Convert common characters to uppercase equivalents
-        config.char_replacements.insert('a', "A".to_string());
-        config.char_replacements.insert('b', "B".to_string());
-        config.char_replacements.insert('c', "C".to_string());
-        config.char_replacements.insert('d', "D".to_string());
-        config.char_replacements.insert('e', "E".to_string());
-        config.char_replacements.insert('f', "F".to_string());
-        config.char_replacements.insert('g', "G".to_string());
-        config.char_replacements.insert('h', "H".to_string());
-        config.char_replacements.insert('i', "I".to_string());
-        config.char_replacements.insert('j', "J".to_string());
-        config.char_replacements.insert('k', "K".to_string());
-        config.char_replacements.insert('l', "L".to_string());
-        config.char_replacements.insert('m', "M".to_string());
-        config.char_replacements.insert('n', "N".to_string());
-        config.char_replacements.insert('o', "O".to_string());
-        config.char_replacements.insert('p', "P".to_string());
-        config.char_replacements.insert('q', "Q".to_string());
-        config.char_replacements.insert('r', "R".to_string());
-        config.char_replacements.insert('s', "S".to_string());
-        config.char_replacements.insert('t', "T".to_string());
-        config.char_replacements.insert('u', "U".to_string());
-        config.char_replacements.insert('v', "V".to_string());
-        config.char_replacements.insert('w', "W".to_string());
-        config.char_replacements.insert('x', "X".to_string());
-        config.char_replacements.insert('y', "Y".to_string());
-        config.char_replacements.insert('z', "Z".to_string());
+        for (lower, upper) in [('a', 'A'), ('b', 'B'), ('c', 'C'), ('d', 'D'), ('e', 'E'),
+                               ('f', 'F'), ('g', 'G'), ('h', 'H'), ('i', 'I'), ('j', 'J'),
+                               ('k', 'K'), ('l', 'L'), ('m', 'M'), ('n', 'N'), ('o', 'O'),
+                               ('p', 'P'), ('q', 'Q'), ('r', 'R'), ('s', 'S'), ('t', 'T'),
+                               ('u', 'U'), ('v', 'V'), ('w', 'W'), ('x', 'X'), ('y', 'Y'),
+                               ('z', 'Z')] {
+            config.char_replacements.insert(lower, upper.to_string());
+        }
 
         config
     }

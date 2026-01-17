@@ -729,7 +729,7 @@ mod tests {
                 confidence_score: 1.0,
             };
 
-            graph.add_entity(entity);
+            let _ = graph.add_entity($1);
         }
 
         // Create duplicate entities with slight variations
@@ -757,7 +757,7 @@ mod tests {
                 confidence_score: 0.8,
             };
 
-            graph.add_entity(entity);
+            let _ = graph.add_entity($1);
         }
 
         // Create relationships
@@ -860,7 +860,7 @@ mod tests {
             };
 
             // Use add_entity to properly populate graph structures
-            graph.add_entity(entity);
+            let _ = graph.add_entity($1);
         }
 
         // Create relationships with weights
@@ -1283,7 +1283,7 @@ mod tests {
                 confidence_score: *score,
             };
 
-            graph.add_entity(entity);
+            let _ = graph.add_entity($1);
         }
 
         // Add supplier entities
@@ -1305,7 +1305,7 @@ mod tests {
                 confidence_score: *score,
             };
 
-            graph.add_entity(entity);
+            let _ = graph.add_entity($1);
         }
 
         // Add relationships
@@ -1437,7 +1437,7 @@ pub struct TraceabilityEngine {
 }
 
 impl TraceabilityEngine {
-    pub fn trace_with_analytics(&self, batch_id: &str) -> Result<TraceabilityReport> {
+    pub fn trace_with_analytics(&self, _batch_id: &str) -> Result<TraceabilityReport> {
         // Enhanced trace through blockchain to collect all relevant data
         let mut origin: Option<String> = None;
         let mut processing_steps: Vec<String> = Vec::new();

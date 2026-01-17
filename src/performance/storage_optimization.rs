@@ -142,8 +142,10 @@ pub struct StorageOptimizer {
 impl StorageOptimizer {
     /// Create a new storage optimizer
     pub fn new(compression_level: u32) -> Self {
-        let mut config = StorageConfig::default();
-        config.compression_level = compression_level;
+        let config = StorageConfig {
+            compression_level,
+            ..Default::default()
+        };
 
         Self {
             config,

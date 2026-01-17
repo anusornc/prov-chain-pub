@@ -153,8 +153,7 @@ impl Owl2EnhancedReasoner {
         match self.base_reasoner.ontology_store.query(query) {
             Ok(QueryResults::Solutions(solutions)) => {
                 info!("Found owl:hasKey axioms");
-                for solution in solutions {
-                    if let Ok(sol) = solution {
+                for sol in solutions.flatten() {
                         if let (Some(class_term), Some(property_term)) =
                             (sol.get("class"), sol.get("property"))
                         {
@@ -185,7 +184,6 @@ impl Owl2EnhancedReasoner {
                                 .entry(class_iri)
                                 .or_default()
                                 .push(property_iri);
-                        }
                     }
                 }
             }
@@ -235,8 +233,7 @@ impl Owl2EnhancedReasoner {
                     let mut list_map: HashMap<String, (String, Option<String>)> = HashMap::new();
 
                     // Populate the map with all first/rest pairs
-                    for solution in solutions {
-                        if let Ok(sol) = solution {
+                    for sol in solutions.flatten() {
                             if let Some(s_term) = sol.get("s") {
                                 let s_str = s_term.to_string();
                                 // Remove angle brackets if present
@@ -274,7 +271,6 @@ impl Owl2EnhancedReasoner {
 
                                     list_map.insert(s_str, (property_str, rest_opt));
                                 }
-                            }
                         }
                     }
 
@@ -325,8 +321,7 @@ impl Owl2EnhancedReasoner {
 
             match self.base_reasoner.ontology_store.query(&query) {
                 Ok(QueryResults::Solutions(solutions)) => {
-                    for solution in solutions {
-                        if let Ok(sol) = solution {
+                    for sol in solutions.flatten() {
                             // Extract the property
                             if let Some(property_term) = sol.get("property") {
                                 let property = property_term.to_string();
@@ -340,7 +335,6 @@ impl Owl2EnhancedReasoner {
                                     };
                                 info!("Processed property: {}", property);
                                 properties.push(property);
-                            }
 
                             // Check if there's a rest node
                             if let Some(rest_term) = sol.get("rest") {
@@ -403,8 +397,7 @@ impl Owl2EnhancedReasoner {
         match self.base_reasoner.ontology_store.query(query) {
             Ok(QueryResults::Solutions(solutions)) => {
                 info!("Found property chain axioms");
-                for solution in solutions {
-                    if let Ok(sol) = solution {
+                for sol in solutions.flatten() {
                         if let (Some(super_prop_term), Some(property_term)) =
                             (sol.get("superProperty"), sol.get("property"))
                         {
@@ -436,7 +429,6 @@ impl Owl2EnhancedReasoner {
                                 .entry(super_property_iri)
                                 .or_default()
                                 .push(property_iri);
-                        }
                     }
                 }
             }
@@ -489,8 +481,7 @@ impl Owl2EnhancedReasoner {
                     let mut list_map: HashMap<String, (String, Option<String>)> = HashMap::new();
 
                     // Populate the map with all first/rest pairs
-                    for solution in solutions {
-                        if let Ok(sol) = solution {
+                    for sol in solutions.flatten() {
                             if let Some(s_term) = sol.get("s") {
                                 let s_str = s_term.to_string();
                                 // Remove angle brackets if present
@@ -528,7 +519,6 @@ impl Owl2EnhancedReasoner {
 
                                     list_map.insert(s_str, (property_str, rest_opt));
                                 }
-                            }
                         }
                     }
 
@@ -582,8 +572,7 @@ impl Owl2EnhancedReasoner {
 
             match self.base_reasoner.ontology_store.query(&query) {
                 Ok(QueryResults::Solutions(solutions)) => {
-                    for solution in solutions {
-                        if let Ok(sol) = solution {
+                    for sol in solutions.flatten() {
                             // Extract the property
                             if let Some(property_term) = sol.get("property") {
                                 let property = property_term.to_string();
@@ -597,7 +586,6 @@ impl Owl2EnhancedReasoner {
                                     };
                                 info!("Processed property: {}", property);
                                 properties.push(property);
-                            }
 
                             // Check if there's a rest node
                             if let Some(rest_term) = sol.get("rest") {
@@ -675,8 +663,7 @@ impl Owl2EnhancedReasoner {
         match self.base_reasoner.ontology_store.query(query) {
             Ok(QueryResults::Solutions(solutions)) => {
                 info!("Found qualified cardinality restrictions");
-                for solution in solutions {
-                    if let Ok(sol) = solution {
+                for sol in solutions.flatten() {
                         if let (
                             Some(class_term),
                             Some(property_term),
@@ -740,7 +727,6 @@ impl Owl2EnhancedReasoner {
                                     },
                                 );
                             }
-                        }
                     }
                 }
             }
@@ -912,8 +898,7 @@ impl Owl2EnhancedReasoner {
         // Execute the SPARQL query against the ontology store
         match self.base_reasoner.ontology_store.query(query) {
             Ok(QueryResults::Solutions(solutions)) => {
-                for solution in solutions {
-                    if let Ok(sol) = solution {
+                for sol in solutions.flatten() {
                         if let (Some(subject_term), Some(predicate_term), Some(object_term)) = (
                             sol.get("x0"),
                             sol.get("predicate"), // This would be the super_property
@@ -923,7 +908,6 @@ impl Owl2EnhancedReasoner {
                             let predicate = predicate_term.to_string();
                             let object = object_term.to_string();
                             inferred_triples.push((subject, predicate, object));
-                        }
                     }
                 }
             }

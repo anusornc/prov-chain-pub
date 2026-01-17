@@ -9,7 +9,6 @@
 
 use chrono::{Duration, Utc};
 use provchain_org::core::blockchain::Blockchain;
-use provchain_org::security::keys::generate_signing_key;
 
 #[cfg(test)]
 mod key_rotation_timing_tests {
