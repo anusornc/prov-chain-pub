@@ -232,3 +232,8 @@ harness = false
 name = "three_node_validation_test"
 path = "tests/three_node_validation_test.rs"
 harness = true
+
+[[test]]
+name = "load_tests"
+path = "tests/load_tests.rs"
+harness = true
