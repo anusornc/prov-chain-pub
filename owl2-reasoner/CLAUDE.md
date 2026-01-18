@@ -54,6 +54,12 @@ High-performance OWL2 reasoning engine implemented in Rust, providing complete O
 - Multi-layered caching with TTL expiration
 - Hash join algorithms and query pattern optimization
 - Parallel reasoning via rayon
+- **Performance Optimization Infrastructure** (January 2026):
+  - **JoinHashTablePool**: Reusable hash join operations to eliminate allocation overhead
+  - **LockFreeMemoryManager**: Thread-local arena allocation for tableaux reasoning
+  - **AdaptiveQueryIndex**: Multi-level query caching with hot pattern detection
+  - **QueryPatternPredictor**: Query pattern prediction for proactive caching
+  - **Arena Allocation**: Memory-efficient parsing in Turtle parser with static string constants
 
 ## Build & Run
 
@@ -68,6 +74,8 @@ cargo bench
 cargo run --example family_ontology
 cargo run --example json_ld_example
 cargo run --example epcis_validation_suite
+cargo run --example performance_optimization_demo
+cargo run --example validate_optimizations
 
 # Run validation
 cargo run --bin owl2_validation
@@ -93,6 +101,10 @@ cargo test
 - Concurrent data structures (dashmap, crossbeam)
 - Query optimization with pattern reordering
 - Memory profiling tools (memmap2, sysinfo)
+- **Adaptive benchmark configuration**: Sample sizes and measurement times scale with input size to prevent hanging
+  - Sample sizes: 100 → 50 → 20 → 10 as input increases
+  - Measurement times: 15s → 12s → 10s → 8s for larger datasets
+  - Throughput measurements for different data sizes (100, 1000, 10000 elements)
 
 ## Security Considerations
 
@@ -145,3 +157,42 @@ See root `Cargo.toml` for comprehensive security documentation:
   - Applied standard Rust formatting across entire library (7 files)
   - All CI checks pass: cargo fmt, cargo check, cargo test
   - No functional changes, formatting only
+
+**Performance Optimization Infrastructure** (January 2026):
+- **Adaptive Benchmark Configuration** (Commit d600781)
+  - Optimized all benchmarks with adaptive configuration to prevent hanging on large inputs
+  - Sample sizes scale down as input size increases (100 → 50 → 20 → 10)
+  - Measurement time reduces for larger datasets (15s → 12s → 10s → 8s)
+  - Throughput measurements enabled for different data sizes
+  - Applies to: parallel_query_bench, performance_optimization_benchmarks
+- **Performance Optimization Examples** (Commit d5ca53a)
+  - Added `performance_optimization_demo.rs` example demonstrating 3 high-impact optimizations:
+    - JoinHashTablePool: Eliminates hash table allocation overhead in query joins
+    - LockFreeMemoryManager: Eliminates mutex contention with thread-local arenas
+    - AdaptiveQueryIndex: Intelligent query caching with hot pattern detection
+    - Combined optimizations showing integrated performance gains
+  - Added `validate_optimizations.rs` example with validation tests:
+    - JoinHashTablePool unit tests (pool hit rate, table allocation)
+    - AdaptiveQueryIndex unit tests (pattern tracking, hot patterns)
+    - LockFreeMemoryManager unit tests (memory efficiency, arena count)
+    - Integration performance test for all optimizations working together
+- **Turtle Parser Enhancements** (Commit d5ca53a)
+  - Added arena allocation support for efficient string and object allocation
+  - Static string constants to avoid allocations (PREFIX_OWL, NS_OWL, error messages)
+  - Arena-allocated parsing functions: parse_content, parse_prefix_declaration, parse_triple
+  - Memory-efficient string handling with alloc_string and alloc_string_clone methods
+  - Enhanced compound statement handling with semicolon continuation support
+- **Parallel Query Benchmarks** (Commit d5ca53a)
+  - Added `parallel_query_bench.rs` with comprehensive parallel execution tests:
+    - Sequential vs parallel query execution comparison
+    - Thread scaling tests (1, 2, 4, 8 threads)
+    - Parallel threshold effectiveness validation
+    - Memory pool effectiveness benchmarks
+    - Union query pattern testing with multiple branches
+- **Performance Optimization Benchmarks** (Commit d5ca53a)
+  - Added `performance_optimization_benchmarks.rs` with 3 optimization benchmarks:
+    - JoinHashTablePool performance vs baseline HashMap
+    - LockFreeMemoryManager single-threaded performance (removed threading benchmarks due to raw pointer Send constraints)
+    - AdaptiveQueryIndex vs linear scan through query cache
+    - QueryPatternPredictor accuracy and hot pattern detection
+    - Memory efficiency comparison (traditional vs lock-free arena allocation)

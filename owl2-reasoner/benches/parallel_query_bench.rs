@@ -103,7 +103,7 @@ fn create_union_query_pattern(union_branches: usize) -> QueryPattern {
         }])
     };
 
-    let class_iris = vec![
+    let class_iris = [
         "http://example.org/Person",
         "http://example.org/Employee",
         "http://example.org/Manager",
@@ -205,7 +205,7 @@ fn bench_parallel_thread_scaling(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("threads", threads),
             &(threads, &ontology, &query_pattern),
-            |b, (threads, ontology, pattern)| {
+            |b, (_threads, ontology, pattern)| {
                 b.iter(|| {
                     let engine = QueryEngine::with_config(
                         (*ontology).clone(),
@@ -318,11 +318,7 @@ fn bench_memory_pool_effectiveness(c: &mut Criterion) {
                 },
             );
 
-            black_box(
-                engine
-                    .execute(black_box(&query_pattern))
-                    .unwrap(),
-            );
+            black_box(engine.execute(black_box(&query_pattern)).unwrap());
         });
     });
 
@@ -344,11 +340,7 @@ fn bench_memory_pool_effectiveness(c: &mut Criterion) {
                 },
             );
 
-            black_box(
-                engine
-                    .execute(black_box(&query_pattern))
-                    .unwrap(),
-            );
+            black_box(engine.execute(black_box(&query_pattern)).unwrap());
         });
     });
 

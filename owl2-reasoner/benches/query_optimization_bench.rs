@@ -287,8 +287,7 @@ fn benchmark_cache_performance(c: &mut Criterion) {
     // Same query without cache
     group.bench_function("repeated_query_without_cache", |b| {
         b.iter(|| {
-            let engine =
-                QueryEngine::with_config(ontology.clone(), config_without_cache.clone());
+            let engine = QueryEngine::with_config(ontology.clone(), config_without_cache.clone());
             let result = engine.execute(black_box(pattern)).unwrap();
             black_box(result)
         })

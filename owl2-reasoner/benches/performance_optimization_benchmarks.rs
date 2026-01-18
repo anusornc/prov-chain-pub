@@ -15,15 +15,12 @@
 //! performance metrics across different scales.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use owl2_reasoner::axioms::*;
-use owl2_reasoner::entities::*;
 use owl2_reasoner::iri::IRI;
 use owl2_reasoner::reasoning::query::cache::*;
 use owl2_reasoner::reasoning::query::types::*;
-use owl2_reasoner::reasoning::tableaux::core::{TableauxNode, NodeId};
+use owl2_reasoner::reasoning::tableaux::core::{NodeId, TableauxNode};
 use owl2_reasoner::reasoning::tableaux::memory::*;
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::time::Duration;
 
 /// Benchmark JoinHashTablePool performance
@@ -361,11 +358,11 @@ fn create_test_bindings(count: usize) -> Vec<QueryBinding> {
         let mut binding = QueryBinding::new();
         binding.add_binding(
             "?x".to_string(),
-            QueryValue::IRI(IRI::new(&format!("http://example.org/obj{}", i)).unwrap()),
+            QueryValue::IRI(IRI::new(format!("http://example.org/obj{}", i)).unwrap()),
         );
         binding.add_binding(
             "?y".to_string(),
-            QueryValue::IRI(IRI::new(&format!("http://example.org/type{}", i % 10)).unwrap()),
+            QueryValue::IRI(IRI::new(format!("http://example.org/type{}", i % 10)).unwrap()),
         );
         binding.add_binding(
             "?z".to_string(),

@@ -191,10 +191,8 @@ impl TurtleParser {
                 if ends_with_dot {
                     current_subject = None;
                 }
-            } else {
-                // Leniently skip lines we can't parse (multi-line constructs), strictness enforced by other checks
-                continue;
             }
+            // Leniently skip lines we can't parse (multi-line constructs), strictness enforced by other checks
         }
 
         if self.config.strict_validation {
@@ -887,7 +885,6 @@ impl TurtleParser {
                 }
                 ObjectValue::Nested(_) => {
                     // Skip nested collections for now
-                    continue;
                 }
             }
         }

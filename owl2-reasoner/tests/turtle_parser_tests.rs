@@ -72,7 +72,7 @@ ex2:Manager owl:equivalentClass ex1:Manager .
     let ontology = result.unwrap();
 
     assert_eq!(ontology.classes().len(), 6); // Person (x2), Manager (x2), Employee, Skill
-    // Object properties are not automatically created
+                                             // Object properties are not automatically created
     assert_eq!(ontology.object_properties().len(), 0);
     // Axioms: SubClassOf, EquivalentClasses, domain, range
     assert!(ontology.axioms().len() >= 3);
@@ -322,7 +322,10 @@ fn test_turtle_performance_large_ontology() {
 #[test]
 fn test_turtle_edge_cases() {
     // Test edge cases and boundary conditions
-    let long_iri_test = format!("@prefix : <http://example.org/> . :verylongnamespaceiri{} a rdfs:Class .", "a".repeat(1000));
+    let long_iri_test = format!(
+        "@prefix : <http://example.org/> . :verylongnamespaceiri{} a rdfs:Class .",
+        "a".repeat(1000)
+    );
     let edge_cases = vec![
         (
             "Multiple prefixes with same prefix",

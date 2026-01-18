@@ -10,7 +10,6 @@ use owl2_reasoner::reasoning::query::cache::*;
 use owl2_reasoner::reasoning::query::types::*;
 use owl2_reasoner::reasoning::tableaux::core::NodeId;
 use owl2_reasoner::reasoning::tableaux::memory::*;
-use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -305,7 +304,7 @@ fn demo_combined_optimizations() -> Result<(), Box<dyn std::error::Error>> {
 
         for left_binding in &left_bindings {
             let key = extract_join_key(left_binding, &common_vars);
-            if let Some(_) = hash_table.get_indices(&key) {
+            if hash_table.get_indices(&key).is_some() {
                 total_joins += 1;
             }
         }
@@ -324,7 +323,7 @@ fn demo_combined_optimizations() -> Result<(), Box<dyn std::error::Error>> {
 
     // Get final statistics
     let join_stats = join_pool.stats();
-    let memory_stats = memory_manager.get_stats();
+    let _memory_stats = memory_manager.get_stats();
     let query_stats = query_index.stats();
 
     println!("\n   📊 Combined Performance Results:");
@@ -362,11 +361,11 @@ fn create_sample_bindings(count: usize) -> Vec<QueryBinding> {
         let mut binding = QueryBinding::new();
         binding.add_binding(
             "?x".to_string(),
-            QueryValue::IRI(IRI::new(&format!("http://example.org/entity{}", i)).unwrap()),
+            QueryValue::IRI(IRI::new(format!("http://example.org/entity{}", i)).unwrap()),
         );
         binding.add_binding(
             "?y".to_string(),
-            QueryValue::IRI(IRI::new(&format!("http://example.org/type{}", i % 10)).unwrap()),
+            QueryValue::IRI(IRI::new(format!("http://example.org/type{}", i % 10)).unwrap()),
         );
         bindings.push(binding);
     }
@@ -380,7 +379,7 @@ fn create_sample_queries(count: usize) -> Vec<QueryPattern> {
     for i in 0..count {
         let pattern = QueryPattern::BasicGraphPattern(vec![TriplePattern::new(
             PatternTerm::Variable("?s".to_string()),
-            PatternTerm::IRI(IRI::new(&format!("http://example.org/predicate{}", i % 5)).unwrap()),
+            PatternTerm::IRI(IRI::new(format!("http://example.org/predicate{}", i % 5)).unwrap()),
             PatternTerm::Variable("?o".to_string()),
         )]);
         queries.push(pattern);

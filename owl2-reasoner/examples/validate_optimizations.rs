@@ -90,7 +90,7 @@ fn test_adaptive_query_index() -> Result<(), Box<dyn std::error::Error>> {
     println!("   ✓ Initial index state valid");
 
     // Simulate query pattern access
-    let pattern_hashes = vec![123u64, 456u64, 789u64];
+    let pattern_hashes = [123u64, 456u64, 789u64];
 
     for (i, &hash) in pattern_hashes.iter().enumerate() {
         let access_time = Duration::from_millis(1 + i as u64);
@@ -188,12 +188,12 @@ fn test_integration_performance() -> Result<(), Box<dyn std::error::Error>> {
 
     // 2. Memory operations (tableaux expansion)
     let _node_ids: Vec<_> = (0..50)
-        .map(|i| owl2_reasoner::reasoning::tableaux::core::NodeId::new(i))
+        .map(owl2_reasoner::reasoning::tableaux::core::NodeId::new)
         .collect();
 
     // 3. Query pattern tracking (caching)
     for i in 0..25 {
-        let hash = (i * 1000) as u64;
+        let hash = i * 1000;
         query_index.record_access(&hash, Duration::from_micros(100 + i));
     }
 
