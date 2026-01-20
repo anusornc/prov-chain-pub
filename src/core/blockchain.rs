@@ -707,7 +707,7 @@ impl Blockchain {
     }
 
     /// Create a block proposal that can be signed by a validator
-    pub fn create_block_proposal(&mut self, data: String, validator: String) -> Result<Block> {
+    pub fn create_block_proposal(&mut self, data: String, encrypted_data: Option<String>, validator: String) -> Result<Block> {
         // Ensure we have at least a genesis block
         if self.chain.is_empty() {
             let mut genesis_block = self.create_genesis_block();
@@ -773,7 +773,7 @@ impl Blockchain {
         let state_root = self.rdf_store.calculate_state_root();
 
         let mut block = Block::new(index, data, previous_hash, state_root, validator);
-        block.encrypted_data = None;
+        block.encrypted_data = encrypted_data;
 
         // Sign the block with the blockchain's signing key
         let signature = self.signing_key.sign(block.hash.as_bytes());
@@ -876,7 +876,7 @@ impl Blockchain {
 
     /// Legacy add_block for backward compatibility
     pub fn add_block(&mut self, data: String) -> Result<()> {
-        let block = self.create_block_proposal(data, self.validator_public_key.clone())?;
+        let block = self.create_block_proposal(data, None, self.validator_public_key.clone())?;
         self.submit_signed_block(block)
     }
 

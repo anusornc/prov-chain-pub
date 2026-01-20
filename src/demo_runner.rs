@@ -166,6 +166,7 @@ impl DemoRunner {
             100.0,
             "Demo Farm".to_string(),
             None,
+            false,
         )?;
 
         let tx_id = blockchain.submit_transaction(tx)?;
@@ -217,6 +218,7 @@ impl DemoRunner {
             200.0,
             "Demo Farm".to_string(),
             None,
+            false,
         )?;
 
         println!("✅ Created transaction with digital signature");
@@ -272,6 +274,7 @@ impl DemoRunner {
             300.0,
             "Farm Location".to_string(),
             None,
+            false,
         )?;
 
         let tx1_id = blockchain.submit_transaction(tx1)?;
@@ -283,6 +286,7 @@ impl DemoRunner {
             "QUALITY_CHECK".to_string(),
             "PASSED".to_string(),
             Some(95.0),
+            false,
         )?;
 
         let tx2_id = blockchain.submit_transaction(tx2)?;
@@ -294,6 +298,7 @@ impl DemoRunner {
             "PROCESSED-BATCH-001".to_string(),
             "UHT_PROCESSING".to_string(),
             None,
+            false,
         )?;
 
         let tx3_id = blockchain.submit_transaction(tx3)?;

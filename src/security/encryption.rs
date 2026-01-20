@@ -7,7 +7,7 @@
 use anyhow::{anyhow, Result};
 use chacha20poly1305::{
     aead::{Aead, KeyInit, OsRng},
-    ChaCha20Poly1305, Nonce,
+    XChaCha20Poly1305, XNonce,
 };
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
@@ -29,10 +29,10 @@ pub struct PrivacyManager;
 impl PrivacyManager {
     /// Encrypt data using a shared secret key
     pub fn encrypt(data: &str, key: &[u8; 32], key_id: &str) -> Result<EncryptedData> {
-        let cipher = ChaCha20Poly1305::new(key.into());
-        let mut nonce_bytes = [0u8; 12];
+        let cipher = XChaCha20Poly1305::new(key.into());
+        let mut nonce_bytes = [0u8; 24]; // XChaCha20Poly1305 uses 24-byte (192-bit) nonces
         OsRng.fill_bytes(&mut nonce_bytes);
-        let nonce = Nonce::from_slice(&nonce_bytes); // 96-bits; unique per message
+        let nonce = XNonce::from_slice(&nonce_bytes);
 
         let ciphertext = cipher
             .encrypt(nonce, data.as_bytes())
@@ -47,11 +47,16 @@ impl PrivacyManager {
 
     /// Decrypt data using a shared secret key
     pub fn decrypt(encrypted: &EncryptedData, key: &[u8; 32]) -> Result<String> {
-        let cipher = ChaCha20Poly1305::new(key.into());
+        let cipher = XChaCha20Poly1305::new(key.into());
 
         let nonce_bytes =
             hex::decode(&encrypted.nonce).map_err(|_| anyhow!("Invalid nonce hex"))?;
-        let nonce = Nonce::from_slice(&nonce_bytes);
+        
+        if nonce_bytes.len() != 24 {
+             return Err(anyhow!("Invalid nonce length: expected 24 bytes, got {}", nonce_bytes.len()));
+        }
+        
+        let nonce = XNonce::from_slice(&nonce_bytes);
 
         let ciphertext_bytes =
             hex::decode(&encrypted.ciphertext).map_err(|_| anyhow!("Invalid ciphertext hex"))?;

@@ -22,12 +22,13 @@ async fn test_data_visibility_control() {
     // 4. Submit Block with Encrypted Data
     {
         let mut bc = blockchain.write().await;
-        let mut block = bc
-            .create_block_proposal("PUBLIC_METADATA_ONLY".to_string(), "VALIDATOR".to_string())
+        let block = bc
+            .create_block_proposal(
+                "PUBLIC_METADATA_ONLY".to_string(), 
+                Some(encrypted_json.clone()),
+                "VALIDATOR".to_string()
+            )
             .expect("Failed to create block");
-
-        block.encrypted_data = Some(encrypted_json.clone());
-        block.hash = block.calculate_hash(); // Recalculate hash with encrypted data
 
         bc.submit_signed_block(block)
             .expect("Failed to submit block");

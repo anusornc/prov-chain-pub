@@ -410,6 +410,7 @@ impl TransactionSecurityTester {
             vec![],
             vec![negative_output],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             create_test_metadata(),
             TransactionPayload::RdfData(String::new()),
         );
@@ -449,6 +450,7 @@ impl TransactionSecurityTester {
             vec![circular_input],
             vec![circular_output],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             create_test_metadata(),
             TransactionPayload::RdfData(String::new()),
         );
@@ -552,6 +554,7 @@ impl TransactionSecurityTester {
             vec![],
             vec![initial_output.clone()],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             create_test_metadata(),
             TransactionPayload::RdfData(String::new()),
         );
@@ -586,6 +589,7 @@ impl TransactionSecurityTester {
             vec![shared_input.clone()],
             vec![spend1_output],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             create_test_metadata(),
             TransactionPayload::RdfData(String::new()),
         );
@@ -596,6 +600,7 @@ impl TransactionSecurityTester {
             vec![shared_input],
             vec![spend2_output],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             create_test_metadata(),
             TransactionPayload::RdfData(String::new()),
         );
@@ -1040,8 +1045,9 @@ fn create_test_transaction(tx_type: TransactionType, metadata: TransactionMetada
         tx_type,
         vec![],
         vec![],
-        "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
-        metadata,
+                    "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+                    None,
+                    metadata,
         TransactionPayload::RdfData(String::new()),
     )
 }

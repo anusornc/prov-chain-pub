@@ -207,6 +207,8 @@ pub struct Wallet {
     /// Signing key for transactions (stored encrypted)
     #[serde(skip)]
     pub signing_key: Option<SigningKey>,
+    /// Raw private key bytes for persistence (serialized but protected by file-level encryption)
+    pub secret_key_bytes: Vec<u8>,
     /// Public key for verification
     pub public_key: VerifyingKey,
     /// Key derivation path (for HD wallets)
@@ -231,6 +233,7 @@ impl Wallet {
         Self {
             participant,
             signing_key: Some(signing_key),
+            secret_key_bytes: bytes.to_vec(),
             public_key,
             derivation_path: None,
             created_at: Utc::now(),
@@ -242,10 +245,12 @@ impl Wallet {
     /// Create a wallet from an existing signing key
     pub fn from_signing_key(participant: Participant, signing_key: SigningKey) -> Self {
         let public_key = signing_key.verifying_key();
+        let bytes = signing_key.to_bytes().to_vec();
 
         Self {
             participant,
             signing_key: Some(signing_key),
+            secret_key_bytes: bytes,
             public_key,
             derivation_path: None,
             created_at: Utc::now(),
@@ -343,14 +348,23 @@ pub struct WalletManager {
     wallets: HashMap<Uuid, Wallet>,
     /// Storage directory for wallet files
     storage_dir: PathBuf,
-    /// Encryption key for wallet storage (in production, this should be derived from user input)
+    /// Encryption key for wallet storage.
+    /// This key is used to encrypt/decrypt wallet files on disk.
+    /// It must be persisted (e.g., via master_key_path) to ensure data is recoverable after restart.
     #[allow(dead_code)]
     encryption_key: [u8; 32],
 }
 
 impl WalletManager {
     /// Create a new wallet manager
-    pub fn new<P: AsRef<Path>>(storage_dir: P) -> Result<Self> {
+    ///
+    /// # Arguments
+    /// * `storage_dir` - Directory to store wallet files
+    /// * `master_key_path` - Optional path to a file containing the 32-byte master encryption key.
+    ///                       If provided and exists, key is loaded.
+    ///                       If provided and missing, new key is generated and saved.
+    ///                       If None, looks for `.master_key` in storage_dir.
+    pub fn new<P: AsRef<Path>>(storage_dir: P, master_key_path: Option<PathBuf>) -> Result<Self> {
         let storage_dir = storage_dir.as_ref().to_path_buf();
 
         // Create storage directory if it doesn't exist
@@ -358,10 +372,41 @@ impl WalletManager {
             fs::create_dir_all(&storage_dir)?;
         }
 
-        // Use cryptographically secure random for encryption key
-        // In production, this should be derived from user input or secure key management
-        let mut encryption_key = [0u8; 32];
-        OsRng.fill_bytes(&mut encryption_key);
+        // Determine master key path
+        let key_path = master_key_path.unwrap_or_else(|| storage_dir.join(".master_key"));
+
+        let encryption_key = if key_path.exists() {
+            // Load existing key
+            let key_bytes = fs::read(&key_path)?;
+            if key_bytes.len() != 32 {
+                return Err(anyhow!("Invalid master key length in {:?}: expected 32 bytes, got {}", key_path, key_bytes.len()));
+            }
+            let mut key = [0u8; 32];
+            key.copy_from_slice(&key_bytes);
+            key
+        } else {
+            // Generate new key and save it
+            let mut key = [0u8; 32];
+            OsRng.fill_bytes(&mut key);
+            
+            // Set file permissions to read-only for owner (0600) on Unix
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                let mut options = fs::OpenOptions::new();
+                options.write(true).create(true).mode(0o600);
+                let mut file = options.open(&key_path)?;
+                use std::io::Write;
+                file.write_all(&key)?;
+            }
+            #[cfg(not(unix))]
+            {
+                fs::write(&key_path, &key)?;
+            }
+            
+            println!("Generated new master key at {:?}", key_path);
+            key
+        };
 
         Ok(Self {
             wallets: HashMap::new(),
@@ -536,8 +581,15 @@ impl WalletManager {
         // Deserialize wallet
         let json_str =
             String::from_utf8(plaintext).map_err(|e| anyhow!("Invalid wallet UTF-8: {}", e))?;
-        let wallet: Wallet =
+        let mut wallet: Wallet =
             serde_json::from_str(&json_str).map_err(|e| anyhow!("Invalid wallet format: {}", e))?;
+
+        // Restore signing key from bytes
+        if !wallet.secret_key_bytes.is_empty() {
+            if let Ok(bytes) = wallet.secret_key_bytes.clone().try_into() {
+                wallet.signing_key = Some(SigningKey::from_bytes(&bytes));
+            }
+        }
 
         Ok(wallet)
     }
@@ -731,7 +783,7 @@ mod tests {
     #[test]
     fn test_wallet_manager() {
         let temp_dir = tempdir().unwrap();
-        let mut manager = WalletManager::new(temp_dir.path()).unwrap();
+        let mut manager = WalletManager::new(temp_dir.path(), None).unwrap();
 
         let farmer =
             Participant::new_farmer("John's Dairy Farm".to_string(), "Vermont, USA".to_string());

@@ -210,6 +210,7 @@ impl UHTDemo {
             2000.0, // 2000 liters
             "Vermont, USA".to_string(),
             Some(env_conditions_john),
+            false,
         )?;
 
         let tx1_id = self.blockchain.submit_transaction(tx1)?;
@@ -233,6 +234,7 @@ impl UHTDemo {
             1500.0, // 1500 liters
             "Wisconsin, USA".to_string(),
             Some(env_conditions_mary),
+            false,
         )?;
 
         let tx2_id = self.blockchain.submit_transaction(tx2)?;
@@ -256,6 +258,7 @@ impl UHTDemo {
             "MICROBIOLOGICAL".to_string(),
             "PASSED".to_string(),
             Some(5.2), // Bacterial count (log CFU/mL)
+            false,
         )?;
 
         let tx3_id = self.blockchain.submit_transaction(tx3)?;
@@ -271,6 +274,7 @@ impl UHTDemo {
             "MICROBIOLOGICAL".to_string(),
             "PASSED".to_string(),
             Some(4.8), // Bacterial count (log CFU/mL)
+            false,
         )?;
 
         let tx4_id = self.blockchain.submit_transaction(tx4)?;
@@ -306,6 +310,7 @@ impl UHTDemo {
             "UHT-MILK-BATCH-001".to_string(),
             "UHT_PASTEURIZATION".to_string(),
             Some(uht_conditions),
+            false,
         )?;
 
         let tx5_id = self.blockchain.submit_transaction(tx5)?;
@@ -329,6 +334,7 @@ impl UHTDemo {
             "POST_UHT_MICROBIOLOGICAL".to_string(),
             "PASSED".to_string(),
             Some(0.0), // Should be sterile after UHT
+            false,
         )?;
 
         let tx6_id = self.blockchain.submit_transaction(tx6)?;
@@ -341,6 +347,7 @@ impl UHTDemo {
             "NUTRITIONAL_ANALYSIS".to_string(),
             "PASSED".to_string(),
             Some(3.2), // Fat content percentage
+            false,
         )?;
 
         let tx7_id = self.blockchain.submit_transaction(tx7)?;
@@ -372,6 +379,7 @@ impl UHTDemo {
             "Alpine UHT Processing Corp, Wisconsin".to_string(),
             "ColdChain Distribution Center, Illinois".to_string(),
             Some(transport_conditions),
+            false,
         )?;
 
         let tx8_id = self.blockchain.submit_transaction(tx8)?;
@@ -403,6 +411,7 @@ impl UHTDemo {
             "ColdChain Distribution Center, Illinois".to_string(),
             "FreshMart Supermarket Chain, Nationwide".to_string(),
             Some(final_transport_conditions),
+            false,
         )?;
 
         let tx9_id = self.blockchain.submit_transaction(tx9)?;

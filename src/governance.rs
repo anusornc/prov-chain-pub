@@ -334,6 +334,7 @@ impl Governance {
             vec![],        // No inputs for governance transactions
             vec![],        // No outputs for governance transactions
             String::new(), // No RDF data for governance transactions
+            None,
             TransactionMetadata {
                 location: None,
                 environmental_conditions: None,
@@ -365,6 +366,7 @@ impl Governance {
             vec![],        // No inputs for governance transactions
             vec![],        // No outputs for governance transactions
             String::new(), // No RDF data for governance transactions
+            None,
             TransactionMetadata {
                 location: None,
                 environmental_conditions: None,
@@ -415,6 +417,7 @@ mod tests {
             vec![],
             vec![],
             String::new(),
+            None,
             crate::transaction::transaction::TransactionMetadata {
                 location: None,
                 environmental_conditions: None,

@@ -156,6 +156,8 @@ pub struct Transaction {
     pub fee: Option<f64>,
     /// Nonce for replay protection
     pub nonce: u64,
+    /// Encrypted data payload for private transactions
+    pub encrypted_data: Option<String>,
     /// Transaction payload (RDF data or governance actions)
     pub payload: Option<TransactionPayload>,
 }
@@ -174,12 +176,40 @@ pub struct TransactionSignature {
 }
 
 impl Transaction {
+    /// Create a new transaction with a specific ID
+    pub fn new_with_id(
+        id: String,
+        tx_type: TransactionType,
+        inputs: Vec<TransactionInput>,
+        outputs: Vec<TransactionOutput>,
+        rdf_data: String,
+        encrypted_data: Option<String>,
+        metadata: TransactionMetadata,
+        payload: TransactionPayload,
+    ) -> Self {
+        Self {
+            id,
+            tx_type,
+            inputs,
+            outputs,
+            rdf_data,
+            signatures: Vec::new(),
+            timestamp: Utc::now(),
+            metadata,
+            fee: None,
+            nonce: 0,
+            encrypted_data,
+            payload: Some(payload),
+        }
+    }
+
     /// Create a new transaction
     pub fn new(
         tx_type: TransactionType,
         inputs: Vec<TransactionInput>,
         outputs: Vec<TransactionOutput>,
         rdf_data: String,
+        encrypted_data: Option<String>,
         metadata: TransactionMetadata,
         payload: TransactionPayload,
     ) -> Self {
@@ -196,6 +226,7 @@ impl Transaction {
             metadata,
             fee: None,
             nonce: 0,
+            encrypted_data,
             payload: Some(payload),
         }
     }
@@ -278,6 +309,10 @@ impl Transaction {
                     hasher.update(fee.to_le_bytes());
                 }
 
+                if let Some(encrypted) = &self.encrypted_data {
+                    hasher.update(encrypted.as_bytes());
+                }
+
                 return Ok(format!("{:x}", hasher.finalize()));
             }
         }
@@ -315,6 +350,10 @@ impl Transaction {
 
         if let Some(fee) = self.fee {
             hasher.update(fee.to_le_bytes());
+        }
+
+        if let Some(encrypted) = &self.encrypted_data {
+            hasher.update(encrypted.as_bytes());
         }
 
         Ok(format!("{:x}", hasher.finalize()))
@@ -611,6 +650,7 @@ mod tests {
             vec![],
             vec![],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             metadata,
             TransactionPayload::RdfData(String::new()),
         );
@@ -639,6 +679,7 @@ mod tests {
             vec![],
             vec![],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             metadata,
             TransactionPayload::RdfData(String::new()),
         );
@@ -677,6 +718,7 @@ mod tests {
                 metadata: HashMap::new(),
             }],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             metadata,
             TransactionPayload::RdfData(String::new()),
         );
@@ -1010,6 +1052,7 @@ mod security_tests {
                 vec![],
                 vec![],
                 "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+                None,
                 metadata,
                 TransactionPayload::RdfData(String::new()),
             );
@@ -1049,6 +1092,7 @@ mod security_tests {
                 vec![],
                 vec![], // No outputs
                 "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+                None,
                 metadata,
                 TransactionPayload::RdfData(String::new()),
             );
@@ -1066,9 +1110,10 @@ mod security_tests {
                 TransactionType::Processing,
                 vec![], // No inputs
                 vec![create_test_output(signer_id)],
-                "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
-                metadata2,
-                TransactionPayload::RdfData(String::new()),
+                            "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+                            None,
+                            metadata2,
+                            TransactionPayload::RdfData(String::new()),
             );
             tx2.sign(&signing_key, signer_id)
                 .expect("Signing should succeed");
@@ -1098,9 +1143,10 @@ mod security_tests {
                 TransactionType::Transfer,
                 vec![shared_input.clone()],
                 vec![create_test_output(signer_id)],
-                "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
-                metadata.clone(),
-                TransactionPayload::RdfData(String::new()),
+                            "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+                            None,
+                            metadata.clone(),
+                            TransactionPayload::RdfData(String::new()),
             );
             tx1.sign(&signing_key, signer_id)
                 .expect("First signing should succeed");
@@ -1111,6 +1157,7 @@ mod security_tests {
                 vec![shared_input],
                 vec![create_test_output(signer_id)],
                 "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+                None,
                 metadata,
                 TransactionPayload::RdfData(String::new()),
             );
@@ -1187,6 +1234,7 @@ mod security_tests {
                 vec![],
                 vec![create_test_output(signer_id)],
                 malicious_rdf,
+                None,
                 metadata,
                 TransactionPayload::RdfData(String::new()),
             );
@@ -1231,6 +1279,7 @@ mod security_tests {
                     vec![create_test_input()], // Add input to satisfy business logic validation
                     vec![create_test_output(signer_id)],
                     rdf_data.clone(),
+                    None,
                     metadata,
                     TransactionPayload::RdfData(String::new()),
                 );
@@ -1288,6 +1337,7 @@ mod security_tests {
                     metadata: HashMap::new(),
                 }],
                 non_compliant_rdf,
+                None,
                 metadata,
                 TransactionPayload::RdfData(String::new()),
             );
@@ -1324,6 +1374,7 @@ mod security_tests {
             vec![],
             vec![],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             metadata,
             TransactionPayload::RdfData(String::new()),
         )
@@ -1339,6 +1390,7 @@ mod security_tests {
             vec![],
             vec![],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             metadata,
             TransactionPayload::RdfData(String::new()),
         );
@@ -1379,6 +1431,7 @@ mod security_tests {
             vec![],
             vec![output],
             "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+            None,
             metadata,
             TransactionPayload::RdfData(String::new()),
         )

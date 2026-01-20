@@ -114,13 +114,11 @@ pub async fn add_triple(
                 // We use a placeholder for the public data to indicate it's encrypted
                 match blockchain.create_block_proposal(
                     format!("@prefix prov: <http://provchain.org/core#> . prov:EncryptedData prov:hasKeyId \"{}\" .", key_id),
+                    Some(encrypted_json),
                     validator_public_key
                 ) {
                     Ok(mut block) => {
-                        block.encrypted_data = Some(encrypted_json);
-                        // Re-calculate hash to include encrypted data
-                        block.hash = block.calculate_hash();
-                        // Re-sign the block with the new hash
+                        // Sign the block
                         use ed25519_dalek::Signer;
                         let signature = blockchain.signing_key.sign(block.hash.as_bytes());
                         block.signature = hex::encode(signature.to_bytes());
@@ -322,6 +320,7 @@ pub async fn create_transaction(
         inputs,
         outputs,
         request.rdf_data,
+        None,
         metadata,
         TransactionPayload::RdfData(String::new()),
     );

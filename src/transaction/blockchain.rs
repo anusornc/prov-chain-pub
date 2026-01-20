@@ -38,7 +38,7 @@ impl TransactionBlockchain {
     pub fn new(data_dir: &str) -> Result<Self> {
         let blockchain = Blockchain::new_persistent(data_dir)?;
         let transaction_pool = TransactionPool::new(1000); // Max 1000 pending transactions
-        let wallet_manager = WalletManager::new(format!("{}/wallets", data_dir))?;
+        let wallet_manager = WalletManager::new(format!("{}/wallets", data_dir), None)?;
 
         Ok(Self {
             blockchain,
@@ -104,12 +104,23 @@ impl TransactionBlockchain {
         // Create block data from transactions
         let block_data = self.create_block_rdf_data(&transactions)?;
 
+        // Aggregate encrypted data
+        let encrypted_payloads: HashMap<String, String> = transactions.iter()
+            .filter_map(|tx| tx.encrypted_data.clone().map(|data| (tx.id.clone(), data)))
+            .collect();
+        
+        let block_encrypted_data = if encrypted_payloads.is_empty() {
+            None
+        } else {
+            Some(serde_json::to_string(&encrypted_payloads).map_err(|e| anyhow!("Failed to serialize encrypted data: {}", e))?)
+        };
+
         // Create block proposal
         // Note: We use the hex string representation of the public key as the validator ID in the block
         let validator_pub_key = hex::encode(validator_wallet.public_key.as_bytes());
         let mut block = self
             .blockchain
-            .create_block_proposal(block_data, validator_pub_key)?;
+            .create_block_proposal(block_data, block_encrypted_data, validator_pub_key)?;
 
         // Sign the block
         let signature = validator_wallet.sign(block.hash.as_bytes())?;
@@ -221,20 +232,32 @@ impl TransactionBlockchain {
 
     /// Create a production transaction (farmer produces raw materials)
     pub fn create_production_transaction(
-        &self,
+        &mut self,
         producer_id: Uuid,
         batch_id: String,
         quantity: f64,
         location: String,
         environmental_conditions: Option<EnvironmentalConditions>,
+        encrypt_data: bool,
     ) -> Result<Transaction> {
-        let wallet = self
-            .wallet_manager
-            .get_wallet(producer_id)
-            .ok_or_else(|| anyhow!("Producer wallet not found"))?;
+        // We need to look up the wallet mutably if we might need to add a key
+        // But for permission checking we only need read access.
+        // To avoid borrow checker issues, we'll check permissions first, then potentially mutate.
 
-        if !wallet.has_permission("produce") {
-            return Err(anyhow!("Producer does not have production permission"));
+        let has_permission = {
+            let wallet = self
+                .wallet_manager
+                .get_wallet(producer_id)
+                .ok_or_else(|| anyhow!("Producer wallet not found"))?;
+
+            if !wallet.has_permission("produce") {
+                return Err(anyhow!("Producer does not have production permission"));
+            }
+            true
+        };
+
+        if !has_permission {
+             return Err(anyhow!("Permission denied"));
         }
 
         // Create transaction output
@@ -250,6 +273,13 @@ impl TransactionBlockchain {
                 meta
             },
         };
+
+        // Get wallet name for RDF generation
+        let producer_name = self.wallet_manager.get_wallet(producer_id)
+            .ok_or_else(|| anyhow!("Producer wallet not found"))?
+            .participant.name.clone();
+        
+        let tx_id = Uuid::new_v4().to_string();
 
         // Create RDF data
         let rdf_data = format!(
@@ -271,7 +301,7 @@ ex:participant_{} a trace:Farmer ;
             quantity,
             location,
             producer_id,
-            wallet.participant.name
+            producer_name
         );
 
         let metadata = TransactionMetadata {
@@ -282,13 +312,58 @@ ex:participant_{} a trace:Farmer ;
             custom_fields: HashMap::new(),
         };
 
-        let mut transaction = Transaction::new(
+        let (final_rdf, encrypted_payload) = if encrypt_data {
+            // Get or create encryption key
+            let key_id = "private_data_key";
+            let wallet = self.wallet_manager.get_wallet_mut(producer_id)
+                .ok_or_else(|| anyhow!("Producer wallet not found for key generation"))?;
+
+            let key_hex = if let Some(k) = wallet.get_secret(key_id) {
+                k.clone()
+            } else {
+                let new_key = crate::security::encryption::PrivacyManager::generate_key();
+                let new_key_hex = hex::encode(new_key);
+                wallet.add_secret(key_id.to_string(), new_key_hex.clone());
+                new_key_hex
+            };
+
+            let key_bytes = hex::decode(&key_hex).map_err(|_| anyhow!("Invalid key hex"))?;
+            let key_array: [u8; 32] = key_bytes.try_into().map_err(|_| anyhow!("Invalid key length"))?;
+
+            let encrypted = crate::security::encryption::PrivacyManager::encrypt(&rdf_data, &key_array, key_id)?;
+            let encrypted_json = serde_json::to_string(&encrypted)?;
+
+            // Create public placeholder RDF
+            let public_rdf = format!(
+                r#"
+ex:{} a trace:ProductBatch ;
+    trace:hasBatchID "{}" ;
+    trace:hasTransactionID "{}" ;
+    trace:isEncrypted "true"^^xsd:boolean .
+"#,
+                batch_id,
+                batch_id,
+                tx_id
+            );
+
+            (public_rdf, Some(encrypted_json))
+        } else {
+            (rdf_data.clone(), None)
+        };
+
+        // Re-borrow wallet immutably for signing
+        let wallet = self.wallet_manager.get_wallet(producer_id)
+            .ok_or_else(|| anyhow!("Producer wallet not found for signing"))?;
+
+        let mut transaction = Transaction::new_with_id(
+            tx_id,
             TransactionType::Production,
             vec![], // No inputs for production
             vec![output],
-            rdf_data.clone(),
+            final_rdf.clone(),
+            encrypted_payload,
             metadata,
-            TransactionPayload::RdfData(rdf_data.clone()),
+            TransactionPayload::RdfData(final_rdf),
         );
 
         // Sign the transaction
@@ -299,24 +374,33 @@ ex:participant_{} a trace:Farmer ;
 
     /// Create a processing transaction (manufacturer processes raw materials)
     pub fn create_processing_transaction(
-        &self,
+        &mut self,
         processor_id: Uuid,
         input_batch_ids: Vec<String>,
         output_batch_id: String,
         process_type: String,
         environmental_conditions: Option<EnvironmentalConditions>,
+        encrypt_data: bool,
     ) -> Result<Transaction> {
-        let wallet = self
-            .wallet_manager
-            .get_wallet(processor_id)
-            .ok_or_else(|| anyhow!("Processor wallet not found"))?;
+        // Permission check
+        let (has_permission, processor_name, location) = {
+            let wallet = self
+                .wallet_manager
+                .get_wallet(processor_id)
+                .ok_or_else(|| anyhow!("Processor wallet not found"))?;
 
-        if !wallet.has_permission("process") {
-            return Err(anyhow!("Processor does not have processing permission"));
+            if !wallet.has_permission("process") {
+                return Err(anyhow!("Processor does not have processing permission"));
+            }
+            (true, wallet.participant.name.clone(), wallet.participant.location.clone())
+        };
+
+        if !has_permission {
+             return Err(anyhow!("Permission denied"));
         }
 
         // Create transaction inputs (simplified - in reality we'd look up the actual UTXOs)
-        let inputs = input_batch_ids
+        let inputs: Vec<crate::transaction::transaction::TransactionInput> = input_batch_ids
             .iter()
             .map(
                 |batch_id| crate::transaction::transaction::TransactionInput {
@@ -341,6 +425,8 @@ ex:participant_{} a trace:Farmer ;
                 meta
             },
         };
+
+        let tx_id = Uuid::new_v4().to_string();
 
         // Create RDF data
         let rdf_data = format!(
@@ -369,24 +455,68 @@ ex:participant_{} a trace:Manufacturer ;
             process_type,
             processor_id,
             processor_id,
-            wallet.participant.name
+            processor_name
         );
 
         let metadata = TransactionMetadata {
-            location: wallet.participant.location.clone(),
+            location: location,
             environmental_conditions,
             compliance_info: None,
             quality_data: None,
             custom_fields: HashMap::new(),
         };
 
-        let mut transaction = Transaction::new(
+        let (final_rdf, encrypted_payload) = if encrypt_data {
+            // Get or create encryption key
+            let key_id = "private_data_key";
+            let wallet = self.wallet_manager.get_wallet_mut(processor_id)
+                .ok_or_else(|| anyhow!("Processor wallet not found for key generation"))?;
+
+            let key_hex = if let Some(k) = wallet.get_secret(key_id) {
+                k.clone()
+            } else {
+                let new_key = crate::security::encryption::PrivacyManager::generate_key();
+                let new_key_hex = hex::encode(new_key);
+                wallet.add_secret(key_id.to_string(), new_key_hex.clone());
+                new_key_hex
+            };
+
+            let key_bytes = hex::decode(&key_hex).map_err(|_| anyhow!("Invalid key hex"))?;
+            let key_array: [u8; 32] = key_bytes.try_into().map_err(|_| anyhow!("Invalid key length"))?;
+
+            let encrypted = crate::security::encryption::PrivacyManager::encrypt(&rdf_data, &key_array, key_id)?;
+            let encrypted_json = serde_json::to_string(&encrypted)?;
+
+            // Create public placeholder RDF
+            let public_rdf = format!(
+                r#"
+ex:{} a trace:ProductBatch ;
+    trace:hasBatchID "{}" ;
+    trace:hasTransactionID "{}" ;
+    trace:isEncrypted "true"^^xsd:boolean .
+"#,
+                output_batch_id,
+                output_batch_id,
+                tx_id
+            );
+
+            (public_rdf, Some(encrypted_json))
+        } else {
+            (rdf_data.clone(), None)
+        };
+
+        let wallet = self.wallet_manager.get_wallet(processor_id)
+            .ok_or_else(|| anyhow!("Processor wallet not found for signing"))?;
+
+        let mut transaction = Transaction::new_with_id(
+            tx_id,
             TransactionType::Processing,
             inputs,
             vec![output],
-            rdf_data.clone(),
+            final_rdf.clone(),
+            encrypted_payload,
             metadata,
-            TransactionPayload::RdfData(rdf_data.clone()),
+            TransactionPayload::RdfData(final_rdf),
         );
 
         // Sign the transaction
@@ -397,20 +527,28 @@ ex:participant_{} a trace:Manufacturer ;
 
     /// Create a quality control transaction
     pub fn create_quality_transaction(
-        &self,
+        &mut self,
         lab_id: Uuid,
         batch_id: String,
         test_type: String,
         test_result: String,
         test_value: Option<f64>,
+        encrypt_data: bool,
     ) -> Result<Transaction> {
-        let wallet = self
-            .wallet_manager
-            .get_wallet(lab_id)
-            .ok_or_else(|| anyhow!("Lab wallet not found"))?;
+        let (has_permission, lab_name, location) = {
+            let wallet = self
+                .wallet_manager
+                .get_wallet(lab_id)
+                .ok_or_else(|| anyhow!("Lab wallet not found"))?;
 
-        if !wallet.has_permission("quality_test") {
-            return Err(anyhow!("Lab does not have quality testing permission"));
+            if !wallet.has_permission("quality_test") {
+                return Err(anyhow!("Lab does not have quality testing permission"));
+            }
+            (true, wallet.participant.name.clone(), wallet.participant.location.clone())
+        };
+
+        if !has_permission {
+            return Err(anyhow!("Permission denied"));
         }
 
         let quality_data = QualityData {
@@ -421,6 +559,8 @@ ex:participant_{} a trace:Manufacturer ;
             lab_id: Some(lab_id),
             test_timestamp: Utc::now(),
         };
+
+        let tx_id = Uuid::new_v4().to_string();
 
         // Create RDF data
         let rdf_data = format!(
@@ -442,24 +582,68 @@ ex:participant_{} a trace:QualityLab ;
             test_result,
             test_type,
             lab_id,
-            wallet.participant.name
+            lab_name
         );
 
         let metadata = TransactionMetadata {
-            location: wallet.participant.location.clone(),
+            location: location,
             environmental_conditions: None,
             compliance_info: None,
             quality_data: Some(quality_data),
             custom_fields: HashMap::new(),
         };
 
-        let mut transaction = Transaction::new(
+        let (final_rdf, encrypted_payload) = if encrypt_data {
+            // Get or create encryption key
+            let key_id = "private_data_key";
+            let wallet = self.wallet_manager.get_wallet_mut(lab_id)
+                .ok_or_else(|| anyhow!("Lab wallet not found for key generation"))?;
+
+            let key_hex = if let Some(k) = wallet.get_secret(key_id) {
+                k.clone()
+            } else {
+                let new_key = crate::security::encryption::PrivacyManager::generate_key();
+                let new_key_hex = hex::encode(new_key);
+                wallet.add_secret(key_id.to_string(), new_key_hex.clone());
+                new_key_hex
+            };
+
+            let key_bytes = hex::decode(&key_hex).map_err(|_| anyhow!("Invalid key hex"))?;
+            let key_array: [u8; 32] = key_bytes.try_into().map_err(|_| anyhow!("Invalid key length"))?;
+
+            let encrypted = crate::security::encryption::PrivacyManager::encrypt(&rdf_data, &key_array, key_id)?;
+            let encrypted_json = serde_json::to_string(&encrypted)?;
+
+            // Create public placeholder RDF
+            let public_rdf = format!(
+                r#"
+ex:quality_test_{} a trace:QualityCheck ;
+    prov:used ex:{} ;
+    trace:hasTransactionID "{}" ;
+    trace:isEncrypted "true"^^xsd:boolean .
+"#,
+                batch_id,
+                batch_id,
+                tx_id
+            );
+
+            (public_rdf, Some(encrypted_json))
+        } else {
+            (rdf_data.clone(), None)
+        };
+
+        let wallet = self.wallet_manager.get_wallet(lab_id)
+            .ok_or_else(|| anyhow!("Lab wallet not found for signing"))?;
+
+        let mut transaction = Transaction::new_with_id(
+            tx_id,
             TransactionType::Quality,
             vec![], // Quality checks don't consume inputs
             vec![], // Quality checks don't produce outputs
-            rdf_data.clone(),
+            final_rdf.clone(),
+            encrypted_payload,
             metadata,
-            TransactionPayload::RdfData(rdf_data.clone()),
+            TransactionPayload::RdfData(final_rdf),
         );
 
         // Sign the transaction
@@ -470,21 +654,31 @@ ex:participant_{} a trace:QualityLab ;
 
     /// Create a transport transaction
     pub fn create_transport_transaction(
-        &self,
+        &mut self,
         logistics_id: Uuid,
         batch_id: String,
         from_location: String,
         to_location: String,
         environmental_conditions: Option<EnvironmentalConditions>,
+        encrypt_data: bool,
     ) -> Result<Transaction> {
-        let wallet = self
-            .wallet_manager
-            .get_wallet(logistics_id)
-            .ok_or_else(|| anyhow!("Logistics provider wallet not found"))?;
+        let (has_permission, provider_name) = {
+            let wallet = self
+                .wallet_manager
+                .get_wallet(logistics_id)
+                .ok_or_else(|| anyhow!("Logistics provider wallet not found"))?;
 
-        if !wallet.has_permission("transport") {
-            return Err(anyhow!("Provider does not have transport permission"));
+            if !wallet.has_permission("transport") {
+                return Err(anyhow!("Provider does not have transport permission"));
+            }
+            (true, wallet.participant.name.clone())
+        };
+
+        if !has_permission {
+             return Err(anyhow!("Permission denied"));
         }
+
+        let tx_id = Uuid::new_v4().to_string();
 
         // Create RDF data
         let rdf_data = format!(
@@ -506,7 +700,7 @@ ex:participant_{} a trace:LogisticsProvider ;
             from_location,
             to_location,
             logistics_id,
-            wallet.participant.name
+            provider_name
         );
 
         let metadata = TransactionMetadata {
@@ -517,13 +711,57 @@ ex:participant_{} a trace:LogisticsProvider ;
             custom_fields: HashMap::new(),
         };
 
-        let mut transaction = Transaction::new(
+        let (final_rdf, encrypted_payload) = if encrypt_data {
+            // Get or create encryption key
+            let key_id = "private_data_key";
+            let wallet = self.wallet_manager.get_wallet_mut(logistics_id)
+                .ok_or_else(|| anyhow!("Logistics wallet not found for key generation"))?;
+
+            let key_hex = if let Some(k) = wallet.get_secret(key_id) {
+                k.clone()
+            } else {
+                let new_key = crate::security::encryption::PrivacyManager::generate_key();
+                let new_key_hex = hex::encode(new_key);
+                wallet.add_secret(key_id.to_string(), new_key_hex.clone());
+                new_key_hex
+            };
+
+            let key_bytes = hex::decode(&key_hex).map_err(|_| anyhow!("Invalid key hex"))?;
+            let key_array: [u8; 32] = key_bytes.try_into().map_err(|_| anyhow!("Invalid key length"))?;
+
+            let encrypted = crate::security::encryption::PrivacyManager::encrypt(&rdf_data, &key_array, key_id)?;
+            let encrypted_json = serde_json::to_string(&encrypted)?;
+
+            // Create public placeholder RDF
+            let public_rdf = format!(
+                r#"
+ex:transport_{} a trace:TransportActivity ;
+    prov:used ex:{} ;
+    trace:hasTransactionID "{}" ;
+    trace:isEncrypted "true"^^xsd:boolean .
+"#,
+                batch_id,
+                batch_id,
+                tx_id
+            );
+
+            (public_rdf, Some(encrypted_json))
+        } else {
+            (rdf_data.clone(), None)
+        };
+
+        let wallet = self.wallet_manager.get_wallet(logistics_id)
+            .ok_or_else(|| anyhow!("Logistics wallet not found for signing"))?;
+
+        let mut transaction = Transaction::new_with_id(
+            tx_id,
             TransactionType::Transport,
             vec![], // Simplified - no inputs/outputs for transport
             vec![],
-            rdf_data.clone(),
+            final_rdf.clone(),
+            encrypted_payload,
             metadata,
-            TransactionPayload::RdfData(rdf_data.clone()),
+            TransactionPayload::RdfData(final_rdf),
         );
 
         // Sign the transaction
@@ -618,6 +856,7 @@ mod tests {
                 1000.0,
                 "Vermont, USA".to_string(),
                 None,
+                false,
             )
             .unwrap();
 
@@ -658,6 +897,7 @@ mod security_tests {
                     100.0,
                     "Test Location".to_string(),
                     None,
+                    false,
                 )
                 .unwrap();
 
@@ -675,6 +915,7 @@ mod security_tests {
                 -100.0, // Negative quantity
                 "Test Location".to_string(),
                 None,
+                false,
             );
 
             assert!(
@@ -706,6 +947,7 @@ mod security_tests {
                         100.0 + i as f64,
                         "Test Location".to_string(),
                         None,
+                        false,
                     )
                     .unwrap();
 
@@ -755,6 +997,7 @@ mod security_tests {
                     100.0,
                     "Location A".to_string(),
                     None,
+                    false,
                 )
                 .unwrap();
 
@@ -765,6 +1008,7 @@ mod security_tests {
                     200.0,
                     "Location B".to_string(),
                     None,
+                    false,
                 )
                 .unwrap();
 
@@ -812,6 +1056,7 @@ mod security_tests {
                     100.0,
                     "Test Location".to_string(),
                     None,
+                    false,
                 )
                 .unwrap();
 
@@ -855,6 +1100,7 @@ mod security_tests {
                 100.0,
                 "Test Location".to_string(),
                 None,
+                false,
             );
             assert!(
                 farmer_production_tx.is_ok(),
@@ -868,6 +1114,7 @@ mod security_tests {
                 "PROCESSED-1".to_string(),
                 "UHT".to_string(),
                 None,
+                false,
             );
             assert!(
                 processor_processing_tx.is_ok(),
@@ -896,6 +1143,7 @@ mod security_tests {
                     100.0,
                     "Test Location".to_string(),
                     None,
+                    false,
                 )
                 .unwrap();
 
@@ -949,6 +1197,7 @@ mod security_tests {
                     10.0,
                     format!("Location {}", i),
                     None,
+                    false,
                 );
 
                 if tx.is_ok() {
@@ -982,6 +1231,7 @@ mod security_tests {
                 100.0,
                 large_description.clone(),
                 None,
+                false,
             );
 
             // Should handle large transactions gracefully
@@ -1004,6 +1254,7 @@ mod security_tests {
                     1.0,
                     format!("Location {}", i),
                     None,
+                    false,
                 );
 
                 if let Ok(transaction) = tx {
@@ -1044,6 +1295,7 @@ mod security_tests {
                     100.0,
                     "Confidential Location".to_string(),
                     None,
+                    false,
                 )
                 .unwrap();
 
@@ -1091,6 +1343,7 @@ mod security_tests {
                             100.0 + i as f64,
                             "Test Location".to_string(),
                             None,
+                            false,
                         )
                         .unwrap()
                 })
@@ -1156,6 +1409,7 @@ mod security_tests {
                             100.0,
                             format!("Location {}", i),
                             None,
+                            false,
                         );
 
                         if tx.is_ok() {
@@ -1212,6 +1466,7 @@ mod security_tests {
                     1.0,
                     format!("Location {}", i),
                     None,
+                    false,
                 );
 
                 match tx {

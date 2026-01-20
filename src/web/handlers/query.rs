@@ -4,12 +4,13 @@ use crate::web::handlers::AppState;
 use crate::web::models::{
     AnalyticsQueryParams, ApiError, BlockInfo, EnhancedTraceQueryParams, EnvironmentalData,
     KnowledgeGraphParams, ProductTrace, ProductsQueryParams, SparqlQueryRequest,
-    SparqlQueryResponse, TraceQueryParams,
+    SparqlQueryResponse, TraceQueryParams, UserClaims,
 };
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     Json,
+    Extension,
 };
 use chrono::Utc;
 use oxigraph::model::{NamedNode, Subject, Term};
@@ -459,119 +460,182 @@ pub async fn get_products(
 /// Get specific product by ID
 pub async fn get_product_by_id(
     Path(product_id): Path<String>,
+    Extension(claims): Extension<UserClaims>,
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
-    let blockchain = app_state.blockchain.read().await;
+    // let blockchain = app_state.blockchain.read().await; // Moved down to limit scope
 
-    // Build SPARQL query to get specific product
-    let sparql_query = format!(
-        r#"
-        SELECT ?name ?type ?status ?participant ?location ?timestamp ?description WHERE {{
-            GRAPH ?g {{
-                <{}> ?p ?o .
-                OPTIONAL {{ <{}> <http://provchain.org/trace#name> ?name }}
-                OPTIONAL {{ <{}> a ?type }}
-                OPTIONAL {{ <{}> <http://provchain.org/trace#status> ?status }}
-                OPTIONAL {{ <{}> <http://provchain.org/trace#participant> ?participant }}
-                OPTIONAL {{ <{}> <http://provchain.org/trace#location> ?location }}
-                OPTIONAL {{ <{}> <http://provchain.org/trace#timestamp> ?timestamp }}
-                OPTIONAL {{ <{}> <http://provchain.org/trace#description> ?description }}
+    let (mut product, encrypted_info) = {
+        let blockchain = app_state.blockchain.read().await;
+
+        // Build SPARQL query to get specific product
+        let sparql_query = format!(
+            r#"
+            SELECT ?name ?type ?status ?participant ?location ?timestamp ?description ?isEncrypted ?txId ?g WHERE {{
+                GRAPH ?g {{
+                    <{}> ?p ?o .
+                    OPTIONAL {{ <{}> <http://provchain.org/trace#name> ?name }}
+                    OPTIONAL {{ <{}> a ?type }}
+                    OPTIONAL {{ <{}> <http://provchain.org/trace#status> ?status }}
+                    OPTIONAL {{ <{}> <http://provchain.org/trace#participant> ?participant }}
+                    OPTIONAL {{ <{}> <http://provchain.org/trace#location> ?location }}
+                    OPTIONAL {{ <{}> <http://provchain.org/trace#timestamp> ?timestamp }}
+                    OPTIONAL {{ <{}> <http://provchain.org/trace#description> ?description }}
+                    OPTIONAL {{ <{}> <http://provchain.org/trace#isEncrypted> ?isEncrypted }}
+                    OPTIONAL {{ <{}> <http://provchain.org/trace#hasTransactionID> ?txId }}
+                }}
             }}
-        }}
-        "#,
-        product_id,
-        product_id,
-        product_id,
-        product_id,
-        product_id,
-        product_id,
-        product_id,
-        product_id
-    );
+            "#,
+            product_id,
+            product_id,
+            product_id,
+            product_id,
+            product_id,
+            product_id,
+            product_id,
+            product_id,
+            product_id,
+            product_id
+        );
 
-    let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
-        Ok(results) => results,
-        Err(_e) => {
+        let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
+            Ok(results) => results,
+            Err(_e) => {
+                return Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        error: "query_execution_failed".to_string(),
+                        message: "Failed to execute SPARQL query".to_string(),
+                        timestamp: Utc::now(),
+                    }),
+                ));
+            }
+        };
+
+        let mut product_found = false;
+        let mut product = serde_json::json!({
+            "id": product_id,
+            "name": "Unknown Product",
+            "type": "unknown",
+            "status": "unknown",
+            "participant": "unknown",
+            "location": "unknown",
+            "timestamp": Utc::now().to_rfc3339(),
+            "description": "",
+            "trace_steps": 0,
+            "quality_score": 85.0,
+            "compliance_status": "compliant"
+        });
+
+        let mut encrypted_payload_json = None;
+        let mut transaction_id = None;
+
+        if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
+            if let Some(sol) = solutions.flatten().next() {
+                product_found = true;
+
+                if let Some(name) = sol.get("name") {
+                    product["name"] =
+                        serde_json::Value::String(name.to_string().trim_matches('"').to_string());
+                }
+                if let Some(type_val) = sol.get("type") {
+                    product["type"] = serde_json::Value::String(
+                        type_val
+                            .to_string()
+                            .trim_matches('<')
+                            .trim_matches('>')
+                            .split('#')
+                            .next_back()
+                            .unwrap_or("unknown")
+                            .to_string(),
+                    );
+                }
+                if let Some(status) = sol.get("status") {
+                    product["status"] =
+                        serde_json::Value::String(status.to_string().trim_matches('"').to_string());
+                }
+                if let Some(participant) = sol.get("participant") {
+                    product["participant"] = serde_json::Value::String(
+                        participant.to_string().trim_matches('"').to_string(),
+                    );
+                }
+                if let Some(location) = sol.get("location") {
+                    product["location"] =
+                        serde_json::Value::String(location.to_string().trim_matches('"').to_string());
+                }
+                if let Some(timestamp) = sol.get("timestamp") {
+                    product["timestamp"] =
+                        serde_json::Value::String(timestamp.to_string().trim_matches('"').to_string());
+                }
+                if let Some(description) = sol.get("description") {
+                    product["description"] = serde_json::Value::String(
+                        description.to_string().trim_matches('"').to_string(),
+                    );
+                }
+
+                // Check for encryption
+                if let Some(is_encrypted) = sol.get("isEncrypted") {
+                    if is_encrypted.to_string().contains("true") {
+                        product["encryption_status"] = serde_json::json!("encrypted");
+                        
+                        if let (Some(tx_id_term), Some(g_term)) = (sol.get("txId"), sol.get("g")) {
+                            let tx_id = tx_id_term.to_string().trim_matches('"').to_string();
+                            let graph_uri = g_term.to_string().trim_matches('<').trim_matches('>').to_string();
+                            
+                            // Extract block index from graph URI
+                            if let Some(index_str) = graph_uri.split('/').last() {
+                                if let Ok(index) = index_str.parse::<usize>() {
+                                    if let Some(block) = blockchain.chain.get(index) {
+                                        if let Some(encrypted_data_json) = &block.encrypted_data {
+                                            encrypted_payload_json = Some(encrypted_data_json.clone());
+                                            transaction_id = Some(tx_id);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if !product_found {
             return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
+                StatusCode::NOT_FOUND,
                 Json(ApiError {
-                    error: "query_execution_failed".to_string(),
-                    message: "Failed to execute SPARQL query. Please check your query syntax and try again.".to_string(),
+                    error: "product_not_found".to_string(),
+                    message: format!("Product with ID {} not found", product_id),
                     timestamp: Utc::now(),
                 }),
             ));
         }
-    };
 
-    let mut product_found = false;
-    let mut product = serde_json::json!({
-        "id": product_id,
-        "name": "Unknown Product",
-        "type": "unknown",
-        "status": "unknown",
-        "participant": "unknown",
-        "location": "unknown",
-        "timestamp": Utc::now().to_rfc3339(),
-        "description": "",
-        "trace_steps": 0,
-        "quality_score": 85.0,
-        "compliance_status": "compliant"
-    });
+        (product, encrypted_payload_json.zip(transaction_id))
+    }; // Blockchain lock dropped here
 
-    if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        if let Some(sol) = solutions.flatten().next() {
-            product_found = true;
-
-            if let Some(name) = sol.get("name") {
-                product["name"] =
-                    serde_json::Value::String(name.to_string().trim_matches('"').to_string());
-            }
-            if let Some(type_val) = sol.get("type") {
-                product["type"] = serde_json::Value::String(
-                    type_val
-                        .to_string()
-                        .trim_matches('<')
-                        .trim_matches('>')
-                        .split('#')
-                        .next_back()
-                        .unwrap_or("unknown")
-                        .to_string(),
-                );
-            }
-            if let Some(status) = sol.get("status") {
-                product["status"] =
-                    serde_json::Value::String(status.to_string().trim_matches('"').to_string());
-            }
-            if let Some(participant) = sol.get("participant") {
-                product["participant"] = serde_json::Value::String(
-                    participant.to_string().trim_matches('"').to_string(),
-                );
-            }
-            if let Some(location) = sol.get("location") {
-                product["location"] =
-                    serde_json::Value::String(location.to_string().trim_matches('"').to_string());
-            }
-            if let Some(timestamp) = sol.get("timestamp") {
-                product["timestamp"] =
-                    serde_json::Value::String(timestamp.to_string().trim_matches('"').to_string());
-            }
-            if let Some(description) = sol.get("description") {
-                product["description"] = serde_json::Value::String(
-                    description.to_string().trim_matches('"').to_string(),
-                );
+    // Perform decryption if needed
+    if let Some((encrypted_data_json, tx_id)) = encrypted_info {
+        if let Ok(payloads) = serde_json::from_str::<std::collections::HashMap<String, String>>(&encrypted_data_json) {
+            if let Some(payload_str) = payloads.get(&tx_id) {
+                if let Ok(encrypted_data) = serde_json::from_str::<crate::security::encryption::EncryptedData>(payload_str) {
+                    if let Ok(user_id) = uuid::Uuid::parse_str(&claims.sub) {
+                        let wallet_manager = app_state.wallet_manager.read().await;
+                        if let Some(wallet) = wallet_manager.get_wallet(user_id) {
+                            if let Some(key_hex) = wallet.get_secret(&encrypted_data.key_id) {
+                                if let Ok(key_bytes) = hex::decode(key_hex) {
+                                    if let Ok(key_array) = key_bytes.try_into() {
+                                        if let Ok(decrypted_rdf) = crate::security::encryption::PrivacyManager::decrypt(&encrypted_data, &key_array) {
+                                            product["decrypted_data"] = serde_json::Value::String(decrypted_rdf);
+                                            product["encryption_status"] = serde_json::json!("decrypted");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
-    }
-
-    if !product_found {
-        return Err((
-            StatusCode::NOT_FOUND,
-            Json(ApiError {
-                error: "product_not_found".to_string(),
-                message: format!("Product with ID {} not found", product_id),
-                timestamp: Utc::now(),
-            }),
-        ));
     }
 
     Ok(Json(product))

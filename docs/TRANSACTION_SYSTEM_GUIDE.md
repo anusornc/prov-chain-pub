@@ -341,6 +341,7 @@ let tx = blockchain.create_production_transaction(
     2000.0, // 2000 liters
     "Vermont, USA".to_string(),
     Some(environmental_conditions),
+    false, // No encryption
 )?;
 
 // Submit transaction
