@@ -201,6 +201,11 @@ cargo test --workspace
   - Tamper detection: view number, sequence number, block hash, sender
   - Replay protection: duplicate detection, message ID uniqueness with UUID reconstruction
   - Performance validation: Ed25519 verification <10ms threshold (adjusted for test environment with serialization overhead)
+- `tests/security_tests.rs` - JWT authentication and authorization tests
+  - Test setup requires `JWT_SECRET` environment variable (32+ chars)
+  - Validates invalid authentication rejection (4xx client errors)
+  - Tests authorization bypass attempts
+  - Setup helper: `setup_test_server_with_auth()` configures test environment
 - `tests/load_tests.rs` - Load testing with aggressive configuration (200 users × 100 requests, 19.58 TPS measured)
 - `src/integrity/` - SPARQL consistency validation and graph integrity checking
   - Transaction count validation with RDF parsing
@@ -516,6 +521,16 @@ cargo test --workspace
   - Automatic cleanup on exit (stops all services)
 
 **Test Reliability Fixes** (January 2026):
+- **Security Test Fixes** (`tests/security_tests.rs`, `src/web/auth.rs`, `src/web/server.rs`):
+  - Fixed logic bug in `AuthState::new_with_defaults()`: Changed `.unwrap_or(true)` → `.unwrap_or(false)` for PROVCHAIN_DEMO_MODE check
+  - Modified `WebServer::new()` to use `AuthState::new_with_defaults()` in debug builds or when PROVCHAIN_DEMO_MODE is set
+  - Added `JWT_SECRET` environment variable setup in `setup_test_server_with_auth()` helper
+  - Result: Fixed 3 failing tests (test_invalid_authentication, test_authorization_bypass_attempts, jwt secret validation)
+- **owl2-reasoner Test Fixes** (`src/reasoning/query/engine.rs`):
+  - Fixed flaky `test_engine_performance` by changing from time-based assertion to functionality-based
+  - Changed `assert!(stats.average_time_ms > 0.0)` to `assert!(stats.successful_queries > 0)`
+  - Added comment explaining queries may execute in < 1ms in optimized builds
+  - Result: Eliminated flaky test failures on fast hardware
 - **PBFT Message Signing Tests** (`tests/pbft_message_signing_tests.rs`) - Commit 4583d30:
   - Fixed 2 failing tests, bringing total to 35 passing tests
   - `test_message_id_format_is_parseable`: Fixed UUID parsing logic

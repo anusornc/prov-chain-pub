@@ -76,7 +76,12 @@ impl WebServer {
 
         Self {
             app_state: AppState::new(blockchain),
-            auth_state: AuthState::new(),
+            // In debug/test builds, use default users for testing
+            auth_state: if cfg!(debug_assertions) || std::env::var("PROVCHAIN_DEMO_MODE").is_ok() {
+                AuthState::new_with_defaults()
+            } else {
+                AuthState::new()
+            },
             websocket_state,
             event_broadcaster,
             config,

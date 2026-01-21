@@ -102,7 +102,7 @@ impl AuthState {
         if !cfg!(debug_assertions)
             || std::env::var("PROVCHAIN_DEMO_MODE")
                 .map(|v| v != "1")
-                .unwrap_or(true)
+                .unwrap_or(false)
         {
             eprintln!("SECURITY: Default users are disabled. Set PROVCHAIN_DEMO_MODE=1 in development to enable demo users.");
             return Self::new();

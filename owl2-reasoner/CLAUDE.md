@@ -142,6 +142,11 @@ See root `Cargo.toml` for comprehensive security documentation:
     - Added clarifying comment: "generous threshold for CI/slow systems"
     - Note: Performance sanity check, not a strict benchmark
     - Prevents flaky test failures on resource-constrained CI runners
+  - **Flaky Performance Test Fixed** (`src/reasoning/query/engine.rs`)
+    - `test_engine_performance`: Changed from time-based to functionality-based assertion
+    - Changed `assert!(stats.average_time_ms > 0.0)` to `assert!(stats.successful_queries > 0)`
+    - Added comment: "Queries may execute in < 1ms total in optimized builds"
+    - Eliminates flaky failures on fast hardware or optimized builds
   - **Result: All 161 tests pass reliably** across different hardware configurations
   - Turtle parser: 12/12 passing (previously documented as 8 failures)
 
