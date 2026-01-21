@@ -260,6 +260,7 @@ cargo test --workspace
 - **README.md** - Project overview with research objectives, quick start, and benchmark toolkit
 - **CONTRIBUTING.md** - Comprehensive contributor guide with development setup, coding standards, and PR process
 - **docs/README.md** - Main documentation index
+- **docs/INDEX.md** - Documentation navigation index with archive structure
 
 ### User Guides
 - `docs/USER_MANUAL.md` - User manual hub
@@ -288,9 +289,11 @@ cargo test --workspace
   - Knowledge transfer priorities for consensus, OWL2 reasoning, and semantic layer
   - Documentation gaps and action items
 - `docs/project-health/` - Project health analysis and improvement tracking
-  - `clippy_warnings_deep_dive.md` - Detailed analysis of 254 clippy warnings with categorization
+  - `test_results_summary_2026-01-21.md` - Comprehensive test results documentation (161/161 owl2-reasoner tests passing, 12/12 turtle parser tests passing)
+  - `clippy_analysis_2026-01-21.md` - Current clippy warnings analysis (204 warnings, 20% reduction from documented baseline)
   - `dependency_analysis_deep_dive.md` - Comprehensive dependency health assessment (640 total, 67 direct)
   - `linear_tasks_export.md` - Action items for Linear with priorities and estimates
+  - `archive/clippy_warnings_deep_dive.md` - Archived outdated analysis (claimed 254 warnings, actual was 204)
 
 ### Deployment Guides
 - `docs/deployment/HANDS_ON_DEPLOYMENT_GUIDE.md` - Step-by-step deployment (1431 lines)
@@ -466,6 +469,15 @@ cargo test --workspace
   - Platform requirements: 2+ cores CPU, 4GB+ RAM, 10GB disk
   - Enables ACM Artifact Review submission and peer review validation
 
+### Documentation Archive
+- **`docs/archive/`** - Historical documentation preserved for reference (moved Jan 2026)
+  - `phases/` - Phase implementation records (PHASE2-6, PHASE8)
+  - `historical-reports/` - Historical test reports and implementation summaries
+  - `implementation-plans/` - Experimental technical docs (RDF canonicalization, GraphChain comparison, hybrid canonicalization)
+  - `experimental/` - AI model docs (GEMINI.md, QWEN.md, agent_memory/)
+  - `old-architecture/` - Superseded architecture docs
+  - `obsolete-folders/` - Outdated documentation folders (advanced/, completed/, issues/, process/, reports/, technical/, status/)
+
 ## Development Notes
 
 - This is a research project for thesis: "Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability"
@@ -527,6 +539,16 @@ cargo test --workspace
   - Deleted files: GEMINI.md, IMPROVEMENTS_SUMMARY.md, PERSISTENCE_README.md, TESTING_ALTERNATIVES_AND_SOLUTIONS.md, TEST_ANALYSIS_AND_SOLUTIONS_SUMMARY.md, UI_README.md
   - Historical content preserved in `docs/archive/` directory
   - Documentation reorganization: All content consolidated into structured `docs/` directory with clear navigation
+- **Documentation Archive Reorganization** (Commit 26c7323, January 2026)
+  - Consolidated 60+ scattered documentation files into structured `docs/archive/` directory
+  - Organized archive into: `phases/`, `historical-reports/`, `implementation-plans/`, `experimental/`, `old-architecture/`, `obsolete-folders/`
+  - Moved phase documents (PHASE2-6, PHASE8) to `docs/archive/phases/`
+  - Moved test reports and summaries to `docs/archive/historical-reports/`
+  - Moved experimental technical docs (RDF canonicalization, GraphChain comparison) to `docs/archive/implementation-plans/`
+  - Moved AI model docs (GEMINI.md, QWEN.md, agent_memory/) to `docs/archive/experimental/`
+  - Preserved historical content while cleaning root `docs/` directory for better maintainability
+  - Updated `docs/INDEX.md` with new navigation structure
+  - Current documentation now aligned with codebase state
 - **Clippy Auto-fixes Applied** (Commit 485d4dd)
   - **Main project (`src/`)**: Fixed field assignment outside initializer patterns and improved code quality
     - `src/performance/storage_optimization.rs`: Used struct init syntax for StorageConfig
@@ -548,9 +570,15 @@ cargo test --workspace
     - Fixed trailing whitespace issues
     - Applied to: cache.rs, engine.rs, optimized_engine.rs, memory.rs
 - **Final Clippy Warnings Resolved** (Commit 511c088)
+  - **Error Handling Enhancements** (`owl2-reasoner/src/error.rs`):
+    - Added #[must_use] attributes to ErrorContext builder methods (new, add_detail, build)
+    - Updated format! macros to use direct variable interpolation (e.g., {k}={v})
   - **Core Parser Fixes** (`owl2-reasoner/src/parser/turtle.rs`):
     - Removed redundant else block with continue statement (line 194)
     - Removed redundant continue in match arm (line 890)
+    - Added #[must_use] attributes to constructor methods (new, with_config)
+    - Removed #[inline(always)] from arc_to_iri (let compiler optimize)
+    - Updated log format string to use direct interpolation ({e})
   - **Benchmark/Example Fixes**:
     - `performance_optimization_benchmarks.rs`: Removed unused import (owl2_reasoner::entities)
     - `parallel_query_bench.rs`: Prefixed unused parameter (_threads)
