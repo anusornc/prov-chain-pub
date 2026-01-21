@@ -6,77 +6,106 @@ This directory contains all the documentation for the ProvChainOrg blockchain tr
 - **[Plan.md](Plan.md)** - Main project plan and roadmap
 - **[../README.md](../README.md)** - Project introduction and setup instructions (at root level)
 - **[Run.md](Run.md)** - How to run the system
+- **[README.md](README.md)** - Documentation overview and index
 
-## 🏗️ Implementation Documentation
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Overall implementation summary
-- **[STORAGE_MIGRATION_DOCUMENTATION.md](STORAGE_MIGRATION_DOCUMENTATION.md)** - Storage system migration details
+## 🚀 User Guides
+- **[USER_MANUAL.md](USER_MANUAL.md)** - User manual hub with comprehensive guides
+- **[FAQ.md](FAQ.md)** - Frequently asked questions
+- **[VERSION.md](VERSION.md)** - Version information
 
-## 🧪 Testing Documentation
-- **[COMPREHENSIVE_TEST_ANALYSIS_REPORT.md](COMPREHENSIVE_TEST_ANALYSIS_REPORT.md)** - Complete test analysis
-- **[TESTING_ANALYSIS_SUMMARY.md](TESTING_ANALYSIS_SUMMARY.md)** - Testing summary
-- **[TESTING_RESULTS_DETAILED_REVIEW.md](TESTING_RESULTS_DETAILED_REVIEW.md)** - Detailed test results
-- **[TESTING_SUMMARY.md](TESTING_SUMMARY.md)** - High-level testing overview
-- **[PRODUCTION_TESTING_PLAN.md](PRODUCTION_TESTING_PLAN.md)** - Production testing strategy
+## 🏗️ Architecture Documentation
+- **[architecture/README.md](architecture/README.md)** - Architecture documentation hub
+  - C4 Model documentation (System Context, Container, Component)
+  - Architectural Decision Records (ADRs)
+  - Technology stack and quality attributes
+- **[architecture/COMPONENT_OWNERSHIP.md](architecture/COMPONENT_OWNERSHIP.md)** - Component ownership matrix
 
-## 📚 Phase Documentation
-- **[PHASE_2_COMPLETION_SUMMARY.md](PHASE_2_COMPLETION_SUMMARY.md)** - Phase 2 Web Interface completion
-- **[PHASE2_TEST_SUITE_DOCUMENTATION.md](PHASE2_TEST_SUITE_DOCUMENTATION.md)** - Phase 2 test documentation
-- **[PHASE3_IMPLEMENTATION_SUMMARY.md](PHASE3_IMPLEMENTATION_SUMMARY.md)** - Phase 3 Knowledge Graph implementation
-- **[PHASE3_TEST_SUITE_DOCUMENTATION.md](PHASE3_TEST_SUITE_DOCUMENTATION.md)** - Phase 3 test documentation
-- **[PHASE4_IMPLEMENTATION_SUMMARY.md](PHASE4_IMPLEMENTATION_SUMMARY.md)** - Phase 4 Distributed Network implementation
-- **[PHASE4_TEST_SUITE_DOCUMENTATION.md](PHASE4_TEST_SUITE_DOCUMENTATION.md)** - Phase 4 test documentation
-- **[PHASE5_IMPLEMENTATION_SUMMARY.md](PHASE5_IMPLEMENTATION_SUMMARY.md)** - Phase 5 Performance & Scalability
-- **[PHASE5_TEST_SUITE_DOCUMENTATION.md](PHASE5_TEST_SUITE_DOCUMENTATION.md)** - Phase 5 test documentation
-- **[PHASE6_IMPLEMENTATION_SUMMARY.md](PHASE6_IMPLEMENTATION_SUMMARY.md)** - Phase 6 Production Deployment
-- **[PHASE6_TEST_SUITE_DOCUMENTATION.md](PHASE6_TEST_SUITE_DOCUMENTATION.md)** - Phase 6 test documentation
+## 🔧 Deployment Guides
+- **[deployment/HANDS_ON_DEPLOYMENT_GUIDE.md](deployment/HANDS_ON_DEPLOYMENT_GUIDE.md)** - Comprehensive deployment guide
+- **[deployment/DOCKER_DEPLOYMENT_ARCHITECTURE.md](deployment/DOCKER_DEPLOYMENT_ARCHITECTURE.md)** - Docker deployment architecture
 
-## 🔬 Research & Technical Analysis
-- **[RESEARCH_PUBLICATION_STRATEGY.md](RESEARCH_PUBLICATION_STRATEGY.md)** - Academic publication strategy
-- **[RDF_CANONICALIZATION_COMPARISON.md](RDF_CANONICALIZATION_COMPARISON.md)** - RDF canonicalization analysis
-- **[HYBRID_CANONICALIZATION_ARCHITECTURE.md](HYBRID_CANONICALIZATION_ARCHITECTURE.md)** - Hybrid canonicalization design
-- **[HYBRID_CANONICALIZATION_PLANTUML.md](HYBRID_CANONICALIZATION_PLANTUML.md)** - Architecture diagrams
-- **[GRAPHCHAIN_COMPARISON.md](GRAPHCHAIN_COMPARISON.md)** - Comparison with other solutions
+## 📊 Benchmarking & Performance
+- **[benchmarking/README.md](benchmarking/README.md)** - Research-focused benchmarking guide
+- **[benchmarking/EXPERIMENTAL_RESULTS.md](benchmarking/EXPERIMENTAL_RESULTS.md)** - Real experimental results
+- **[../BENCHMARKING.md](../BENCHMARKING.md)** - Central benchmarking entry point
 
-## 🧬 Ontology & Integration
-- **[ONTOLOGY_INTEGRATION.md](ONTOLOGY_INTEGRATION.md)** - Ontology integration details
-- **[ONTOLOGY_INTEGRATION_COMPLETE.md](ONTOLOGY_INTEGRATION_COMPLETE.md)** - Completed ontology integration
+## 📚 Research & Publication
+- **[publication/README.md](publication/README.md)** - Publication package for journals
+- **[publication/BASELINE_QUICKSTART.md](publication/BASELINE_QUICKSTART.md)** - Quick start for baseline comparisons
 
-## 🤖 AI Model Documentation
-- **[GEMINI.md](GEMINI.md)** - Gemini AI model integration
-- **[QWEN.md](QWEN.md)** - Qwen AI model integration
+## 📖 Developer Resources
+- **[../CONTRIBUTING.md](../CONTRIBUTING.md)** - Contributor guide and development setup
+- **[../CLAUDE.md](../CLAUDE.md)** - Project instructions and patterns
 
 ## 📁 Directory Structure
 
 ```
 docs/
-├── INDEX.md                                    # This file
-├── Plan.md                                     # Main project plan
-├── Run.md                                      # Execution instructions
-├── IMPLEMENTATION_SUMMARY.md                   # Implementation overview
-├── STORAGE_MIGRATION_DOCUMENTATION.md          # Storage migration
-├── COMPREHENSIVE_TEST_ANALYSIS_REPORT.md       # Complete test analysis
-├── TESTING_*.md                               # Testing documentation
-├── PHASE*_*.md                                # Phase-specific documentation
-├── RESEARCH_PUBLICATION_STRATEGY.md           # Research strategy
-├── RDF_CANONICALIZATION_COMPARISON.md         # Technical analysis
-├── HYBRID_CANONICALIZATION_*.md               # Canonicalization docs
-├── ONTOLOGY_INTEGRATION*.md                   # Ontology documentation
-└── *.md                                       # Other documentation files
+├── README.md                           # Documentation overview
+├── INDEX.md                            # This file (navigation index)
+├── Plan.md                             # Project plan
+├── Run.md                              # Execution guide
+├── USER_MANUAL.md                      # User manual hub
+├── FAQ.md                              # FAQ
+│
+├── architecture/                       # Architecture documentation
+│   ├── README.md                       # C4 model documentation
+│   ├── ADR/                            # Architecture Decision Records
+│   └── COMPONENT_OWNERSHIP.md          # Component ownership matrix
+│
+├── deployment/                         # Deployment guides
+│   ├── HANDS_ON_DEPLOYMENT_GUIDE.md    # Step-by-step deployment
+│   └── DOCKER_DEPLOYMENT_ARCHITECTURE.md
+│
+├── benchmarking/                       # Performance testing
+│   ├── README.md
+│   └── EXPERIMENTAL_RESULTS.md
+│
+├── publication/                        # Research materials
+│   ├── README.md
+│   └── BASELINE_QUICKSTART.md
+│
+├── user-manual/                        # Detailed user manual
+│   ├── README.md
+│   ├── 00-quick-start/
+│   ├── 03-querying-data/
+│   └── 08-troubleshooting/
+│
+├── tutorials/                          # Tutorials
+├── developer/                          # Developer documentation
+├── project-health/                     # Project health analysis
+│
+└── archive/                            # Historical documents
+    ├── phases/                         # Phase implementation records
+    ├── status/                         # Progress tracking
+    ├── old-architecture/               # Superseded architecture docs
+    ├── implementation-plans/           # Experimental technical docs
+    ├── experimental/                   # AI model docs
+    ├── historical-reports/             # Historical reports
+    └── obsolete-folders/               # Outdated documentation folders
 ```
 
 ## 🚀 Quick Start
 
-1. Read **[../README.md](../README.md)** for project overview (at root level)
+1. Read **[../README.md](../README.md)** for project overview
 2. Check **[Plan.md](Plan.md)** for detailed roadmap
 3. Follow **[Run.md](Run.md)** for execution instructions
-4. Review **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** for technical details
+4. Review **[USER_MANUAL.md](USER_MANUAL.md)** for usage guides
 
-## 📊 Project Status
+## 📊 Current Documentation Status
 
-The ProvChainOrg project has completed **7 out of 8 phases** with:
-- ✅ **93% overall test success rate**
-- ✅ **Production-ready implementation**
-- ✅ **Research publication ready**
-- ✅ **Enterprise-grade features**
+The ProvChainOrg project documentation has been reorganized:
+- ✅ **Current documentation** aligned with codebase state
+- ✅ **Historical documents** preserved in `archive/` directory
+- ✅ **Duplicate content** removed and consolidated
+- ✅ **C4 Model architecture** documentation up-to-date
 
-For the latest status, see **[COMPREHENSIVE_TEST_ANALYSIS_REPORT.md](COMPREHENSIVE_TEST_ANALYSIS_REPORT.md)**.
+### Key Resources
+- **Architecture**: See `architecture/README.md` for C4 model documentation
+- **Performance**: See `benchmarking/EXPERIMENTAL_RESULTS.md` for real experimental data
+- **Deployment**: See `deployment/HANDS_ON_DEPLOYMENT_GUIDE.md` for setup
+- **Research**: See `publication/README.md` for journal submission materials
+
+## 🔍 Archived Content
+
+Historical implementation phases, status tracking, experimental features, and obsolete technical documentation have been moved to the `archive/` directory. These documents are preserved for reference but may not reflect the current codebase state.

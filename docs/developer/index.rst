@@ -3,37 +3,19 @@ Developer Documentation
 
 Comprehensive guides, API references, and technical resources for building applications with ProvChainOrg.
 
-.. raw:: html
-
-   <div class="hero-section">
-     <div class="hero-content">
-       <h1>Developer Documentation</h1>
-       <p class="hero-subtitle">Technical resources for building semantic blockchain applications</p>
-       <div class="hero-badges">
-         <span class="badge badge-developer">Developer</span>
-         <span class="badge badge-technical">Technical</span>
-         <span class="badge badge-api">API</span>
-         <span class="badge badge-integration">Integration</span>
-       </div>
-     </div>
-   </div>
-
 .. note::
-   This section provides comprehensive technical documentation for developers building applications with ProvChainOrg. Whether you're integrating with our APIs, extending the platform, or building custom applications, these resources will help you succeed.
+   **Documentation Status**: This section is under active development. Many of the detailed guides referenced below are still being written. For the most current information, please refer to the main project documentation.
+
+   **Key Resources Available**:
+   - **[Contributing Guide](../../CONTRIBUTING.md)** - Development setup and contribution guidelines
+   - **[Architecture Documentation](../architecture/README.md)** - C4 model architecture and design decisions
+   - **[Deployment Guide](../deployment/HANDS_ON_DEPLOYMENT_GUIDE.md)** - Deployment instructions
+   - **[Project CLAUDE.md](../../CLAUDE.md)** - Project patterns and coding standards
 
 Getting Started
 ---------------
 
-New to ProvChainOrg development? Start here:
-
-**Quick Start Guides**
-.. toctree::
-   :maxdepth: 1
-   :caption: Getting Started
-
-   setup-guide
-   first-application
-   development-workflow
+New to ProvChainOrg development? Start with these resources:
 
 **Prerequisites**
 Before you begin development with ProvChainOrg, ensure you have:
@@ -41,8 +23,40 @@ Before you begin development with ProvChainOrg, ensure you have:
 - **Rust 1.70+**: `rustc --version`
 - **Git**: For version control
 - **Docker**: For containerized deployment (optional)
-- **Node.js**: For web development (optional)
 - **Python 3.7+**: For client library development (optional)
+
+**Quick Start**
+
+.. code-block:: bash
+   # Install Rust toolchain
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+   # Install development tools
+   rustup component add clippy rustfmt
+   cargo install cargo-watch cargo-audit
+
+   # Clone and build ProvChainOrg
+   git clone https://github.com/anusornc/provchain-org.git
+   cd provchain-org
+   cargo build
+
+**Key Developer Resources**
+
+1. **[../../CONTRIBUTING.md](../../CONTRIBUTING.md)**: Complete contributor guide
+   - Development setup instructions
+   - Project structure overview
+   - Coding standards and conventions
+   - Pull request process
+
+2. **[../architecture/README.md](../architecture/README.md)**: Architecture documentation
+   - C4 Model diagrams
+   - Architectural Decision Records (ADRs)
+   - Technology stack details
+
+3. **[../../CLAUDE.md](../../CLAUDE.md)**: Project patterns
+   - Error handling patterns
+   - Async runtime usage
+   - Security best practices
 
 Development Environment
 -----------------------
@@ -62,312 +76,260 @@ Setting up your development environment for maximum productivity:
 - **Vim/Neovim**: With rust.vim plugin
 - **Emacs**: With rust-mode
 
-**Development Configuration**
+**Build Commands**
+
 .. code-block:: bash
-   # Install Rust toolchain
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   
-   # Install development tools
-   rustup component add clippy rustfmt
-   cargo install cargo-watch cargo-audit
-   
-   # Clone and build ProvChainOrg
-   git clone https://github.com/anusornc/provchain-org.git
-   cd provchain-org
+   # Build the project
    cargo build
+
+   # Run tests
+   cargo test
+
+   # Run with logging
+   RUST_LOG=debug cargo run
+
+   # Run benchmarks
+   cargo bench
 
 API Documentation
 -----------------
 
-Comprehensive API references for all ProvChainOrg interfaces:
-
 **Core APIs**
-.. toctree::
-   :maxdepth: 1
-   :caption: API Documentation
 
-   ../api/rest-api
-   ../api/sparql-api
-   ../api/websocket-api
-   ../api/authentication
-   ../api/client-libraries
+ProvChainOrg provides several interfaces for application development:
 
-**API Usage Patterns**
 1. **REST API**: HTTP-based interface for standard operations
+   - JWT authentication required
+   - Endpoints for blockchain operations
+   - SPARQL query interface
+
 2. **SPARQL API**: Semantic query interface for complex data analysis
+   - Standard SPARQL 1.1 protocol
+   - Ontology-aware querying
+   - Custom reasoning support
+
 3. **WebSocket API**: Real-time communication for event-driven applications
-4. **Client Libraries**: Language-specific SDKs for easier integration
+   - Block subscription
+   - Real-time updates
 
-Architecture Guides
--------------------
+**Quick API Example**
 
-Deep dive into ProvChainOrg's system architecture and design patterns:
+.. code-block:: bash
+   # Get JWT token
+   curl -X POST http://localhost:8080/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"username":"demo","password":"demo"}'
 
-**System Architecture**
-.. toctree::
-   :maxdepth: 1
-   :caption: Architecture Guides
+   # Submit RDF data
+   curl -X POST http://localhost:8080/api/transactions \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"triples": "@prefix : <#> . :s :p :o ."}'
 
-   architecture-overview
-   data-models
-   network-protocols
-   security-model
+Architecture Overview
+--------------------
 
 **Key Architectural Components**
-1. **Blockchain Engine**: Core consensus and block management
-2. **RDF Store**: Semantic data storage and querying
-3. **Canonicalization Engine**: Deterministic data hashing
-4. **Network Layer**: Peer-to-peer communication
-5. **API Layer**: External interface management
 
-Implementation Guides
----------------------
+1. **Blockchain Engine** (`src/core/`): Core consensus and block management
+   - Block structure and validation
+   - Ed25519 digital signatures
+   - Chain state management
 
-Detailed guides for implementing specific features and functionality:
+2. **RDF Store** (`src/storage/`): Semantic data storage and querying
+   - Oxigraph triplestore backend
+   - Persistent RDF storage
+   - SPARQL query processing
 
-**Core Implementation Topics**
-.. toctree::
-   :maxdepth: 1
-   :caption: Implementation Guides
+3. **OWL2 Reasoner** (`owl2-reasoner/`): Semantic reasoning engine
+   - Tableaux algorithm implementation
+   - OWL2 RL support
+   - Query optimization
 
-   blockchain-implementation
-   rdf-processing
-   consensus-mechanism
-   ontology-integration
+4. **Network Layer** (`src/network/`): Peer-to-peer communication
+   - Consensus protocols (PoA/PBFT)
+   - WebSocket communication
+   - Peer discovery
 
-**Development Patterns**
-1. **Data Modeling**: Designing semantic data structures
-2. **Query Optimization**: Efficient SPARQL query patterns
-3. **Performance Tuning**: System optimization techniques
-4. **Error Handling**: Robust error management strategies
-5. **Testing Strategies**: Unit, integration, and performance testing
+5. **API Layer** (`src/web/`): External interface management
+   - REST API handlers
+   - JWT authentication
+   - SPARQL endpoint
+
+**Module Structure**
+
+```
+provchain-org/
+├── src/
+│   ├── core/           # Blockchain core (block, state, signatures)
+│   ├── storage/        # RDF storage and persistence
+│   ├── network/        # P2P networking and consensus
+│   ├── semantic/       # OWL2 reasoning and SHACL validation
+│   ├── security/       # Encryption and wallet management
+│   ├── integrity/      # Blockchain validation
+│   ├── interop/        # Cross-chain bridge
+│   ├── web/            # REST API and JWT auth
+│   └── analytics/      # Performance monitoring
+├── owl2-reasoner/      # OWL2 reasoning sub-project
+└── tests/              # Integration tests
+```
 
 Testing Framework
 -----------------
 
-Comprehensive testing resources for ensuring code quality and reliability:
-
-**Testing Documentation**
-.. toctree::
-   :maxdepth: 1
-   :caption: Testing Framework
-
-   testing-strategy
-   unit-testing
-   integration-testing
-   performance-testing
-
 **Testing Tools and Frameworks**
+
 1. **Unit Testing**: Rust's built-in testing framework
+   - Inline tests in source files
+   - Module-level test organization
+
 2. **Integration Testing**: End-to-end system testing
+   - `tests/` directory for integration tests
+   - Full system validation
+
 3. **Performance Testing**: Criterion.rs for benchmarking
-4. **Property Testing**: Proptest for generative testing
-5. **Fuzz Testing**: AFL.rs for security testing
+   - Microbenchmarking in `benches/`
+   - Statistical analysis (95% confidence intervals)
 
-**Test Coverage Requirements**
-- **Unit Tests**: Minimum 80% code coverage
-- **Integration Tests**: All major workflows covered
-- **Performance Tests**: Baseline performance metrics
-- **Security Tests**: Vulnerability assessment
+4. **Load Testing**: High-volume transaction testing
+   - Concurrent user simulation
+   - Throughput measurement
 
-Deployment Guides
------------------
+**Running Tests**
 
-Resources for deploying ProvChainOrg in various environments:
+.. code-block:: bash
+   # Run all tests
+   cargo test --workspace
 
-**Deployment Documentation**
-.. toctree::
-   :maxdepth: 1
-   :caption: Deployment Guides
+   # Run specific test file
+   cargo test --test load_tests
 
-   deployment-options
-   docker-deployment
-   kubernetes-deployment
-   cloud-deployment
+   # Run benchmarks
+   cargo bench
 
-**Deployment Scenarios**
-1. **Single Node**: Development and testing environments
-2. **Multi-Node Network**: Production deployments
-3. **Load Balanced**: High-availability setups
-4. **Hybrid Cloud**: Multi-environment deployments
+   # Run owl2-reasoner tests
+   cargo test -p owl2-reasoner
 
-**Configuration Management**
-.. code-block:: toml
-   # Example configuration
-   [network]
-   listen_port = 8080
-   known_peers = ["192.168.1.100:8080"]
-   
-   [storage]
-   data_dir = "./data"
-   persistent = true
-   
-   [consensus]
-   is_authority = false
+**Test Coverage**
 
-Performance Optimization
-------------------------
-
-Guides for optimizing ProvChainOrg performance and scalability:
-
-**Optimization Topics**
-.. toctree::
-   :maxdepth: 1
-   :caption: Performance Optimization
-
-   performance-tuning
-   memory-management
-   query-optimization
-   network-optimization
-
-**Key Optimization Areas**
-1. **Database Indexing**: Efficient data retrieval
-2. **Caching Strategies**: Memory and disk caching
-3. **Parallel Processing**: Concurrent operation handling
-4. **Resource Management**: CPU and memory optimization
-5. **Network Efficiency**: Bandwidth and latency optimization
+Key test files include:
+- `tests/project_requirements_test.rs` - Consensus and bridge validation
+- `tests/privacy_test.rs` - Encryption and wallet tests
+- `tests/enhanced_traceability_demo.rs` - Traceability validation
+- `tests/load_tests.rs` - Performance testing (200 users × 100 requests)
+- `owl2-reasoner/tests/` - OWL2 reasoner test suite (12 test files)
 
 Security Guidelines
 -------------------
 
-Best practices and guidelines for secure development:
+**Security Best Practices**
 
-**Security Documentation**
-.. toctree::
-   :maxdepth: 1
-   :caption: Security Guidelines
-
-   security-best-practices
-   authentication-guide
-   data-protection
-   vulnerability-management
-
-**Security Considerations**
 1. **Input Validation**: Sanitizing all external data
-2. **Authentication**: Secure user and system authentication
+2. **Authentication**: JWT-based API authentication
 3. **Authorization**: Role-based access control
-4. **Data Encryption**: At-rest and in-transit encryption
-5. **Audit Logging**: Comprehensive security logging
+4. **Data Encryption**: ChaCha20-Poly1305 for private data
+5. **Digital Signatures**: Ed25519 for block signing
+6. **Audit Logging**: Comprehensive security logging
 
-Contributing to ProvChainOrg
-----------------------------
+**Key Security Features**
 
-Guidelines for contributing to the open source project:
-
-**Contribution Process**
-.. toctree::
-   :maxdepth: 1
-   :caption: Contributing
-
-   contribution-guide
-   code-style
-   documentation-style
-   pull-request-process
-
-**How to Contribute**
-1. **Code Contributions**: Bug fixes and feature implementations
-2. **Documentation**: Improving guides and references
-3. **Testing**: Expanding test coverage and scenarios
-4. **Research**: Advancing semantic blockchain technology
-5. **Community**: Supporting other developers and users
+- **JWT Authentication**: Secure API access with configurable secrets
+- **Ed25519 Signatures**: Each blockchain instance has unique signing key
+- **Privacy Encryption**: Optional triple-level encryption with ChaCha20-Poly1305
+- **Wallet Management**: Argon2-based key derivation for wallet encryption
+- **Key Rotation**: 90-day recommended signing key rotation interval
 
 **Development Workflow**
+
 .. code-block:: bash
    # Fork and clone the repository
    git clone https://github.com/your-username/provchain-org.git
    cd provchain-org
-   
+
    # Create feature branch
    git checkout -b feature/new-feature
-   
+
    # Make changes and test
    cargo test
    cargo clippy
    cargo fmt
-   
+
    # Commit and push
    git commit -am "Add new feature"
    git push origin feature/new-feature
-   
+
    # Create pull request
 
-Client Libraries
-----------------
+Performance Optimization
+------------------------
 
-Language-specific SDKs for easier integration:
+**Key Optimization Areas**
 
-**Supported Languages**
-1. **Rust**: Native implementation with full feature support
-2. **Python**: Official SDK with comprehensive functionality
-3. **JavaScript/TypeScript**: Node.js and browser libraries
-4. **Java**: Enterprise-grade SDK for JVM applications
-5. **Go**: Cloud-native module for Go applications
-6. **C#**: .NET library for Windows and cross-platform apps
+1. **Query Optimization**: Efficient SPARQL query patterns
+2. **Caching**: Memory and disk caching strategies
+3. **Parallel Processing**: Concurrent operation handling
+4. **Resource Management**: CPU and memory optimization
+5. **Network Efficiency**: Bandwidth and latency optimization
 
-**Installation Examples**
+**Performance Benchmarks**
+
+Current performance measurements (development environment):
+
+- **OWL2 Reasoning**: 0.015-0.17ms per axiom
+- **SPARQL Queries**: 0.04-18ms (P95 < 100ms target ✅)
+- **Memory Usage**: ~200MB baseline
+- **Write Throughput**: 19.58 TPS (single-node dev environment)
+
+See `[../benchmarking/EXPERIMENTAL_RESULTS.md](../benchmarking/EXPERIMENTAL_RESULTS.md)` for detailed experimental results.
+
+Deployment Guides
+-----------------
+
+**Deployment Documentation**
+
+- **[../deployment/HANDS_ON_DEPLOYMENT_GUIDE.md](../deployment/HANDS_ON_DEPLOYMENT_GUIDE.md)**: Comprehensive deployment guide
+- **[../deployment/DOCKER_DEPLOYMENT_ARCHITECTURE.md](../deployment/DOCKER_DEPLOYMENT_ARCHITECTURE.md)**: Docker deployment architecture
+
+**Deployment Scenarios**
+
+1. **Single Node**: Development and testing environments
+2. **Multi-Node Network**: Production deployments
+3. **Docker Deployment**: Containerized setups
+4. **Benchmark Comparison**: Performance testing with baseline systems
+
+**Quick Docker Deployment**
+
 .. code-block:: bash
-   # Rust (Cargo.toml)
-   [dependencies]
-   provchain-sdk = "0.1.0"
-   
-   # Python
-   pip install provchain-sdk
-   
-   # JavaScript
-   npm install @provchain/sdk
-   
-   # Java (pom.xml)
-   <dependency>
-       <groupId>org.provchain</groupId>
-       <artifactId>provchain-sdk</artifactId>
-       <version>0.1.0</version>
-   </dependency>
+   # Quick start single-node deployment
+   cd deploy
+   docker-compose -f docker-compose.quickstart.yml up -d
 
-Example Applications
---------------------
+**Configuration Management**
 
-Sample applications demonstrating ProvChainOrg capabilities:
+Configuration is managed via `config.toml` at the project root:
 
-**Sample Projects**
-.. toctree::
-   :maxdepth: 1
-   :caption: Example Applications
+.. code-block:: toml
+   [network]
+   listen_port = 8080
+   known_peers = ["192.168.1.100:8080"]
 
-   supply-chain-tracker
-   food-safety-monitor
-   pharmaceutical-traceability
-   quality-assurance-system
+   [storage]
+   data_dir = "./data"
+   persistent = true
 
-**Example Use Cases**
-1. **Supply Chain Tracking**: End-to-end product traceability
-2. **Environmental Monitoring**: Temperature and humidity tracking
-3. **Quality Assurance**: Compliance verification and reporting
-4. **Audit Trails**: Immutable record keeping for regulations
+   [consensus]
+   is_authority = false
 
-**Quick Example**
-.. code-block:: python
-   from provchain import ProvChainClient
-   
-   # Initialize client
-   client = ProvChainClient(api_key="YOUR_API_KEY")
-   
-   # Add supply chain data
-   rdf_data = """
-   @prefix : <http://example.org/supply-chain#> .
-   :Batch001 a :ProductBatch ;
-       :hasBatchID "TEST-001" ;
-       :product :OrganicTomatoes .
-   """
-   
-   result = client.add_rdf_data(rdf_data)
-   print(f"Added block {result['block_index']}")
+   [web]
+   host = "127.0.0.1"
+   port = 8080
+   jwt_secret = "your-secret-key-here"
 
 Troubleshooting
 ---------------
 
-Common issues and solutions for developers:
+**Common Issues**
 
-**Frequent Problems**
 1. **Build Issues**: Dependency conflicts and compilation errors
 2. **Runtime Errors**: Configuration problems and data issues
 3. **Performance Problems**: Slow queries and high resource usage
@@ -375,89 +337,46 @@ Common issues and solutions for developers:
 5. **Security Issues**: Authentication failures and access problems
 
 **Debugging Tools**
+
 .. code-block:: bash
    # Enable debug logging
    export RUST_LOG=debug
    cargo run
-   
+
    # Run with specific log level
    export RUST_LOG=provchain=trace
    cargo run
-   
+
    # Profile performance
    cargo bench
-   
+
    # Check for security vulnerabilities
    cargo audit
+
+   # Run health checks
+   curl http://localhost:8080/health
 
 Community and Support
 ---------------------
 
-Resources for getting help and connecting with the community:
-
 **Support Channels**
+
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: Technical discussions and Q&A
-- **Community Forum**: Peer support and best practices
-- **Stack Overflow**: Community-driven Q&A
-- **Slack/Discord**: Real-time chat and collaboration
+- **Contributing Guide**: See `[../../CONTRIBUTING.md](../../CONTRIBUTING.md)`
 
 **Documentation Resources**
-- **API Reference**: Complete interface documentation
-- **Research Papers**: Academic publications and studies
-- **Technical Specifications**: Detailed system documentation
-- **User Guides**: End-user documentation and tutorials
 
-Best Practices
---------------
+- **[README.md](../../README.md)**: Project overview and quick start
+- **[Plan.md](../Plan.md)**: Detailed project roadmap
+- **[Run.md](../Run.md)**: Execution instructions
+- **[USER_MANUAL.md](../USER_MANUAL.md)**: End-user documentation
 
-Guidelines for effective development with ProvChainOrg:
+**Further Reading**
 
-**Development Best Practices**
-1. **Code Quality**: Follow Rust coding standards and best practices
-2. **Testing**: Maintain comprehensive test coverage
-3. **Documentation**: Keep documentation up-to-date with code changes
-4. **Performance**: Profile and optimize critical code paths
-5. **Security**: Implement security best practices from the start
-6. **Version Control**: Use meaningful commit messages and branching strategies
-
-**Semantic Data Best Practices**
-1. **Ontology Design**: Create clear and consistent ontologies
-2. **Data Modeling**: Use appropriate RDF patterns and structures
-3. **Validation**: Implement comprehensive data validation
-4. **Query Optimization**: Write efficient SPARQL queries
-5. **Interoperability**: Follow W3C standards and best practices
-
-**Blockchain Best Practices**
-1. **Immutability**: Design for data immutability from the start
-2. **Consensus**: Understand and implement appropriate consensus mechanisms
-3. **Scalability**: Plan for growth and increased data volumes
-4. **Security**: Implement robust security measures at all levels
-5. **Auditability**: Maintain comprehensive audit trails
-
-Further Reading
----------------
-
-Additional resources for deepening your understanding:
-
-**External Resources**
-- **Rust Documentation**: Official Rust programming language docs
-- **RDF Standards**: W3C specifications for Resource Description Framework
-- **SPARQL Documentation**: Query language for RDF data
-- **Blockchain Research**: Academic papers and conference proceedings
-- **Distributed Systems**: Research in P2P networks and consensus algorithms
-
-**Learning Path**
-1. **Beginner**: Start with the setup guide and first application tutorial
-2. **Intermediate**: Explore API documentation and implementation guides
-3. **Advanced**: Dive into architecture guides and performance optimization
-4. **Expert**: Contribute to the project and advance the technology
+- **[../architecture/ADR/](../architecture/ADR/)**: Architectural Decision Records
+- **[../project-health/](../project-health/)**: Project health analysis
+- **[../benchmarking/](../benchmarking/)**: Performance benchmarking guides
 
 .. note::
-   The ProvChainOrg developer documentation is continuously evolving. Check back regularly for updates, new guides, and improved examples. If you have suggestions for additional documentation, please contribute through our GitHub repository.
-
-.. raw:: html
-
-   <div class="footer-note">
-     <p><strong>Ready to start developing?</strong> Begin with the <a href="setup-guide.html">Setup Guide</a> or explore the <a href="../api/index.html">API Documentation</a> for integration details.</p>
-   </div>
+   The ProvChainOrg developer documentation is continuously evolving. For the most current information, refer to the main project README and the contributing guide. If you have suggestions for additional documentation, please contribute through our GitHub repository.
