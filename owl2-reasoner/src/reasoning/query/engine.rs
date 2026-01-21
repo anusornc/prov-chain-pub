@@ -85,8 +85,8 @@ impl QueryEngine {
                 stats.record_success(start_time.elapsed().as_millis() as u64);
                 return Ok(cached_result);
             } else {
-                let mut stats = self.stats.write();
-                stats.record_cache_miss();
+                // Cache miss - stats will be updated by query execution
+                self.stats.write().record_cache_miss();
             }
         }
 

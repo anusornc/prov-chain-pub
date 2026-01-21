@@ -729,7 +729,7 @@ mod tests {
                 confidence_score: 1.0,
             };
 
-            let _ = graph.add_entity($1);
+            let _ = graph.add_entity(entity);
         }
 
         // Create duplicate entities with slight variations
@@ -757,7 +757,7 @@ mod tests {
                 confidence_score: 0.8,
             };
 
-            let _ = graph.add_entity($1);
+            let _ = graph.add_entity(entity);
         }
 
         // Create relationships
@@ -860,7 +860,7 @@ mod tests {
             };
 
             // Use add_entity to properly populate graph structures
-            let _ = graph.add_entity($1);
+            let _ = graph.add_entity(entity);
         }
 
         // Create relationships with weights
@@ -1283,7 +1283,7 @@ mod tests {
                 confidence_score: *score,
             };
 
-            let _ = graph.add_entity($1);
+            let _ = graph.add_entity(entity);
         }
 
         // Add supplier entities
@@ -1305,7 +1305,7 @@ mod tests {
                 confidence_score: *score,
             };
 
-            let _ = graph.add_entity($1);
+            let _ = graph.add_entity(entity);
         }
 
         // Add relationships
@@ -1530,7 +1530,7 @@ impl TraceabilityEngine {
                         // Temperature is typically after the property name
                         // Format: "prefix:temperature value ;" or "storageTemperature value ;"
                         // Try to parse the temperature value (it might be at different positions)
-                        for (i, part) in parts.iter().enumerate() {
+                        for (_i, part) in parts.iter().enumerate() {
                             if let Ok(temp) = part.parse::<f64>() {
                                 // Found a numeric value that could be temperature
                                 let humidity = if data.contains("humidity") {
@@ -1605,7 +1605,7 @@ impl TraceabilityEngine {
             // Extract ingredient batches (API, components)
             if data.contains("ActivePharmaceuticalIngredient") || data.contains("componentType") {
                 if let Some(start) = data.find("batchId \"") {
-                    if let Some(end) = data[start + 10..].find('"') {
+                    if let Some(_end) = data[start + 10..].find('"') {
                         ingredient_batches.push(IngredientBatch {
                             batch_type: if data.contains("API") {
                                 "API"

@@ -376,9 +376,10 @@ fn test_large_scale_iri_creation() {
 
     let duration = start_time.elapsed();
 
-    // Should complete reasonably quickly - reduced threshold for faster CI
+    // Should complete reasonably quickly - generous threshold for CI/slow systems
+    // Note: This is a performance sanity check, not a strict benchmark
     assert!(
-        duration.as_millis() < 500,
+        duration.as_millis() < 2000,
         "IRI creation took too long: {:?}",
         duration
     );

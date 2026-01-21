@@ -44,7 +44,7 @@ pub fn next_float(value: f32) -> f32 {
     // Handle zero specially
     if value == 0.0 {
         // Return smallest positive float (subnormal minimum)
-        return f32::from_bits(0x00000001);
+        return f32::from_bits(0x0000_0001);
     }
 
     // For positive numbers, increment bit pattern
@@ -79,7 +79,7 @@ pub fn prev_float(value: f32) -> f32 {
     // Handle zero specially
     if value == 0.0 {
         // Return largest negative float (subnormal minimum)
-        return f32::from_bits(0x80000001);
+        return f32::from_bits(0x8000_0001);
     }
 
     // For positive numbers, decrement bit pattern

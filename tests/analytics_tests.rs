@@ -9,7 +9,7 @@ use provchain_org::analytics::predictive::PredictiveAnalyzer;
 use provchain_org::analytics::supply_chain::SupplyChainAnalyzer;
 use provchain_org::analytics::sustainability::SustainabilityTracker;
 use provchain_org::analytics::{AnalyticsEngine, ComplianceStatus, RiskLevel};
-use provchain_org::knowledge_graph::{KnowledgeEntity, KnowledgeGraph, KnowledgeRelationship};
+use provchain_org::knowledge_graph::{KnowledgeEntity, KnowledgeGraph};
 use provchain_org::storage::rdf_store::RDFStore;
 
 /// Create a test knowledge graph with sample entities
@@ -29,7 +29,7 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         .collect(),
         confidence_score: 1.0,
     };
-    let _ = graph.add_entity($1);
+    let _ = graph.add_entity(farmer);
 
     // Add a product batch
     let batch = KnowledgeEntity {
@@ -46,7 +46,7 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         .collect(),
         confidence_score: 1.0,
     };
-    let _ = graph.add_entity($1);
+    let _ = graph.add_entity(batch);
 
     // Add a quality check
     let quality_check = KnowledgeEntity {
@@ -62,7 +62,7 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         .collect(),
         confidence_score: 1.0,
     };
-    let _ = graph.add_entity($1);
+    let _ = graph.add_entity(quality_check);
 
     // Add a transport activity
     let transport = KnowledgeEntity {
@@ -79,7 +79,7 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         .collect(),
         confidence_score: 1.0,
     };
-    let _ = graph.add_entity($1);
+    let _ = graph.add_entity(transport);
 
     // Add a certificate
     let certificate = KnowledgeEntity {
@@ -95,26 +95,26 @@ fn create_test_knowledge_graph() -> KnowledgeGraph {
         .collect(),
         confidence_score: 1.0,
     };
-    let _ = graph.add_entity($1);
+    let _ = graph.add_entity(certificate);
 
     // Add relationships
-    let rel1 = KnowledgeRelationship {
+    let rel1 = provchain_org::knowledge_graph::KnowledgeRelationship {
         subject: "urn:provchain:entity:farmer:1".to_string(),
         predicate: "produced".to_string(),
         object: "urn:provchain:entity:batch:1".to_string(),
         confidence_score: 1.0,
         temporal_info: None,
     };
-    graph.add_relationship(rel1);
+    let _ = graph.add_relationship(rel1);
 
-    let rel2 = KnowledgeRelationship {
+    let rel2 = provchain_org::knowledge_graph::KnowledgeRelationship {
         subject: "urn:provchain:entity:batch:1".to_string(),
         predicate: "validatedBy".to_string(),
         object: "urn:provchain:entity:quality:1".to_string(),
         confidence_score: 1.0,
         temporal_info: None,
     };
-    graph.add_relationship(rel2);
+    let _ = graph.add_relationship(rel2);
 
     graph
 }
@@ -171,8 +171,8 @@ mod predictive_analytics_tests {
 
         let predictions = analyzer.predict_quality_issues().unwrap();
 
-        // Should return predictions (even if empty)
-        assert!(predictions.len() >= 0);
+        // Verify predictions were returned (may be empty, which is valid)
+        let _ = predictions.len(); // Acknowledge we received a result
 
         // If predictions exist, they should have valid structure
         for pred in &predictions {
@@ -274,9 +274,9 @@ mod supply_chain_analytics_tests {
 
         let metrics = analyzer.calculate_metrics().unwrap();
 
-        // Should calculate all metric types
-        assert!(metrics.quality_metrics.total_quality_checks >= 0);
-        assert!(metrics.compliance_status.total_checks >= 0);
+        // Should calculate all metric types (usize values are always >= 0)
+        let _ = metrics.quality_metrics.total_quality_checks;
+        let _ = metrics.compliance_status.total_checks;
         assert!(metrics.traceability_coverage.overall_coverage_percentage >= 0.0);
         assert!(metrics.efficiency_metrics.efficiency_score >= 0.0);
         assert!(metrics.visibility_score >= 0.0);
@@ -658,7 +658,7 @@ mod analytics_engine_tests {
                 .collect(),
             confidence_score: 1.0,
         };
-        kg1.add_entity(new_entity);
+        let _ = kg1.add_entity(new_entity);
 
         engine.update_knowledge_graph(kg1);
 
@@ -677,8 +677,9 @@ mod analytics_engine_tests {
 
         assert!(summary.total_entities > 0);
         assert!(summary.total_relationships > 0);
-        assert!(summary.product_batches >= 0);
-        assert!(summary.total_activities >= 0);
+        // product_batches and total_activities are usize, so always >= 0
+        let _ = summary.product_batches;
+        let _ = summary.total_activities;
         assert!(!summary.key_insights.is_empty());
     }
 }

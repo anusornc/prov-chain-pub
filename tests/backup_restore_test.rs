@@ -1,5 +1,5 @@
 use provchain_org::core::blockchain::Blockchain;
-use provchain_org::storage::rdf_store::{BackupInfo, StorageConfig};
+use provchain_org::storage::rdf_store::StorageConfig;
 use std::fs;
 use std::io::Write;
 use tempfile::tempdir;
@@ -100,8 +100,14 @@ fn test_backup_restore_with_corrupted_backup() {
     // Create backup
     let backup_info = blockchain.create_backup("test_backup".to_string()).unwrap();
 
-    // Corrupt the backup file
+    // Corrupt the backup by removing its contents and replacing with invalid data
+    // backup_info.path is a directory, so we need to corrupt files inside it
     {
+        // Remove the backup directory contents first
+        if backup_info.path.is_dir() {
+            fs::remove_dir_all(&backup_info.path).unwrap();
+        }
+        // Create a file at the same path (where directory was)
         let mut backup_file = fs::File::create(&backup_info.path).unwrap();
         backup_file.write_all(b"CORRUPTED DATA!!!").unwrap();
     }
@@ -146,20 +152,34 @@ fn test_backup_list_and_management() {
 
     let mut blockchain = Blockchain::new_persistent_with_config(config.clone()).unwrap();
 
-    // Create multiple backups
-    let backup1 = blockchain.create_backup("backup_001".to_string());
-    let backup2 = blockchain.create_backup("backup_002".to_string());
-    let backup3 = blockchain.create_backup("backup_003".to_string());
+    // Add some data first - backups require data to exist
+    let test_data = r#"
+        @prefix ex: <http://example.org/> .
+        ex:product1 ex:name "Test Product" .
+    "#.to_string();
+    let _ = blockchain.add_block(test_data);
 
-    assert!(backup1.is_ok());
-    assert!(backup2.is_ok());
-    assert!(backup3.is_ok());
+    // Create multiple backups with delay to ensure unique timestamps (filename uses second granularity)
+    let backup1 = blockchain.create_backup("backup_001".to_string());
+    assert!(backup1.is_ok(), "backup1 failed: {:?}", backup1.err());
+
+    std::thread::sleep(std::time::Duration::from_secs(1)); // Need 1s for unique timestamp
+    let backup2 = blockchain.create_backup("backup_002".to_string());
+    assert!(backup2.is_ok(), "backup2 failed: {:?}", backup2.err());
+
+    std::thread::sleep(std::time::Duration::from_secs(1)); // Need 1s for unique timestamp
+    let backup3 = blockchain.create_backup("backup_003".to_string());
+    assert!(backup3.is_ok(), "backup3 failed: {:?}", backup3.err());
 
     // List available backups
     let backups = blockchain
         .list_backups()
         .expect("Should list backups successfully");
-    assert!(backups.len() >= 3, "Should have at least 3 backups");
+
+    // Debug: print what we got
+    eprintln!("Found {} backups", backups.len());
+
+    assert!(backups.len() >= 3, "Should have at least 3 backups, got {}", backups.len());
 }
 
 #[test]

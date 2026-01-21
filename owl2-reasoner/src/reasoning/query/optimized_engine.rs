@@ -216,8 +216,8 @@ impl OptimizedQueryEngine {
                 // Execute with pre-compiled plan
                 return self.execute_compiled_pattern(&index_entry.pattern, start_time);
             } else {
-                let mut stats = self.stats.write();
-                stats.adaptive_index_misses += 1;
+                // Adaptive index miss - stats will be updated by query execution
+                self.stats.write().adaptive_index_misses += 1;
             }
         }
 
@@ -228,8 +228,7 @@ impl OptimizedQueryEngine {
                 stats.cache_hits += 1;
                 return Ok(cached_result);
             } else {
-                let mut stats = self.stats.write();
-                stats.cache_misses += 1;
+                self.stats.write().cache_misses += 1;
             }
         }
 

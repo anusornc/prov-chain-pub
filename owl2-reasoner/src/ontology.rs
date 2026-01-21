@@ -1303,7 +1303,7 @@ impl Ontology {
             ClassExpression::ObjectMinCardinality(cardinality, _)
             | ClassExpression::ObjectMaxCardinality(cardinality, _)
             | ClassExpression::ObjectExactCardinality(cardinality, _) => {
-                if *cardinality > 1000000 {
+                if *cardinality > 1_000_000 {
                     errors.push(OwlError::ValidationError(format!(
                         "Excessive cardinality {} for class {}",
                         cardinality, context_iri
@@ -1313,7 +1313,7 @@ impl Ontology {
             ClassExpression::DataMinCardinality(cardinality, _)
             | ClassExpression::DataMaxCardinality(cardinality, _)
             | ClassExpression::DataExactCardinality(cardinality, _) => {
-                if *cardinality > 1000000 {
+                if *cardinality > 1_000_000 {
                     errors.push(OwlError::ValidationError(format!(
                         "Excessive cardinality {} for class {}",
                         cardinality, context_iri

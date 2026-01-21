@@ -8,7 +8,6 @@
 //! - Message tampering is detected
 
 use ed25519_dalek::Signer;
-use ed25519_dalek::SigningKey;
 use provchain_org::core::blockchain::Block;
 use provchain_org::network::consensus::PbftMessage;
 use provchain_org::security::keys::generate_signing_key;
@@ -435,7 +434,7 @@ mod replay_protection_tests {
         let sender = Uuid::new_v4();
         let block = create_test_block(1, "test");
 
-        let msg1 = PbftMessage::create_pre_prepare(
+        let _msg1 = PbftMessage::create_pre_prepare(
             0,
             1,
             "hash".to_string(),
@@ -444,7 +443,7 @@ mod replay_protection_tests {
             &keypair,
         );
 
-        let msg2 =
+        let _msg2 =
             PbftMessage::create_pre_prepare(0, 1, "hash".to_string(), block, sender, &keypair);
 
         // Same parameters should produce same message ID
