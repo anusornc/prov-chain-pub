@@ -1,0 +1,23 @@
+# Python Dependencies for Baseline Benchmark Runner
+# For Journal Publication: ProvChainOrg vs Neo4j vs Jena vs Ethereum
+
+# Core scientific computing
+numpy>=1.24.0
+scipy>=1.10.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Statistical analysis
+statsmodels>=0.14.0
+
+# Database connectors
+neo4j>=5.15.0
+web3>=6.11.0
+
+# HTTP requests
+requests>=2.31.0
+
+# Jupyter (optional, for interactive analysis)
+jupyter>=1.0.0
+ipython>=8.14.0

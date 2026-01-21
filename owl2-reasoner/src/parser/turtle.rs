@@ -41,17 +41,18 @@ pub struct TurtleParser {
 
 impl TurtleParser {
     /// Helper function to convert Arc<IRI> to IRI with minimal overhead
-    #[inline(always)]
     fn arc_to_iri(arc_iri: OwlResult<Arc<IRI>>) -> OwlResult<IRI> {
         arc_iri.map(|arc| (*arc).clone())
     }
 
     /// Create a new Turtle parser with default configuration
+    #[must_use]
     pub fn new() -> Self {
         Self::with_config(ParserConfig::default())
     }
 
     /// Create a new Turtle parser with custom configuration
+    #[must_use]
     pub fn with_config(config: ParserConfig) -> Self {
         let mut prefixes = HashMap::new();
         for (prefix, namespace) in &config.prefixes {
@@ -203,7 +204,7 @@ impl TurtleParser {
         if self.config.resolve_imports {
             if let Err(e) = ontology.resolve_imports() {
                 if self.config.ignore_import_errors {
-                    log::warn!("Import resolution failed: {}", e);
+                    log::warn!("Import resolution failed: {e}");
                 } else {
                     return Err(e);
                 }
@@ -355,10 +356,7 @@ impl TurtleParser {
         if let Some(stripped) = token.strip_prefix("_:") {
             // Blank node - generate temporary IRI for processing using arena allocation
             let blank_iri = self.alloc_string(stripped);
-            Self::arc_to_iri(IRI::new_optimized(format!(
-                "http://blank.node/{}",
-                blank_iri
-            )))
+            Self::arc_to_iri(IRI::new_optimized(format!("http://blank.node/{blank_iri}")))
             .ok()
         } else {
             let arena_token = self.alloc_string(token);
@@ -437,6 +435,7 @@ impl TurtleParser {
     }
 
     /// Parse blank node structure [ ... ] using arena allocation
+    #[allow(clippy::unused_self)]
     fn parse_blank_node_structure(&self, content: &str) -> Option<(NestedObject, usize)> {
         // Generate a unique ID for this blank node based on content hash
         use std::collections::hash_map::DefaultHasher;
@@ -479,6 +478,7 @@ impl TurtleParser {
     }
 
     /// Parse collection ( ... ) using arena allocation
+    #[allow(clippy::unused_self)]
     fn parse_collection(&self, tokens: &[String]) -> Option<(Vec<ObjectValue>, usize)> {
         let mut items = Vec::new();
         let mut consumed = 0;
@@ -512,14 +512,11 @@ impl TurtleParser {
 
             if let Some(namespace) = self.prefixes.get(prefix.to_string().as_str()) {
                 // Use arena allocation for the constructed IRI string
-                let iri_string = format!("{}{}", namespace, local);
+                let iri_string = format!("{namespace}{local}");
                 let arena_iri_string = self.alloc_string(&iri_string);
                 Self::arc_to_iri(IRI::new_optimized(arena_iri_string))
             } else if self.config.strict_validation {
-                Err(crate::error::OwlError::ParseError(format!(
-                    "Undefined prefix: {}",
-                    prefix
-                )))
+                Err(crate::error::OwlError::ParseError(format!("Undefined prefix: {prefix}")))
             } else {
                 // Treat as full IRI in non-strict mode
                 let arena_s = self.alloc_string(s);
@@ -533,6 +530,7 @@ impl TurtleParser {
     }
 
     /// Process a single triple with comprehensive OWL2 support
+    #[allow(clippy::too_many_lines)]
     fn process_triple(
         &self,
         ontology: &mut Ontology,
@@ -543,7 +541,7 @@ impl TurtleParser {
         match predicate.as_str() {
             // RDF type declarations (entity declarations)
             "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" => {
-                self.process_type_declaration(ontology, subject, object)?;
+                self.process_type_declaration(ontology, &subject, object)?;
             }
 
             // RDFS subclass relationships
@@ -694,23 +692,23 @@ impl TurtleParser {
     fn process_type_declaration(
         &self,
         ontology: &mut Ontology,
-        subject: IRI,
+        subject: &IRI,
         object: ObjectValue,
     ) -> OwlResult<()> {
         if let ObjectValue::IRI(type_iri) = object {
             match type_iri.as_str() {
                 "http://www.w3.org/2002/07/owl#Ontology" => {
-                    ontology.set_iri(subject);
+                    ontology.set_iri(subject.clone());
                 }
                 "http://www.w3.org/2002/07/owl#Class"
                 | "http://www.w3.org/2000/01/rdf-schema#Class" => {
                     ontology.add_class(Class::new(subject.clone()))?;
                 }
                 "http://www.w3.org/2002/07/owl#ObjectProperty" => {
-                    ontology.add_object_property(ObjectProperty::new(subject))?;
+                    ontology.add_object_property(ObjectProperty::new(subject.clone()))?;
                 }
                 "http://www.w3.org/2002/07/owl#DataProperty" => {
-                    ontology.add_data_property(DataProperty::new(subject))?;
+                    ontology.add_data_property(DataProperty::new(subject.clone()))?;
                 }
                 "http://www.w3.org/2002/07/owl#NamedIndividual" => {
                     let individual = NamedIndividual::new(subject.clone());
@@ -824,7 +822,7 @@ impl TurtleParser {
                     use std::hash::{Hash, Hasher};
 
                     let mut hasher = DefaultHasher::new();
-                    format!("{:?}", nested).hash(&mut hasher);
+                    format!("{nested:?}").hash(&mut hasher);
                     let anon_id = format!("nested_{}", hasher.finish());
                     let anon_individual = AnonymousIndividual::new(anon_id);
                     ontology.add_anonymous_individual(anon_individual.clone())?;
@@ -860,6 +858,7 @@ impl TurtleParser {
     }
 
     /// Process RDF collections (rdf:first, rdf:rest, rdf:nil linked lists)
+    #[allow(clippy::unused_self)]
     fn process_rdf_collection(
         &self,
         ontology: &mut Ontology,
@@ -908,6 +907,7 @@ impl TurtleParser {
     }
 
     /// Parse nested class expressions from complex structures
+    #[allow(clippy::unused_self)]
     fn parse_nested_class_expression(&self, nested: &NestedObject) -> Option<ClassExpression> {
         match nested.object_type.as_str() {
             "Collection" => {
@@ -971,6 +971,7 @@ impl TurtleParser {
     }
 
     /// Validate the parsed ontology
+    #[allow(clippy::unused_self)]
     fn validate_ontology(&self, ontology: &Ontology) -> OwlResult<()> {
         // Basic validation checks - allow ontologies with only imports
         if ontology.classes().is_empty()
@@ -1041,6 +1042,7 @@ impl TurtleParser {
     }
 
     /// Validate input size constraints
+    #[allow(clippy::unused_self)]
     fn validate_input_size(&self, content: &str) -> OwlResult<()> {
         const MAX_FILE_SIZE: usize = 50 * 1024 * 1024; // 50MB limit
         const MAX_LINE_LENGTH: usize = 65536; // 64KB per line
@@ -1093,8 +1095,7 @@ impl TurtleParser {
         for pattern in &suspicious_patterns {
             if content_lower.contains(pattern) {
                 return Err(OwlError::ParseError(format!(
-                    "Potentially unsafe content pattern detected: '{}'",
-                    pattern
+                    "Potentially unsafe content pattern detected: '{pattern}'"
                 )));
             }
         }
@@ -1103,8 +1104,7 @@ impl TurtleParser {
         let max_brace_depth = self.calculate_max_brace_depth(content);
         if max_brace_depth > 100 {
             return Err(OwlError::ParseError(format!(
-                "Excessive nesting depth detected: {}",
-                max_brace_depth
+                "Excessive nesting depth detected: {max_brace_depth}"
             )));
         }
 
@@ -1112,8 +1112,7 @@ impl TurtleParser {
         let max_quote_depth = self.calculate_max_quote_depth(content);
         if max_quote_depth > 50 {
             return Err(OwlError::ParseError(format!(
-                "Excessive quote nesting detected: {}",
-                max_quote_depth
+                "Excessive quote nesting detected: {max_quote_depth}"
             )));
         }
 
@@ -1150,8 +1149,7 @@ impl TurtleParser {
             // Check for unbalanced brackets
             if !self.validate_balanced_brackets(trimmed) {
                 return Err(OwlError::ParseError(format!(
-                    "Unbalanced brackets in line {}: {}",
-                    line_count, trimmed
+                    "Unbalanced brackets in line {line_count}: {trimmed}"
                 )));
             }
         }
@@ -1166,8 +1164,7 @@ impl TurtleParser {
         // Check for excessive prefix declarations
         if prefix_count > 1000 {
             return Err(OwlError::ParseError(format!(
-                "Excessive number of prefix declarations: {}",
-                prefix_count
+                "Excessive number of prefix declarations: {prefix_count}"
             )));
         }
 
@@ -1175,6 +1172,7 @@ impl TurtleParser {
     }
 
     /// Calculate maximum brace nesting depth
+    #[must_use]
     fn calculate_max_brace_depth(&self, content: &str) -> usize {
         let mut max_depth = 0;
         let mut current_depth: usize = 0;
@@ -1194,6 +1192,7 @@ impl TurtleParser {
     }
 
     /// Calculate maximum quote nesting depth
+    #[must_use]
     fn calculate_max_quote_depth(&self, content: &str) -> usize {
         let mut max_depth = 0;
         let mut current_depth: usize = 0;
@@ -1223,6 +1222,7 @@ impl TurtleParser {
     }
 
     /// Validate balanced brackets
+    #[must_use]
     fn validate_balanced_brackets(&self, line: &str) -> bool {
         let mut stack = Vec::new();
         for c in line.chars() {

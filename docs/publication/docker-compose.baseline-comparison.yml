@@ -1,0 +1,249 @@
+# Baseline Comparison Docker Compose
+# For Journal Publication: ProvChainOrg vs Neo4j vs Jena vs Ethereum
+# Purpose: Run baseline experiments for related work comparison
+#
+# Usage:
+#   docker-compose -f docs/publication/docker-compose.baseline-comparison.yml up -d
+#   docker-compose -f docs/publication/docker-compose.baseline-comparison.yml down
+#
+# Access Points:
+#   Neo4j:      http://localhost:7474 (Web), bolt://localhost:7687 (Bolt)
+#   Jena Fuseki: http://localhost:3030 (SPARQL endpoint)
+#   Ethereum:   http://localhost:8545 (RPC for Ganache)
+#   Grafana:    http://localhost:3000 (Dashboard)
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # BASELINE 1: Neo4j Graph Database
+  # =============================================================================
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: neo4j-baseline
+    restart: unless-stopped
+    ports:
+      - "7474:7474"   # HTTP (Neo4j Browser)
+      - "7687:7687"   # Bolt Protocol
+    environment:
+      - NEO4J_AUTH=neo4j/benchmark_password
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+      - NEO4J_dbms_security_procedures_unrestricted=apoc*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*
+      - NEO4J_dbms_security_procedures_unrestricted=gds.*
+      # Enable query logging for validation
+      - NEO4J_dbms_logs_debug_level=INFO
+    volumes:
+      - neo4j_baseline_data:/data
+      - neo4j_baseline_logs:/logs
+      - ./datasets:/import:ro
+    networks:
+      - baseline_network
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "benchmark_password", "RETURN 1 AS result"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+
+  # =============================================================================
+  # BASELINE 2: Apache Jena Fuseki (RDF/SPARQL Store)
+  # =============================================================================
+  jena-fuseki:
+    image: stain/jena-fuseki:latest
+    container_name: jena-fuseki-baseline
+    restart: unless-stopped
+    ports:
+      - "3030:3030"   # Fuseki UI and SPARQL endpoint
+    environment:
+      - ADMIN_PASSWORD=admin123
+      - FUSEKI_BASEDATA=/fuseki
+      - JVM_ARGS=-Xmx2G -Xms512m
+    volumes:
+      - jena_baseline_data:/fuseki-base
+      - ./datasets:/datasets:ro
+    networks:
+      - baseline_network
+    command: >
+      /jena-fuseki/fuseki-server
+      --mem
+      --set=TDB=tdb
+      /ds
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3030/$$/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # =============================================================================
+  # BASELINE 3: Ethereum (Ganache Testnet)
+  # =============================================================================
+  ethereum-ganache:
+    image: trufflesuite/ganache:latest
+    container_name: ethereum-baseline
+    restart: unless-stopped
+    ports:
+      - "8545:8545"   # RPC endpoint
+    environment:
+      # Ganache configuration
+      - MNEMONIC="test test test test test test test test test test test junk"
+      - NETWORK_ID=1337
+      - GAS_PRICE=20000000000
+      - GAS_LIMIT=6721975
+      - ACCOUNTS=10
+      - DEFAULT_BALANCE_ETH=1000
+      - LOCK=false
+      - CHAIN_ID=1337
+      - NETWORK=hardhat
+    networks:
+      - baseline_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # =============================================================================
+  # ProvChainOrg (System Under Evaluation)
+  # =============================================================================
+  provchain-org:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.production
+    container_name: provchain-baseline
+    restart: unless-stopped
+    ports:
+      - "8080:8080"   # API
+      - "9090:9090"   # Metrics
+    environment:
+      - RUST_LOG=debug
+      - JWT_SECRET=baseline-benchmark-test-secret-key-min-32-chars-for-validation
+      - BENCHMARK_MODE=true
+      - CONSENSUS_PROTOCOL=poa
+    volumes:
+      - provchain_baseline_data:/app/data
+      - ../../benchmark/datasets:/datasets:ro
+    networks:
+      - baseline_network
+    # Override CMD to run shell with binary - for debugging
+    command: >
+      sh -c "echo '=== ProvChainOrg Debug Shell ===' && echo 'Binary location:' && which provchain-org && echo 'Binary exists:' && ls -la /usr/local/bin/provchain-org && echo '=== Running help ===' && /usr/local/bin/provchain-org --help && echo '=== Starting web server ===' && exec /usr/local/bin/provchain-org web-server --port 8080"
+    # Health check disabled temporarily - application exits immediately
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+    #   interval: 15s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 60s
+
+  # =============================================================================
+  # Benchmark Runner (Python scripts for baseline comparisons)
+  # =============================================================================
+  benchmark-runner:
+    image: python:3.10-slim
+    container_name: baseline-runner
+    restart: "no"
+    working_dir: /benchmarks
+    command: >
+      bash -c "
+        pip install scipy numpy pandas matplotlib seaborn requests neo4j &&
+        python scripts/run_baseline_benchmarks.py
+      "
+    environment:
+      # Neo4j connection
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=benchmark_password
+      # Jena connection
+      - JENA_SPARQL=http://jena-fuseki:3030/ds/query
+      - JENA_UPDATE=http://jena-fuseki:3030/ds/update
+      # Ethereum connection
+      - ETH_RPC=http://ethereum-ganache:8545
+      # ProvChain connection
+      - PROVCHAIN_URL=http://provchain-org:8080
+      # Dataset configuration
+      - DATASET_PATH=/datasets
+      - RESULTS_PATH=/results
+      - ITERATIONS=100
+    volumes:
+      - ./scripts:/benchmarks/scripts:ro
+      - ./datasets:/datasets:ro
+      - ./results:/results
+    networks:
+      - baseline_network
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      jena-fuseki:
+        condition: service_healthy
+      ethereum-ganache:
+        condition: service_started
+      provchain-org:
+        condition: service_started
+
+  # =============================================================================
+  # Monitoring: Prometheus (Optional - for metrics collection)
+  # =============================================================================
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: baseline-prometheus
+    restart: unless-stopped
+    ports:
+      - "9092:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - baseline_network
+
+  # =============================================================================
+  # Monitoring: Grafana (Optional - for visualization)
+  # =============================================================================
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: baseline-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=baseline123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./configs/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./configs/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - baseline_network
+    depends_on:
+      - prometheus
+
+volumes:
+  neo4j_baseline_data:
+    driver: local
+  neo4j_baseline_logs:
+    driver: local
+  jena_baseline_data:
+    driver: local
+  provchain_baseline_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  baseline_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16

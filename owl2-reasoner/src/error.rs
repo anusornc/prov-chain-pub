@@ -194,6 +194,7 @@ pub struct ErrorContext {
 
 impl ErrorContext {
     /// Create a new error context
+    #[must_use]
     pub fn new(operation: &str) -> Self {
         Self {
             operation: operation.to_string(),
@@ -202,12 +203,14 @@ impl ErrorContext {
     }
 
     /// Add a detail to the error context
+    #[must_use]
     pub fn add_detail(mut self, key: &str, value: &str) -> Self {
         self.details.push((key.to_string(), value.to_string()));
         self
     }
 
     /// Build an error with context
+    #[must_use]
     pub fn build(self, error: OwlError) -> OwlError {
         let context_str = if self.details.is_empty() {
             self.operation
@@ -217,7 +220,7 @@ impl ErrorContext {
                 self.operation,
                 self.details
                     .iter()
-                    .map(|(k, v)| format!("{}={}", k, v))
+                    .map(|(k, v)| format!("{k}={v}"))
                     .collect::<Vec<_>>()
                     .join(", ")
             )
@@ -225,12 +228,12 @@ impl ErrorContext {
 
         match error {
             OwlError::ReasoningError(msg) => {
-                OwlError::ReasoningError(format!("{}: {}", context_str, msg))
+                OwlError::ReasoningError(format!("{context_str}:{msg}"))
             }
             OwlError::StorageError(msg) => {
-                OwlError::StorageError(format!("{}: {}", context_str, msg))
+                OwlError::StorageError(format!("{context_str}:{msg}"))
             }
-            OwlError::ParseError(msg) => OwlError::ParseError(format!("{}: {}", context_str, msg)),
+            OwlError::ParseError(msg) => OwlError::ParseError(format!("{context_str}:{msg}")),
             _ => error,
         }
     }

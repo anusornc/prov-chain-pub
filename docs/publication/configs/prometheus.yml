@@ -1,0 +1,34 @@
+# Prometheus Configuration for Baseline Comparison Monitoring
+# Scrapes metrics from ProvChainOrg and all baseline systems
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'provchain-baseline-comparison'
+    benchmark: 'thesis-2026'
+
+# Alerting configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Rule files
+rule_files: []
+
+# Scrape configurations
+scrape_configs:
+  # ProvChainOrg Benchmark Instance
+  - job_name: 'provchain-baseline'
+    static_configs:
+      - targets: ['provchain-org:9090']
+        labels:
+          system: 'provchain'
+          instance: 'baseline-1'
+    metrics_path: '/metrics'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

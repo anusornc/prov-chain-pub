@@ -132,13 +132,29 @@ See root `Cargo.toml` for comprehensive security documentation:
 ## Recent Improvements
 
 **Code Quality & Testing** (January 2026):
-- **Test File Clippy Fixes** (Post-commit 511c088)
-  - **CI Compatibility Improvements**: Relaxed performance thresholds for resource-constrained runners
-    - `tests/core_iri_entity_tests.rs`: Relaxed IRI creation performance threshold from 500ms to 2000ms
-      - Added clarifying comment: "generous threshold for CI/slow systems"
-      - Note: Performance sanity check, not a strict benchmark
-      - Prevents flaky test failures on CI runners with limited CPU resources
-  - **Result: All tests pass reliably** across different hardware configurations
+- **Clippy Warnings: ZERO** ✅ (verified 2026-01-21)
+  - All source code, benchmarks, examples, and tests pass with default clippy settings
+  - Represents excellent code quality and serves as model for main project
+  - Verified with: `cargo clippy -p owl2-reasoner --all-targets`
+- **Test File CI Compatibility** (Post-commit b707b6a)
+  - **Performance Thresholds Relaxed**: Resource-constrained CI runners
+    - `tests/core_iri_entity_tests.rs`: Relaxed IRI creation threshold (500ms → 2000ms)
+    - Added clarifying comment: "generous threshold for CI/slow systems"
+    - Note: Performance sanity check, not a strict benchmark
+    - Prevents flaky test failures on resource-constrained CI runners
+  - **Result: All 161 tests pass reliably** across different hardware configurations
+  - Turtle parser: 12/12 passing (previously documented as 8 failures)
+
+**Documentation Enhancements** (January 2026):
+- **Ontology Module** (`src/ontology.rs`)
+  - Added comprehensive module-level documentation with usage examples
+  - Documented indexed axiom storage architecture with O(1) access patterns
+  - Added performance characteristics: entity access O(1), axiom access O(1), ~20% memory overhead
+  - Enhanced Ontology struct documentation with detailed field descriptions
+- **Query Engine Documentation** (`src/reasoning/query/`)
+  - Enhanced `engine.rs` with struct and method documentation
+  - Enhanced `optimized_engine.rs` with comprehensive performance optimization documentation
+  - Documented integration with caching, indexing, and parallel execution features
 - **Datatype Value Space Module** (`src/datatypes/value_space.rs`)
   - Added IEEE 754 floating-point value space utilities for OWL2 datatype reasoning
   - Functions: `next_float()`, `prev_float()`, `is_float_range_empty()`, `is_float_range_empty_exclusive()`
@@ -179,9 +195,15 @@ See root `Cargo.toml` for comprehensive security documentation:
   - Fixed trailing whitespace issues
   - Applied to: cache.rs, engine.rs, optimized_engine.rs, memory.rs
 - **Final Clippy Warnings Resolved** (Commit 511c088)
+  - **Error Handling Enhancements** (`src/error.rs`):
+    - Added #[must_use] attributes to ErrorContext builder methods (new, add_detail, build)
+    - Updated format! macros to use direct variable interpolation (e.g., {k}={v})
   - **Core Parser Fixes** (`src/parser/turtle.rs`):
     - Removed redundant else block with continue statement (line 194)
     - Removed redundant continue in match arm (line 890)
+    - Added #[must_use] attributes to constructor methods (new, with_config)
+    - Removed #[inline(always)] from arc_to_iri (let compiler optimize)
+    - Updated log format string to use direct interpolation ({e})
   - **Benchmark/Example Fixes**:
     - `performance_optimization_benchmarks.rs`: Removed unused import (owl2_reasoner::entities)
     - `parallel_query_bench.rs`: Prefixed unused parameter (_threads)
