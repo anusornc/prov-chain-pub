@@ -5,9 +5,13 @@ use axum::{routing::get, Router};
 use futures_util::{SinkExt, StreamExt};
 use provchain_org::{
     core::blockchain::Blockchain,
-    web::websocket::{
-        websocket_handler, BlockchainEvent, BlockchainEventBroadcaster, WebSocketMessage,
-        WebSocketState,
+    web::{
+        auth::generate_token,
+        models::ActorRole,
+        websocket::{
+            websocket_handler, BlockchainEvent, BlockchainEventBroadcaster, WebSocketMessage,
+            WebSocketState,
+        },
     },
 };
 use std::{
@@ -22,8 +26,14 @@ use tokio_tungstenite::{
     connect_async, tungstenite::protocol::Message as TungsteniteMessage, WebSocketStream,
 };
 
+/// Test JWT secret (must be at least 32 characters)
+const TEST_JWT_SECRET: &[u8] = b"test-secret-for-websocket-testing-must-be-32-char";
+
 /// Test helper to create a test WebSocket server
 async fn create_test_server() -> (String, WebSocketState) {
+    // Set JWT_SECRET environment variable for WebSocket authentication
+    std::env::set_var("JWT_SECRET", std::str::from_utf8(TEST_JWT_SECRET).unwrap());
+
     let blockchain = Arc::new(Mutex::new(Blockchain::new()));
     let websocket_state = WebSocketState::new(blockchain);
 
@@ -45,12 +55,28 @@ async fn create_test_server() -> (String, WebSocketState) {
     (server_url, websocket_state)
 }
 
-/// Test helper to connect WebSocket client
+/// Generate a test JWT token for WebSocket authentication
+fn generate_test_token(username: &str) -> String {
+    generate_token(username, &ActorRole::Admin, TEST_JWT_SECRET)
+        .expect("Failed to generate test JWT token")
+}
+
+/// Test helper to connect WebSocket client with JWT authentication
 async fn connect_websocket_client(
     url: &str,
 ) -> Result<WebSocketStream<tokio_tungstenite::MaybeTlsStream<TcpStream>>, Box<dyn std::error::Error>>
 {
-    let (ws_stream, _) = connect_async(url).await?;
+    // Generate JWT token for authentication
+    let token = generate_test_token("test_user");
+
+    // Append token to WebSocket URL
+    let auth_url = if url.contains('?') {
+        format!("{}&token={}", url, token)
+    } else {
+        format!("{}?token={}", url, token)
+    };
+
+    let (ws_stream, _) = connect_async(&auth_url).await?;
     Ok(ws_stream)
 }
 

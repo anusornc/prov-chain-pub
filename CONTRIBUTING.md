@@ -21,7 +21,7 @@ Thank you for your interest in contributing to ProvChainOrg! This document will 
 
 ## About ProvChainOrg
 
-ProvChainOrg is a distributed blockchain system in Rust that enhances blockchain with embedded ontology and knowledge graph for data traceability. It extends the "GraphChain" concept with semantic technologies.
+ProvChainOrg is a distributed blockchain system in Rust that enhances blockchain with embedded ontology and knowledge graph for data traceability with semantic technologies.
 
 **Key Technologies**:
 - **Language**: Rust 1.70+

@@ -24,6 +24,17 @@ This directory contains all the documentation for the ProvChainOrg blockchain tr
 - **[deployment/HANDS_ON_DEPLOYMENT_GUIDE.md](deployment/HANDS_ON_DEPLOYMENT_GUIDE.md)** - Comprehensive deployment guide
 - **[deployment/DOCKER_DEPLOYMENT_ARCHITECTURE.md](deployment/DOCKER_DEPLOYMENT_ARCHITECTURE.md)** - Docker deployment architecture
 
+## 🔒 Security Documentation
+- **[security/](security/)** - Security documentation and reports
+  - Security setup and configuration
+  - Security test coverage reports
+
+## 📝 Code Reviews
+- **[reviews/](reviews/)** - Code review and analysis reports
+  - Production feature reviews
+  - Consensus implementation reviews
+  - Test coverage reviews
+
 ## 📊 Benchmarking & Performance
 - **[benchmarking/README.md](benchmarking/README.md)** - Research-focused benchmarking guide
 - **[benchmarking/EXPERIMENTAL_RESULTS.md](benchmarking/EXPERIMENTAL_RESULTS.md)** - Real experimental results
@@ -56,6 +67,15 @@ docs/
 ├── deployment/                         # Deployment guides
 │   ├── HANDS_ON_DEPLOYMENT_GUIDE.md    # Step-by-step deployment
 │   └── DOCKER_DEPLOYMENT_ARCHITECTURE.md
+│
+├── security/                           # Security documentation
+│   ├── SECURITY_SETUP.md               # Security setup guide
+│   └── SECURITY_TEST_COVERAGE_REPORT.md
+│
+├── reviews/                            # Code review reports
+│   ├── CODE_REVIEW_PRODUCTION_FEATURES.md
+│   ├── PBFT_CONSENSUS_CODE_REVIEW.md
+│   └── test_coverage_review_atomic_operations.md
 │
 ├── benchmarking/                       # Performance testing
 │   ├── README.md
