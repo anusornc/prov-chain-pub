@@ -146,12 +146,10 @@ fn test_environmental_conditions_integration() {
 
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = bc.rdf_store.query(env_query) {
         let mut found_conditions = false;
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                if let (Some(temp), Some(humidity)) = (sol.get("temp"), sol.get("humidity")) {
-                    println!("Found environmental conditions: temp={temp}, humidity={humidity}");
-                    found_conditions = true;
-                }
+        for sol in solutions.flatten() {
+            if let (Some(temp), Some(humidity)) = (sol.get("temp"), sol.get("humidity")) {
+                println!("Found environmental conditions: temp={temp}, humidity={humidity}");
+                found_conditions = true;
             }
         }
         assert!(
@@ -175,10 +173,8 @@ fn test_environmental_conditions_integration() {
             bc.rdf_store.query(simple_query)
         {
             let mut count = 0;
-            for solution in solutions {
-                if let Ok(_sol) = solution {
-                    count += 1;
-                }
+            for _sol in solutions.flatten() {
+                count += 1;
             }
             assert!(
                 count > 0,
@@ -259,12 +255,10 @@ fn test_supply_chain_traceability() {
 
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = bc.rdf_store.query(trace_query) {
         let mut batch_count = 0;
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                if let Some(batch_id) = sol.get("batchId") {
-                    println!("Found batch: {batch_id}");
-                    batch_count += 1;
-                }
+        for sol in solutions.flatten() {
+            if let Some(batch_id) = sol.get("batchId") {
+                println!("Found batch: {batch_id}");
+                batch_count += 1;
             }
         }
         assert!(
@@ -288,12 +282,10 @@ fn test_supply_chain_traceability() {
             bc.rdf_store.query(simple_query)
         {
             let mut count = 0;
-            for solution in solutions {
-                if let Ok(sol) = solution {
-                    if let Some(batch_id) = sol.get("batchId") {
-                        println!("Found batch in fallback: {batch_id}");
-                        count += 1;
-                    }
+            for sol in solutions.flatten() {
+                if let Some(batch_id) = sol.get("batchId") {
+                    println!("Found batch in fallback: {batch_id}");
+                    count += 1;
                 }
             }
             assert!(

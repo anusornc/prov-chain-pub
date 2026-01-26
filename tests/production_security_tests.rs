@@ -542,7 +542,7 @@ mod security_middleware_tests {
 
         // Current implementation always returns true (TODO: Implement actual rate limiting)
         let allowed = result.unwrap();
-        assert_eq!(allowed, true);
+        assert!(allowed);
     }
 
     #[test]
@@ -556,7 +556,7 @@ mod security_middleware_tests {
         assert!(result.is_ok());
 
         let allowed = result.unwrap();
-        assert_eq!(allowed, true);
+        assert!(allowed);
     }
 
     #[test]
@@ -570,7 +570,7 @@ mod security_middleware_tests {
         for ip in ips {
             let result = middleware.check_rate_limit(ip);
             assert!(result.is_ok());
-            assert_eq!(result.unwrap(), true);
+            assert!(result.unwrap());
         }
     }
 
@@ -604,7 +604,7 @@ mod jwt_validation_tests {
 
         assert!(result.is_ok());
         // Should be valid: proper signature, not expired
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
     }
 
     #[test]
@@ -618,7 +618,7 @@ mod jwt_validation_tests {
 
         assert!(result.is_ok());
         // Should be invalid because token is expired
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[test]
@@ -631,7 +631,7 @@ mod jwt_validation_tests {
         assert!(result.is_ok());
 
         // Should be invalid because token is empty
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[test]
@@ -653,7 +653,7 @@ mod jwt_validation_tests {
         assert!(result.is_ok());
 
         // Should be invalid because signature doesn't match
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[test]
@@ -674,9 +674,8 @@ mod jwt_validation_tests {
             let result = middleware.validate_jwt(token);
             assert!(result.is_ok(), "Should handle malformed token: {}", token);
             // Should be invalid because token is malformed
-            assert_eq!(
-                result.unwrap(),
-                false,
+            assert!(
+                !result.unwrap(),
                 "Malformed token should be rejected: {}",
                 token
             );
@@ -714,7 +713,7 @@ mod jwt_validation_tests {
         assert!(result.is_ok());
 
         // Should be invalid because signature doesn't match
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[test]
@@ -727,7 +726,7 @@ mod jwt_validation_tests {
         let result = middleware.validate_jwt(&token);
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
     }
 
     #[test]
@@ -740,7 +739,7 @@ mod jwt_validation_tests {
         let result = middleware.validate_jwt(&token);
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
     }
 
     #[test]
@@ -802,7 +801,7 @@ mod jwt_validation_tests {
         assert!(result.is_ok());
 
         // Should be valid (just a long subject)
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
     }
 
     #[test]
@@ -816,7 +815,7 @@ mod jwt_validation_tests {
 
         assert!(result.is_ok());
         // Should be invalid (malformed JWT)
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 }
 

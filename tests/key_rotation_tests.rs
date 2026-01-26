@@ -339,7 +339,7 @@ mod rotation_warning_tests {
 
             let days_overdue = blockchain.days_since_key_rotation() - 90;
             assert_eq!(
-                days_overdue, overdue as i64,
+                days_overdue, overdue,
                 "Should be {} days overdue",
                 overdue
             );

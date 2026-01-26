@@ -785,7 +785,7 @@ impl SparqlValidator {
         }
 
         // Check for mixed case keywords (e.g., SeLeCt)
-        let first_word = query.trim().split_whitespace().next().unwrap_or("");
+        let first_word = query.split_whitespace().next().unwrap_or("");
         if !first_word.is_empty() && !first_word.chars().all(|c| c.is_uppercase() || c == '(') {
             // Check if first word looks like SELECT but not all caps
             let upper_first = first_word.to_uppercase();
@@ -915,8 +915,10 @@ mod tests {
 
     #[test]
     fn test_query_too_long() {
-        let mut config = SparqlValidatorConfig::default();
-        config.max_query_length = 100;
+        let config = SparqlValidatorConfig {
+    max_query_length: 100,
+    ..Default::default()
+};
         let validator = SparqlValidator::new(config);
 
         let long_query = format!("SELECT ?s WHERE {{ {} }}", "a ".repeat(200));

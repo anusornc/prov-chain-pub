@@ -583,7 +583,7 @@ pub async fn get_product_by_id(
                             let graph_uri = g_term.to_string().trim_matches('<').trim_matches('>').to_string();
                             
                             // Extract block index from graph URI
-                            if let Some(index_str) = graph_uri.split('/').last() {
+                            if let Some(index_str) = graph_uri.split('/').next_back() {
                                 if let Ok(index) = index_str.parse::<usize>() {
                                     if let Some(block) = blockchain.chain.get(index) {
                                         if let Some(encrypted_data_json) = &block.encrypted_data {

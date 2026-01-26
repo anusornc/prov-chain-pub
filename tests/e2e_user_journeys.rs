@@ -53,7 +53,7 @@ async fn authenticate_user(
     password: &str,
 ) -> Result<String> {
     let auth_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": username,
             "password": password
@@ -86,7 +86,7 @@ async fn test_supply_chain_manager_complete_journey() -> Result<()> {
     });
 
     let add_response = client
-        .post(&format!("{}/api/blockchain/add-triple", base_url))
+        .post(format!("{}/api/blockchain/add-triple", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&new_batch_data)
         .send()
@@ -99,7 +99,7 @@ async fn test_supply_chain_manager_complete_journey() -> Result<()> {
 
     // Step 3: Verify batch appears in blockchain
     let blocks_response = client
-        .get(&format!("{}/api/blockchain/blocks", base_url))
+        .get(format!("{}/api/blockchain/blocks", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
@@ -121,7 +121,7 @@ async fn test_supply_chain_manager_complete_journey() -> Result<()> {
     });
 
     let query_response = client
-        .post(&format!("{}/api/sparql/query", base_url))
+        .post(format!("{}/api/sparql/query", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&sparql_query)
         .send()
@@ -139,7 +139,7 @@ async fn test_supply_chain_manager_complete_journey() -> Result<()> {
 
     // Step 5: Trace the product
     let trace_response = client
-        .get(&format!(
+        .get(format!(
             "{}/api/products/trace?batch_id=BATCH123",
             base_url
         ))
@@ -197,7 +197,7 @@ async fn test_quality_auditor_complete_journey() -> Result<()> {
 
     for data in quality_data {
         let response = client
-            .post(&format!("{}/api/blockchain/add-triple", base_url))
+            .post(format!("{}/api/blockchain/add-triple", base_url))
             .header("Authorization", format!("Bearer {}", token))
             .json(&data)
             .send()
@@ -219,7 +219,7 @@ async fn test_quality_auditor_complete_journey() -> Result<()> {
     });
 
     let query_response = client
-        .post(&format!("{}/api/sparql/query", base_url))
+        .post(format!("{}/api/sparql/query", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&compliance_query)
         .send()
@@ -237,7 +237,7 @@ async fn test_quality_auditor_complete_journey() -> Result<()> {
 
     // Step 4: Validate blockchain integrity
     let validation_response = client
-        .get(&format!("{}/api/blockchain/validate", base_url))
+        .get(format!("{}/api/blockchain/validate", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
@@ -263,7 +263,7 @@ async fn test_quality_auditor_complete_journey() -> Result<()> {
     });
 
     let audit_response = client
-        .post(&format!("{}/api/sparql/query", base_url))
+        .post(format!("{}/api/sparql/query", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&audit_query)
         .send()
@@ -287,7 +287,7 @@ async fn test_consumer_public_access_journey() -> Result<()> {
     println!("Testing Consumer Public Access Journey on {}", base_url);
 
     // Step 1: Access public health endpoint (no auth required)
-    let health_response = client.get(&format!("{}/health", base_url)).send().await?;
+    let health_response = client.get(format!("{}/health", base_url)).send().await?;
 
     assert!(
         health_response.status().is_success(),
@@ -296,7 +296,7 @@ async fn test_consumer_public_access_journey() -> Result<()> {
 
     // Step 2: Try to access protected endpoint without auth (should fail)
     let protected_response = client
-        .get(&format!("{}/api/blockchain/status", base_url))
+        .get(format!("{}/api/blockchain/status", base_url))
         .send()
         .await?;
 
@@ -312,7 +312,7 @@ async fn test_consumer_public_access_journey() -> Result<()> {
 
     // Step 4: Access blockchain status with auth
     let status_response = client
-        .get(&format!("{}/api/blockchain/status", base_url))
+        .get(format!("{}/api/blockchain/status", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
@@ -334,7 +334,7 @@ async fn test_consumer_public_access_journey() -> Result<()> {
     });
 
     let search_response = client
-        .post(&format!("{}/api/sparql/query", base_url))
+        .post(format!("{}/api/sparql/query", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&product_query)
         .send()
@@ -367,7 +367,7 @@ async fn test_administrator_system_management_journey() -> Result<()> {
     // Step 2: Monitor system health
     let health_start = Instant::now();
     let status_response = client
-        .get(&format!("{}/api/blockchain/status", base_url))
+        .get(format!("{}/api/blockchain/status", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
@@ -391,7 +391,7 @@ async fn test_administrator_system_management_journey() -> Result<()> {
     // Step 3: Validate blockchain integrity
     let validation_start = Instant::now();
     let validation_response = client
-        .get(&format!("{}/api/blockchain/validate", base_url))
+        .get(format!("{}/api/blockchain/validate", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
@@ -411,7 +411,7 @@ async fn test_administrator_system_management_journey() -> Result<()> {
 
     // Step 4: Retrieve all blocks for audit
     let blocks_response = client
-        .get(&format!("{}/api/blockchain/blocks", base_url))
+        .get(format!("{}/api/blockchain/blocks", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
@@ -456,7 +456,7 @@ async fn test_administrator_system_management_journey() -> Result<()> {
     });
 
     let analytics_response = client
-        .post(&format!("{}/api/sparql/query", base_url))
+        .post(format!("{}/api/sparql/query", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&analytics_query)
         .send()
@@ -583,7 +583,7 @@ async fn test_concurrent_user_operations() -> Result<()> {
             });
 
             let add_response = client
-                .post(&format!("{}/api/blockchain/add-triple", base_url))
+                .post(format!("{}/api/blockchain/add-triple", base_url))
                 .header("Authorization", format!("Bearer {}", token))
                 .json(&data)
                 .send()
@@ -601,7 +601,7 @@ async fn test_concurrent_user_operations() -> Result<()> {
             });
 
             let query_response = client
-                .post(&format!("{}/api/sparql/query", base_url))
+                .post(format!("{}/api/sparql/query", base_url))
                 .header("Authorization", format!("Bearer {}", token))
                 .json(&query)
                 .send()
@@ -635,7 +635,7 @@ async fn test_concurrent_user_operations() -> Result<()> {
     let token = authenticate_user(&client, &base_url, "admin", "password").await?;
 
     let blocks_response = client
-        .get(&format!("{}/api/blockchain/blocks", base_url))
+        .get(format!("{}/api/blockchain/blocks", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
@@ -663,7 +663,7 @@ async fn test_error_handling_and_recovery() -> Result<()> {
 
     // Test 1: Invalid authentication
     let invalid_auth_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "invalid",
             "password": "invalid"
@@ -679,7 +679,7 @@ async fn test_error_handling_and_recovery() -> Result<()> {
 
     // Test 2: Malformed requests
     let malformed_response = client
-        .post(&format!("{}/api/blockchain/add-triple", base_url))
+        .post(format!("{}/api/blockchain/add-triple", base_url))
         .json(&json!({
             "invalid": "data"
         }))
@@ -695,7 +695,7 @@ async fn test_error_handling_and_recovery() -> Result<()> {
     let token = authenticate_user(&client, &base_url, "user", "password").await?;
 
     let invalid_query_response = client
-        .post(&format!("{}/api/sparql/query", base_url))
+        .post(format!("{}/api/sparql/query", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&json!({
             "query": "INVALID SPARQL SYNTAX",
@@ -718,7 +718,7 @@ async fn test_error_handling_and_recovery() -> Result<()> {
     });
 
     let recovery_response = client
-        .post(&format!("{}/api/blockchain/add-triple", base_url))
+        .post(format!("{}/api/blockchain/add-triple", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&valid_data)
         .send()
@@ -731,7 +731,7 @@ async fn test_error_handling_and_recovery() -> Result<()> {
 
     // Test 5: System should remain stable
     let status_response = client
-        .get(&format!("{}/api/blockchain/status", base_url))
+        .get(format!("{}/api/blockchain/status", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;

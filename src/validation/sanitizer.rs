@@ -234,8 +234,10 @@ mod tests {
 
     #[test]
     fn test_length_truncation() {
-        let mut config = SanitizationConfig::default();
-        config.max_length = Some(5);
+        let config = SanitizationConfig {
+    max_length: Some(5),
+    ..Default::default()
+};
         let sanitizer = InputSanitizer::new(config);
 
         let input = "Hello World";

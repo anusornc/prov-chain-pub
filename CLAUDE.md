@@ -349,6 +349,7 @@ See `docs/INDEX.md` for complete documentation navigation.
 
 **Key entry points:**
 - `README.md` - Project overview and quick start
+- `CHANGELOG.md` - Project changelog tracking recent improvements and fixes
 - `CONTRIBUTING.md` - Development setup and coding standards
 - `SECURITY.md` - Security policy, vulnerability reporting, and security features documentation
 - `docs/INDEX.md` - Complete documentation index with navigation
@@ -360,7 +361,7 @@ See `docs/INDEX.md` for complete documentation navigation.
 **Documentation Organization:**
 - `docs/reviews/` - Code review and analysis reports (CODE_REVIEW_PRODUCTION_FEATURES.md, PBFT_CONSENSUS_CODE_REVIEW.md)
 - `docs/security/` - Security documentation and test coverage (SECURITY_SETUP.md, SECURITY_TEST_COVERAGE_REPORT.md)
-- `docs/project-health/` - Test coverage and code quality reports (TEST_COVERAGE_REPORT.md, clippy_analysis_*.md)
+- `docs/project-health/` - Test coverage and code quality reports (TEST_COVERAGE_REPORT.md, test_results_summary_*.md, clippy_analysis_*.md)
 - `docs/benchmarking/` - Research-focused benchmarking and experimental results
 - `docs/deployment/` - Deployment guides and Docker configurations
 - `docs/archive/` - Historical documentation and implementation records

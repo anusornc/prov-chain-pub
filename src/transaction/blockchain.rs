@@ -459,7 +459,7 @@ ex:participant_{} a trace:Manufacturer ;
         );
 
         let metadata = TransactionMetadata {
-            location: location,
+            location,
             environmental_conditions,
             compliance_info: None,
             quality_data: None,
@@ -586,7 +586,7 @@ ex:participant_{} a trace:QualityLab ;
         );
 
         let metadata = TransactionMetadata {
-            location: location,
+            location,
             environmental_conditions: None,
             compliance_info: None,
             quality_data: Some(quality_data),

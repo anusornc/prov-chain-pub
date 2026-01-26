@@ -16,8 +16,10 @@ mod tests {
     #[test]
     fn test_owl2_feature_flags() -> Result<()> {
         // Test that OWL2 feature flags are properly configured
-        let mut config = OwlReasonerConfig::default();
-        config.process_owl2_features = true;
+        let config = OwlReasonerConfig {
+    process_owl2_features: true,
+    ..Default::default()
+};
         config.enable_has_key_validation = true;
         config.enable_property_chain_inference = true;
         config.enable_qualified_cardinality_validation = true;

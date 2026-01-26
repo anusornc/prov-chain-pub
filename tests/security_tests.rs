@@ -60,7 +60,7 @@ async fn test_valid_authentication() -> Result<()> {
 
     // Test login with valid credentials
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "admin123"
@@ -86,7 +86,7 @@ async fn test_invalid_authentication() -> Result<()> {
 
     // Test login with invalid password
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "wrongpassword"
@@ -99,7 +99,7 @@ async fn test_invalid_authentication() -> Result<()> {
 
     // Test login with non-existent user
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "nonexistent",
             "password": "password"
@@ -121,7 +121,7 @@ async fn test_malformed_authentication_requests() -> Result<()> {
 
     // Test login with missing username
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "password": "admin123"
         }))
@@ -132,7 +132,7 @@ async fn test_malformed_authentication_requests() -> Result<()> {
 
     // Test login with missing password
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin"
         }))
@@ -143,7 +143,7 @@ async fn test_malformed_authentication_requests() -> Result<()> {
 
     // Test login with empty JSON
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({}))
         .send()
         .await?;
@@ -152,7 +152,7 @@ async fn test_malformed_authentication_requests() -> Result<()> {
 
     // Test login with invalid JSON
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .header("content-type", "application/json")
         .body("invalid json")
         .send()
@@ -173,7 +173,7 @@ async fn test_jwt_token_validation() -> Result<()> {
 
     // Get a valid token first
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "admin123"
@@ -186,7 +186,7 @@ async fn test_jwt_token_validation() -> Result<()> {
 
     // Test protected endpoint with valid token
     let protected_response = client
-        .get(&format!("{}/api/blockchain/status", base_url))
+        .get(format!("{}/api/blockchain/status", base_url))
         .header("Authorization", format!("Bearer {}", valid_token))
         .send()
         .await?;
@@ -195,7 +195,7 @@ async fn test_jwt_token_validation() -> Result<()> {
 
     // Test protected endpoint with invalid token
     let protected_response = client
-        .get(&format!("{}/api/blockchain/status", base_url))
+        .get(format!("{}/api/blockchain/status", base_url))
         .header("Authorization", "Bearer invalid_token")
         .send()
         .await?;
@@ -204,7 +204,7 @@ async fn test_jwt_token_validation() -> Result<()> {
 
     // Test protected endpoint with malformed authorization header
     let protected_response = client
-        .get(&format!("{}/api/blockchain/status", base_url))
+        .get(format!("{}/api/blockchain/status", base_url))
         .header("Authorization", "InvalidFormat")
         .send()
         .await?;
@@ -213,7 +213,7 @@ async fn test_jwt_token_validation() -> Result<()> {
 
     // Test protected endpoint without authorization header
     let protected_response = client
-        .get(&format!("{}/api/blockchain/status", base_url))
+        .get(format!("{}/api/blockchain/status", base_url))
         .send()
         .await?;
 
@@ -232,7 +232,7 @@ async fn test_sparql_injection_protection() -> Result<()> {
 
     // Get authentication token
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "admin123"
@@ -264,7 +264,7 @@ async fn test_sparql_injection_protection() -> Result<()> {
         );
 
         let response = client
-            .post(&format!("{}/api/sparql/query", base_url))
+            .post(format!("{}/api/sparql/query", base_url))
             .header("Authorization", format!("Bearer {}", token))
             .json(&json!({
                 "query": malicious_query,
@@ -299,7 +299,7 @@ async fn test_input_validation() -> Result<()> {
 
     // Get authentication token
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "admin123"
@@ -313,7 +313,7 @@ async fn test_input_validation() -> Result<()> {
     // Test extremely large input
     let large_data = "A".repeat(10_000_000); // 10MB of data
     let response = client
-        .post(&format!("{}/api/blockchain/add-triple", base_url))
+        .post(format!("{}/api/blockchain/add-triple", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&json!({
             "subject": "http://example.org/test",
@@ -336,7 +336,7 @@ async fn test_input_validation() -> Result<()> {
     // Test malformed RDF data
     let malformed_rdf = "This is not valid RDF data @#$%^&*()";
     let response = client
-        .post(&format!("{}/api/blockchain/add-triple", base_url))
+        .post(format!("{}/api/blockchain/add-triple", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&json!({
             "subject": "http://example.org/test",
@@ -361,7 +361,7 @@ async fn test_input_validation() -> Result<()> {
 
     // Test null/empty inputs
     let response = client
-        .post(&format!("{}/api/blockchain/add-triple", base_url))
+        .post(format!("{}/api/blockchain/add-triple", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&json!({
             "subject": "http://example.org/test",
@@ -378,7 +378,7 @@ async fn test_input_validation() -> Result<()> {
 
     // Test missing required fields
     let response = client
-        .post(&format!("{}/api/blockchain/add-triple", base_url))
+        .post(format!("{}/api/blockchain/add-triple", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .json(&json!({}))
         .send()
@@ -401,7 +401,7 @@ async fn test_rate_limiting() -> Result<()> {
 
     // Get authentication token
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "admin123"
@@ -418,7 +418,7 @@ async fn test_rate_limiting() -> Result<()> {
 
     for i in 0..50 {
         let response = client
-            .get(&format!("{}/api/blockchain/status", base_url))
+            .get(format!("{}/api/blockchain/status", base_url))
             .header("Authorization", format!("Bearer {}", token))
             .send()
             .await?;
@@ -457,7 +457,7 @@ async fn test_xss_protection() -> Result<()> {
 
     // Get authentication token
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "admin123"
@@ -479,7 +479,7 @@ async fn test_xss_protection() -> Result<()> {
 
     for xss_payload in xss_attempts {
         let response = client
-            .post(&format!("{}/api/blockchain/add-triple", base_url))
+            .post(format!("{}/api/blockchain/add-triple", base_url))
             .header("Authorization", format!("Bearer {}", token))
             .json(&json!({
                 "subject": "http://example.org/batch001",
@@ -504,7 +504,7 @@ async fn test_xss_protection() -> Result<()> {
         if status.is_success() {
             // If accepted, verify the data is properly escaped when retrieved
             let query_response = client
-                .post(&format!("{}/api/sparql/query", base_url))
+                .post(format!("{}/api/sparql/query", base_url))
                 .header("Authorization", format!("Bearer {}", token))
                 .json(&json!({
                     "query": "SELECT ?product WHERE { <http://example.org/batch001> <http://provchain.org/trace#product> ?product }",
@@ -559,7 +559,7 @@ async fn test_authorization_bypass_attempts() -> Result<()> {
 
     for endpoint in protected_endpoints {
         let response = client
-            .get(&format!("{}{}", base_url, endpoint))
+            .get(format!("{}{}", base_url, endpoint))
             .send()
             .await?;
 
@@ -578,7 +578,7 @@ async fn test_authorization_bypass_attempts() -> Result<()> {
 
     for invalid_token in invalid_tokens {
         let response = client
-            .get(&format!("{}/api/blockchain/status", base_url))
+            .get(format!("{}/api/blockchain/status", base_url))
             .header("Authorization", format!("Bearer {}", invalid_token))
             .send()
             .await?;
@@ -602,7 +602,7 @@ async fn test_session_security() -> Result<()> {
 
     for _ in 0..3 {
         let login_response = client
-            .post(&format!("{}/auth/login", base_url))
+            .post(format!("{}/auth/login", base_url))
             .json(&json!({
                 "username": "admin",
                 "password": "admin123"
@@ -618,7 +618,7 @@ async fn test_session_security() -> Result<()> {
     // Verify all tokens work
     for token in &tokens {
         let response = client
-            .get(&format!("{}/api/blockchain/status", base_url))
+            .get(format!("{}/api/blockchain/status", base_url))
             .header("Authorization", format!("Bearer {}", token))
             .send()
             .await?;
@@ -629,7 +629,7 @@ async fn test_session_security() -> Result<()> {
     // Test logout functionality (if implemented)
     if let Some(first_token) = tokens.first() {
         let logout_response = client
-            .post(&format!("{}/api/auth/logout", base_url))
+            .post(format!("{}/api/auth/logout", base_url))
             .header("Authorization", format!("Bearer {}", first_token))
             .send()
             .await?;
@@ -658,7 +658,7 @@ async fn test_password_security() -> Result<()> {
 
     for weak_password in weak_passwords {
         let register_response = client
-            .post(&format!("{}/auth/register", base_url))
+            .post(format!("{}/auth/register", base_url))
             .json(&json!({
                 "username": "testuser",
                 "password": weak_password
@@ -685,7 +685,7 @@ async fn test_data_integrity_protection() -> Result<()> {
 
     // Get authentication token
     let login_response = client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "admin123"
@@ -704,7 +704,7 @@ async fn test_data_integrity_protection() -> Result<()> {
 
         // Add legitimate data
         let response = client
-            .post(&format!("{}/api/blockchain/add-triple", base_url))
+            .post(format!("{}/api/blockchain/add-triple", base_url))
             .header("Authorization", format!("Bearer {}", token))
             .json(&json!({
                 "subject": "http://example.org/batch001",
@@ -724,7 +724,7 @@ async fn test_data_integrity_protection() -> Result<()> {
 
         // Verify blockchain integrity
         let stats_response = client
-            .get(&format!("{}/api/blockchain/status", base_url))
+            .get(format!("{}/api/blockchain/status", base_url))
             .header("Authorization", format!("Bearer {}", token))
             .send()
             .await?;
@@ -745,7 +745,7 @@ async fn test_data_integrity_protection() -> Result<()> {
 
         // Test attempts to modify existing blocks (should be impossible)
         let tamper_response = client
-            .put(&format!("{}/api/blockchain/block/0", base_url))
+            .put(format!("{}/api/blockchain/block/0", base_url))
             .header("Authorization", format!("Bearer {}", token))
             .json(&json!({
                 "data": "Tampered data"

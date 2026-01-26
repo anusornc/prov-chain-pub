@@ -284,12 +284,10 @@ impl ProofOfAuthority {
         if let Some(our_id) = our_authority_id {
             if let Some(current_authority) = authority_state.current_authority {
                 Ok(current_authority == our_id)
+            } else if !authority_state.authority_rotation_order.is_empty() {
+                Ok(authority_state.authority_rotation_order[0] == our_id)
             } else {
-                if !authority_state.authority_rotation_order.is_empty() {
-                    Ok(authority_state.authority_rotation_order[0] == our_id)
-                } else {
-                    Ok(true)
-                }
+                Ok(true)
             }
         } else {
             Ok(false)
@@ -1635,8 +1633,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_pbft_switching() {
-        let mut config = ConsensusConfig::default();
-        config.consensus_type = "pbft".to_string();
+        let config = ConsensusConfig {
+    consensus_type: "pbft".to_string(),
+    ..Default::default()
+};
 
         let node_config = NodeConfig::default();
         let network = Arc::new(NetworkManager::new(node_config));

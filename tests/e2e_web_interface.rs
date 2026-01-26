@@ -542,7 +542,7 @@ async fn test_authentication_flow() -> Result<()> {
         .await?
         .attr("style")
         .await?;
-    assert!(modal_style.map_or(true, |s| s.contains("display: none") || s.is_empty()));
+    assert!(modal_style.is_none_or(|s| s.contains("display: none") || s.is_empty()));
 
     // Test login with invalid credentials
     client
@@ -862,7 +862,7 @@ async fn test_real_time_updates() -> Result<()> {
     // Add new data via API in background
     let api_client = Client::new();
     let auth_response = api_client
-        .post(&format!("{}/auth/login", base_url))
+        .post(format!("{}/auth/login", base_url))
         .json(&json!({
             "username": "admin",
             "password": "password"
@@ -876,7 +876,7 @@ async fn test_real_time_updates() -> Result<()> {
 
         // Add new triple
         let _add_response = api_client
-            .post(&format!("{}/api/blockchain/add-triple", base_url))
+            .post(format!("{}/api/blockchain/add-triple", base_url))
             .header("Authorization", format!("Bearer {}", token))
             .json(&json!({
                 "subject": "http://example.org/realtime_test",

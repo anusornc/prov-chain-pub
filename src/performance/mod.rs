@@ -275,12 +275,14 @@ mod tests {
 
     #[test]
     fn test_performance_metrics_score() {
-        let mut metrics = PerformanceMetrics::default();
-        metrics.canonicalization_cache_hit_rate = 0.8;
-        metrics.query_cache_hit_rate = 0.9;
-        metrics.avg_block_processing_time = Duration::from_millis(50);
-        metrics.memory_usage_mb = 50;
-        metrics.compression_ratio = 2.0;
+        let metrics = PerformanceMetrics {
+    canonicalization_cache_hit_rate: 0.8,
+    query_cache_hit_rate: 0.9,
+    avg_block_processing_time: Duration::from_millis(50),
+    memory_usage_mb: 50,
+    compression_ratio: 2.0,
+    ..Default::default()
+};
 
         let score = metrics.calculate_performance_score();
         assert!(score > 80.0); // Should be a high score with good metrics

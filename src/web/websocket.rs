@@ -221,11 +221,11 @@ pub async fn websocket_handler(
         }
         Err(e) => {
             // Token is invalid, return error
-            return (
+            (
                 StatusCode::UNAUTHORIZED,
                 format!("Invalid JWT token: {}", e),
             )
-                .into_response();
+                .into_response()
         }
     }
 }
