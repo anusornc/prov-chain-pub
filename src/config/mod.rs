@@ -230,15 +230,36 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
-    fn test_default_config() {
+    #[cfg(debug_assertions)]
+    fn test_default_config_debug() {
         let config = Config::default();
         assert_eq!(config.network.listen_port, 8080);
         assert!(config.web.cors.enabled);
+        // In debug mode, default origins include localhost dev ports
         assert!(config
             .web
             .cors
             .allowed_origins
             .contains(&"http://localhost:5173".to_string()));
+        assert!(config
+            .web
+            .cors
+            .allowed_origins
+            .contains(&"http://localhost:5174".to_string()));
+        assert!(config
+            .web
+            .cors
+            .allowed_origins
+            .contains(&"http://localhost:5175".to_string()));
+    }
+
+    #[test]
+    fn test_default_config_common() {
+        let config = Config::default();
+        // These assertions should work in both debug and release mode
+        assert_eq!(config.network.listen_port, 8080);
+        assert!(config.web.cors.enabled);
+        assert!(!config.web.cors.allowed_origins.is_empty());
     }
 
     #[test]

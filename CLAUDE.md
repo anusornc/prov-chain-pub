@@ -127,7 +127,12 @@ sudo docker compose -f docker-compose.baselines-only.yml down
   - Default test users in debug/demo mode (admin/admin123, farmer1/farmer123, processor1/processor123)
 - `src/knowledge_graph/` - Graph algorithms for traceability
 - `src/analytics/` - Performance monitoring and metrics
-- `src/utils/config.rs` - Configuration management module
+- `src/config/mod.rs` - Basic configuration module with TOML support
+  - `Config` - Basic configuration with network, consensus, storage, logging, web, and ontology settings
+  - `CorsConfig` - CORS configuration with origin whitelisting
+  - `OntologyConfigFile` - Ontology file configuration with SHACL validation paths
+  - Tests split for debug/release compatibility (cfg!(debug_assertions) handling)
+- `src/utils/config.rs` - Comprehensive node configuration module
   - `NodeConfig` - Complete node configuration with validation
   - `NetworkConfig` - Network parameters (peers, ports, timeouts)
   - `ConsensusConfig` - Consensus settings (type, authority keys, block interval)
