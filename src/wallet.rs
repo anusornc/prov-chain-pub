@@ -361,9 +361,9 @@ impl WalletManager {
     /// # Arguments
     /// * `storage_dir` - Directory to store wallet files
     /// * `master_key_path` - Optional path to a file containing the 32-byte master encryption key.
-    ///                       If provided and exists, key is loaded.
-    ///                       If provided and missing, new key is generated and saved.
-    ///                       If None, looks for `.master_key` in storage_dir.
+    ///   - If provided and exists, key is loaded.
+    ///   - If provided and missing, new key is generated and saved.
+    ///   - If None, looks for `.master_key` in storage_dir.
     pub fn new<P: AsRef<Path>>(storage_dir: P, master_key_path: Option<PathBuf>) -> Result<Self> {
         let storage_dir = storage_dir.as_ref().to_path_buf();
 

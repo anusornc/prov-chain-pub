@@ -416,17 +416,17 @@ fn test_json_compatibility() {
 /// Test RDF Store integration with Phase 2 models
 #[test]
 fn test_rdf_store_integration() {
-    let rdf_store = RDFStore::new();
+    let _rdf_store = RDFStore::new();
 
     // Test that RDF store can be created for web server
-    assert!(true, "RDF store should be created successfully");
+    // If we got here without panicking, the store was created successfully
 
     // Test basic RDF operations that would be used by the web API
     let test_query = "SELECT * WHERE { ?s ?p ?o } LIMIT 10";
+    let rdf_store = RDFStore::new();
     let _results = rdf_store.query(test_query);
 
-    // The query should execute without panicking
-    assert!(true, "SPARQL query should execute successfully");
+    // If we got here without panicking, the query executed successfully
 }
 
 /// Test configuration integration for Phase 2

@@ -316,7 +316,6 @@ async fn test_scalability_endurance() -> Result<()> {
 }
 
 /// Load test implementation functions
-
 async fn run_transaction_load_test(config: LoadTestConfig) -> Result<LoadTestResults> {
     let blockchain = Arc::new(Mutex::new(Blockchain::new()));
     let results = Arc::new(Mutex::new(LoadTestResults::default()));

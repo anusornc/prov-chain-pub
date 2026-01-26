@@ -469,7 +469,7 @@ impl SupplyChainAnalyzer {
         }
 
         // Check if there are temperature requirements
-        let requires_temperature_control = batch.properties.get("temperatureMin").is_some();
+        let requires_temperature_control = batch.properties.contains_key("temperatureMin");
 
         if requires_temperature_control {
             risk_score += 0.10; // Higher risk for temperature-sensitive goods
@@ -602,8 +602,8 @@ impl SupplyChainAnalyzer {
         }
 
         // Check storage conditions
-        let has_storage_info = batch.properties.get("storageTemperature").is_some()
-            || batch.properties.get("storageHumidity").is_some();
+        let has_storage_info = batch.properties.contains_key("storageTemperature")
+            || batch.properties.contains_key("storageHumidity");
 
         if !has_storage_info {
             risk_score += 0.10; // Unknown storage conditions
@@ -824,7 +824,7 @@ impl SupplyChainAnalyzer {
         let mut is_compliant = true;
 
         // Check if activity has required documentation
-        if activity.properties.get("documentationDate").is_none() {
+        if !activity.properties.contains_key("documentationDate") {
             // Only require documentation for certain activity types
             if matches!(
                 activity.entity_type.as_str(),
@@ -836,7 +836,7 @@ impl SupplyChainAnalyzer {
         }
 
         // Check if activity has temperature controls (for temperature-sensitive products)
-        if activity.properties.get("temperatureMin").is_none()
+        if !activity.properties.contains_key("temperatureMin")
             && activity
                 .properties
                 .get("productType")

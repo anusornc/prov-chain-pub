@@ -87,7 +87,7 @@ fn bench_api_concurrent_performance(c: &mut Criterion) {
                 let rt = Runtime::new().unwrap();
 
                 b.to_async(&rt).iter_batched(
-                    || setup_test_web_server(),
+                    setup_test_web_server,
                     |(server, _temp_dir)| async move {
                         simulate_concurrent_api_load(server.clone(), users).await;
                         server
@@ -121,7 +121,7 @@ fn bench_real_time_traceability_performance(c: &mut Criterion) {
     for (complexity, query) in query_complexities {
         group.bench_function(BenchmarkId::new("query_complexity", complexity), |b| {
             b.iter_batched(
-                || setup_large_traceability_dataset(),
+                setup_large_traceability_dataset,
                 |(blockchain, _data)| {
                     let result = blockchain.rdf_store.query(black_box(&query));
                     black_box(result)
@@ -317,7 +317,7 @@ fn bench_resilience_performance(c: &mut Criterion) {
     for (scenario_name, simulation_fn) in failure_scenarios {
         group.bench_function(BenchmarkId::new("failure_resilience", scenario_name), |b| {
             b.iter_batched(
-                || setup_resilience_test_environment(),
+                setup_resilience_test_environment,
                 |(mut blockchain, test_env)| {
                     let start_time = Instant::now();
 

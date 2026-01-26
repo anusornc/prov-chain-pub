@@ -436,7 +436,6 @@ async fn test_long_running_stability() -> Result<()> {
 }
 
 /// Stress test implementation functions
-
 async fn run_capacity_stress_test(config: StressTestConfig) -> Result<StressTestResults> {
     let monitor = ResourceMonitor::new();
     let _monitor_handle = monitor.start_monitoring();

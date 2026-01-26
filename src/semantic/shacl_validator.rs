@@ -901,9 +901,9 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "SPARQL syntax issues need to be fixed"]
     fn test_validate_graph_with_missing_required_property() {
         // This test is currently failing due to SPARQL syntax issues
-        // We'll skip it for now and come back to fix it later
-        assert!(true);
+        // TODO: Fix SPARQL syntax and enable this test
     }
 }
