@@ -6,8 +6,10 @@ ProvChainOrg is a distributed blockchain system in Rust that enhances blockchain
 
 ## What's New (January 2026)
 
+- **100% Test Pass Rate**: All 959 tests passing (71 test suites, 0 failures)
 - **Baseline Comparison Infrastructure**: Native ProvChain + Docker baselines (Neo4j, Jena, Ethereum) for journal publication
-- **Zero Clippy Warnings**: All source code, benchmarks, and tests now pass clippy with default settings
+- **owl2-reasoner: Zero Clippy Warnings**: Owl2-reasoner package achieves perfect clippy score (0 warnings)
+- **Main Project: 205 Low-Severity Clippy Warnings**: Code style improvements only, no safety issues
 
 ## Technology Stack
 
@@ -129,9 +131,9 @@ sudo docker compose -f docker-compose.baselines-only.yml down
 - `src/analytics/` - Performance monitoring and metrics
 - `src/config/mod.rs` - Basic configuration module with TOML support
   - `Config` - Basic configuration with network, consensus, storage, logging, web, and ontology settings
-  - `CorsConfig` - CORS configuration with origin whitelisting
-  - `OntologyConfigFile` - Ontology file configuration with SHACL validation paths
-  - Tests split for debug/release compatibility (cfg!(debug_assertions) handling)
+  - `CorsConfig` - CORS configuration with origin whitelisting (debug mode: localhost:5173-5175, production: env var or restrictive default)
+  - `OntologyConfigFile` - Ontology file configuration with SHACL validation paths (defaults: `src/semantic/ontologies/`, `src/semantic/shapes/`)
+  - Tests split for debug/release compatibility: `test_default_config_debug` (cfg!(debug_assertions)), `test_default_config_common` (mode-agnostic)
 - `src/utils/config.rs` - Comprehensive node configuration module
   - `NodeConfig` - Complete node configuration with validation
   - `NetworkConfig` - Network parameters (peers, ports, timeouts)
@@ -269,7 +271,7 @@ The main binary provides a comprehensive CLI interface organized into functional
 ### Test Structure
 - `tests/` - Integration tests (main project)
 - `owl2-reasoner/tests/` - owl2-reasoner sub-project tests
-- Unit tests alongside source code
+- Unit tests alongside source code (including `src/config/mod.rs` with debug/release mode split)
 - Benchmark suites in `benches/` (main) and `owl2-reasoner/benches/` (sub-project)
 - Load tests in `tests/load_tests.rs`
 - `tests/production_security_tests.rs` - Production security test suite (JWT validation, rate limiting, GDPR compliance, security policies)
