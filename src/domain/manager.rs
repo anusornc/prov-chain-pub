@@ -111,7 +111,7 @@ impl DomainManager {
                     );
                     mapping.insert(
                         serde_yaml::Value::String("domain_ontology_path".to_string()),
-                        serde_yaml::Value::String("ontologies/supply-chain.owl".to_string()),
+                        serde_yaml::Value::String("src/semantic/ontologies/supply-chain.owl".to_string()),
                     );
                 }
                 Err(anyhow::anyhow!("OwlDomainAdapter not yet implemented"))
@@ -136,7 +136,7 @@ impl DomainManager {
                     );
                     mapping.insert(
                         serde_yaml::Value::String("domain_ontology_path".to_string()),
-                        serde_yaml::Value::String("ontologies/healthcare.owl".to_string()),
+                        serde_yaml::Value::String("src/semantic/ontologies/healthcare.owl".to_string()),
                     );
                 }
                 Err(anyhow::anyhow!("OwlDomainAdapter not yet implemented"))
@@ -161,7 +161,7 @@ impl DomainManager {
                     );
                     mapping.insert(
                         serde_yaml::Value::String("domain_ontology_path".to_string()),
-                        serde_yaml::Value::String("ontologies/pharmaceutical.owl".to_string()),
+                        serde_yaml::Value::String("src/semantic/ontologies/pharmaceutical.owl".to_string()),
                     );
                 }
                 Err(anyhow::anyhow!("OwlDomainAdapter not yet implemented"))
@@ -202,7 +202,7 @@ impl DomainManager {
             );
             mapping.insert(
                 serde_yaml::Value::String("domain_ontology_path".to_string()),
-                serde_yaml::Value::String(format!("ontologies/{}.owl", domain_id)),
+                serde_yaml::Value::String(format!("src/semantic/ontologies/{}.owl", domain_id)),
             );
         }
 
@@ -299,9 +299,9 @@ impl GenericDomainAdapter {
             domain_id: domain_id.to_string(),
             name: format!("Generic {} Domain", domain_id),
             description: format!("Generic domain adapter for {}", domain_id),
-            core_ontology_path: "ontologies/generic_core.owl".to_string(),
-            domain_ontology_path: format!("ontologies/{}.owl", domain_id),
-            ontology_path: format!("ontologies/{}.owl", domain_id),
+            core_ontology_path: "src/semantic/ontologies/generic_core.owl".to_string(),
+            domain_ontology_path: format!("src/semantic/ontologies/{}.owl", domain_id),
+            ontology_path: format!("src/semantic/ontologies/{}.owl", domain_id),
             shacl_shapes_path: None,
             inference_rules_path: None,
             required_properties: Vec::new(),

@@ -190,7 +190,7 @@ impl Default for LoggingConfig {
 impl Default for OntologyConfig {
     fn default() -> Self {
         Self {
-            path: "ontologies/generic_core.owl".to_string(),
+            path: "src/semantic/ontologies/generic_core.owl".to_string(),
             graph_name: "http://provchain.org/ontology".to_string(),
             auto_load: true,
             validate_data: false,
@@ -343,7 +343,7 @@ pub fn load_config(config_file: Option<&str>) -> Result<NodeConfig> {
     }
 
     // Try to load from default config file
-    let default_config_path = "config.toml";
+    let default_config_path = "config/config.toml";
     if Path::new(default_config_path).exists() {
         let mut config = NodeConfig::load_from_file(default_config_path)?;
 

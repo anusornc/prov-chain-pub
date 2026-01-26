@@ -110,7 +110,7 @@ enum Commands {
     /// Run advanced OWL2 reasoning using the owl2-reasoner library
     AdvancedOwl2 {
         /// Ontology file to process
-        #[arg(short, long, default_value = "ontologies/generic_core.owl")]
+        #[arg(short, long, default_value = "src/semantic/ontologies/generic_core.owl")]
         ontology: String,
     },
     /// Trace the shortest path between two entities in the knowledge graph
@@ -288,7 +288,7 @@ fn create_blockchain_with_ontology(
         );
 
         // Create ontology configuration
-        let config = Config::load_or_default("config.toml");
+        let config = Config::load_or_default("config/config.toml");
         let ontology_config = OntologyConfig::new(Some(ontology_path.clone()), &config)
             .map_err(|e| format!("Failed to create ontology configuration: {e}"))?;
 
@@ -396,7 +396,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Load ontology data first
             info!("Loading core ontology...\n");
-            let ontology_data = fs::read_to_string("ontologies/generic_core.owl")
+            let ontology_data = fs::read_to_string("src/semantic/ontologies/generic_core.owl")
                 .map_err(|e| format!("Cannot read ontology file: {e}\n"))?;
             blockchain
                 .add_block(ontology_data)
@@ -404,7 +404,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Generate ontology-aware demo data
             let ontology_config =
-                OntologyConfig::new(ontology, &Config::load_or_default("config.toml"))
+                OntologyConfig::new(ontology, &Config::load_or_default("config/config.toml"))
                     .map_err(|e| format!("Failed to create ontology config: {e}\n"))?;
             let demo_data = generate_demo_data(&ontology_config);
 
@@ -424,7 +424,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
 
             // Create config with custom port
-            let mut config = Config::load_or_default("config.toml");
+            let mut config = Config::load_or_default("config/config.toml");
             config.web.port = port;
 
             // Create and start the web server

@@ -18,7 +18,7 @@ pub fn run_universal_traceability_demo() -> Result<()> {
     // Create a default ontology configuration for demo
     let config = crate::config::Config::default();
     let ontology_config =
-        match OntologyConfig::new(Some("ontologies/healthcare.owl".to_string()), &config) {
+        match OntologyConfig::new(Some("src/semantic/ontologies/healthcare.owl".to_string()), &config) {
             Ok(config) => config,
             Err(e) => {
                 println!("   Failed to create ontology config: {}", e);
@@ -53,9 +53,9 @@ pub fn run_universal_traceability_demo() -> Result<()> {
         domain_id: "healthcare".to_string(),
         name: "Healthcare Traceability".to_string(),
         description: "Healthcare and medical traceability".to_string(),
-        core_ontology_path: "ontologies/generic_core.owl".to_string(),
-        domain_ontology_path: "ontologies/healthcare.owl".to_string(),
-        ontology_path: "ontologies/healthcare.owl".to_string(),
+        core_ontology_path: "src/semantic/ontologies/generic_core.owl".to_string(),
+        domain_ontology_path: "src/semantic/ontologies/healthcare.owl".to_string(),
+        ontology_path: "src/semantic/ontologies/healthcare.owl".to_string(),
         shacl_shapes_path: None,
         inference_rules_path: None,
         required_properties: vec!["patientID".to_string()],
@@ -72,9 +72,9 @@ pub fn run_universal_traceability_demo() -> Result<()> {
         domain_id: "pharmaceutical".to_string(),
         name: "Pharmaceutical Traceability".to_string(),
         description: "Pharmaceutical and drug traceability".to_string(),
-        core_ontology_path: "ontologies/generic_core.owl".to_string(),
-        domain_ontology_path: "ontologies/pharmaceutical.owl".to_string(),
-        ontology_path: "ontologies/pharmaceutical.owl".to_string(),
+        core_ontology_path: "src/semantic/ontologies/generic_core.owl".to_string(),
+        domain_ontology_path: "src/semantic/ontologies/pharmaceutical.owl".to_string(),
+        ontology_path: "src/semantic/ontologies/pharmaceutical.owl".to_string(),
         shacl_shapes_path: None,
         inference_rules_path: None,
         required_properties: vec!["lotNumber".to_string()],

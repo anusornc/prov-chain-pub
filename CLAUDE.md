@@ -25,14 +25,47 @@ ProvChainOrg is a distributed blockchain system in Rust that enhances blockchain
 # Build the project
 cargo build
 
-# Run main application
-cargo run
+# Run main application (CLI interface)
+cargo run -- --help
+
+# Add RDF file as blockchain block
+cargo run -- add-file <path> --ontology <optional>
+
+# Run SPARQL query file
+cargo run -- query <path> --ontology <optional>
+
+# Validate blockchain integrity
+cargo run -- validate --ontology <optional>
+
+# Dump blockchain as JSON
+cargo run -- dump
 
 # Run supply chain traceability demo
-cargo run demo
+cargo run -- demo --ontology <optional>
+
+# Run transaction blockchain demos (uht, basic, signing, multi, all, interactive)
+cargo run -- transaction-demo --demo-type <type> --ontology <optional>
 
 # Start web server (default port 8080)
-cargo run -- web-server --port 8080
+cargo run -- web-server --port <port> --ontology <optional>
+
+# Run OWL2 integration and enhanced features demo
+cargo run -- owl2-demo --ontology <optional>
+
+# Run enhanced traceability using OWL2 reasoning
+cargo run -- enhanced-trace --batch-id <id> --optimization <0-2> --ontology <optional>
+
+# Run advanced OWL2 reasoning using owl2-reasoner library
+cargo run -- advanced-owl2 --ontology <path>
+
+# Trace shortest path between two entities
+cargo run -- trace-path --from <uri> --to <uri> --ontology <optional>
+
+# Start full node with networking and consensus
+cargo run -- start-node --config <optional>
+
+# Generate new Ed25519 keypair for authority nodes
+cargo run -- generate-key --out <path>
 
 # Run tests
 cargo test
@@ -86,8 +119,22 @@ sudo docker compose -f docker-compose.baselines-only.yml down
   - `sparql_validator.rs` - SPARQL query validation and graph consistency
 - `src/interop/` - Cross-chain bridge implementation
 - `src/web/` - REST API handlers with JWT auth
+  - `server.rs` - Axum-based web server with comprehensive security headers
+  - Security headers: CSP, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy
+  - CORS configuration with origin whitelisting
+  - WebSocket support for real-time blockchain events
+  - Static file serving from `src/web/static/`
+  - Default test users in debug/demo mode (admin/admin123, farmer1/farmer123, processor1/processor123)
 - `src/knowledge_graph/` - Graph algorithms for traceability
 - `src/analytics/` - Performance monitoring and metrics
+- `src/utils/config.rs` - Configuration management module
+  - `NodeConfig` - Complete node configuration with validation
+  - `NetworkConfig` - Network parameters (peers, ports, timeouts)
+  - `ConsensusConfig` - Consensus settings (type, authority keys, block interval)
+  - `StorageConfig` - Storage configuration (data directory, persistence, cache size)
+  - `LoggingConfig` - Logging configuration (level, format, file output)
+  - `OntologyConfig` - Ontology configuration (path, graph name, auto-load, validation)
+  - Environment variable overrides with fallback priority: CLI config > env vars > default config > built-in defaults
 
 ### Production Infrastructure
 - `src/production/` - Enterprise-grade production deployment features
@@ -110,17 +157,54 @@ sudo docker compose -f docker-compose.baselines-only.yml down
   - Jaeger distributed tracing integration
 
 ### Key Binaries
-- `provchain-org` (src/main.rs) - Main CLI application
+- `provchain-org` (src/main.rs) - Main CLI application (TraceChain)
+  - Commands: add-file, query, validate, dump, demo, transaction-demo, web-server, owl2-demo, enhanced-trace, advanced-owl2, trace-path, start-node, generate-key
+  - Domain-specific demo data generation: uht_manufacturing, automotive, pharmaceutical, healthcare, generic
+  - Ontology-aware blockchain initialization with persistent storage
 - `owl2-integration-test` (src/bin/owl2_integration_test.rs) - Ontology integration tests
 
+### CLI Command Structure
+The main binary provides a comprehensive CLI interface organized into functional categories:
+
+**Blockchain Operations:**
+- `add-file <path>` - Add Turtle RDF file as new block
+- `query <path>` - Execute SPARQL query file
+- `validate` - Validate blockchain integrity
+- `dump` - Export blockchain as JSON
+
+**Demo & Testing:**
+- `demo` - Run built-in UHT manufacturing demo
+- `transaction-demo --demo-type <type>` - Run transaction demos (uht, basic, signing, multi, all, interactive)
+- `owl2-demo` - Run OWL2 integration and enhanced features demo
+
+**Web Server:**
+- `web-server --port <port>` - Start REST API server with WebSocket support
+
+**Advanced Features:**
+- `enhanced-trace --batch-id <id>` - Run OWL2-enhanced traceability
+- `advanced-owl2 --ontology <path>` - Run advanced OWL2 reasoning
+- `trace-path --from <uri> --to <uri>` - Find shortest path in knowledge graph
+
+**Node Operations:**
+- `start-node --config <path>` - Start full node with networking and consensus
+- `generate-key --out <path>` - Generate Ed25519 keypair for authority nodes
+
+**Common Options:**
+- `--ontology <path>` - Specify domain ontology for validation
+- Supports multiple domains: uht_manufacturing, automotive, pharmaceutical, healthcare, generic
+
 ### Configuration
-- `config.toml` - Node configuration (consensus type, network settings, storage, web server, CORS)
+- `config/config.toml` - Node configuration (consensus type, network settings, storage, web server, CORS)
   - Development mode includes default JWT secret (for demo/testing only)
   - Production: Override with `JWT_SECRET` environment variable for secure authentication
   - Network configuration: peers, ports, timeouts, connection limits
   - Consensus settings: authority mode, block interval, size limits
   - Storage: persistent RDF store with configurable cache size
   - Web server: host, port, JWT authentication, CORS settings
+- `config/ontology.toml` - Ontology-specific configuration
+- `config/persistence.toml` - Storage and persistence settings
+- `config/production.toml` - Production deployment configuration
+- `config/production-deployment.toml` - Production-specific deployment parameters
 - Environment: `JWT_SECRET` overrides config file value for production security
 
 ## Project Patterns
@@ -185,6 +269,8 @@ sudo docker compose -f docker-compose.baselines-only.yml down
 - Load tests in `tests/load_tests.rs`
 - `tests/production_security_tests.rs` - Production security test suite (JWT validation, rate limiting, GDPR compliance, security policies)
 - `tests/websocket_integration_tests.rs` - WebSocket integration tests (connection management, event broadcasting, multi-client scenarios)
+- `tests/owl2_feature_tests.rs` - OWL2 feature integration tests (hasKey constraints, property chains, qualified cardinality)
+- `tests/shacl_validation_tests.rs` - SHACL validation tests (conformance, required properties, datatype validation)
 
 ### owl2-reasoner Sub-Project
 The project includes `owl2-reasoner` as a workspace member - a high-performance OWL2 reasoning engine.
@@ -241,7 +327,14 @@ cargo test --workspace
 
 ### Environment Variables
 - `JWT_SECRET` - Required for API authentication (32+ chars)
-- Node-specific settings in `config.toml`
+- `PROVCHAIN_DEMO_MODE` - Enables default test users for web server (admin/admin123, farmer1/farmer123, processor1/processor123)
+- `PROVCHAIN_NETWORK_ID` - Override network identifier
+- `PROVCHAIN_PORT` - Override listen port
+- `PROVCHAIN_PEERS` - Comma-separated list of bootstrap peers
+- `PROVCHAIN_AUTHORITY` - Set to "true" for authority mode
+- `PROVCHAIN_DATA_DIR` - Override data directory path
+- `PROVCHAIN_LOG_LEVEL` - Override log level (trace, debug, info, warn, error)
+- Node-specific settings in `config/config.toml`
 
 ## Documentation
 
@@ -250,6 +343,7 @@ See `docs/INDEX.md` for complete documentation navigation.
 **Key entry points:**
 - `README.md` - Project overview and quick start
 - `CONTRIBUTING.md` - Development setup and coding standards
+- `SECURITY.md` - Security policy, vulnerability reporting, and security features documentation
 - `docs/INDEX.md` - Complete documentation index with navigation
 - `docs/architecture/README.md` - Architecture documentation (C4 model, ADRs)
 - `docs/USER_MANUAL.md` - User guide

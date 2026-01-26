@@ -18,13 +18,13 @@ use std::path::Path;
 /// Ontology configuration for domain-specific blockchain validation
 #[derive(Debug, Clone)]
 pub struct OntologyConfig {
-    /// Path to the domain-specific ontology file (e.g., "ontologies/uht_manufacturing.owl")
+    /// Path to the domain-specific ontology file (e.g., "src/semantic/ontologies/uht_manufacturing.owl")
     pub domain_ontology_path: String,
-    /// Path to the core ontology file (default: "ontologies/generic_core.owl")
+    /// Path to the core ontology file (default: "src/semantic/ontologies/generic_core.owl")
     pub core_ontology_path: String,
-    /// Path to domain-specific SHACL shapes (e.g., "shapes/uht_manufacturing.shacl.ttl")
+    /// Path to domain-specific SHACL shapes (e.g., "src/semantic/shapes/uht_manufacturing.shacl.ttl")
     pub domain_shacl_path: String,
-    /// Path to core SHACL shapes (default: "shapes/core.shacl.ttl")
+    /// Path to core SHACL shapes (default: "src/semantic/shapes/core.shacl.ttl")
     pub core_shacl_path: String,
     /// Validation mode - currently only Strict is supported
     pub validation_mode: ValidationMode,
@@ -50,7 +50,7 @@ impl OntologyConfig {
                     .as_ref()
                     .map(|c| c.domain_ontology_path.clone())
             })
-            .unwrap_or_else(|| "ontologies/generic_core.owl".to_string());
+            .unwrap_or_else(|| "src/semantic/ontologies/generic_core.owl".to_string());
 
         // Validate that the ontology file exists
         if !Path::new(&domain_ontology_path).exists() {
@@ -61,23 +61,23 @@ impl OntologyConfig {
 
         // Derive domain-specific paths from the ontology file
         let domain_name = Self::extract_domain_name(&domain_ontology_path)?;
-        let domain_shacl_path = format!("shapes/{}.shacl.ttl", domain_name);
+        let domain_shacl_path = format!("src/semantic/shapes/{}.shacl.ttl", domain_name);
 
         // Generate ontology hash for consistency checking
         let ontology_hash = Self::generate_ontology_hash(&domain_ontology_path)?;
 
         Ok(OntologyConfig {
             domain_ontology_path,
-            core_ontology_path: "ontologies/generic_core.owl".to_string(),
+            core_ontology_path: "src/semantic/ontologies/generic_core.owl".to_string(),
             domain_shacl_path,
-            core_shacl_path: "shapes/core.shacl.ttl".to_string(),
+            core_shacl_path: "src/semantic/shapes/core.shacl.ttl".to_string(),
             validation_mode: ValidationMode::Strict,
             ontology_hash,
         })
     }
 
     /// Extract domain name from ontology file path
-    /// e.g., "ontologies/uht_manufacturing.owl" -> "uht_manufacturing"
+    /// e.g., "src/semantic/ontologies/uht_manufacturing.owl" -> "uht_manufacturing"
     fn extract_domain_name(ontology_path: &str) -> Result<String, OntologyError> {
         let path = Path::new(ontology_path);
         let filename = path
@@ -143,7 +143,7 @@ mod tests {
     #[test]
     fn test_extract_domain_name() {
         assert_eq!(
-            OntologyConfig::extract_domain_name("ontologies/uht_manufacturing.owl").unwrap(),
+            OntologyConfig::extract_domain_name("src/semantic/ontologies/uht_manufacturing.owl").unwrap(),
             "uht_manufacturing"
         );
         assert_eq!(

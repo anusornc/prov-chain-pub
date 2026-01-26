@@ -27,7 +27,7 @@ impl Default for OwlReasonerConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            ontology_path: "ontologies/generic_core.owl".to_string(),
+            ontology_path: "src/semantic/ontologies/generic_core.owl".to_string(),
             classify: true,
             check_consistency: true,
             process_owl2_features: true,

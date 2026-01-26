@@ -184,6 +184,6 @@ mod tests {
 
     #[test]
     fn test_debug_ontology_loading() -> Result<(), Box<dyn std::error::Error>> {
-        debug_ontology_loading("ontologies/test-owl2.owl")
+        debug_ontology_loading("src/semantic/ontologies/test-owl2.owl")
     }
 }

@@ -23,9 +23,9 @@ mod tests {
             domain_id: "test_domain"
             name: "Test Domain"
             description: "Test domain for OWL adapter"
-            core_ontology_path: "ontologies/generic_core.owl"
-            domain_ontology_path: "ontologies/test-owl2.owl"
-            ontology_path: "ontologies/test-owl2.owl"
+            core_ontology_path: "src/semantic/ontologies/generic_core.owl"
+            domain_ontology_path: "src/semantic/ontologies/test-owl2.owl"
+            ontology_path: "src/semantic/ontologies/test-owl2.owl"
             enabled: true
             priority: 1
         "#;
@@ -52,9 +52,9 @@ mod tests {
             domain_id: "supplychain"
             name: "Supply Chain Domain"
             description: "Supply chain traceability domain"
-            core_ontology_path: "ontologies/generic_core.owl"
-            domain_ontology_path: "ontologies/test-owl2.owl"
-            ontology_path: "ontologies/test-owl2.owl"
+            core_ontology_path: "src/semantic/ontologies/generic_core.owl"
+            domain_ontology_path: "src/semantic/ontologies/test-owl2.owl"
+            ontology_path: "src/semantic/ontologies/test-owl2.owl"
             enabled: true
             priority: 1
         "#;
@@ -81,9 +81,9 @@ mod tests {
             domain_id: "test_domain"
             name: "Test Domain"
             description: "Test domain for OWL adapter"
-            core_ontology_path: "ontologies/generic_core.owl"
-            domain_ontology_path: "ontologies/test-owl2.owl"
-            ontology_path: "ontologies/test-owl2.owl"
+            core_ontology_path: "src/semantic/ontologies/generic_core.owl"
+            domain_ontology_path: "src/semantic/ontologies/test-owl2.owl"
+            ontology_path: "src/semantic/ontologies/test-owl2.owl"
             enabled: true
             priority: 1
         "#;

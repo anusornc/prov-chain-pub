@@ -23,7 +23,7 @@ mod tests {
     #[ignore]
     fn test_real_world_entity_linking() -> Result<()> {
         // Load test data with intentional duplicates
-        let test_data = std::fs::read_to_string("test_data/real_world_entity_linking_test.ttl")?;
+        let test_data = std::fs::read_to_string("tests/data/real_world_entity_linking_test.ttl")?;
 
         // Create RDF store and load data
         let mut rdf_store = RDFStore::new();

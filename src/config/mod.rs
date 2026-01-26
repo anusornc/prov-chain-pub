@@ -85,10 +85,10 @@ pub struct OntologyConfigFile {
 impl Default for OntologyConfigFile {
     fn default() -> Self {
         Self {
-            domain_ontology_path: "ontologies/generic_core.owl".to_string(),
-            core_ontology_path: Some("ontologies/generic_core.owl".to_string()),
-            domain_shacl_path: Some("shapes/core.shacl.ttl".to_string()),
-            core_shacl_path: Some("shapes/core.shacl.ttl".to_string()),
+            domain_ontology_path: "src/semantic/ontologies/generic_core.owl".to_string(),
+            core_ontology_path: Some("src/semantic/ontologies/generic_core.owl".to_string()),
+            domain_shacl_path: Some("src/semantic/shapes/core.shacl.ttl".to_string()),
+            core_shacl_path: Some("src/semantic/shapes/core.shacl.ttl".to_string()),
             validation_enabled: Some(true),
         }
     }
@@ -270,7 +270,7 @@ mod tests {
         let ontology_config = OntologyConfigFile::default();
         assert_eq!(
             ontology_config.domain_ontology_path,
-            "ontologies/generic_core.owl"
+            "src/semantic/ontologies/generic_core.owl"
         );
         assert_eq!(ontology_config.validation_enabled, Some(true));
     }

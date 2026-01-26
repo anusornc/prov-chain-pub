@@ -8,17 +8,17 @@ mod tests {
     #[test]
     fn test_ontology_files_exist() {
         // Check that our ontology files were created
-        assert!(fs::metadata("ontologies/generic_core.owl").is_ok());
-        assert!(fs::metadata("ontologies/healthcare.owl").is_ok());
-        assert!(fs::metadata("ontologies/pharmaceutical.owl").is_ok());
-        assert!(fs::metadata("ontologies/automotive.owl").is_ok());
-        assert!(fs::metadata("ontologies/digital_assets.owl").is_ok());
+        assert!(fs::metadata("src/semantic/ontologies/generic_core.owl").is_ok());
+        assert!(fs::metadata("src/semantic/ontologies/healthcare.owl").is_ok());
+        assert!(fs::metadata("src/semantic/ontologies/pharmaceutical.owl").is_ok());
+        assert!(fs::metadata("src/semantic/ontologies/automotive.owl").is_ok());
+        assert!(fs::metadata("src/semantic/ontologies/digital_assets.owl").is_ok());
     }
 
     #[test]
     fn test_domain_adapter_creation() {
         let config = DomainConfig {
-            ontology_path: "ontologies/healthcare.owl".to_string(),
+            ontology_path: "src/semantic/ontologies/healthcare.owl".to_string(),
             shacl_shapes_path: None,
             inference_rules_path: None,
             required_properties: vec!["patientID".to_string()],
@@ -33,7 +33,7 @@ mod tests {
     #[test]
     fn test_entity_domain_validation() {
         let config = DomainConfig {
-            ontology_path: "ontologies/healthcare.owl".to_string(),
+            ontology_path: "src/semantic/ontologies/healthcare.owl".to_string(),
             shacl_shapes_path: None,
             inference_rules_path: None,
             required_properties: vec![],

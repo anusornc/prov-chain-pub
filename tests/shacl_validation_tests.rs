@@ -7,7 +7,7 @@ fn test_shacl_validation_with_valid_data() {
     // Create SHACL validator
     let config = ShaclConfig {
         enabled: true,
-        shapes_path: "shapes/traceability.shacl.ttl".to_string(),
+        shapes_path: "src/semantic/shapes/traceability.shacl.ttl".to_string(),
         fail_on_error: false,
     };
     let validator = ShaclValidator::new(config).expect("Failed to create SHACL validator");
@@ -17,7 +17,7 @@ fn test_shacl_validation_with_valid_data() {
     let graph_name = NamedNode::new("http://example.org/test").unwrap();
 
     // Load ontology data first
-    let ontology_data = std::fs::read_to_string("ontologies/generic_core.owl")
+    let ontology_data = std::fs::read_to_string("src/semantic/ontologies/generic_core.owl")
         .expect("Failed to read ontology file");
     // For testing purposes, we'll load the ontology data into the same graph as the test data
     // This is a simplification for testing - in production, the ontology would be in a separate graph
@@ -71,7 +71,7 @@ fn test_shacl_validation_with_missing_required_property() {
     // Create SHACL validator
     let config = ShaclConfig {
         enabled: true,
-        shapes_path: "shapes/traceability.shacl.ttl".to_string(),
+        shapes_path: "src/semantic/shapes/traceability.shacl.ttl".to_string(),
         fail_on_error: false,
     };
     let validator = ShaclValidator::new(config).expect("Failed to create SHACL validator");
@@ -81,7 +81,7 @@ fn test_shacl_validation_with_missing_required_property() {
     let graph_name = NamedNode::new("http://example.org/test").unwrap();
 
     // Load ontology data first
-    let ontology_data = std::fs::read_to_string("ontologies/generic_core.owl")
+    let ontology_data = std::fs::read_to_string("src/semantic/ontologies/generic_core.owl")
         .expect("Failed to read ontology file");
     let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
     rdf_store.add_rdf_to_graph(&ontology_data, &ontology_graph);
@@ -140,7 +140,7 @@ fn test_shacl_validation_with_incorrect_datatype() {
     // Create SHACL validator
     let config = ShaclConfig {
         enabled: true,
-        shapes_path: "shapes/traceability.shacl.ttl".to_string(),
+        shapes_path: "src/semantic/shapes/traceability.shacl.ttl".to_string(),
         fail_on_error: false,
     };
     let validator = ShaclValidator::new(config).expect("Failed to create SHACL validator");
@@ -150,7 +150,7 @@ fn test_shacl_validation_with_incorrect_datatype() {
     let graph_name = NamedNode::new("http://example.org/test").unwrap();
 
     // Load ontology data first
-    let ontology_data = std::fs::read_to_string("ontologies/generic_core.owl")
+    let ontology_data = std::fs::read_to_string("src/semantic/ontologies/generic_core.owl")
         .expect("Failed to read ontology file");
     let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
     rdf_store.add_rdf_to_graph(&ontology_data, &ontology_graph);
@@ -210,7 +210,7 @@ fn test_shacl_validation_disabled() {
     // Create SHACL validator with validation disabled
     let config = ShaclConfig {
         enabled: false, // Disabled
-        shapes_path: "shapes/traceability.shacl.ttl".to_string(),
+        shapes_path: "src/semantic/shapes/traceability.shacl.ttl".to_string(),
         fail_on_error: false,
     };
     let validator = ShaclValidator::new(config).expect("Failed to create SHACL validator");
@@ -220,7 +220,7 @@ fn test_shacl_validation_disabled() {
     let graph_name = NamedNode::new("http://example.org/test").unwrap();
 
     // Load ontology data first
-    let ontology_data = std::fs::read_to_string("ontologies/generic_core.owl")
+    let ontology_data = std::fs::read_to_string("src/semantic/ontologies/generic_core.owl")
         .expect("Failed to read ontology file");
     let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
     rdf_store.add_rdf_to_graph(&ontology_data, &ontology_graph);
@@ -265,7 +265,7 @@ fn test_format_validation_report() {
     // Create SHACL validator
     let config = ShaclConfig {
         enabled: true,
-        shapes_path: "shapes/traceability.shacl.ttl".to_string(),
+        shapes_path: "src/semantic/shapes/traceability.shacl.ttl".to_string(),
         fail_on_error: false,
     };
     let validator = ShaclValidator::new(config).expect("Failed to create SHACL validator");

@@ -66,7 +66,7 @@ fn test_ontology_validation_failures() {
     let mut rdf_store = RDFStore::new();
 
     // Load ontology first
-    if let Ok(ontology_data) = std::fs::read_to_string("ontologies/generic_core.owl") {
+    if let Ok(ontology_data) = std::fs::read_to_string("src/semantic/ontologies/generic_core.owl") {
         let ontology_graph = NamedNode::new("http://provchain.org/ontology").unwrap();
         rdf_store.load_ontology(&ontology_data, &ontology_graph);
     }

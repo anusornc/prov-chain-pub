@@ -154,7 +154,7 @@ impl WebServer {
     /// Build the router with all routes and middleware
     fn build_router(&self) -> Router {
         // Static file serving
-        let static_service = ServeDir::new("static").append_index_html_on_directories(true);
+        let static_service = ServeDir::new("src/web/static").append_index_html_on_directories(true);
 
         // WebSocket routes (no authentication required for WebSocket upgrade)
         let websocket_routes = Router::new()
@@ -296,7 +296,7 @@ impl WebServer {
         info!("  POST /api/sparql/query - Execute SPARQL query");
         info!("  GET  /api/products/trace - Product traceability");
         info!("  POST /api/blockchain/add-triple - Add new triple");
-        info!("Static files served from: ./static/");
+        info!("Static files served from: ./src/web/static/");
         info!("Real-time features: Block creation, transaction updates, integrity alerts");
 
         let listener = tokio::net::TcpListener::bind(addr).await?;
@@ -327,7 +327,7 @@ pub async fn create_web_server(
     blockchain: Blockchain,
     config: Option<Config>,
 ) -> Result<WebServer, anyhow::Error> {
-    let server_config = config.unwrap_or_else(|| Config::load_or_default("config.toml"));
+    let server_config = config.unwrap_or_else(|| Config::load_or_default("config/config.toml"));
     let server = WebServer::new(blockchain, server_config.clone());
 
     info!("Web server configured on port {}", server_config.web.port);

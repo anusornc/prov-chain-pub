@@ -307,7 +307,7 @@ mod tests {
         
         let config_content = r#"
 [main_ontology]
-path = "ontologies/generic_core.owl"
+path = "src/semantic/ontologies/generic_core.owl"
 graph_iri = "http://provchain.org/ontology/core"
 auto_load = true
 

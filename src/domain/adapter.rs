@@ -54,7 +54,7 @@ impl OwlDomainAdapter {
         let mut ontology_manager = OntologyManager::new()?;
         
         // Load the core ontology
-        let _ = ontology_manager.load_core_ontology("ontologies/generic_core.owl");
+        let _ = ontology_manager.load_core_ontology("src/semantic/ontologies/generic_core.owl");
         
         // Load domain-specific ontology
         let _ = ontology_manager.load_domain_ontology(

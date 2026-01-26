@@ -61,7 +61,7 @@ pub enum OntologyResolutionStrategy {
 impl Default for OntologyConfig {
     fn default() -> Self {
         Self {
-            main_ontology_path: "ontologies/generic_core.owl".to_string(),
+            main_ontology_path: "src/semantic/ontologies/generic_core.owl".to_string(),
             main_ontology_graph: "http://provchain.org/ontology/core".to_string(),
             domain_ontologies: HashMap::new(),
             auto_load: true,

@@ -59,7 +59,7 @@ impl Default for ShaclConfig {
     fn default() -> Self {
         Self {
             enabled: false,
-            shapes_path: "shapes/traceability.shacl.ttl".to_string(),
+            shapes_path: "src/semantic/shapes/traceability.shacl.ttl".to_string(),
             fail_on_error: false,
         }
     }

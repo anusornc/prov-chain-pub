@@ -8,7 +8,7 @@ fn test_minimal_test_data_file() {
     let mut store = RDFStore::new();
     
     // Read the minimal test data file
-    let turtle_data = fs::read_to_string("test_data/minimal_test_data.ttl")
+    let turtle_data = fs::read_to_string("tests/data/minimal_test_data.ttl")
         .expect("Failed to read minimal_test_data.ttl");
     
     let graph_name = NamedNode::new("http://provchain.org/test_graph").unwrap();
@@ -38,7 +38,7 @@ fn test_complete_supply_chain_test_file() {
     let mut store = RDFStore::new();
     
     // Read the complete supply chain test data file
-    let turtle_data = fs::read_to_string("test_data/complete_supply_chain_test.ttl")
+    let turtle_data = fs::read_to_string("tests/data/complete_supply_chain_test.ttl")
         .expect("Failed to read complete_supply_chain_test.ttl");
     
     let graph_name = NamedNode::new("http://provchain.org/test_graph").unwrap();
@@ -82,7 +82,7 @@ fn test_supply_chain_provenance_relationships() {
     let mut store = RDFStore::new();
     
     // Read the complete supply chain test data file
-    let turtle_data = fs::read_to_string("test_data/complete_supply_chain_test.ttl")
+    let turtle_data = fs::read_to_string("tests/data/complete_supply_chain_test.ttl")
         .expect("Failed to read complete_supply_chain_test.ttl");
     
     let graph_name = NamedNode::new("http://provchain.org/test_graph").unwrap();
