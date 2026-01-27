@@ -9,7 +9,8 @@ ProvChainOrg is a distributed blockchain system in Rust that enhances blockchain
 - **100% Test Pass Rate**: All 959 tests passing (71 test suites, 0 failures)
 - **Baseline Comparison Infrastructure**: Native ProvChain + Docker baselines (Neo4j, Jena, Ethereum) for journal publication
 - **owl2-reasoner: Zero Clippy Warnings**: Owl2-reasoner package achieves perfect clippy score (0 warnings)
-- **Main Project: 81 Low-Severity Clippy Warnings** (60% reduction from 205): Code style improvements only, no safety issues
+- **Main Project: 52 Low-Severity Clippy Warnings** (75% reduction from 205): Code style improvements only, no safety issues
+  - Latest reduction: Commit 65caf45 (36% reduction from 81 to 52 warnings)
 
 ## Technology Stack
 

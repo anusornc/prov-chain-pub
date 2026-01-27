@@ -96,65 +96,6 @@ impl AuthState {
         }
     }
 
-    /// Initialize with default users ONLY if ALLOW_DEFAULT_USERS env var is set (for development)
-    pub fn new_with_defaults() -> Self {
-        // Only allow default users in development if explicitly requested AND demo mode is on
-        if !cfg!(debug_assertions)
-            || std::env::var("PROVCHAIN_DEMO_MODE")
-                .map(|v| v != "1")
-                .unwrap_or(false)
-        {
-            eprintln!("SECURITY: Default users are disabled. Set PROVCHAIN_DEMO_MODE=1 in development to enable demo users.");
-            return Self::new();
-        }
-
-        let mut users = HashMap::new();
-
-        // DEVELOPMENT ONLY: Create default users with weak credentials
-        // This should NEVER be used in production
-        eprintln!(
-            "WARNING: Creating default development users. This should not be used in production!"
-        );
-
-        let admin_hash =
-            hash("admin123", DEFAULT_COST).unwrap_or_else(|_| "fallback_admin_hash".to_string());
-        let farmer_hash =
-            hash("farmer123", DEFAULT_COST).unwrap_or_else(|_| "fallback_farmer_hash".to_string());
-        let processor_hash = hash("processor123", DEFAULT_COST)
-            .unwrap_or_else(|_| "fallback_processor_hash".to_string());
-
-        users.insert(
-            "admin".to_string(),
-            UserInfo {
-                username: "admin".to_string(),
-                password_hash: admin_hash,
-                role: ActorRole::Admin,
-            },
-        );
-
-        users.insert(
-            "farmer1".to_string(),
-            UserInfo {
-                username: "farmer1".to_string(),
-                password_hash: farmer_hash,
-                role: ActorRole::Farmer,
-            },
-        );
-
-        users.insert(
-            "processor1".to_string(),
-            UserInfo {
-                username: "processor1".to_string(),
-                password_hash: processor_hash,
-                role: ActorRole::Processor,
-            },
-        );
-
-        Self {
-            users: Arc::new(RwLock::new(users)),
-        }
-    }
-
     /// Initialize with an admin user (for first-time setup)
     pub fn new_with_admin(
         username: String,

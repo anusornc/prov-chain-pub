@@ -340,9 +340,15 @@ mod tests {
         let blockchain = Blockchain::new();
         let enhancer = Owl2EnhancedTraceability::new(blockchain);
 
-        // This should compile and create the enhancer
         // Verify the enhancer was created successfully
-        assert!(enhancer.get_reasoner().is_some());
+        // Test that we can validate entity keys (basic functionality)
+        let test_entity = TraceableEntity::new(
+            "test_product".to_string(),
+            EntityType::Product,
+            crate::core::entity::DomainType::SupplyChain,
+        );
+        let validation_result = enhancer.validate_entity_keys(&[test_entity]);
+        assert!(validation_result.is_ok(), "Entity key validation should succeed");
     }
 
     #[test]

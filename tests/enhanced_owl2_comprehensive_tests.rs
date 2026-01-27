@@ -6,7 +6,7 @@ mod tests {
 
     #[test]
     fn test_enhanced_owl2_feature_processing() -> Result<()> {
-        let config = OwlReasonerConfig {
+        let mut config = OwlReasonerConfig {
     ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
     process_owl2_features: true,
     ..Default::default()
@@ -28,7 +28,7 @@ mod tests {
 
     #[test]
     fn test_has_key_constraint_extraction() -> Result<()> {
-        let config = OwlReasonerConfig {
+        let mut config = OwlReasonerConfig {
     ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
     process_owl2_features: true,
     ..Default::default()
@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn test_property_chain_extraction() -> Result<()> {
-        let config = OwlReasonerConfig {
+        let mut config = OwlReasonerConfig {
     ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
     process_owl2_features: true,
     enable_property_chain_inference: true,
@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn test_qualified_cardinality_extraction() -> Result<()> {
-        let config = OwlReasonerConfig {
+        let mut config = OwlReasonerConfig {
     ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
     process_owl2_features: true,
     ..Default::default()
@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_owl2_entity_validation() -> Result<()> {
-        let config = OwlReasonerConfig {
+        let mut config = OwlReasonerConfig {
     ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
     process_owl2_features: true,
     ..Default::default()
@@ -115,7 +115,7 @@ mod tests {
 
     #[test]
     fn test_owl2_property_chain_inference() -> Result<()> {
-        let config = OwlReasonerConfig {
+        let mut config = OwlReasonerConfig {
     ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
     process_owl2_features: true,
     enable_property_chain_inference: true,

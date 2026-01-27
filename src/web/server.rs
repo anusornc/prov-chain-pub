@@ -69,6 +69,10 @@ pub struct WebServer {
 
 impl WebServer {
     /// Create a new web server instance
+    ///
+    /// SECURITY: No default users are created. Users must be explicitly created
+    /// via the AuthState::create_user() method or AuthState::new_with_admin() for
+    /// first-time setup. This prevents hardcoded credentials and improves security.
     pub fn new(blockchain: Blockchain, config: Config) -> Self {
         let blockchain_arc = Arc::new(Mutex::new(blockchain.clone()));
         let websocket_state = WebSocketState::new(blockchain_arc);
@@ -76,12 +80,8 @@ impl WebServer {
 
         Self {
             app_state: AppState::new(blockchain),
-            // In debug/test builds, use default users for testing
-            auth_state: if cfg!(debug_assertions) || std::env::var("PROVCHAIN_DEMO_MODE").is_ok() {
-                AuthState::new_with_defaults()
-            } else {
-                AuthState::new()
-            },
+            // SECURITY: Use empty user database - users must be explicitly created
+            auth_state: AuthState::new(),
             websocket_state,
             event_broadcaster,
             config,

@@ -6,7 +6,7 @@ mod tests {
     #[test]
     fn test_enhanced_owl_reasoner_compilation() -> Result<()> {
         // Test that our enhanced OWL reasoner compiles correctly
-        let config = OwlReasonerConfig::default();
+        let mut config = OwlReasonerConfig::default();
         let reasoner = OwlReasoner::new(config);
         assert!(reasoner.is_ok());
 
@@ -16,7 +16,7 @@ mod tests {
     #[test]
     fn test_owl2_feature_flags() -> Result<()> {
         // Test that OWL2 feature flags are properly configured
-        let config = OwlReasonerConfig {
+        let mut config = OwlReasonerConfig {
     process_owl2_features: true,
     ..Default::default()
 };
