@@ -901,9 +901,74 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "SPARQL syntax issues need to be fixed"]
     fn test_validate_graph_with_missing_required_property() {
-        // This test is currently failing due to SPARQL syntax issues
-        // TODO: Fix SPARQL syntax and enable this test
+        // Test SHACL validation with data missing a required property
+        use crate::storage::rdf_store::RDFStore;
+
+        let mut validator = ShaclValidator::new(ShaclConfig {
+            enabled: true,
+            ..Default::default()
+        })
+        .unwrap();
+
+        // Define SHACL shape with required property
+        let shapes_data = r#"
+            @prefix sh: <http://www.w3.org/ns/shacl#> .
+            @prefix ex: <http://example.org/> .
+            @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+            ex:TestShape
+                a sh:NodeShape ;
+                sh:targetClass ex:TestEntity ;
+                sh:property [
+                    sh:path ex:requiredProperty ;
+                    sh:minCount 1 ;
+                    sh:datatype xsd:string ;
+                ] .
+        "#;
+
+        let result = validator.load_shapes_from_string(shapes_data);
+        assert!(result.is_ok(), "Shapes should load successfully");
+
+        // Create RDF store for test data
+        let mut rdf_store = RDFStore::new();
+        let graph = oxigraph::model::NamedNode::new("http://example.org/test").unwrap();
+
+        // Create test RDF data with missing required property
+        let test_data = r#"
+            @prefix ex: <http://example.org/> .
+
+            ex:entity1 a ex:TestEntity .
+        "#;
+
+        // Load the test data into the RDF store
+        rdf_store.add_rdf_to_graph(test_data, &graph);
+
+        // Validate the graph - should detect missing required property
+        let validation_result = validator.validate_graph(&rdf_store.store, &graph);
+
+        // The validation should complete without error
+        assert!(validation_result.is_ok(), "Validation should complete successfully");
+
+        let result = validation_result.unwrap();
+
+        // The data should NOT conform (missing required property)
+        assert!(!result.conforms, "Data with missing required property should not conform");
+
+        // Should have validation errors
+        assert!(!result.errors.is_empty(), "Should have validation errors for missing property");
+
+        // At least one error should mention the missing property or minimum count
+        let error_text = result
+            .errors
+            .iter()
+            .map(|e| e.message.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert!(
+            error_text.contains("requiredProperty") || error_text.contains("minCount") || error_text.to_lowercase().contains("required"),
+            "Error should mention the missing property. Got: {}",
+            error_text
+        );
     }
 }

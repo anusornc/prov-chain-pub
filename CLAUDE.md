@@ -111,6 +111,7 @@ sudo docker compose -f docker-compose.baselines-only.yml down
 
 ### Core Modules
 - `src/core/` - Blockchain state and block management with Ed25519 signing
+  - **DEPRECATED**: `src/ontology/processor.rs` is not maintained (use `src/semantic/owl_reasoner.rs`, `src/semantic/shacl_validator.rs`, or `src/semantic/owl2_enhanced_reasoner.rs`)
 - `src/network/` - P2P networking and consensus (PoA/PBFT)
 - `src/semantic/` - OWL2 reasoning and SHACL validation
   - `owl2_enhanced_reasoner.rs` - Full OWL2 feature support (hasKey, property chains, qualified cardinality)
@@ -123,13 +124,18 @@ sudo docker compose -f docker-compose.baselines-only.yml down
 - `src/interop/` - Cross-chain bridge implementation
 - `src/web/` - REST API handlers with JWT auth
   - `server.rs` - Axum-based web server with comprehensive security headers
+  - `auth.rs` - JWT authentication with secure user management
   - Security headers: CSP, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy
   - CORS configuration with origin whitelisting
   - WebSocket support for real-time blockchain events
   - Static file serving from `src/web/static/`
-  - Default test users in debug/demo mode (admin/admin123, farmer1/farmer123, processor1/processor123)
+  - **SECURITY**: No default users - must be explicitly created via `AuthState::create_user()` or `AuthState::new_with_admin()`
 - `src/knowledge_graph/` - Graph algorithms for traceability
-- `src/analytics/` - Performance monitoring and metrics
+- `src/semantic/` - OWL2 reasoning and SHACL validation
+  - `owl2_traceability.rs` - Enhanced traceability using owl2-reasoner for property chain inference and OWL2 reasoning
+- `src/analytics/` - Performance monitoring and predictive analytics
+  - `predictive.rs` - Demand forecasting with configurable `ForecastingConfig` (base_demand, growth_rate, noise_amplitude, confidence_interval_pct, seasonal_amplitude)
+  - Research-reproducible models with explicit historical data loading via `load_historical_data()`
 - `src/config/mod.rs` - Basic configuration module with TOML support
   - `Config` - Basic configuration with network, consensus, storage, logging, web, and ontology settings
   - `CorsConfig` - CORS configuration with origin whitelisting (debug mode: localhost:5173-5175, production: env var or restrictive default)
@@ -203,8 +209,8 @@ The main binary provides a comprehensive CLI interface organized into functional
 
 ### Configuration
 - `config/config.toml` - Node configuration (consensus type, network settings, storage, web server, CORS)
-  - Development mode includes default JWT secret (for demo/testing only)
-  - Production: Override with `JWT_SECRET` environment variable for secure authentication
+  - **SECURITY**: JWT secret must be set via `JWT_SECRET` environment variable (min 32 characters)
+  - No hardcoded secrets allowed in config files for production security
   - Network configuration: peers, ports, timeouts, connection limits
   - Consensus settings: authority mode, block interval, size limits
   - Storage: persistent RDF store with configurable cache size
@@ -238,17 +244,17 @@ The main binary provides a comprehensive CLI interface organized into functional
 
 ### Security
 - JWT-based API authentication (`jsonwebtoken` crate)
+  - **No hardcoded secrets**: JWT_SECRET must be set via environment variable (min 32 chars)
+  - No default test users - must be explicitly created via API
+  - Secure password hashing with bcrypt and validation
 - Ed25519 digital signatures for consensus and block validation
   - Each blockchain instance has a unique signing key (`SigningKey`)
   - Public key stored as hex-encoded `validator_public_key` for verification
   - Blocks signed with `signing_key.sign(block.hash.as_bytes())`
   - Signature verification via `Verifier::verify()` before adding blocks
+  - Key rotation tracking: `last_key_rotation` timestamp, `key_rotation_interval_days` (90-day default)
 - ChaCha20-Poly1305 for private data encryption
 - Argon2 for password-based key derivation in wallet encryption
-- Key rotation tracking with 90-day recommended interval
-  - `should_rotate_key()` - Check if key needs rotation
-  - `days_since_key_rotation()` - Monitor key age
-  - Placeholder for `rotate_signing_key()` (requires blockchain consensus)
 - RDF canonicalization for tamper-evident block hashing
   - Hash calculation uses `calculate_hash_with_store()` for RDF data
   - Combines metadata with canonicalized RDF hash for integrity
@@ -278,6 +284,8 @@ The main binary provides a comprehensive CLI interface organized into functional
 - `tests/production_security_tests.rs` - Production security test suite (JWT validation, rate limiting, GDPR compliance, security policies)
 - `tests/websocket_integration_tests.rs` - WebSocket integration tests (connection management, event broadcasting, multi-client scenarios)
 - `tests/owl2_feature_tests.rs` - OWL2 feature integration tests (hasKey constraints, property chains, qualified cardinality)
+- `tests/enhanced_owl2_comprehensive_tests.rs` - Comprehensive OWL2 feature processing tests
+- `tests/owl2_generic_traceability_tests.rs` - Generic traceability tests with OWL2 reasoning
 - `tests/shacl_validation_tests.rs` - SHACL validation tests (conformance, required properties, datatype validation)
 
 ### owl2-reasoner Sub-Project
@@ -334,8 +342,7 @@ cargo test --workspace
 - See `deploy/` directory for all deployment options
 
 ### Environment Variables
-- `JWT_SECRET` - Required for API authentication (32+ chars)
-- `PROVCHAIN_DEMO_MODE` - Enables default test users for web server (admin/admin123, farmer1/farmer123, processor1/processor123)
+- `JWT_SECRET` - **Required** for API authentication (32+ chars, no hardcoded fallback)
 - `PROVCHAIN_NETWORK_ID` - Override network identifier
 - `PROVCHAIN_PORT` - Override listen port
 - `PROVCHAIN_PEERS` - Comma-separated list of bootstrap peers
