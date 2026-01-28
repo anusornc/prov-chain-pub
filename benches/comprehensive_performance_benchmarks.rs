@@ -451,8 +451,9 @@ fn process_transaction_batches(blockchain: &mut Blockchain, volume: usize) {
 
         processed += current_batch;
 
-        // Simulate realistic processing delays
-        std::thread::sleep(Duration::from_micros(100));
+        // REMOVED: Artificial delay for accurate benchmarking
+// Previous code simulated processing delays (100μs) which invalidates performance measurements
+// Real workloads should have natural delays from actual I/O and computation
     }
 }
 
@@ -484,8 +485,9 @@ async fn simulate_concurrent_api_load(server: Arc<WebServer>, users: usize) {
                     }
                 }
 
-                // Simulate user think time
-                tokio::time::sleep(Duration::from_millis(50)).await;
+                // REMOVED: Artificial "think time" for accurate benchmarking
+// Previous code simulated 50ms user think time which invalidates concurrent load measurements
+// Real concurrent workloads should measure actual API throughput without artificial delays
             }
         });
 
@@ -1281,8 +1283,9 @@ cross:hasCrossDomainStandard a owl:ObjectProperty .
 // Failure Simulation Functions
 
 fn simulate_network_partition(blockchain: &mut Blockchain, _test_env: TestEnvironment) {
-    // Simulate network partition effects
-    std::thread::sleep(Duration::from_millis(100));
+    // REMOVED: Artificial network partition delay (100ms) for accurate benchmarking
+    // Previous code simulated partition effects with sleep, which invalidates recovery time measurements
+    // Real network partitions should be tested with actual network isolation, not artificial delays
 
     // Continue processing during partition
     let transactions = generate_transaction_batch(10);
