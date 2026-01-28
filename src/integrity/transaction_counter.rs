@@ -75,7 +75,7 @@ impl TransactionCountValidator {
     pub fn count_transactions_in_block(&self, block: &Block) -> Result<TransactionCountDetails> {
         let mut details = TransactionCountDetails {
             block_index: block.index,
-            reported_count: 1, // Current hardcoded logic: 1 transaction per block
+            reported_count: 0, // Calculated below from actual RDF content (not hardcoded)
             actual_triple_count: 0,
             rdf_parsing_errors: Vec::new(),
         };
@@ -84,6 +84,7 @@ impl TransactionCountValidator {
             match self.parse_rdf_content_for_transactions(&block.data) {
                 Ok(count) => {
                     details.actual_triple_count = count;
+                    details.reported_count = count; // Use actual count instead of hardcoded
                     if self.verbose_logging {
                         debug!(
                             "Block {}: parsed {} triples from RDF content",
