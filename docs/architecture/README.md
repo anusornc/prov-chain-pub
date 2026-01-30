@@ -12,12 +12,15 @@ This directory contains comprehensive architecture documentation for ProvChainOr
 
 ### Quick Navigation
 
-| Document | Level | Description |
-|----------|-------|-------------|
-| [System Context](./SYSTEM_CONTEXT.md) | C4 Level 1 | High-level system context, stakeholders, external systems |
-| [Container Architecture](./CONTAINER_ARCHITECTURE.md) | C4 Level 2 | Container/service architecture and deployment |
-| [Component Architecture](./COMPONENT_ARCHITECTURE.md) | C4 Level 3 | Detailed component design and interactions |
-| [ADR/](./ADR/) | Decision Records | Historical architectural decisions |
+| Document | Level | Description | Status |
+|----------|-------|-------------|--------|
+| [System Context](./SYSTEM_CONTEXT.md) | C4 Level 1 | High-level system context, stakeholders, external systems | ✅ Complete |
+| [Container Architecture](./CONTAINER_ARCHITECTURE.md) | C4 Level 2 | Container/service architecture and deployment | ✅ Complete |
+| [Component Architecture](./COMPONENT_ARCHITECTURE.md) | C4 Level 3 | Detailed component design and interactions | ⏳ Planned |
+| [Data Flow Architecture](./DATA_FLOW_ARCHITECTURE.md) | Supporting | Transaction and query flows | ✅ Complete |
+| [Security Architecture](./SECURITY_ARCHITECTURE.md) | Supporting | Security layers and threat model | ✅ Complete |
+| [Integration Architecture](./INTEGRATION_ARCHITECTURE.md) | Supporting | External system integrations | ✅ Complete |
+| [ADR/](./ADR/) | Decision Records | Historical architectural decisions | ✅ Expanded (7 ADRs) |
 
 ---
 
@@ -60,11 +63,27 @@ This directory contains comprehensive architecture documentation for ProvChainOr
 
 ### ADR Index
 
-| ID | Title | Status | Date |
-|----|-------|--------|------|
-| 0001 | Use Rust for Blockchain Core | Accepted | 2024-01-15 |
-| 0002 | Use Oxigraph for RDF Storage | Accepted | 2024-01-15 |
-| 0003 | Embed RDF Graphs in Blockchain Blocks | Accepted | 2024-01-15 |
+| ID | Title | Status | Date | Topic |
+|----|-------|--------|------|-------|
+| **Core Technology** |||||
+| [0001](./ADR/0001-use-rust-for-blockchain-core.md) | Use Rust for Blockchain Core | Accepted | 2024-01-15 | Language |
+| [0002](./ADR/0002-use-oxigraph-rdf-store.md) | Use Oxigraph for RDF Storage | Accepted | 2024-01-15 | RDF store |
+| [0003](./ADR/0003-embedded-rdf-blocks.md) | Embed RDF Graphs in Blockchain Blocks | Accepted | 2024-01-15 | Data structure |
+| **Cryptography & Security** |||||
+| [0004](./ADR/0004-use-ed25519-signatures.md) | Use Ed25519 for Digital Signatures | Accepted | 2026-01-28 | Signatures ✨ NEW |
+| [0005](./ADR/0005-use-chacha20-encryption.md) | Use ChaCha20-Poly1305 for Data Encryption | Accepted | 2026-01-28 | Encryption ✨ NEW |
+| **Consensus & Networking** |||||
+| [0006](./ADR/0006-dual-consensus-protocol.md) | Implement Dual Consensus (PoA/PBFT) | Accepted | 2026-01-28 | Consensus ✨ NEW |
+| [0007](./ADR/0007-websocket-p2p-protocol.md) | Use WebSocket for P2P Communication | Accepted | 2026-01-28 | P2P ✨ NEW |
+| **Application & Integration** |||||
+| [0009](./ADR/0009-jwt-authentication.md) | Use JWT for API Authentication | Accepted | 2026-01-28 | Authentication ✨ NEW |
+| [0010](./ADR/0010-owner-controlled-visibility.md) | Implement Owner-Controlled Data Visibility | Proposed | 2026-01-28 | Privacy |
+| [0011](./ADR/0011-use-axum-framework.md) | Use Axum Web Framework | Proposed | 2026-01-28 | Web Framework |
+| [0012](./ADR/0012-shacl-validation.md) | Implement SHACL Validation | Proposed | 2026-01-28 | Validation |
+| **Observability** |||||
+| [0013](./ADR/0013-monitoring-stack.md) | Use Prometheus + Grafana for Monitoring | Accepted | 2026-01-28 | Monitoring ✨ NEW |
+| **Semantic & Data** |||||
+| [0008](./ADR/0008-rdf-canonicalization.md) | Implement RDF Canonicalization for Deterministic Hashing | Proposed | 2026-01-28 | Hashing |
 
 ---
 
