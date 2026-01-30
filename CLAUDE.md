@@ -79,6 +79,9 @@ cargo bench
 # Run specific test suites
 cargo test --test load_tests --release
 
+# Run persistence demo
+cargo run --bin persistence_demo
+
 # Run portable benchmark toolkit (Docker-based)
 cd benchmark-toolkit && ./run.sh
 
@@ -121,6 +124,9 @@ sudo docker compose -f docker-compose.baselines-only.yml down
   - `transaction_counter.rs` - RDF parsing-based accurate transaction counting
   - `blockchain_validator.rs` - Chain reconstruction, hash integrity, corruption detection
   - `sparql_validator.rs` - SPARQL query validation and graph consistency
+- `src/transaction/` - Transaction-based blockchain operations
+  - `blockchain.rs` - `TransactionBlockchain` with wallet manager, transaction pool, UTXO set, persistent storage
+  - Encrypted payload aggregation, transaction indexing, batch block creation
 - `src/interop/` - Cross-chain bridge implementation
 - `src/web/` - REST API handlers with JWT auth
   - `server.rs` - Axum-based web server with comprehensive security headers
@@ -176,6 +182,7 @@ sudo docker compose -f docker-compose.baselines-only.yml down
   - Domain-specific demo data generation: uht_manufacturing, automotive, pharmaceutical, healthcare, generic
   - Ontology-aware blockchain initialization with persistent storage
 - `owl2-integration-test` (src/bin/owl2_integration_test.rs) - Ontology integration tests
+- `persistence_demo` (examples/persistence_demo.rs) - Persistent storage demo with backup/restore, integrity checks, trace queries
 
 ### CLI Command Structure
 The main binary provides a comprehensive CLI interface organized into functional categories:
@@ -234,8 +241,12 @@ The main binary provides a comprehensive CLI interface organized into functional
 
 ### Storage
 - Hybrid storage: RDF triples (public) + encrypted triples (private)
-- Persistent via `src/storage/` module
-- Oxigraph as RDF store backend
+- Persistent via `src/storage/` module with `StorageConfig`
+  - `flush_interval`: Blocks to batch before disk flush (default: 1, increase to 10-100 for reduced I/O)
+  - `enable_backup`, `backup_interval_hours`, `max_backup_files`: Backup configuration
+  - `enable_compression`, `enable_encryption`: Optional data protection
+  - `cache_size`, `warm_cache_on_startup`: LRU memory cache configuration
+- Oxigraph as RDF store backend with RDFC-1.0 canonicalization support
 
 ### Consensus
 - Trait-based consensus manager in `src/network/consensus.rs`
@@ -287,6 +298,9 @@ The main binary provides a comprehensive CLI interface organized into functional
 - `tests/enhanced_owl2_comprehensive_tests.rs` - Comprehensive OWL2 feature processing tests
 - `tests/owl2_generic_traceability_tests.rs` - Generic traceability tests with OWL2 reasoning
 - `tests/shacl_validation_tests.rs` - SHACL validation tests (conformance, required properties, datatype validation)
+- `tests/backup_restore_test.rs` - Backup/restore functionality tests (corruption handling, missing files, max_backups limit)
+- `tests/persistence_integration_tests.rs` - Persistence workflow tests (memory cache, backup/restore cycles, integrity verification)
+- `tests/transaction_pipeline_profile.rs` - Transaction pipeline profiling (flush_interval batching performance, TPS measurements)
 
 ### owl2-reasoner Sub-Project
 The project includes `owl2-reasoner` as a workspace member - a high-performance OWL2 reasoning engine.

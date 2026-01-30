@@ -93,6 +93,9 @@ pub struct StorageConfig {
     pub enable_encryption: bool,
     pub cache_size: usize,
     pub warm_cache_on_startup: bool,
+    /// Number of blocks to batch before flushing to disk (default: 1 = flush every block)
+    /// Set to higher values (e.g., 10, 50, 100) to reduce I/O overhead
+    pub flush_interval: u64,
 }
 
 impl Default for StorageConfig {
@@ -106,6 +109,7 @@ impl Default for StorageConfig {
             enable_encryption: false,
             cache_size: 1000, // Default cache size for 1000 graphs
             warm_cache_on_startup: false,
+            flush_interval: 1, // Default: flush after every block (conservative default for safety)
         }
     }
 }
@@ -189,6 +193,8 @@ pub struct RDFStore {
     pub config: StorageConfig,
     pub is_persistent: bool,
     pub memory_cache: Option<RDFMemoryCache>,
+    /// Counter to track blocks added since last disk flush
+    blocks_since_flush: std::sync::atomic::AtomicU64,
 }
 
 impl std::fmt::Debug for RDFStore {
@@ -220,6 +226,7 @@ impl Clone for RDFStore {
                     config: self.config.clone(),
                     is_persistent: false,
                     memory_cache: None,
+                    blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
                 };
             }
         };
@@ -240,6 +247,7 @@ impl Clone for RDFStore {
             } else {
                 None
             },
+            blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
         }
     }
 }
@@ -263,6 +271,7 @@ impl RDFStore {
             } else {
                 None
             },
+            blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
         }
     }
 
@@ -292,6 +301,7 @@ impl RDFStore {
             } else {
                 None
             },
+            blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
         };
 
         // Try to load existing data
@@ -329,6 +339,7 @@ impl RDFStore {
             } else {
                 None
             },
+            blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
         };
 
         // Try to load existing data
@@ -439,7 +450,27 @@ impl RDFStore {
     }
 
     /// Save RDF data to disk using N-Quads format (supports datasets with named graphs)
-    pub fn save_to_disk(&self) -> Result<()> {
+    /// With batching: only flushes to disk when blocks_since_flush reaches flush_interval
+    pub fn save_to_disk(&mut self) -> Result<()> {
+        if !self.is_persistent {
+            return Ok(());
+        }
+
+        // Increment counter and check if we should flush
+        let count = self.blocks_since_flush.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+
+        // Only flush to disk when we reach the flush interval
+        if count < self.config.flush_interval {
+            return Ok(());
+        }
+
+        // Reset counter and perform actual flush
+        self.blocks_since_flush.store(0, std::sync::atomic::Ordering::Relaxed);
+        self.force_flush()
+    }
+
+    /// Force immediate flush to disk, regardless of flush_interval
+    pub fn force_flush(&self) -> Result<()> {
         if !self.is_persistent {
             return Ok(());
         }
@@ -479,7 +510,7 @@ impl RDFStore {
                 error!("Failed to serialize to N-Quads format: {}", e);
 
                 // As a fallback, save error information
-                let error_content = format!("# RDF dataset serialization failed\n# N-Quads error: {}\n# Store contains {} quads\n# Note: RocksDB backend provides persistence automatically\n", 
+                let error_content = format!("# RDF dataset serialization failed\n# N-Quads error: {}\n# Store contains {} quads\n# Note: RocksDB backend provides persistence automatically\n",
                                            e, self.store.len().unwrap_or(0));
                 std::fs::write(&data_file, error_content).with_context(|| {
                     format!("Failed to write error file: {}", data_file.display())
@@ -774,6 +805,7 @@ impl RDFStore {
             } else {
                 None
             },
+            blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
         };
 
         // Load the restored data
@@ -951,7 +983,9 @@ pub struct IntegrityReport {
 
 impl RDFStore {
     pub fn add_rdf_to_graph(&mut self, rdf_data: &str, graph_name: &NamedNode) {
-        // Try to parse as RDF using a temporary store, if it fails, treat as plain text and create a simple triple
+        // Create a temporary store for parsing this RDF data
+        // Note: Reusing a temp_store would require efficient clearing, which is complex
+        // The overhead of Store::new() is acceptable for typical block sizes
         let temp_store = match Store::new() {
             Ok(store) => store,
             Err(e) => {
@@ -959,6 +993,7 @@ impl RDFStore {
                 return;
             }
         };
+
         let reader = Cursor::new(rdf_data.as_bytes());
 
         match temp_store.load_from_reader(RdfFormat::Turtle, reader) {

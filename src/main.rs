@@ -596,6 +596,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 enable_encryption: false,
                 cache_size: 1000, // Default
                 warm_cache_on_startup: false,
+                flush_interval: 1, // Default: flush after every block (conservative for production)
             };
 
             let blockchain = Arc::new(RwLock::new(

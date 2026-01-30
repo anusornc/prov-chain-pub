@@ -22,6 +22,7 @@ fn main() -> anyhow::Result<()> {
         enable_encryption: false,
         cache_size: 1000,
         warm_cache_on_startup: true,
+        flush_interval: 1,
     };
 
     println!("1. Creating persistent RDF store...");
