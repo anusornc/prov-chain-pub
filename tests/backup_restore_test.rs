@@ -20,6 +20,7 @@ fn test_backup_restore_functionality() {
         enable_encryption: false,
         cache_size: 100,
         warm_cache_on_startup: true,
+        flush_interval: 1,
     };
 
     // Create a persistent blockchain
@@ -86,6 +87,7 @@ fn test_backup_restore_with_corrupted_backup() {
         enable_encryption: false,
         cache_size: 100,
         warm_cache_on_startup: true,
+        flush_interval: 1,
     };
 
     // Create blockchain and add data
@@ -148,6 +150,7 @@ fn test_backup_list_and_management() {
         enable_encryption: false,
         cache_size: 100,
         warm_cache_on_startup: true,
+        flush_interval: 1,
     };
 
     let mut blockchain = Blockchain::new_persistent_with_config(config.clone()).unwrap();
@@ -196,6 +199,7 @@ fn test_backup_with_max_backups_limit() {
         enable_encryption: false,
         cache_size: 100,
         warm_cache_on_startup: true,
+        flush_interval: 1,
     };
 
     let mut blockchain = Blockchain::new_persistent_with_config(config).unwrap();
@@ -237,6 +241,7 @@ fn test_backup_restore_with_large_blockchain() {
         enable_encryption: false,
         cache_size: 100,
         warm_cache_on_startup: true,
+        flush_interval: 1,
     };
 
     let mut blockchain = Blockchain::new_persistent_with_config(config).unwrap();

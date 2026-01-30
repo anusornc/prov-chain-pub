@@ -791,7 +791,7 @@ ex:transport_{} a trace:TransportActivity ;
     }
 
     /// Save blockchain state to disk
-    pub fn save_to_disk(&self) -> Result<()> {
+    pub fn save_to_disk(&mut self) -> Result<()> {
         self.blockchain.rdf_store.save_to_disk()
     }
 }

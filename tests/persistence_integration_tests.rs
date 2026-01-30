@@ -17,6 +17,7 @@ fn test_full_persistence_workflow() {
         enable_encryption: false,
         cache_size: 1000,
         warm_cache_on_startup: true,
+        flush_interval: 1,
     };
 
     // Create and populate RDF store
