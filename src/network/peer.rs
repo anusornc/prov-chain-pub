@@ -7,8 +7,10 @@
 use anyhow::Result;
 use futures_util::{stream::SplitSink, SinkExt, StreamExt};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc;
+use tokio::time::timeout;
 use tokio_tungstenite::{
     accept_async, connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream,
 };
@@ -17,12 +19,20 @@ use uuid::Uuid;
 
 use super::messages::{P2PMessage, PeerInfo};
 
+/// Maximum number of pending messages per peer connection.
+/// When this limit is reached, backpressure will be applied.
+const MAX_PENDING_MESSAGES: usize = 1000;
+
+/// Timeout for WebSocket operations to prevent hung connections.
+/// If no message is received/sent within this time, the connection is closed.
+const WEBSOCKET_TIMEOUT: Duration = Duration::from_secs(60);
+
 /// Represents a connection to a peer node
 pub struct PeerConnection {
     /// Information about the peer
     pub info: PeerInfo,
-    /// Channel for sending messages to the peer
-    pub sender: mpsc::UnboundedSender<P2PMessage>,
+    /// Channel for sending messages to the peer (bounded for backpressure)
+    pub sender: mpsc::Sender<P2PMessage>,
     /// Handle to the connection task
     pub task_handle: tokio::task::JoinHandle<()>,
 }
@@ -40,7 +50,8 @@ impl PeerConnection {
         ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
         message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
     ) -> Result<Self> {
-        let (sender, receiver) = mpsc::unbounded_channel();
+        // Use bounded channel to apply backpressure and prevent unbounded memory growth
+        let (sender, receiver) = mpsc::channel(MAX_PENDING_MESSAGES);
         let connection = WebSocketConnection::Client(ws_stream);
 
         let task_handle = tokio::spawn(Self::connection_task(
@@ -63,7 +74,8 @@ impl PeerConnection {
         ws_stream: WebSocketStream<TcpStream>,
         message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
     ) -> Result<Self> {
-        let (sender, receiver) = mpsc::unbounded_channel();
+        // Use bounded channel to apply backpressure and prevent unbounded memory growth
+        let (sender, receiver) = mpsc::channel(MAX_PENDING_MESSAGES);
         let connection = WebSocketConnection::Server(ws_stream);
 
         let task_handle = tokio::spawn(Self::connection_task(
@@ -81,10 +93,14 @@ impl PeerConnection {
     }
 
     /// Send a message to the peer
+    ///
+    /// This method is async and will wait if the channel is full (backpressure).
+    /// Returns an error if the channel is closed (peer disconnected).
     pub async fn send_message(&self, message: P2PMessage) -> Result<()> {
         self.sender
             .send(message)
-            .map_err(|_| anyhow::anyhow!("Failed to send message to peer {}", self.info.node_id))?;
+            .await
+            .map_err(|_| anyhow::anyhow!("Failed to send message to peer {}: channel closed", self.info.node_id))?;
         Ok(())
     }
 
@@ -92,7 +108,7 @@ impl PeerConnection {
     async fn connection_task(
         peer_id: Uuid,
         connection: WebSocketConnection,
-        message_receiver: mpsc::UnboundedReceiver<P2PMessage>,
+        message_receiver: mpsc::Receiver<P2PMessage>,
         message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
     ) {
         debug!("Starting connection task for peer {}", peer_id);
@@ -113,7 +129,7 @@ impl PeerConnection {
     async fn handle_connection_loop<S>(
         peer_id: Uuid,
         ws: WebSocketStream<S>,
-        mut message_receiver: mpsc::UnboundedReceiver<P2PMessage>,
+        mut message_receiver: mpsc::Receiver<P2PMessage>,
         message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
     ) where
         S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
@@ -122,13 +138,20 @@ impl PeerConnection {
 
         loop {
             tokio::select! {
-                // Handle outgoing messages
+                // Handle outgoing messages with timeout
                 message = message_receiver.recv() => {
                     match message {
                         Some(msg) => {
-                            if let Err(e) = Self::send_websocket_message_generic(&mut ws_sender, msg).await {
-                                error!("Failed to send message to peer {}: {}", peer_id, e);
-                                break;
+                            match timeout(WEBSOCKET_TIMEOUT, Self::send_websocket_message_generic(&mut ws_sender, msg)).await {
+                                Ok(Ok(())) => {},
+                                Ok(Err(e)) => {
+                                    error!("Failed to send message to peer {}: {}", peer_id, e);
+                                    break;
+                                }
+                                Err(_) => {
+                                    warn!("Timeout sending message to peer {}", peer_id);
+                                    break;
+                                }
                             }
                         }
                         None => {
@@ -138,10 +161,10 @@ impl PeerConnection {
                     }
                 }
 
-                // Handle incoming messages
-                ws_message = ws_receiver.next() => {
+                // Handle incoming messages with timeout
+                ws_message = timeout(WEBSOCKET_TIMEOUT, ws_receiver.next()) => {
                     match ws_message {
-                        Some(Ok(Message::Text(text))) => {
+                        Ok(Some(Ok(Message::Text(text)))) => {
                             match P2PMessage::from_bytes(text.as_bytes()) {
                                 Ok(message) => {
                                     debug!("Received {} from peer {}", message.message_type(), peer_id);
@@ -152,7 +175,7 @@ impl PeerConnection {
                                 }
                             }
                         }
-                        Some(Ok(Message::Binary(data))) => {
+                        Ok(Some(Ok(Message::Binary(data)))) => {
                             match P2PMessage::from_bytes(&data) {
                                 Ok(message) => {
                                     debug!("Received {} from peer {}", message.message_type(), peer_id);
@@ -163,29 +186,40 @@ impl PeerConnection {
                                 }
                             }
                         }
-                        Some(Ok(Message::Close(_))) => {
+                        Ok(Some(Ok(Message::Close(_)))) => {
                             info!("Peer {} closed connection", peer_id);
                             break;
                         }
-                        Some(Ok(Message::Ping(data))) => {
-                            if let Err(e) = ws_sender.send(Message::Pong(data)).await {
-                                error!("Failed to send pong to peer {}: {}", peer_id, e);
-                                break;
+                        Ok(Some(Ok(Message::Ping(data)))) => {
+                            match timeout(WEBSOCKET_TIMEOUT, ws_sender.send(Message::Pong(data))).await {
+                                Ok(Ok(())) => {},
+                                Ok(Err(e)) => {
+                                    error!("Failed to send pong to peer {}: {}", peer_id, e);
+                                    break;
+                                }
+                                Err(_) => {
+                                    warn!("Timeout sending pong to peer {}", peer_id);
+                                    break;
+                                }
                             }
                         }
-                        Some(Ok(Message::Pong(_))) => {
+                        Ok(Some(Ok(Message::Pong(_)))) => {
                             // Handle pong if needed for connection health
                         }
-                        Some(Ok(Message::Frame(_))) => {
+                        Ok(Some(Ok(Message::Frame(_)))) => {
                             // Handle raw frames if needed
                             debug!("Received raw frame from peer {}", peer_id);
                         }
-                        Some(Err(e)) => {
+                        Ok(Some(Err(e))) => {
                             error!("WebSocket error with peer {}: {}", peer_id, e);
                             break;
                         }
-                        None => {
+                        Ok(None) => {
                             info!("WebSocket stream ended for peer {}", peer_id);
+                            break;
+                        }
+                        Err(_) => {
+                            warn!("WebSocket read timeout for peer {} (no activity for {}s)", peer_id, WEBSOCKET_TIMEOUT.as_secs());
                             break;
                         }
                     }

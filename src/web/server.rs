@@ -73,27 +73,36 @@ impl WebServer {
     /// SECURITY: No default users are created. Users must be explicitly created
     /// via the AuthState::create_user() method or AuthState::new_with_admin() for
     /// first-time setup. This prevents hardcoded credentials and improves security.
-    pub fn new(blockchain: Blockchain, config: Config) -> Self {
+    ///
+    /// # Errors
+    /// Returns an error if the app state (wallet manager) fails to initialize
+    pub fn new(blockchain: Blockchain, config: Config) -> anyhow::Result<Self> {
         let blockchain_arc = Arc::new(Mutex::new(blockchain.clone()));
         let websocket_state = WebSocketState::new(blockchain_arc);
         let event_broadcaster = BlockchainEventBroadcaster::new(websocket_state.clone());
 
-        Self {
-            app_state: AppState::new(blockchain),
+        let app_state = AppState::new(blockchain)
+            .map_err(|e| anyhow::anyhow!("Failed to initialize app state: {}", e))?;
+
+        Ok(Self {
+            app_state,
             // SECURITY: Use empty user database - users must be explicitly created
             auth_state: AuthState::new(),
             websocket_state,
             event_broadcaster,
             config,
-        }
+        })
     }
 
     /// Create a new web server with a specific port (helper for tests/benchmarks)
+    ///
+    /// # Panics
+    /// Panics if the web server fails to initialize
     pub fn new_with_port(port: u16) -> Self {
         let mut config = Config::default();
         config.web.port = port;
         let blockchain = Blockchain::new();
-        Self::new(blockchain, config)
+        Self::new(blockchain, config).expect("Failed to create web server")
     }
 
     /// Access the underlying blockchain (for tests/benchmarks)
@@ -328,7 +337,8 @@ pub async fn create_web_server(
     config: Option<Config>,
 ) -> Result<WebServer, anyhow::Error> {
     let server_config = config.unwrap_or_else(|| Config::load_or_default("config/config.toml"));
-    let server = WebServer::new(blockchain, server_config.clone());
+    let server = WebServer::new(blockchain, server_config.clone())
+        .map_err(|e| anyhow::anyhow!("Failed to create web server: {}", e))?;
 
     info!("Web server configured on port {}", server_config.web.port);
     Ok(server)
@@ -343,7 +353,7 @@ mod tests {
     async fn test_server_creation() {
         let blockchain = Blockchain::new();
         let config = Config::default();
-        let server = WebServer::new(blockchain, config);
+        let server = WebServer::new(blockchain, config).expect("Failed to create server");
         assert_eq!(server.port(), 8080);
     }
 }
