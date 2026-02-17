@@ -1,5 +1,5 @@
 use crate::trace_optimization::EnhancedTraceResult;
-use crate::web::handlers::utils::validate_sparql_query;
+use crate::web::handlers::utils::{validate_sparql_identifier, validate_sparql_local_name, validate_sparql_query};
 use crate::web::handlers::AppState;
 use crate::web::models::{
     AnalyticsQueryParams, ApiError, BlockInfo, EnhancedTraceQueryParams, EnvironmentalData,
@@ -9,8 +9,7 @@ use crate::web::models::{
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    Json,
-    Extension,
+    Extension, Json,
 };
 use chrono::Utc;
 use oxigraph::model::{NamedNode, Subject, Term};
@@ -362,10 +361,25 @@ pub async fn get_products(
 
     // Add filters if provided
     if let Some(product_type) = &params.product_type {
-        sparql_query = sparql_query.replace(
-            "?product a ?type .",
-            &format!("?product a <http://provchain.org/trace#{}>", product_type),
-        );
+        // Validate product_type to prevent SPARQL injection
+        match validate_sparql_local_name(product_type) {
+            Ok(()) => {
+                sparql_query = sparql_query.replace(
+                    "?product a ?type .",
+                    &format!("?product a <http://provchain.org/trace#{}>", product_type),
+                );
+            }
+            Err(e) => {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        error: "invalid_product_type".to_string(),
+                        message: format!("Invalid product type: {}", e),
+                        timestamp: Utc::now(),
+                    }),
+                ));
+            }
+        }
     }
 
     // Execute SPARQL query
@@ -463,39 +477,45 @@ pub async fn get_product_by_id(
     Extension(claims): Extension<UserClaims>,
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
-    // let blockchain = app_state.blockchain.read().await; // Moved down to limit scope
+    // Validate product_id to prevent SPARQL injection
+    let validated_product_id = match validate_sparql_identifier(&product_id) {
+        Ok(node) => node,
+        Err(e) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    error: "invalid_product_id".to_string(),
+                    message: format!("Invalid product ID: {}", e),
+                    timestamp: Utc::now(),
+                }),
+            ));
+        }
+    };
+
+    let product_id_str = validated_product_id.as_str();
 
     let (mut product, encrypted_info) = {
         let blockchain = app_state.blockchain.read().await;
 
-        // Build SPARQL query to get specific product
+        // Build SPARQL query to get specific product (using validated identifier)
         let sparql_query = format!(
             r#"
             SELECT ?name ?type ?status ?participant ?location ?timestamp ?description ?isEncrypted ?txId ?g WHERE {{
                 GRAPH ?g {{
-                    <{}> ?p ?o .
-                    OPTIONAL {{ <{}> <http://provchain.org/trace#name> ?name }}
-                    OPTIONAL {{ <{}> a ?type }}
-                    OPTIONAL {{ <{}> <http://provchain.org/trace#status> ?status }}
-                    OPTIONAL {{ <{}> <http://provchain.org/trace#participant> ?participant }}
-                    OPTIONAL {{ <{}> <http://provchain.org/trace#location> ?location }}
-                    OPTIONAL {{ <{}> <http://provchain.org/trace#timestamp> ?timestamp }}
-                    OPTIONAL {{ <{}> <http://provchain.org/trace#description> ?description }}
-                    OPTIONAL {{ <{}> <http://provchain.org/trace#isEncrypted> ?isEncrypted }}
-                    OPTIONAL {{ <{}> <http://provchain.org/trace#hasTransactionID> ?txId }}
+                    <{id}> ?p ?o .
+                    OPTIONAL {{ <{id}> <http://provchain.org/trace#name> ?name }}
+                    OPTIONAL {{ <{id}> a ?type }}
+                    OPTIONAL {{ <{id}> <http://provchain.org/trace#status> ?status }}
+                    OPTIONAL {{ <{id}> <http://provchain.org/trace#participant> ?participant }}
+                    OPTIONAL {{ <{id}> <http://provchain.org/trace#location> ?location }}
+                    OPTIONAL {{ <{id}> <http://provchain.org/trace#timestamp> ?timestamp }}
+                    OPTIONAL {{ <{id}> <http://provchain.org/trace#description> ?description }}
+                    OPTIONAL {{ <{id}> <http://provchain.org/trace#isEncrypted> ?isEncrypted }}
+                    OPTIONAL {{ <{id}> <http://provchain.org/trace#hasTransactionID> ?txId }}
                 }}
             }}
             "#,
-            product_id,
-            product_id,
-            product_id,
-            product_id,
-            product_id,
-            product_id,
-            product_id,
-            product_id,
-            product_id,
-            product_id
+            id = product_id_str
         );
 
         let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
@@ -560,12 +580,14 @@ pub async fn get_product_by_id(
                     );
                 }
                 if let Some(location) = sol.get("location") {
-                    product["location"] =
-                        serde_json::Value::String(location.to_string().trim_matches('"').to_string());
+                    product["location"] = serde_json::Value::String(
+                        location.to_string().trim_matches('"').to_string(),
+                    );
                 }
                 if let Some(timestamp) = sol.get("timestamp") {
-                    product["timestamp"] =
-                        serde_json::Value::String(timestamp.to_string().trim_matches('"').to_string());
+                    product["timestamp"] = serde_json::Value::String(
+                        timestamp.to_string().trim_matches('"').to_string(),
+                    );
                 }
                 if let Some(description) = sol.get("description") {
                     product["description"] = serde_json::Value::String(
@@ -577,17 +599,22 @@ pub async fn get_product_by_id(
                 if let Some(is_encrypted) = sol.get("isEncrypted") {
                     if is_encrypted.to_string().contains("true") {
                         product["encryption_status"] = serde_json::json!("encrypted");
-                        
+
                         if let (Some(tx_id_term), Some(g_term)) = (sol.get("txId"), sol.get("g")) {
                             let tx_id = tx_id_term.to_string().trim_matches('"').to_string();
-                            let graph_uri = g_term.to_string().trim_matches('<').trim_matches('>').to_string();
-                            
+                            let graph_uri = g_term
+                                .to_string()
+                                .trim_matches('<')
+                                .trim_matches('>')
+                                .to_string();
+
                             // Extract block index from graph URI
                             if let Some(index_str) = graph_uri.split('/').next_back() {
                                 if let Ok(index) = index_str.parse::<usize>() {
                                     if let Some(block) = blockchain.chain.get(index) {
                                         if let Some(encrypted_data_json) = &block.encrypted_data {
-                                            encrypted_payload_json = Some(encrypted_data_json.clone());
+                                            encrypted_payload_json =
+                                                Some(encrypted_data_json.clone());
                                             transaction_id = Some(tx_id);
                                         }
                                     }
@@ -615,18 +642,29 @@ pub async fn get_product_by_id(
 
     // Perform decryption if needed
     if let Some((encrypted_data_json, tx_id)) = encrypted_info {
-        if let Ok(payloads) = serde_json::from_str::<std::collections::HashMap<String, String>>(&encrypted_data_json) {
+        if let Ok(payloads) =
+            serde_json::from_str::<std::collections::HashMap<String, String>>(&encrypted_data_json)
+        {
             if let Some(payload_str) = payloads.get(&tx_id) {
-                if let Ok(encrypted_data) = serde_json::from_str::<crate::security::encryption::EncryptedData>(payload_str) {
+                if let Ok(encrypted_data) =
+                    serde_json::from_str::<crate::security::encryption::EncryptedData>(payload_str)
+                {
                     if let Ok(user_id) = uuid::Uuid::parse_str(&claims.sub) {
                         let wallet_manager = app_state.wallet_manager.read().await;
                         if let Some(wallet) = wallet_manager.get_wallet(user_id) {
                             if let Some(key_hex) = wallet.get_secret(&encrypted_data.key_id) {
                                 if let Ok(key_bytes) = hex::decode(key_hex) {
                                     if let Ok(key_array) = key_bytes.try_into() {
-                                        if let Ok(decrypted_rdf) = crate::security::encryption::PrivacyManager::decrypt(&encrypted_data, &key_array) {
-                                            product["decrypted_data"] = serde_json::Value::String(decrypted_rdf);
-                                            product["encryption_status"] = serde_json::json!("decrypted");
+                                        if let Ok(decrypted_rdf) =
+                                            crate::security::encryption::PrivacyManager::decrypt(
+                                                &encrypted_data,
+                                                &key_array,
+                                            )
+                                        {
+                                            product["decrypted_data"] =
+                                                serde_json::Value::String(decrypted_rdf);
+                                            product["encryption_status"] =
+                                                serde_json::json!("decrypted");
                                         }
                                     }
                                 }
@@ -646,14 +684,29 @@ pub async fn get_product_trace_path(
     Path(product_id): Path<String>,
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
+    // Validate product_id to prevent SPARQL injection
+    let validated_product_id = match validate_sparql_identifier(&product_id) {
+        Ok(node) => node,
+        Err(e) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    error: "invalid_product_id".to_string(),
+                    message: format!("Invalid product ID: {}", e),
+                    timestamp: Utc::now(),
+                }),
+            ));
+        }
+    };
+
     let blockchain = app_state.blockchain.read().await;
 
-    // Build SPARQL query to get trace path
+    // Build SPARQL query to get trace path (using validated identifier)
     let sparql_query = format!(
         r#"
         SELECT ?step ?timestamp ?location ?participant ?action ?status WHERE {{
             GRAPH ?g {{
-                ?step <http://provchain.org/trace#product> <{}> .
+                ?step <http://provchain.org/trace#product> <{id}> .
                 OPTIONAL {{ ?step <http://provchain.org/trace#timestamp> ?timestamp }}
                 OPTIONAL {{ ?step <http://provchain.org/trace#location> ?location }}
                 OPTIONAL {{ ?step <http://provchain.org/trace#participant> ?participant }}
@@ -663,7 +716,7 @@ pub async fn get_product_trace_path(
         }}
         ORDER BY ?timestamp
         "#,
-        product_id
+        id = validated_product_id.as_str()
     );
 
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
@@ -726,14 +779,29 @@ pub async fn get_product_provenance(
     Path(product_id): Path<String>,
     State(app_state): State<AppState>,
 ) -> Result<Json<Vec<serde_json::Value>>, (StatusCode, Json<ApiError>)> {
+    // Validate product_id to prevent SPARQL injection
+    let validated_product_id = match validate_sparql_identifier(&product_id) {
+        Ok(node) => node,
+        Err(e) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    error: "invalid_product_id".to_string(),
+                    message: format!("Invalid product ID: {}", e),
+                    timestamp: Utc::now(),
+                }),
+            ));
+        }
+    };
+
     let blockchain = app_state.blockchain.read().await;
 
-    // Build SPARQL query to get provenance chain
+    // Build SPARQL query to get provenance chain (using validated identifier)
     let sparql_query = format!(
         r#"
         SELECT ?entity ?activity ?agent ?timestamp ?location WHERE {{
             GRAPH ?g {{
-                ?entity <http://www.w3.org/ns/prov#wasDerivedFrom> <{}> .
+                ?entity <http://www.w3.org/ns/prov#wasDerivedFrom> <{id}> .
                 OPTIONAL {{ ?entity <http://www.w3.org/ns/prov#wasGeneratedBy> ?activity }}
                 OPTIONAL {{ ?activity <http://www.w3.org/ns/prov#wasAssociatedWith> ?agent }}
                 OPTIONAL {{ ?entity <http://provchain.org/trace#timestamp> ?timestamp }}
@@ -742,7 +810,7 @@ pub async fn get_product_provenance(
         }}
         ORDER BY ?timestamp
         "#,
-        product_id
+        id = validated_product_id.as_str()
     );
 
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
@@ -808,11 +876,28 @@ pub async fn get_knowledge_graph(
         ));
     }
 
-    // Build SPARQL query to get knowledge graph
-    let item_filters = params
-        .item_id
+    // Validate all item_ids to prevent SPARQL injection
+    let mut validated_ids = Vec::new();
+    for id in &params.item_id {
+        match validate_sparql_identifier(id) {
+            Ok(node) => validated_ids.push(node),
+            Err(e) => {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        error: "invalid_item_id".to_string(),
+                        message: format!("Invalid item ID '{}': {}", id, e),
+                        timestamp: Utc::now(),
+                    }),
+                ));
+            }
+        }
+    }
+
+    // Build SPARQL query to get knowledge graph (using validated identifiers)
+    let item_filters = validated_ids
         .iter()
-        .map(|id| format!("?s = <{}>", id))
+        .map(|node| format!("?s = <{}>", node.as_str()))
         .collect::<Vec<_>>()
         .join(" || ");
 
@@ -1015,8 +1100,25 @@ pub async fn get_products_by_type(
     Path(product_type): Path<String>,
     State(app_state): State<AppState>,
 ) -> Result<Json<Vec<serde_json::Value>>, (StatusCode, Json<ApiError>)> {
+    // Validate product_type to prevent SPARQL injection
+    // product_type is used as a local name (after #), so we validate accordingly
+    let validated_type = match validate_sparql_local_name(&product_type) {
+        Ok(()) => product_type.clone(),
+        Err(e) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    error: "invalid_product_type".to_string(),
+                    message: format!("Invalid product type: {}", e),
+                    timestamp: Utc::now(),
+                }),
+            ));
+        }
+    };
+
     let blockchain = app_state.blockchain.read().await;
 
+    // Build SPARQL query to get products by type (using validated type)
     let sparql_query = format!(
         r#"
         SELECT DISTINCT ?product ?name ?status ?participant ?location ?timestamp WHERE {{
@@ -1030,7 +1132,7 @@ pub async fn get_products_by_type(
             }}
         }}
         "#,
-        typ = product_type
+        typ = validated_type
     );
 
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
@@ -1080,7 +1182,40 @@ pub async fn get_products_by_participant(
     Path(participant_id): Path<String>,
     State(app_state): State<AppState>,
 ) -> Result<Json<Vec<serde_json::Value>>, (StatusCode, Json<ApiError>)> {
+    // Validate participant_id to prevent SPARQL injection
+    // participant_id is used in a string comparison, validate strictly
+    let validated_id = match validate_sparql_identifier(&participant_id) {
+        Ok(node) => node.as_str().to_string(),
+        Err(_) => {
+            // Fallback: if it's not a valid IRI, treat it as a plain string identifier
+            // but validate it doesn't contain dangerous characters
+            if participant_id.len() > 256
+                || participant_id.contains('"')
+                || participant_id.contains('\\')
+                || participant_id.contains('\n')
+                || participant_id.contains('\r')
+            {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        error: "invalid_participant_id".to_string(),
+                        message: "Invalid participant ID format".to_string(),
+                        timestamp: Utc::now(),
+                    }),
+                ));
+            }
+            participant_id.clone()
+        }
+    };
+
+    // Clone participant_id for use in response
+    let participant_id_for_response = participant_id.clone();
+
     let blockchain = app_state.blockchain.read().await;
+
+    // Build SPARQL query to get products by participant (using validated id)
+    // Use proper SPARQL string escaping
+    let escaped_id = validated_id.replace("\\", "\\\\").replace('"', "\\\"");
 
     let sparql_query = format!(
         r#"
@@ -1097,7 +1232,7 @@ pub async fn get_products_by_participant(
             }}
         }}
         "#,
-        pid = participant_id
+        pid = escaped_id
     );
 
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
@@ -1132,7 +1267,7 @@ pub async fn get_products_by_participant(
                 "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown".to_string()),
                 "type": sol.get("type").map(|t| t.to_string().trim_matches('<').trim_matches('>').split('#').next_back().unwrap_or("unknown").to_string()).unwrap_or("unknown".to_string()),
                 "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
-                "participant": participant_id,
+                "participant": participant_id_for_response.clone(),
                 "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
                 "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339())
             }));
@@ -1147,8 +1282,24 @@ pub async fn get_related_items(
     Path(item_id): Path<String>,
     State(app_state): State<AppState>,
 ) -> Result<Json<Vec<serde_json::Value>>, (StatusCode, Json<ApiError>)> {
+    // Validate item_id to prevent SPARQL injection
+    let validated_item_id = match validate_sparql_identifier(&item_id) {
+        Ok(node) => node,
+        Err(e) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    error: "invalid_item_id".to_string(),
+                    message: format!("Invalid item ID: {}", e),
+                    timestamp: Utc::now(),
+                }),
+            ));
+        }
+    };
+
     let blockchain = app_state.blockchain.read().await;
 
+    // Build SPARQL query to get related items (using validated identifier)
     let sparql_query = format!(
         r#"
         SELECT DISTINCT ?related ?name ?type ?status ?participant ?location ?timestamp WHERE {{
@@ -1170,7 +1321,7 @@ pub async fn get_related_items(
             }}
         }}
         "#,
-        id = item_id
+        id = validated_item_id.as_str()
     );
 
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {

@@ -1010,8 +1010,19 @@ impl CompiledPattern {
     }
 }
 
-// Safety: All fields in CompiledPattern are Send + Sync
+/// # Safety
+/// `CompiledPattern` is safe to send between threads because:
+/// - All fields are `Send` (`QueryPattern`, `u64`, `ExecutionPlan`, `Vec<String>`)
+/// - `QueryPattern` and `ExecutionPlan` are enums with only `Send` variants
+/// - No thread-local storage is used
+/// - All data is owned (no references or raw pointers)
 unsafe impl Send for CompiledPattern {}
+
+/// # Safety
+/// `CompiledPattern` is safe to share between threads because:
+/// - All fields are `Sync` (immutable after construction)
+/// - No interior mutability without synchronization
+/// - All contained types (`QueryPattern`, `ExecutionPlan`, `Vec<String>`, `u64`) implement `Sync`
 unsafe impl Sync for CompiledPattern {}
 
 /// Query execution plan for optimized evaluation
@@ -1042,8 +1053,19 @@ pub enum ExecutionPlan {
     },
 }
 
-// Safety: All variants in ExecutionPlan contain Send + Sync types
+/// # Safety
+/// `ExecutionPlan` is safe to send between threads because:
+/// - All variants contain `Send` types (`QueryType`, `TriplePattern`, `Vec<TriplePattern>`, `Vec<usize>`, `FilterExpression`)
+/// - `Box<ExecutionPlan>` is `Send` when `ExecutionPlan` is `Send`
+/// - No thread-local storage is used
+/// - All data is owned (no references or raw pointers)
 unsafe impl Send for ExecutionPlan {}
+
+/// # Safety
+/// `ExecutionPlan` is safe to share between threads because:
+/// - All fields are `Sync` (immutable after construction)
+/// - No interior mutability without synchronization
+/// - All contained types (`QueryType`, `TriplePattern`, `FilterExpression`, `Vec`, `Box`) implement `Sync`
 unsafe impl Sync for ExecutionPlan {}
 
 /// Types of triple pattern queries

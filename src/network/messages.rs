@@ -9,6 +9,11 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Maximum message size in bytes (10 MB) to prevent DoS from oversized messages
+const MAX_MESSAGE_SIZE: usize = 10 * 1024 * 1024;
+/// Maximum RDF data size within GraphResponse messages (8 MB)
+const MAX_RDF_DATA_SIZE: usize = 8 * 1024 * 1024;
+
 /// All possible P2P messages exchanged between GraphChain nodes
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -198,15 +203,53 @@ impl P2PMessage {
     }
 
     /// Serialize message to JSON bytes for network transmission
+    ///
+    /// Returns an error if the serialized message exceeds MAX_MESSAGE_SIZE.
     pub fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
         let json = serde_json::to_string(self)?;
+
+        // Check for oversized messages to prevent DoS
+        if json.len() > MAX_MESSAGE_SIZE {
+            anyhow::bail!(
+                "Message too large: {} bytes exceeds maximum of {}",
+                json.len(),
+                MAX_MESSAGE_SIZE
+            );
+        }
+
+        // Validate RDF data size for GraphResponse messages
+        if let Self::GraphResponse { rdf_data: Some(data), .. } = self {
+            if data.len() > MAX_RDF_DATA_SIZE {
+                anyhow::bail!(
+                    "RDF data too large: {} bytes exceeds maximum of {}",
+                    data.len(),
+                    MAX_RDF_DATA_SIZE
+                );
+            }
+        }
+
         Ok(json.into_bytes())
     }
 
     /// Deserialize message from JSON bytes
+    ///
+    /// Returns an error if the input exceeds MAX_MESSAGE_SIZE or contains invalid data.
     pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
+        // Reject oversized messages before parsing
+        if bytes.len() > MAX_MESSAGE_SIZE {
+            anyhow::bail!(
+                "Message too large: {} bytes exceeds maximum of {}",
+                bytes.len(),
+                MAX_MESSAGE_SIZE
+            );
+        }
+
         let json = std::str::from_utf8(bytes)?;
-        let message = serde_json::from_str(json)?;
+        let message: Self = serde_json::from_str(json)?;
+
+        // Validate message content after parsing
+        message.validate()?;
+
         Ok(message)
     }
 

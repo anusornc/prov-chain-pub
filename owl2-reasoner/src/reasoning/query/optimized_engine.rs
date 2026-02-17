@@ -672,8 +672,20 @@ impl Default for OptimizedQueryEngine {
     }
 }
 
-// Thread safety implementations
+/// # Safety
+/// `OptimizedQueryEngine` is safe to send between threads because:
+/// - All fields are `Send` (`Arc<Ontology>`, `Arc<DashMap<...>>`, `Arc<RwLock<...>>`, `Arc<LockFreeMemoryManager>`)
+/// - The `reasoner` field is wrapped in `Mutex<Box<dyn Reasoner>>` for thread-safe ownership transfer
+/// - `QueryEngineConfig` contains only primitive `Send` types (bool, usize, u64)
+/// - No thread-local storage is used
 unsafe impl Send for OptimizedQueryEngine {}
+
+/// # Safety
+/// `OptimizedQueryEngine` is safe to share between threads because:
+/// - All fields are `Sync` (immutable or synchronized via `Arc<RwLock<...>>` and `Arc<DashMap<...>>`)
+/// - Interior mutability is controlled via synchronization primitives (`RwLock`, `DashMap`, `Mutex`)
+/// - `Arc` provides thread-safe reference counting
+/// - The ontology is immutable after construction (`Arc<Ontology>`)
 unsafe impl Sync for OptimizedQueryEngine {}
 
 #[cfg(test)]

@@ -723,8 +723,21 @@ impl QueryPatternExt for QueryPattern {
     }
 }
 
-// Thread safety implementations
+/// # Safety
+/// `QueryEngine` is safe to send between threads because:
+/// - All fields are `Send` (`Arc<Ontology>`, `Arc<QueryCache>`, `Arc<DashMap<...>>`, `Arc<RwLock<...>>`)
+/// - `QueryConfig` contains only primitive `Send` types
+/// - `Option<Box<dyn Reasoner>>` is `Send` if the underlying reasoner is `Send`
+/// - No thread-local storage is used
 unsafe impl Send for QueryEngine {}
+
+/// # Safety
+/// `QueryEngine` is safe to share between threads because:
+/// - All fields are `Sync` (immutable or synchronized via `Arc<RwLock<...>>` and `Arc<DashMap<...>>`)
+/// - Interior mutability is controlled via synchronization primitives (`RwLock`, `DashMap`)
+/// - `Arc` provides thread-safe reference counting
+/// - The ontology is immutable after construction (`Arc<Ontology>`)
+/// - The query cache is accessed through `Arc<QueryCache>` which manages its own locking
 unsafe impl Sync for QueryEngine {}
 
 #[cfg(test)]
@@ -1356,7 +1369,10 @@ mod tests {
         assert_eq!(stats.successful_queries, 10);
         // Note: Queries may execute in < 1ms total in optimized builds
         // This test validates functionality, not performance
-        assert!(stats.successful_queries > 0, "Queries should execute successfully");
+        assert!(
+            stats.successful_queries > 0,
+            "Queries should execute successfully"
+        );
     }
 
     #[test]

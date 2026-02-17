@@ -1,5 +1,151 @@
 use chrono::{NaiveDate, Utc};
+use oxigraph::model::NamedNode;
 use regex::Regex;
+
+/// Maximum length for SPARQL identifiers
+const MAX_SPARQL_IDENTIFIER_LEN: usize = 2048;
+
+/// Validates that a string is safe to use as a SPARQL IRI reference.
+/// This prevents SPARQL injection attacks by ensuring the input is a valid IRI
+/// and doesn't contain malicious SPARQL syntax.
+pub fn validate_sparql_identifier(identifier: &str) -> Result<NamedNode, String> {
+    if identifier.is_empty() {
+        return Err("Identifier cannot be empty".to_string());
+    }
+
+    if identifier.len() > MAX_SPARQL_IDENTIFIER_LEN {
+        return Err(format!(
+            "Identifier too long (max {} characters)",
+            MAX_SPARQL_IDENTIFIER_LEN
+        ));
+    }
+
+    // Check for dangerous SPARQL keywords that could indicate injection
+    let dangerous_patterns = [
+        " SELECT ",
+        " UNION ",
+        " INSERT ",
+        " DELETE ",
+        " DROP ",
+        " CLEAR ",
+        " CREATE ",
+        " LOAD ",
+        " COPY ",
+        " MOVE ",
+        " ADD ",
+        " WHERE ",
+        " FILTER ",
+        " OPTIONAL ",
+        " GRAPH ",
+        " BIND ",
+        " SERVICE ",
+        " VALUES ",
+        " MINUS ",
+        " NOT ",
+        " EXISTS ",
+        " STR ",
+        " LANG ",
+        " DATATYPE ",
+        " IRI ",
+        " URI ",
+        " BNODE ",
+        " RAND ",
+        " ABS ",
+        " CEIL ",
+        " FLOOR ",
+        " ROUND ",
+        " CONCAT ",
+        " SUBSTR ",
+        " STRLEN ",
+        " REPLACE ",
+        " UCASE ",
+        " LCASE ",
+        " ENCODE_FOR_URI ",
+        " CONTAINS ",
+        " STRSTARTS ",
+        " STRENDS ",
+        " STRBEFORE ",
+        " STRAFTER ",
+        " YEAR ",
+        " MONTH ",
+        " DAY ",
+        " HOURS ",
+        " MINUTES ",
+        " SECONDS ",
+        " TIMEZONE ",
+        " TZ ",
+        " NOW ",
+        " UUID ",
+        " STRUUID ",
+        " MD5 ",
+        " SHA1 ",
+        " SHA256 ",
+        " SHA384 ",
+        " SHA512 ",
+        " COALESCE ",
+        " IF ",
+        " STRLANG ",
+        " STRDT ",
+        " SAMETERM ",
+        " ISIRI ",
+        " ISURI ",
+        " ISBLANK ",
+        " ISLITERAL ",
+        " ISNUMERIC ",
+        " REGEX ",
+        " SUBSTITUTION ",
+    ];
+
+    let identifier_upper = format!(" {} ", identifier.to_uppercase());
+    for pattern in &dangerous_patterns {
+        if identifier_upper.contains(pattern) {
+            return Err(format!(
+                "Identifier contains potentially dangerous SPARQL keyword: {}",
+                pattern.trim()
+            ));
+        }
+    }
+
+    // Check for special characters that could break out of IRI context
+    let dangerous_chars = ['<', '>', '{', '}', '|', '^', '`', '\\', '"', '\n', '\r', '\0'];
+    for ch in dangerous_chars {
+        if identifier.contains(ch) {
+            return Err(format!(
+                "Identifier contains invalid character: {:?}",
+                ch
+            ));
+        }
+    }
+
+    // Validate as a proper NamedNode (IRI)
+    NamedNode::new(identifier)
+        .map_err(|e| format!("Invalid IRI format: {}", e))
+}
+
+/// Validates that a string is safe to use as a SPARQL prefixed name local part.
+/// This is more restrictive than IRI validation and suitable for CURIE-style names.
+pub fn validate_sparql_local_name(name: &str) -> Result<(), String> {
+    if name.is_empty() {
+        return Err("Local name cannot be empty".to_string());
+    }
+
+    if name.len() > 256 {
+        return Err("Local name too long (max 256 characters)".to_string());
+    }
+
+    // SPARQL prefixed name local part: PN_LOCAL
+    // Allow: alphanumeric, underscore, hyphen, dot, and certain Unicode
+    // But we restrict further for safety
+    let valid_local_name_regex = Regex::new(r"^[a-zA-Z0-9_][a-zA-Z0-9_\-\.]*$").unwrap();
+
+    if !valid_local_name_regex.is_match(name) {
+        return Err(
+            "Local name contains invalid characters (only a-zA-Z0-9_- allowed)".to_string(),
+        );
+    }
+
+    Ok(())
+}
 
 /// Input validation functions
 pub fn validate_uri(uri: &str) -> Result<(), String> {

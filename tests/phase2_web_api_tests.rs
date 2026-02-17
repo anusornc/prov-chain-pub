@@ -23,7 +23,7 @@ fn create_test_server() -> WebServer {
     let mut config = Config::default();
     config.web.port = 0; // Use random available port for testing
 
-    WebServer::new(blockchain, config)
+    WebServer::new(blockchain, config).expect("Failed to create test server")
 }
 
 /// Test helper to get authentication token (for integration tests)

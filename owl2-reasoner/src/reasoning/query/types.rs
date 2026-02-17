@@ -81,8 +81,19 @@ pub enum QueryPattern {
     Distinct(Box<QueryPattern>),
 }
 
-// Safety: All variants in QueryPattern contain Send + Sync types
+/// # Safety
+/// `QueryPattern` is safe to send between threads because:
+/// - All fields are `Send` (Box<QueryPattern>, String, IRI, etc.)
+/// - No thread-local storage is used
+/// - Interior mutability is controlled via standard synchronization primitives
+/// - The enum variants only contain owned data or Box pointers
 unsafe impl Send for QueryPattern {}
+
+/// # Safety
+/// `QueryPattern` is safe to share between threads because:
+/// - All fields are `Sync` (immutable after construction)
+/// - No interior mutability without synchronization
+/// - All contained types implement Sync
 unsafe impl Sync for QueryPattern {}
 
 /// Triple pattern for SPARQL-like queries
@@ -121,8 +132,18 @@ pub enum FilterExpression {
     Bound(String),
 }
 
-// Safety: All variants in FilterExpression contain Send + Sync types
+/// # Safety
+/// `FilterExpression` is safe to send between threads because:
+/// - All variants contain `Send` types (`Box<FilterExpression>`, `String`)
+/// - No thread-local storage is used
+/// - All data is owned (no raw pointers or references)
 unsafe impl Send for FilterExpression {}
+
+/// # Safety
+/// `FilterExpression` is safe to share between threads because:
+/// - All fields are `Sync` (immutable after construction)
+/// - No interior mutability without synchronization
+/// - All contained types (`String`, `Box`) implement `Sync`
 unsafe impl Sync for FilterExpression {}
 
 /// RDF vocabulary constants

@@ -7,6 +7,7 @@ use anyhow::Result;
 use ed25519_dalek::SigningKey;
 use rand::rngs::OsRng;
 use rand::RngCore;
+use zeroize::Zeroize;
 
 /// Generate a new Ed25519 signing key using cryptographically secure RNG
 ///
@@ -29,7 +30,9 @@ use rand::RngCore;
 pub fn generate_signing_key() -> Result<SigningKey> {
     let mut bytes = [0u8; 32];
     OsRng.fill_bytes(&mut bytes);
-    Ok(SigningKey::from_bytes(&bytes))
+    let key = SigningKey::from_bytes(&bytes);
+    bytes.zeroize(); // Clear temporary key material from stack
+    Ok(key)
 }
 
 /// Generate a new Ed25519 signing key with a specific seed (TESTING ONLY)

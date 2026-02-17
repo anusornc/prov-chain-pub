@@ -16,6 +16,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
+use zeroize::Zeroize;
 
 /// Participant types in the supply chain
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -200,6 +201,9 @@ pub struct ContactInfo {
 }
 
 /// Wallet containing cryptographic keys and participant information
+///
+/// SECURITY: This struct implements custom `Drop` to ensure sensitive
+/// key material is securely cleared from memory when the wallet is dropped.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Wallet {
     /// Participant information
@@ -219,6 +223,26 @@ pub struct Wallet {
     pub last_backup: Option<DateTime<Utc>>,
     /// Shared secrets for data privacy (KeyID -> HexEncodedSecret)
     pub shared_secrets: HashMap<String, String>,
+}
+
+/// Manual Drop implementation to zeroize sensitive key material
+impl Drop for Wallet {
+    fn drop(&mut self) {
+        // Zeroize the signing key if present
+        if let Some(ref mut key) = self.signing_key {
+            // SigningKey doesn't implement Zeroize directly, but we can
+            // clear it by replacing with a zeroed key
+            let zeroed_bytes = [0u8; 32];
+            *key = SigningKey::from_bytes(&zeroed_bytes);
+        }
+        // Zeroize sensitive byte arrays
+        self.secret_key_bytes.zeroize();
+        // Zeroize shared secrets
+        for (_, secret) in self.shared_secrets.iter_mut() {
+            secret.zeroize();
+        }
+        self.shared_secrets.clear();
+    }
 }
 
 impl Wallet {
@@ -379,7 +403,11 @@ impl WalletManager {
             // Load existing key
             let key_bytes = fs::read(&key_path)?;
             if key_bytes.len() != 32 {
-                return Err(anyhow!("Invalid master key length in {:?}: expected 32 bytes, got {}", key_path, key_bytes.len()));
+                return Err(anyhow!(
+                    "Invalid master key length in {:?}: expected 32 bytes, got {}",
+                    key_path,
+                    key_bytes.len()
+                ));
             }
             let mut key = [0u8; 32];
             key.copy_from_slice(&key_bytes);
@@ -388,7 +416,7 @@ impl WalletManager {
             // Generate new key and save it
             let mut key = [0u8; 32];
             OsRng.fill_bytes(&mut key);
-            
+
             // Set file permissions to read-only for owner (0600) on Unix
             #[cfg(unix)]
             {
@@ -403,7 +431,7 @@ impl WalletManager {
             {
                 fs::write(&key_path, &key)?;
             }
-            
+
             println!("Generated new master key at {:?}", key_path);
             key
         };
