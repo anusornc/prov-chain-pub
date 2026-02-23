@@ -2,6 +2,7 @@ use crate::error::{BlockchainError, ProvChainError, Result};
 use crate::governance::Governance;
 use crate::ontology::{OntologyConfig, OntologyManager, ShaclValidator};
 use crate::security::keys::generate_signing_key;
+use crate::storage::persistence::{BlockMetadata, PersistentStorage};
 use crate::storage::rdf_store::{RDFStore, StorageConfig};
 use crate::trace_optimization::{EnhancedTraceResult, EnhancedTraceabilitySystem};
 use chrono::Utc;
@@ -107,6 +108,8 @@ pub struct Blockchain {
     pub last_key_rotation: chrono::DateTime<chrono::Utc>,
     /// Recommended key rotation interval (90 days)
     pub key_rotation_interval_days: u64,
+    /// Persistent storage for durability (None for in-memory mode)
+    persistent_storage: Option<std::sync::Arc<std::sync::Mutex<PersistentStorage>>>,
 }
 
 impl Default for Blockchain {
@@ -133,6 +136,7 @@ impl Blockchain {
             validator_public_key,
             last_key_rotation: chrono::Utc::now(),
             key_rotation_interval_days: 90,
+            persistent_storage: None,
         };
 
         // Load the traceability ontology
@@ -156,9 +160,15 @@ impl Blockchain {
         bc
     }
 
-    /// Create a new persistent blockchain with RocksDB backend
+    /// Create a new persistent blockchain with WAL-based durability
     pub fn new_persistent<P: AsRef<Path>>(data_dir: P) -> Result<Self> {
-        let rdf_store = RDFStore::new_persistent(data_dir)?;
+        // Initialize persistent storage with WAL
+        let persistent_storage = PersistentStorage::open(data_dir)
+            .map_err(|e| ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(
+                format!("Failed to initialize persistent storage: {}", e)
+            )))?;
+        
+        let rdf_store = RDFStore::new_persistent(persistent_storage.rdf_data_dir())?;
 
         // Generate signing key for this blockchain instance
         let signing_key = generate_signing_key().map_err(|e| {
@@ -180,14 +190,17 @@ impl Blockchain {
             validator_public_key,
             last_key_rotation: chrono::Utc::now(),
             key_rotation_interval_days: 90,
+            persistent_storage: Some(std::sync::Arc::new(std::sync::Mutex::new(persistent_storage))),
         };
 
         // Load the traceability ontology
         bc.load_ontology();
 
-        // Check if we need to create genesis block or load existing chain
-        let store_len = bc.rdf_store.store.len().unwrap_or(0);
-        if store_len == 0 {
+        // Try to load existing blocks from persistent storage
+        bc.load_chain_from_persistent_storage()?;
+        
+        // If no blocks were loaded, create genesis block
+        if bc.chain.is_empty() {
             // Create genesis block for new blockchain
             let mut genesis_block = bc.create_genesis_block();
 
@@ -202,43 +215,25 @@ impl Blockchain {
                 );
             }
 
-            // Recalculate hash after adding data to RDF store (consistent with new() method)
+            // Recalculate hash after adding data to RDF store
             genesis_block.hash = genesis_block.calculate_hash_with_store(Some(&bc.rdf_store));
-            bc.chain.push(genesis_block);
+            bc.chain.push(genesis_block.clone());
 
-            // Save to disk
-            if let Err(e) = bc.rdf_store.save_to_disk() {
-                eprintln!("Warning: Could not save to disk: {e}");
-            }
-        } else {
-            // Load existing blockchain from persistent storage
-            bc.load_chain_from_store()?;
-
-            // If no blocks were loaded but store has data, something is wrong
-            // Create genesis block as fallback
-            if bc.chain.is_empty() {
-                eprintln!("Warning: Store has data but no blocks loaded, creating genesis block");
-                let mut genesis_block = bc.create_genesis_block();
-
-                if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
-                    bc.rdf_store
-                        .add_rdf_to_graph(&genesis_block.data, &graph_name);
-                    bc.rdf_store.add_block_metadata(&genesis_block);
-                } else {
-                    eprintln!("Warning: Could not create graph name for fallback genesis block");
-                }
-
-                // Recalculate hash after adding data to RDF store (consistent with new() method)
-                genesis_block.hash = genesis_block.calculate_hash_with_store(Some(&bc.rdf_store));
-                bc.chain.push(genesis_block);
-            }
+            // Persist genesis block
+            bc.persist_block(&genesis_block)?;
         }
-
+        
         Ok(bc)
     }
 
     /// Create a persistent blockchain with custom storage configuration
     pub fn new_persistent_with_config(config: StorageConfig) -> Result<Self> {
+        // Initialize persistent storage with WAL
+        let persistent_storage = PersistentStorage::open(&config.data_dir)
+            .map_err(|e| ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(
+                format!("Failed to initialize persistent storage: {}", e)
+            )))?;
+        
         let rdf_store = RDFStore::new_persistent_with_config(config)?;
 
         // Generate signing key for this blockchain instance
@@ -261,14 +256,17 @@ impl Blockchain {
             validator_public_key,
             last_key_rotation: chrono::Utc::now(),
             key_rotation_interval_days: 90,
+            persistent_storage: Some(std::sync::Arc::new(std::sync::Mutex::new(persistent_storage))),
         };
 
         // Load the traceability ontology
         bc.load_ontology();
 
-        // Check if we need to create genesis block or load existing chain
-        if bc.rdf_store.store.len().unwrap_or(0) == 0 {
-            // Create genesis block for new blockchain
+        // Try to load existing blocks from persistent storage
+        bc.load_chain_from_persistent_storage()?;
+        
+        // If no blocks were loaded, create genesis block
+        if bc.chain.is_empty() {
             let mut genesis_block = bc.create_genesis_block();
 
             // Add genesis block data to RDF store
@@ -280,114 +278,67 @@ impl Blockchain {
                 eprintln!("Warning: Could not create graph name for genesis block in config store");
             }
 
-            // Recalculate hash after adding data to RDF store (consistent with new() method)
+            // Recalculate hash after adding data to RDF store
             genesis_block.hash = genesis_block.calculate_hash_with_store(Some(&bc.rdf_store));
-            bc.chain.push(genesis_block);
-        } else {
-            // Load existing blockchain from persistent storage
-            bc.load_chain_from_store()?;
+            bc.chain.push(genesis_block.clone());
+
+            // Persist genesis block
+            bc.persist_block(&genesis_block)?;
         }
 
         Ok(bc)
     }
 
-    /// Load blockchain from persistent RDF store
-    fn load_chain_from_store(&mut self) -> Result<()> {
-        use oxigraph::sparql::QueryResults;
-
-        // Query to get all blocks ordered by index
-        let query = r#"
-            PREFIX prov: <http://provchain.org/>
-            SELECT ?block ?index ?timestamp ?hash ?prevHash ?dataGraph ?validator ?signature ?encryptedData WHERE {
-                GRAPH <http://provchain.org/blockchain> {
-                    ?block a prov:Block ;
-                           prov:hasIndex ?index ;
-                           prov:hasTimestamp ?timestamp ;
-                           prov:hasHash ?hash ;
-                           prov:hasPreviousHash ?prevHash ;
-                           prov:hasDataGraphIRI ?dataGraph ;
-                           prov:hasValidator ?validator ;
-                           prov:hasSignature ?signature .
-                    OPTIONAL { ?block prov:hasEncryptedData ?encryptedData }
-                }
+    /// Load blockchain from persistent storage (WAL + chain index)
+    fn load_chain_from_persistent_storage(&mut self) -> Result<()> {
+        let storage = match &self.persistent_storage {
+            Some(storage) => storage,
+            None => return Ok(()), // In-memory mode, nothing to load
+        };
+        
+        let storage = storage.lock()
+            .map_err(|_| ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
+                "Failed to lock persistent storage".to_string()
+            )))?;
+        
+        // Load all block metadata from chain index
+        let block_metadatas = storage.load_all_blocks()
+            .map_err(|e| ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
+                format!("Failed to load chain index: {}", e)
+            )))?;
+        
+        info!("Loading {} blocks from persistent storage", block_metadatas.len());
+        
+        for metadata in block_metadatas {
+            // Load RDF data for this block
+            let rdf_data = storage.load_block_data(metadata.index)
+                .map_err(|e| ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
+                    format!("Failed to load block {} data: {}", metadata.index, e)
+                )))?;
+            
+            // Reconstruct block
+            let block = Block {
+                index: metadata.index,
+                timestamp: metadata.timestamp,
+                data: rdf_data,
+                encrypted_data: if metadata.has_encrypted_data { Some(String::new()) } else { None },
+                previous_hash: metadata.previous_hash,
+                hash: metadata.hash,
+                state_root: metadata.state_root,
+                validator: metadata.validator,
+                signature: metadata.signature,
+            };
+            
+            // Add to RDF store
+            if let Ok(graph_name) = NamedNode::new(format!("http://provchain.org/block/{}", block.index)) {
+                self.rdf_store.add_rdf_to_graph(&block.data, &graph_name);
+                self.rdf_store.add_block_metadata(&block);
             }
-            ORDER BY ?index
-        "#;
-
-        if let QueryResults::Solutions(solutions) = self.rdf_store.query(query) {
-            for sol in solutions.flatten() {
-                if let (
-                    Some(index_term),
-                    Some(timestamp_term),
-                    Some(hash_term),
-                    Some(prev_hash_term),
-                    Some(data_graph_term),
-                    Some(validator_term),
-                    Some(signature_term),
-                ) = (
-                    sol.get("index"),
-                    sol.get("timestamp"),
-                    sol.get("hash"),
-                    sol.get("prevHash"),
-                    sol.get("dataGraph"),
-                    sol.get("validator"),
-                    sol.get("signature"),
-                ) {
-                    // Parse block data
-                    let index: u64 = index_term.to_string().parse().unwrap_or(0);
-                    let timestamp = timestamp_term.to_string().trim_matches('"').to_string();
-                    let hash = hash_term.to_string().trim_matches('"').to_string();
-                    let previous_hash = prev_hash_term.to_string().trim_matches('"').to_string();
-                    let validator = validator_term.to_string().trim_matches('"').to_string();
-                    let signature = signature_term.to_string().trim_matches('"').to_string();
-
-                    let encrypted_data = sol
-                        .get("encryptedData")
-                        .map(|t| t.to_string().trim_matches('"').to_string());
-
-                    // Extract RDF data from the block's graph
-                    let data_graph_string = data_graph_term.to_string();
-                    println!("Raw data graph string: '{}'", data_graph_string);
-                    // Handle typed literals - extract the URI part before the type annotation
-                    let data_graph_uri =
-                        if let Some(uri_part) = data_graph_string.split("^^").next() {
-                            uri_part
-                                .trim_matches('"')
-                                .trim_matches('<')
-                                .trim_matches('>')
-                        } else {
-                            data_graph_string
-                                .trim_matches('"')
-                                .trim_matches('<')
-                                .trim_matches('>')
-                        };
-                    println!("Processed data graph URI: '{}'", data_graph_uri);
-                    let data = self.extract_rdf_data_from_graph(data_graph_uri)?;
-
-                    // For existing blocks, we'll use a placeholder state_root
-                    // In a real implementation, this would be loaded from the blockchain metadata
-                    let state_root =
-                        "0000000000000000000000000000000000000000000000000000000000000000"
-                            .to_string();
-
-                    let block = Block {
-                        index,
-                        timestamp,
-                        data,
-                        encrypted_data,
-                        previous_hash,
-                        hash,
-                        state_root,
-                        validator,
-                        signature,
-                    };
-
-                    self.chain.push(block);
-                }
-            }
+            
+            self.chain.push(block);
         }
-
-        println!("Loaded {} blocks from persistent storage", self.chain.len());
+        
+        info!("Successfully loaded {} blocks from persistent storage", self.chain.len());
         Ok(())
     }
 
@@ -497,6 +448,7 @@ impl Blockchain {
             validator_public_key,
             last_key_rotation: chrono::Utc::now(),
             key_rotation_interval_days: 90,
+            persistent_storage: None,
         };
 
         // Initialize ontology manager and SHACL validator
@@ -522,7 +474,13 @@ impl Blockchain {
         data_dir: P,
         ontology_config: OntologyConfig,
     ) -> Result<Self> {
-        let rdf_store = RDFStore::new_persistent(data_dir)?;
+        // Initialize persistent storage with WAL
+        let persistent_storage = PersistentStorage::open(&data_dir)
+            .map_err(|e| ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(
+                format!("Failed to initialize persistent storage: {}", e)
+            )))?;
+        
+        let rdf_store = RDFStore::new_persistent(persistent_storage.rdf_data_dir())?;
 
         // Generate signing key for this blockchain instance
         let signing_key = generate_signing_key().map_err(|e| {
@@ -544,15 +502,17 @@ impl Blockchain {
             validator_public_key,
             last_key_rotation: chrono::Utc::now(),
             key_rotation_interval_days: 90,
+            persistent_storage: Some(std::sync::Arc::new(std::sync::Mutex::new(persistent_storage))),
         };
 
         // Initialize ontology manager and SHACL validator
         bc.initialize_ontology_system(ontology_config)?;
 
-        // Check if we need to create genesis block or load existing chain
-        let store_len = bc.rdf_store.store.len().unwrap_or(0);
-        if store_len == 0 {
-            // Create genesis block for new blockchain
+        // Try to load existing blocks from persistent storage
+        bc.load_chain_from_persistent_storage()?;
+        
+        // If no blocks were loaded, create genesis block
+        if bc.chain.is_empty() {
             let mut genesis_block = bc.create_genesis_block();
 
             // Add genesis block data to RDF store
@@ -566,36 +526,12 @@ impl Blockchain {
                 );
             }
 
-            // Recalculate hash after adding data to RDF store (consistent with new() method)
+            // Recalculate hash after adding data to RDF store
             genesis_block.hash = genesis_block.calculate_hash_with_store(Some(&bc.rdf_store));
-            bc.chain.push(genesis_block);
+            bc.chain.push(genesis_block.clone());
 
-            // Save to disk
-            if let Err(e) = bc.rdf_store.save_to_disk() {
-                eprintln!("Warning: Could not save to disk: {e}");
-            }
-        } else {
-            // Load existing blockchain from persistent storage
-            bc.load_chain_from_store()?;
-
-            // If no blocks were loaded but store has data, something is wrong
-            // Create genesis block as fallback
-            if bc.chain.is_empty() {
-                eprintln!("Warning: Store has data but no blocks loaded, creating genesis block");
-                let mut genesis_block = bc.create_genesis_block();
-
-                if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
-                    bc.rdf_store
-                        .add_rdf_to_graph(&genesis_block.data, &graph_name);
-                    bc.rdf_store.add_block_metadata(&genesis_block);
-                } else {
-                    eprintln!("Warning: Could not create graph name for fallback genesis block");
-                }
-
-                // Recalculate hash after adding data to RDF store (consistent with new() method)
-                genesis_block.hash = genesis_block.calculate_hash_with_store(Some(&bc.rdf_store));
-                bc.chain.push(genesis_block);
-            }
+            // Persist genesis block
+            bc.persist_block(&genesis_block)?;
         }
 
         Ok(bc)
@@ -664,10 +600,11 @@ impl Blockchain {
             validator_public_key,
             last_key_rotation: chrono::Utc::now(),
             key_rotation_interval_days: 90,
+            persistent_storage: None, // Restored from backup, create fresh WAL
         };
 
         // Load the chain from the restored store
-        bc.load_chain_from_store()?;
+        bc.load_chain_from_persistent_storage()?;
 
         Ok(bc)
     }
@@ -869,13 +806,56 @@ impl Blockchain {
         // SECURITY FIX: Don't recalculate hash after signature verification
         // The hash was already signed by the validator. Recalculating it would
         // invalidate the signature. The signed hash must remain stable.
-        self.chain.push(block);
+        self.chain.push(block.clone());
 
-        // Persist changes to disk if using persistent storage
-        if let Err(e) = self.rdf_store.save_to_disk() {
-            eprintln!("Warning: Failed to persist blockchain to disk: {}", e);
+        // Persist block to durable storage using WAL
+        if let Err(e) = self.persist_block(&block) {
+            return Err(ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
+                format!("Failed to persist block: {}", e)
+            )));
         }
 
+        Ok(())
+    }
+    
+    /// Persist a block to durable storage (WAL + RDF store)
+    fn persist_block(&mut self, block: &Block) -> Result<()> {
+        // Only persist if we have persistent storage
+        let storage = match &self.persistent_storage {
+            Some(storage) => storage,
+            None => return Ok(()), // In-memory mode, nothing to persist
+        };
+        
+        let storage = storage.lock()
+            .map_err(|_| ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
+                "Failed to lock persistent storage".to_string()
+            )))?;
+        
+        // Create block metadata
+        let metadata = BlockMetadata {
+            index: block.index,
+            hash: block.hash.clone(),
+            previous_hash: block.previous_hash.clone(),
+            timestamp: block.timestamp.clone(),
+            validator: block.validator.clone(),
+            signature: block.signature.clone(),
+            state_root: block.state_root.clone(),
+            data_graph_uri: format!("http://provchain.org/block/{}", block.index),
+            has_encrypted_data: block.encrypted_data.is_some(),
+            data_size: block.data.len() as u64,
+        };
+        
+        // Store block atomically via WAL
+        storage.store_block(&metadata, &block.data)
+            .map_err(|e| ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
+                format!("Storage error: {}", e)
+            )))?;
+        
+        // Also save RDF store state
+        if let Err(e) = self.rdf_store.save_to_disk() {
+            eprintln!("Warning: Failed to save RDF store state: {}", e);
+        }
+        
         Ok(())
     }
 
