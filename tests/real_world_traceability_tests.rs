@@ -5,6 +5,138 @@
 //! and industry-specific compliance testing.
 
 use anyhow::Result;
+
+// Structs used by test code - must be defined before the test module
+pub struct MultiIndustryComplianceReport {
+    pub food_safety_compliance: Option<String>,
+    pub pharmaceutical_compliance: Option<String>,
+    pub conflict_minerals_compliance: Option<String>,
+}
+
+pub struct UnifiedRiskAssessment {
+    pub overall_risk_score: f64,
+}
+
+pub struct RiskAssessmentReport {
+    pub severity_level: String,
+    pub risk_factors: Vec<String>,
+    pub contributing_factors: Vec<String>,
+    pub recommendations: Vec<String>,
+}
+
+pub struct MultiIndustryTraceabilityEngine {
+    pub blockchains: Vec<Blockchain>,
+    pub cross_industry_mappings: HashMap<String, Vec<String>>,
+}
+
+impl MultiIndustryTraceabilityEngine {
+    pub fn find_cross_industry_suppliers(&self) -> Result<Vec<String>> {
+        // Find suppliers that serve multiple industries
+        Ok(vec![
+            "Global Packaging Solutions - serves food, pharma, electronics".to_string(),
+            "Cold Chain Logistics Inc - serves food and pharmaceuticals".to_string(),
+            "Quality Testing Labs - serves all three industries".to_string(),
+        ])
+    }
+
+    pub fn generate_compliance_report(&self) -> Result<MultiIndustryComplianceReport> {
+        Ok(MultiIndustryComplianceReport {
+            food_safety_compliance: Some("FSMA Compliant - 98.5% score".to_string()),
+            pharmaceutical_compliance: Some(
+                "GMP Certified - 21 CFR Part 211 compliant".to_string(),
+            ),
+            conflict_minerals_compliance: Some(
+                "RMAP Compliant - 100% conflict-free sourcing".to_string(),
+            ),
+        })
+    }
+
+    pub fn assess_unified_supply_chain_risk(&self) -> Result<UnifiedRiskAssessment> {
+        // Calculate unified risk across all industries
+        let overall_risk_score = 0.23; // Low risk overall
+
+        Ok(UnifiedRiskAssessment { overall_risk_score })
+    }
+}
+
+pub struct GraphUpdateReport {
+    pub block_index: usize,
+    pub entities_added: usize,
+    pub relationships_added: usize,
+    pub entities_merged: usize,
+    pub significant_changes: Vec<String>,
+    pub processing_time: Duration,
+}
+
+pub struct QualityPredictor {
+    pub graph_db: GraphDatabase,
+    pub historical_data: HashMap<String, Vec<QualityEvent>>,
+}
+
+impl QualityPredictor {
+    pub fn new(
+        graph_db: GraphDatabase,
+        historical_data: HashMap<String, Vec<QualityEvent>>,
+    ) -> Self {
+        Self {
+            graph_db,
+            historical_data,
+        }
+    }
+
+    pub fn predict_quality_risk(&self, batch_id: &str) -> Result<QualityPrediction> {
+        // Simple prediction based on historical data
+        let risk_probability = if batch_id.contains("BAD") {
+            0.85
+        } else if batch_id.contains("GOOD") {
+            0.12
+        } else {
+            0.35
+        };
+
+        let confidence_score = 0.78;
+
+        let contributing_factors = vec![
+            "Historical quality deviations".to_string(),
+            "Temperature excursions during transport".to_string(),
+            "Supplier performance metrics".to_string(),
+        ];
+
+        let recommendations = if risk_probability > 0.5 {
+            vec![
+                "Increase inspection frequency".to_string(),
+                "Review supplier certification".to_string(),
+                "Consider alternate sourcing".to_string(),
+            ]
+        } else {
+            vec![
+                "Continue standard monitoring".to_string(),
+                "Maintain current quality protocols".to_string(),
+            ]
+        };
+
+        Ok(QualityPrediction {
+            risk_probability,
+            confidence_score,
+            contributing_factors,
+            recommendations,
+        })
+    }
+}
+
+pub struct QualityEvent {
+    pub batch_id: String,
+    pub timestamp: Instant,
+    pub quality_score: f64,
+    pub issue_type: Option<String>,
+}
+
+pub struct QualityPrediction {
+    pub risk_probability: f64,
+    pub confidence_score: f64,
+    pub contributing_factors: Vec<String>,
+    pub recommendations: Vec<String>,
+}
 use provchain_org::core::blockchain::Blockchain;
 use provchain_org::knowledge_graph::builder::GraphBuilder;
 use provchain_org::knowledge_graph::entity_linking::EntityLinker;
@@ -15,6 +147,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)] // Test infrastructure structs defined after module
 mod tests {
     use super::*;
 
@@ -1309,7 +1442,11 @@ mod tests {
         }
 
         // Add relationships
-        for i in 0..batches.len().saturating_sub(1) {
+        for (i, _batch) in batches
+            .iter()
+            .enumerate()
+            .take(batches.len().saturating_sub(1))
+        {
             let relationship = KnowledgeRelationship {
                 subject: format!("http://example.org/{}", batches[i].0),
                 predicate: "sourced_from".to_string(),
@@ -1530,7 +1667,7 @@ impl TraceabilityEngine {
                         // Temperature is typically after the property name
                         // Format: "prefix:temperature value ;" or "storageTemperature value ;"
                         // Try to parse the temperature value (it might be at different positions)
-                        for (_i, part) in parts.iter().enumerate() {
+                        for part in parts.iter() {
                             if let Ok(temp) = part.parse::<f64>() {
                                 // Found a numeric value that could be temperature
                                 let humidity = if data.contains("humidity") {
@@ -1629,11 +1766,7 @@ impl TraceabilityEngine {
                             authority: data[start + 11..start + 11 + end].to_string(),
                         });
                     }
-                } else if data.contains("FDA") {
-                    regulatory_approvals.push(RegulatoryApproval {
-                        authority: "FDA".to_string(),
-                    });
-                } else if data.contains("EUA") {
+                } else if data.contains("FDA") || data.contains("EUA") {
                     regulatory_approvals.push(RegulatoryApproval {
                         authority: "FDA".to_string(),
                     });
@@ -1913,128 +2046,4 @@ impl GraphStreamProcessor {
             processing_time: start.elapsed(),
         })
     }
-}
-
-pub struct GraphUpdateReport {
-    pub block_index: usize,
-    pub entities_added: usize,
-    pub relationships_added: usize,
-    pub entities_merged: usize,
-    pub significant_changes: Vec<String>,
-    pub processing_time: Duration,
-}
-
-pub struct QualityPredictor {
-    pub graph_db: GraphDatabase,
-    pub historical_data: HashMap<String, Vec<QualityEvent>>,
-}
-
-impl QualityPredictor {
-    pub fn new(
-        graph_db: GraphDatabase,
-        historical_data: HashMap<String, Vec<QualityEvent>>,
-    ) -> Self {
-        Self {
-            graph_db,
-            historical_data,
-        }
-    }
-
-    pub fn predict_quality_risk(&self, batch_id: &str) -> Result<QualityPrediction> {
-        // Simple prediction based on historical data
-        let risk_probability = if batch_id.contains("BAD") {
-            0.85
-        } else if batch_id.contains("GOOD") {
-            0.12
-        } else {
-            0.35
-        };
-
-        let confidence_score = 0.78;
-
-        let contributing_factors = vec![
-            "Historical quality deviations".to_string(),
-            "Temperature excursions during transport".to_string(),
-            "Supplier performance metrics".to_string(),
-        ];
-
-        let recommendations = if risk_probability > 0.5 {
-            vec![
-                "Increase inspection frequency".to_string(),
-                "Review supplier certification".to_string(),
-                "Consider alternate sourcing".to_string(),
-            ]
-        } else {
-            vec![
-                "Continue standard monitoring".to_string(),
-                "Maintain current quality protocols".to_string(),
-            ]
-        };
-
-        Ok(QualityPrediction {
-            risk_probability,
-            confidence_score,
-            contributing_factors,
-            recommendations,
-        })
-    }
-}
-
-pub struct QualityEvent {
-    pub batch_id: String,
-    pub timestamp: Instant,
-    pub quality_score: f64,
-    pub issue_type: Option<String>,
-}
-
-pub struct QualityPrediction {
-    pub risk_probability: f64,
-    pub confidence_score: f64,
-    pub contributing_factors: Vec<String>,
-    pub recommendations: Vec<String>,
-}
-
-pub struct MultiIndustryTraceabilityEngine {
-    pub blockchains: Vec<Blockchain>,
-    pub cross_industry_mappings: HashMap<String, Vec<String>>,
-}
-
-impl MultiIndustryTraceabilityEngine {
-    pub fn find_cross_industry_suppliers(&self) -> Result<Vec<String>> {
-        // Find suppliers that serve multiple industries
-        Ok(vec![
-            "Global Packaging Solutions - serves food, pharma, electronics".to_string(),
-            "Cold Chain Logistics Inc - serves food and pharmaceuticals".to_string(),
-            "Quality Testing Labs - serves all three industries".to_string(),
-        ])
-    }
-
-    pub fn generate_compliance_report(&self) -> Result<MultiIndustryComplianceReport> {
-        Ok(MultiIndustryComplianceReport {
-            food_safety_compliance: Some("FSMA Compliant - 98.5% score".to_string()),
-            pharmaceutical_compliance: Some(
-                "GMP Certified - 21 CFR Part 211 compliant".to_string(),
-            ),
-            conflict_minerals_compliance: Some(
-                "RMAP Compliant - 100% conflict-free sourcing".to_string(),
-            ),
-        })
-    }
-
-    pub fn assess_unified_supply_chain_risk(&self) -> Result<UnifiedRiskAssessment> {
-        // Calculate unified risk across all industries
-        let overall_risk_score = 0.23; // Low risk overall
-
-        Ok(UnifiedRiskAssessment { overall_risk_score })
-    }
-}
-
-pub struct MultiIndustryComplianceReport {
-    pub food_safety_compliance: Option<String>,
-    pub pharmaceutical_compliance: Option<String>,
-    pub conflict_minerals_compliance: Option<String>,
-}
-
-pub struct UnifiedRiskAssessment {
-    pub overall_risk_score: f64,
 }

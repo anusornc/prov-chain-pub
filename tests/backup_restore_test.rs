@@ -159,7 +159,8 @@ fn test_backup_list_and_management() {
     let test_data = r#"
         @prefix ex: <http://example.org/> .
         ex:product1 ex:name "Test Product" .
-    "#.to_string();
+    "#
+    .to_string();
     let _ = blockchain.add_block(test_data);
 
     // Create multiple backups with delay to ensure unique timestamps (filename uses second granularity)
@@ -182,7 +183,11 @@ fn test_backup_list_and_management() {
     // Debug: print what we got
     eprintln!("Found {} backups", backups.len());
 
-    assert!(backups.len() >= 3, "Should have at least 3 backups, got {}", backups.len());
+    assert!(
+        backups.len() >= 3,
+        "Should have at least 3 backups, got {}",
+        backups.len()
+    );
 }
 
 #[test]

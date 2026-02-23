@@ -218,7 +218,11 @@ impl P2PMessage {
         }
 
         // Validate RDF data size for GraphResponse messages
-        if let Self::GraphResponse { rdf_data: Some(data), .. } = self {
+        if let Self::GraphResponse {
+            rdf_data: Some(data),
+            ..
+        } = self
+        {
             if data.len() > MAX_RDF_DATA_SIZE {
                 anyhow::bail!(
                     "RDF data too large: {} bytes exceeds maximum of {}",

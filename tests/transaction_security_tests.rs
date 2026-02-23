@@ -1045,9 +1045,9 @@ fn create_test_transaction(tx_type: TransactionType, metadata: TransactionMetada
         tx_type,
         vec![],
         vec![],
-                    "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
-                    None,
-                    metadata,
+        "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+        None,
+        metadata,
         TransactionPayload::RdfData(String::new()),
     )
 }

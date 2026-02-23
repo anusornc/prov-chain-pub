@@ -1,0 +1,41 @@
+C4Container
+    title ProvChainOrg Container Architecture - Context View
+
+    Person(supply_chain_manager, "Supply Chain Manager", "Manages supply chain operations and requires traceability data")
+    Person(consumer, "Consumer", "Wants to verify product origin and journey")
+    Person(auditor, "Regulatory Auditor", "Requires audit trail for compliance")
+    Person(admin, "System Administrator", "Operations, monitoring, maintenance")
+
+    Container_Boundary(provchain, "ProvChainOrg Node", "Distributed blockchain system with semantic reasoning") {
+        Container(web_api, "Web API", "Axum + JWT Authentication", "REST API and WebSocket endpoints for transaction submission and SPARQL queries")
+        Container(blockchain, "Blockchain Core", "Rust + Tokio Runtime", "Block management, consensus engine (PoA/PBFT), transaction pool")
+        Container(semantic, "Semantic Layer", "OWL2 Reasoner + SHACL", "Reasoning engine for ontology inference and data validation")
+        ContainerDb(rdf_store, "RDF Store", "Oxigraph", "Triple/quad storage and SPARQL query execution")
+    }
+
+    ContainerDb(monitoring, "Monitoring Stack", "Prometheus + Grafana", "Metrics collection, dashboards, and observability")
+
+    System_Ext(erp_system, "ERP System", "Enterprise resource planning system for automated data entry")
+    System_Ext(iot_devices, "IoT Sensors", "Temperature and location tracking devices")
+    System_Ext(other_blockchain, "Other Blockchain", "External blockchain systems for cross-chain data interchange")
+
+    Rel(supply_chain_manager, web_api, "Submit transactions", "HTTP/JSON, WebSocket")
+    Rel(consumer, web_api, "Query product journey", "HTTP/JSON")
+    Rel(auditor, web_api, "Audit chain integrity", "HTTP/JSON")
+    Rel(admin, web_api, "Manage system", "HTTPS")
+
+    Rel(admin, monitoring, "Monitor metrics", "HTTPS")
+
+    Rel(web_api, blockchain, "Submit transaction", "REST/gRPC")
+    Rel(web_api, semantic, "Validate data", "RDF content")
+    Rel(web_api, rdf_store, "Query data", "SPARQL")
+
+    Rel(blockchain, rdf_store, "Persist blocks", "Embedded storage")
+    Rel(blockchain, semantic, "Validate with SHACL", "RDF content")
+    Rel(semantic, rdf_store, "Query ontology", "SPARQL")
+
+    Rel(erp_system, web_api, "Automated submission", "REST API")
+    Rel(iot_devices, web_api, "Sensor data", "WebSocket/MQTT")
+    Rel(blockchain, other_blockchain, "Cross-chain bridge", "Lock & Mint Protocol")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2")

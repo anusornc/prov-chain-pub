@@ -1,5 +1,7 @@
 use crate::trace_optimization::EnhancedTraceResult;
-use crate::web::handlers::utils::{validate_sparql_identifier, validate_sparql_local_name, validate_sparql_query};
+use crate::web::handlers::utils::{
+    validate_sparql_identifier, validate_sparql_local_name, validate_sparql_query,
+};
 use crate::web::handlers::AppState;
 use crate::web::models::{
     AnalyticsQueryParams, ApiError, BlockInfo, EnhancedTraceQueryParams, EnvironmentalData,

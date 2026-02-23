@@ -307,6 +307,7 @@ fn extract_entities_from_ontology_data() -> Vec<provchain_org::core::entity::Tra
 fn bench_resilience_performance(c: &mut Criterion) {
     let mut group = c.benchmark_group("resilience_performance");
 
+    #[allow(clippy::type_complexity)]
     let failure_scenarios: Vec<(&str, fn(&mut Blockchain, TestEnvironment))> = vec![
         ("network_partition", simulate_network_partition),
         ("high_error_rate", simulate_high_error_rate),
@@ -452,8 +453,8 @@ fn process_transaction_batches(blockchain: &mut Blockchain, volume: usize) {
         processed += current_batch;
 
         // REMOVED: Artificial delay for accurate benchmarking
-// Previous code simulated processing delays (100μs) which invalidates performance measurements
-// Real workloads should have natural delays from actual I/O and computation
+        // Previous code simulated processing delays (100μs) which invalidates performance measurements
+        // Real workloads should have natural delays from actual I/O and computation
     }
 }
 
@@ -486,8 +487,8 @@ async fn simulate_concurrent_api_load(server: Arc<WebServer>, users: usize) {
                 }
 
                 // REMOVED: Artificial "think time" for accurate benchmarking
-// Previous code simulated 50ms user think time which invalidates concurrent load measurements
-// Real concurrent workloads should measure actual API throughput without artificial delays
+                // Previous code simulated 50ms user think time which invalidates concurrent load measurements
+                // Real concurrent workloads should measure actual API throughput without artificial delays
             }
         });
 

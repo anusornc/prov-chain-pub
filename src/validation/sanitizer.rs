@@ -80,12 +80,34 @@ impl SanitizationConfig {
         };
 
         // Convert common characters to uppercase equivalents
-        for (lower, upper) in [('a', 'A'), ('b', 'B'), ('c', 'C'), ('d', 'D'), ('e', 'E'),
-                               ('f', 'F'), ('g', 'G'), ('h', 'H'), ('i', 'I'), ('j', 'J'),
-                               ('k', 'K'), ('l', 'L'), ('m', 'M'), ('n', 'N'), ('o', 'O'),
-                               ('p', 'P'), ('q', 'Q'), ('r', 'R'), ('s', 'S'), ('t', 'T'),
-                               ('u', 'U'), ('v', 'V'), ('w', 'W'), ('x', 'X'), ('y', 'Y'),
-                               ('z', 'Z')] {
+        for (lower, upper) in [
+            ('a', 'A'),
+            ('b', 'B'),
+            ('c', 'C'),
+            ('d', 'D'),
+            ('e', 'E'),
+            ('f', 'F'),
+            ('g', 'G'),
+            ('h', 'H'),
+            ('i', 'I'),
+            ('j', 'J'),
+            ('k', 'K'),
+            ('l', 'L'),
+            ('m', 'M'),
+            ('n', 'N'),
+            ('o', 'O'),
+            ('p', 'P'),
+            ('q', 'Q'),
+            ('r', 'R'),
+            ('s', 'S'),
+            ('t', 'T'),
+            ('u', 'U'),
+            ('v', 'V'),
+            ('w', 'W'),
+            ('x', 'X'),
+            ('y', 'Y'),
+            ('z', 'Z'),
+        ] {
             config.char_replacements.insert(lower, upper.to_string());
         }
 
@@ -235,9 +257,9 @@ mod tests {
     #[test]
     fn test_length_truncation() {
         let config = SanitizationConfig {
-    max_length: Some(5),
-    ..Default::default()
-};
+            max_length: Some(5),
+            ..Default::default()
+        };
         let sanitizer = InputSanitizer::new(config);
 
         let input = "Hello World";

@@ -193,7 +193,9 @@ impl SparqlValidator {
             }
 
             // Check for comments followed by UNION (on next line)
-            if query_upper.contains("UNION") && (query.contains("#") || query.contains("--") || query.contains("//")) {
+            if query_upper.contains("UNION")
+                && (query.contains("#") || query.contains("--") || query.contains("//"))
+            {
                 return Err(anyhow!("Comment followed by UNION detected"));
             }
         }
@@ -226,7 +228,11 @@ impl SparqlValidator {
         }
 
         // Check for RDF* (triple) patterns that might expose internals
-        if query.contains("<<<") || query.contains(">>>") || query.contains("<<") || query.contains(">>") {
+        if query.contains("<<<")
+            || query.contains(">>>")
+            || query.contains("<<")
+            || query.contains(">>")
+        {
             return Err(anyhow!("RDF* triple patterns are not allowed via API"));
         }
 
@@ -344,13 +350,16 @@ impl SparqlValidator {
         let query_upper = query.to_uppercase();
 
         // Check for case-insensitive UNION with any whitespace around it
-        if query_upper.contains(" UNION ") 
-            || query_upper.contains("\nUNION ") 
+        if query_upper.contains(" UNION ")
+            || query_upper.contains("\nUNION ")
             || query_upper.contains("\tUNION ")
             || query_upper.contains("\r\nUNION")
             || query_upper.contains("\nUNION\n")
-            || query_upper.contains(" \nUNION") {
-            return Err(anyhow!("UNION injection with whitespace smuggling detected"));
+            || query_upper.contains(" \nUNION")
+        {
+            return Err(anyhow!(
+                "UNION injection with whitespace smuggling detected"
+            ));
         }
 
         // Check for UNION at start (after trimming whitespace)
@@ -376,7 +385,9 @@ impl SparqlValidator {
                 let union_pos = query_upper.find("UNION").unwrap_or(0);
                 let comment_end = query.find("*/").unwrap_or(usize::MAX);
                 if comment_end < union_pos + 20 {
-                    return Err(anyhow!("Multi-line comment terminated UNION injection detected"));
+                    return Err(anyhow!(
+                        "Multi-line comment terminated UNION injection detected"
+                    ));
                 }
             }
         }
@@ -387,11 +398,22 @@ impl SparqlValidator {
         }
 
         // Check for UNION with aggregation functions
-        let aggregations = ["COUNT", "MAX", "MIN", "SUM", "AVG", "GROUP_CONCAT", "SAMPLE"];
+        let aggregations = [
+            "COUNT",
+            "MAX",
+            "MIN",
+            "SUM",
+            "AVG",
+            "GROUP_CONCAT",
+            "SAMPLE",
+        ];
         if query_upper.contains("UNION") {
             for agg in &aggregations {
                 if query_upper.contains(agg) {
-                    return Err(anyhow!("UNION with aggregation function '{}' injection detected", agg));
+                    return Err(anyhow!(
+                        "UNION with aggregation function '{}' injection detected",
+                        agg
+                    ));
                 }
             }
         }
@@ -410,10 +432,21 @@ impl SparqlValidator {
             if let Some(pos) = query_lower.find('^') {
                 let rest = &query_lower[pos..];
                 // Check for sensitive properties after ^
-                let sensitive = ["password", "token", "secret", "auth", "key", "private", "credential"];
+                let sensitive = [
+                    "password",
+                    "token",
+                    "secret",
+                    "auth",
+                    "key",
+                    "private",
+                    "credential",
+                ];
                 for sens in &sensitive {
                     if rest.contains(sens) {
-                        return Err(anyhow!("Inverse path injection targeting sensitive property '{}' detected", sens));
+                        return Err(anyhow!(
+                            "Inverse path injection targeting sensitive property '{}' detected",
+                            sens
+                        ));
                     }
                 }
             }
@@ -423,23 +456,42 @@ impl SparqlValidator {
         if query_lower.contains('|') {
             // Pattern: :prop|:sensitive (pipe after property)
             let alt_after = [
-                ":password|", ":token|", ":secret|", ":auth|", ":key|", ":private|",
-                ":haspassword|", ":hastoken|", ":hascredential|",
-                ":read|", ":write|", ":delete|",
+                ":password|",
+                ":token|",
+                ":secret|",
+                ":auth|",
+                ":key|",
+                ":private|",
+                ":haspassword|",
+                ":hastoken|",
+                ":hascredential|",
+                ":read|",
+                ":write|",
+                ":delete|",
             ];
             for pattern in &alt_after {
                 if query_lower.contains(pattern) {
-                    return Err(anyhow!("Alternative path injection pattern '{}' detected", pattern));
+                    return Err(anyhow!(
+                        "Alternative path injection pattern '{}' detected",
+                        pattern
+                    ));
                 }
             }
             // Pattern: |:sensitive (pipe before property)
             let alt_before = [
-                "|:password", "|:token", "|:secret", "|:auth", "|:key",
+                "|:password",
+                "|:token",
+                "|:secret",
+                "|:auth",
+                "|:key",
                 "|<http://",
             ];
             for pattern in &alt_before {
                 if query_lower.contains(pattern) {
-                    return Err(anyhow!("Alternative path injection pattern '{}' detected", pattern));
+                    return Err(anyhow!(
+                        "Alternative path injection pattern '{}' detected",
+                        pattern
+                    ));
                 }
             }
         }
@@ -448,12 +500,20 @@ impl SparqlValidator {
         if query_lower.contains('/') {
             // Pattern: :hasPassword/ (slash after property)
             let seq_after = [
-                ":haspassword/", ":hastoken/", ":hassecret/", ":user/",
-                ":password/", ":token/", ":secret/",
+                ":haspassword/",
+                ":hastoken/",
+                ":hassecret/",
+                ":user/",
+                ":password/",
+                ":token/",
+                ":secret/",
             ];
             for pattern in &seq_after {
                 if query_lower.contains(pattern) {
-                    return Err(anyhow!("Sequence path injection pattern '{}' detected", pattern));
+                    return Err(anyhow!(
+                        "Sequence path injection pattern '{}' detected",
+                        pattern
+                    ));
                 }
             }
             // Pattern: /:password (slash before property)
@@ -469,8 +529,12 @@ impl SparqlValidator {
                 // Patterns: :password*, :token+, etc. (quantifier after)
                 if query_lower.contains(&format!("{}*", sens))
                     || query_lower.contains(&format!("{}+", sens))
-                    || query_lower.contains(&format!("{}?", sens)) {
-                    return Err(anyhow!("Quantifier path injection targeting '{}' detected", sens));
+                    || query_lower.contains(&format!("{}?", sens))
+                {
+                    return Err(anyhow!(
+                        "Quantifier path injection targeting '{}' detected",
+                        sens
+                    ));
                 }
             }
         }
@@ -505,7 +569,8 @@ impl SparqlValidator {
                 if rest.contains("'1'='1'")
                     || rest.contains("\"1\"=\"1\"")
                     || rest.contains("'a'='a'")
-                    || rest.contains("\"a\"=\"a\"") {
+                    || rest.contains("\"a\"=\"a\"")
+                {
                     return Err(anyhow!("SQL-like OR bypass injection in FILTER detected"));
                 }
             }
@@ -518,7 +583,8 @@ impl SparqlValidator {
                 if rest.contains("'1'='1'")
                     || rest.contains("\"1\"=\"1\"")
                     || rest.contains("'a'='a'")
-                    || rest.contains("\"a\"=\"a\"") {
+                    || rest.contains("\"a\"=\"a\"")
+                {
                     return Err(anyhow!("SQL-like AND bypass injection in FILTER detected"));
                 }
             }
@@ -528,17 +594,19 @@ impl SparqlValidator {
         if query_upper.contains("REGEX") {
             // Pattern: REGEX(.*, "..." or REGEX(.+, "..."
             if query_lower.contains("regex(.*,") || query_lower.contains("regex(.+,") {
-                return Err(anyhow!("Greedy REGEX pattern injection (DoS risk) detected"));
+                return Err(anyhow!(
+                    "Greedy REGEX pattern injection (DoS risk) detected"
+                ));
             }
             // Check for character class patterns that match everything
-            if query_upper.contains("REGEX") && (
-                query_lower.contains("[\\s\\s]")
-                || query_lower.contains("[\\s\\S]")
-                || query_lower.contains(".*.*")
-                || query_lower.contains(".+.+")
-                || query_lower.contains("(.*){10,}")
-                || query_lower.contains("(.+){10,}")
-            ) {
+            if query_upper.contains("REGEX")
+                && (query_lower.contains("[\\s\\s]")
+                    || query_lower.contains("[\\s\\S]")
+                    || query_lower.contains(".*.*")
+                    || query_lower.contains(".+.+")
+                    || query_lower.contains("(.*){10,}")
+                    || query_lower.contains("(.+){10,}"))
+            {
                 return Err(anyhow!("Complex REGEX injection detected"));
             }
 
@@ -553,8 +621,19 @@ impl SparqlValidator {
 
         // Check for function injection in FILTER - always reject dangerous functions in FILTER
         let dangerous_funcs = [
-            "STRLEN", "CONTAINS", "CONCAT", "COALESCE", "IF", "REPLACE", "SUBSTR",
-            "UCASE", "LCASE", "STRSTARTS", "STRENDS", "ENCODE_FOR_URI", "STRAFTER",
+            "STRLEN",
+            "CONTAINS",
+            "CONCAT",
+            "COALESCE",
+            "IF",
+            "REPLACE",
+            "SUBSTR",
+            "UCASE",
+            "LCASE",
+            "STRSTARTS",
+            "STRENDS",
+            "ENCODE_FOR_URI",
+            "STRAFTER",
         ];
         for func in &dangerous_funcs {
             if query_upper.contains("FILTER") && query_upper.contains(func) {
@@ -568,7 +647,10 @@ impl SparqlValidator {
             let in_content = &query_upper[query_upper.find(" IN (").unwrap_or(0)..];
             let count_values = in_content.matches(',').count();
             if count_values > 50 {
-                return Err(anyhow!("IN clause injection (too many values: {})", count_values));
+                return Err(anyhow!(
+                    "IN clause injection (too many values: {})",
+                    count_values
+                ));
             }
 
             // Check for IN clause with sensitive values
@@ -582,27 +664,34 @@ impl SparqlValidator {
 
         // Check for logical operators in FILTER (potential bypass)
         // Allow only basic comparison operators, reject complex logical expressions
-        if query_upper.contains("FILTER") && (
-            query_lower.contains(" || ")  // Space-pipe-space for OR
+        if query_upper.contains("FILTER")
+            && (
+                query_lower.contains(" || ")  // Space-pipe-space for OR
             || query_lower.contains("\n||")  // Newline before pipe
             || query_lower.contains("\t||")  // Tab before pipe
             || query_lower.contains(" && ")   // Space-ampersand-space for AND
-            || query_lower.contains("\n&&")   // Newline before ampersand
-        ) {
-            return Err(anyhow!("Logical operator bypass injection in FILTER detected"));
+            || query_lower.contains("\n&&")
+                // Newline before ampersand
+            )
+        {
+            return Err(anyhow!(
+                "Logical operator bypass injection in FILTER detected"
+            ));
         }
 
         // Check for SLEEP function (timing attack)
         if query_upper.contains("FILTER") && query_upper.contains("SLEEP") {
-            return Err(anyhow!("SLEEP function in FILTER not allowed (timing attack)"));
+            return Err(anyhow!(
+                "SLEEP function in FILTER not allowed (timing attack)"
+            ));
         }
 
         // Check for suspicious boolean combinations in FILTER
-        if query_upper.contains("FILTER") && (
-            query_lower.contains("true() &&")
-            || query_lower.contains("false() ||")
-            || query_lower.contains("true() ||")
-        ) {
+        if query_upper.contains("FILTER")
+            && (query_lower.contains("true() &&")
+                || query_lower.contains("false() ||")
+                || query_lower.contains("true() ||"))
+        {
             return Err(anyhow!("Suspicious boolean combination in FILTER detected"));
         }
 
@@ -657,35 +746,50 @@ impl SparqlValidator {
         // Check for nested BIND expressions
         let bind_count = query_upper.matches("BIND(").count();
         if bind_count > 3 {
-            return Err(anyhow!("Excessive BIND statements detected (count: {})", bind_count));
+            return Err(anyhow!(
+                "Excessive BIND statements detected (count: {})",
+                bind_count
+            ));
         }
 
         // Check for BIND with arithmetic operations (potential DoS)
-        if query_upper.contains("BIND") && (
-            query_lower.contains("* 1000") || 
-            query_lower.contains("/ 0") ||
-            query_lower.contains("**") ||
-            query_lower.contains("^ ")
-        ) {
-            return Err(anyhow!("BIND with suspicious arithmetic operations detected"));
+        if query_upper.contains("BIND")
+            && (query_lower.contains("* 1000")
+                || query_lower.contains("/ 0")
+                || query_lower.contains("**")
+                || query_lower.contains("^ "))
+        {
+            return Err(anyhow!(
+                "BIND with suspicious arithmetic operations detected"
+            ));
         }
 
         // Check for BIND overriding built-in functions
-        let built_in_vars = ["?offset", "?limit", "?orderby", "?distinct", "?reduced", "?sorted"];
+        let built_in_vars = [
+            "?offset",
+            "?limit",
+            "?orderby",
+            "?distinct",
+            "?reduced",
+            "?sorted",
+        ];
         for var in &built_in_vars {
             if query_upper.contains("BIND") && query_upper.contains(var) {
-                return Err(anyhow!("BIND attempting to override built-in variable '{}'", var));
+                return Err(anyhow!(
+                    "BIND attempting to override built-in variable '{}'",
+                    var
+                ));
             }
         }
 
         // Check for BIND with now/datetime manipulation
-        if query_upper.contains("BIND") && (
-            query_upper.contains("NOW()") || 
-            query_upper.contains("YEAR(") ||
-            query_upper.contains("MONTH(")
-        ) {
+        if query_upper.contains("BIND")
+            && (query_upper.contains("NOW()")
+                || query_upper.contains("YEAR(")
+                || query_upper.contains("MONTH("))
+        {
             // Allow for legitimate use but flag excessive manipulation
-            let datetime_count = query_upper.matches("NOW()").count() 
+            let datetime_count = query_upper.matches("NOW()").count()
                 + query_upper.matches("YEAR(").count()
                 + query_upper.matches("MONTH(").count();
             if datetime_count > 5 {
@@ -709,7 +813,17 @@ impl SparqlValidator {
         // Check for sensitive data in VALUES clause
         // Pattern: VALUES ?var { :admin :user }
         if query_upper.contains("VALUES") {
-            let sensitive = ["password", "token", "secret", "auth", "key", "private", "credential", "admin", "user"];
+            let sensitive = [
+                "password",
+                "token",
+                "secret",
+                "auth",
+                "key",
+                "private",
+                "credential",
+                "admin",
+                "user",
+            ];
             for sens in &sensitive {
                 // Check for sensitive property in VALUES
                 if query_lower.contains(&format!(":{}", sens)) && query_upper.contains("VALUES") {
@@ -717,7 +831,10 @@ impl SparqlValidator {
                     let values_pos = query_upper.find("VALUES").unwrap_or(0);
                     let sens_pos = query_lower.find(&format!(":{}", sens)).unwrap_or(0);
                     if sens_pos > values_pos && sens_pos < values_pos + 200 {
-                        return Err(anyhow!("VALUES clause contains sensitive property '{}'", sens));
+                        return Err(anyhow!(
+                            "VALUES clause contains sensitive property '{}'",
+                            sens
+                        ));
                     }
                 }
             }
@@ -731,7 +848,10 @@ impl SparqlValidator {
         // Check for excessive VALUES clauses (DoS risk)
         let values_count = query_upper.matches("VALUES").count();
         if values_count > 2 {
-            return Err(anyhow!("Excessive VALUES clauses detected (count: {})", values_count));
+            return Err(anyhow!(
+                "Excessive VALUES clauses detected (count: {})",
+                values_count
+            ));
         }
 
         // Check for large VALUES sets (potential DoS)
@@ -739,21 +859,24 @@ impl SparqlValidator {
             let values_start = query_upper.find("VALUES {").unwrap_or(0);
             let values_end = query_upper[values_start..].find('}').unwrap_or(0);
             let values_content = &query_upper[values_start..values_start + values_end];
-            
+
             // Count rows (parentheses groups)
             let row_count = values_content.matches('(').count();
             if row_count > 100 {
-                return Err(anyhow!("VALUES clause with excessive rows detected (count: {})", row_count));
+                return Err(anyhow!(
+                    "VALUES clause with excessive rows detected (count: {})",
+                    row_count
+                ));
             }
         }
 
         // Check for VALUES with nested data structures
-        if query_upper.contains("VALUES") && (
-            query_lower.contains("{{") ||  // Double braces (nested)
+        if query_upper.contains("VALUES")
+            && (query_lower.contains("{{") ||  // Double braces (nested)
             query_lower.contains("}}") ||
             query_lower.contains("<<") ||  // RDF collections
-            query_lower.contains(">>")
-        ) {
+            query_lower.contains(">>"))
+        {
             return Err(anyhow!("VALUES clause with nested structures detected"));
         }
 
@@ -767,13 +890,18 @@ impl SparqlValidator {
         // Check for control characters (potential smuggling)
         for (i, c) in query.chars().enumerate() {
             if c < ' ' && c != '\n' && c != '\r' && c != '\t' {
-                return Err(anyhow!("Control character detected at position {} (potential smuggling)", i));
+                return Err(anyhow!(
+                    "Control character detected at position {} (potential smuggling)",
+                    i
+                ));
             }
         }
 
         // Check for single-line comment at end of query (query truncation)
         if query.trim_end().ends_with("--") {
-            return Err(anyhow!("Single-line comment termination at query end detected"));
+            return Err(anyhow!(
+                "Single-line comment termination at query end detected"
+            ));
         }
 
         // Check for comment with newline smuggling (e.g., # comment\nUNION)
@@ -790,7 +918,9 @@ impl SparqlValidator {
             // Check if first word looks like SELECT but not all caps
             let upper_first = first_word.to_uppercase();
             if upper_first == "SELECT" && first_word != "SELECT" {
-                return Err(anyhow!("Mixed case keyword detected (potential obfuscation)"));
+                return Err(anyhow!(
+                    "Mixed case keyword detected (potential obfuscation)"
+                ));
             }
         }
 
@@ -818,7 +948,9 @@ impl SparqlValidator {
             let suspicious_unquoted = ["user", "password", "token", "secret"];
             for sus in &suspicious_unquoted {
                 // Check if the keyword appears in FILTER context without quotes
-                if query_lower.contains(&format!("= {}", sus)) || query_lower.contains(&format!("= {}", sus)) {
+                if query_lower.contains(&format!("= {}", sus))
+                    || query_lower.contains(&format!("= {}", sus))
+                {
                     return Err(anyhow!("Unquoted keyword '{}' in FILTER detected", sus));
                 }
             }
@@ -840,11 +972,15 @@ impl SparqlValidator {
             let code = c as u32;
             // Cyrillic range: U+0400–U+04FF
             if (0x0400..=0x04FF).contains(&code) {
-                return Err(anyhow!("Cyrillic character detected (potential homograph attack)"));
+                return Err(anyhow!(
+                    "Cyrillic character detected (potential homograph attack)"
+                ));
             }
             // Greek range: U+0370–U+03FF
             if (0x0370..=0x03FF).contains(&code) {
-                return Err(anyhow!("Greek character detected (potential homograph attack)"));
+                return Err(anyhow!(
+                    "Greek character detected (potential homograph attack)"
+                ));
             }
         }
 
@@ -867,7 +1003,9 @@ impl SparqlValidator {
             let code = c as u32;
             // RTL/LTR overrides: U+202A-U+202E, U+2066-U+2069
             if (0x202A..=0x202E).contains(&code) || (0x2066..=0x2069).contains(&code) {
-                return Err(anyhow!("Bidirectional override character detected (trojan source)"));
+                return Err(anyhow!(
+                    "Bidirectional override character detected (trojan source)"
+                ));
             }
         }
 
@@ -916,9 +1054,9 @@ mod tests {
     #[test]
     fn test_query_too_long() {
         let config = SparqlValidatorConfig {
-    max_query_length: 100,
-    ..Default::default()
-};
+            max_query_length: 100,
+            ..Default::default()
+        };
         let validator = SparqlValidator::new(config);
 
         let long_query = format!("SELECT ?s WHERE {{ {} }}", "a ".repeat(200));

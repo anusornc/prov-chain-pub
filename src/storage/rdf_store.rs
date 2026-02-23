@@ -406,10 +406,8 @@ impl RDFStore {
             if let QueryResults::Solutions(solutions) = self.query(query) {
                 let mut names = Vec::new();
                 for sol in solutions.flatten() {
-                    if let Some(graph_term) = sol.get("g") {
-                        if let Term::NamedNode(graph_node) = graph_term {
-                            names.push(graph_node.as_str().to_string());
-                        }
+                    if let Some(Term::NamedNode(graph_node)) = sol.get("g") {
+                        names.push(graph_node.as_str().to_string());
                     }
                 }
                 names
@@ -457,7 +455,10 @@ impl RDFStore {
         }
 
         // Increment counter and check if we should flush
-        let count = self.blocks_since_flush.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+        let count = self
+            .blocks_since_flush
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            + 1;
 
         // Only flush to disk when we reach the flush interval
         if count < self.config.flush_interval {
@@ -465,7 +466,8 @@ impl RDFStore {
         }
 
         // Reset counter and perform actual flush
-        self.blocks_since_flush.store(0, std::sync::atomic::Ordering::Relaxed);
+        self.blocks_since_flush
+            .store(0, std::sync::atomic::Ordering::Relaxed);
         self.force_flush()
     }
 
@@ -627,6 +629,7 @@ impl RDFStore {
     }
 
     /// Copy directory recursively
+    #[allow(clippy::only_used_in_recursion)]
     fn copy_directory(&self, src: &Path, dst: &Path) -> Result<()> {
         std::fs::create_dir_all(dst)?;
 
@@ -900,12 +903,10 @@ impl RDFStore {
             QueryResults::Solutions(solutions) => {
                 let mut count = 0u64;
                 for sol in solutions.flatten() {
-                    if let Some(term) = sol.get("orphans") {
-                        if let Term::Literal(lit) = term {
-                            if let Ok(parsed_count) = lit.value().parse::<u64>() {
-                                count = parsed_count;
-                                break;
-                            }
+                    if let Some(Term::Literal(lit)) = sol.get("orphans") {
+                        if let Ok(parsed_count) = lit.value().parse::<u64>() {
+                            count = parsed_count;
+                            break;
                         }
                     }
                 }
@@ -1000,17 +1001,15 @@ impl RDFStore {
             Ok(_) => {
                 // Successfully parsed as RDF, now copy all triples to the target graph
                 let mut quads_to_insert = Vec::new();
-                for quad in temp_store.iter() {
-                    if let Ok(original_quad) = quad {
-                        // Create a new quad with the specified graph name
-                        let new_quad = Quad::new(
-                            original_quad.subject.clone(),
-                            original_quad.predicate.clone(),
-                            original_quad.object.clone(),
-                            graph_name.clone(),
-                        );
-                        quads_to_insert.push(new_quad);
-                    }
+                for original_quad in temp_store.iter().flatten() {
+                    // Create a new quad with the specified graph name
+                    let new_quad = Quad::new(
+                        original_quad.subject.clone(),
+                        original_quad.predicate.clone(),
+                        original_quad.object.clone(),
+                        graph_name.clone(),
+                    );
+                    quads_to_insert.push(new_quad);
                 }
 
                 // Insert all quads into the main store
@@ -1203,19 +1202,17 @@ impl RDFStore {
             .with_context(|| "Failed to parse Turtle data")?;
 
         // Copy all triples to the target graph
-        for quad_result in temp_store.iter() {
-            if let Ok(original_quad) = quad_result {
-                // Create a new quad with the specified graph name
-                let new_quad = Quad::new(
-                    original_quad.subject.clone(),
-                    original_quad.predicate.clone(),
-                    original_quad.object.clone(),
-                    graph_name.clone(),
-                );
-                self.store
-                    .insert(&new_quad)
-                    .with_context(|| "Failed to insert quad into store")?;
-            }
+        for original_quad in temp_store.iter().flatten() {
+            // Create a new quad with the specified graph name
+            let new_quad = Quad::new(
+                original_quad.subject.clone(),
+                original_quad.predicate.clone(),
+                original_quad.object.clone(),
+                graph_name.clone(),
+            );
+            self.store
+                .insert(&new_quad)
+                .with_context(|| "Failed to insert quad into store")?;
         }
 
         Ok(())
@@ -1462,23 +1459,18 @@ impl RDFStore {
         let mut triple_hashes: Vec<String> = Vec::new();
 
         // Iterate over all quads in the store
-        for quad_result in self.store.iter() {
-            if let Ok(quad) = quad_result {
-                // Create a deterministic string representation of the quad
-                let quad_str = format!(
-                    "{}\n{}\n{}\n{}",
-                    quad.graph_name,
-                    quad.subject,
-                    quad.predicate,
-                    quad.object
-                );
+        for quad in self.store.iter().flatten() {
+            // Create a deterministic string representation of the quad
+            let quad_str = format!(
+                "{}\n{}\n{}\n{}",
+                quad.graph_name, quad.subject, quad.predicate, quad.object
+            );
 
-                // Hash this quad
-                let mut hasher = Sha256::new();
-                hasher.update(quad_str.as_bytes());
-                let hash = format!("{:x}", hasher.finalize());
-                triple_hashes.push(hash);
-            }
+            // Hash this quad
+            let mut hasher = Sha256::new();
+            hasher.update(quad_str.as_bytes());
+            let hash = format!("{:x}", hasher.finalize());
+            triple_hashes.push(hash);
         }
 
         // Sort for deterministic ordering
@@ -1555,45 +1547,44 @@ impl RDFStore {
         let mut blank_node_connections = HashMap::new();
 
         // Collect all triples and analyze blank node patterns
-        for quad_result in self
+        for quad in self
             .store
             .quads_for_pattern(None, None, None, Some(graph_name.into()))
+            .flatten()
         {
-            if let Ok(quad) = quad_result {
-                let triple = Triple::new(
-                    quad.subject.clone(),
-                    quad.predicate.clone(),
-                    quad.object.clone(),
-                );
-                triples.push(triple.clone());
+            let triple = Triple::new(
+                quad.subject.clone(),
+                quad.predicate.clone(),
+                quad.object.clone(),
+            );
+            triples.push(triple.clone());
 
-                // Track blank nodes and their connections
-                if let Subject::BlankNode(bn) = &triple.subject {
-                    blank_nodes.insert(bn.as_str().to_string());
-                    blank_node_connections
-                        .entry(bn.as_str().to_string())
-                        .or_insert_with(HashSet::new);
-                }
-                if let Term::BlankNode(bn) = &triple.object {
-                    blank_nodes.insert(bn.as_str().to_string());
-                    blank_node_connections
-                        .entry(bn.as_str().to_string())
-                        .or_insert_with(HashSet::new);
-                }
+            // Track blank nodes and their connections
+            if let Subject::BlankNode(bn) = &triple.subject {
+                blank_nodes.insert(bn.as_str().to_string());
+                blank_node_connections
+                    .entry(bn.as_str().to_string())
+                    .or_insert_with(HashSet::new);
+            }
+            if let Term::BlankNode(bn) = &triple.object {
+                blank_nodes.insert(bn.as_str().to_string());
+                blank_node_connections
+                    .entry(bn.as_str().to_string())
+                    .or_insert_with(HashSet::new);
+            }
 
-                // Track connections between blank nodes
-                if let (Subject::BlankNode(s_bn), Term::BlankNode(o_bn)) =
-                    (&triple.subject, &triple.object)
-                {
-                    blank_node_connections
-                        .entry(s_bn.as_str().to_string())
-                        .or_insert_with(HashSet::new)
-                        .insert(o_bn.as_str().to_string());
-                    blank_node_connections
-                        .entry(o_bn.as_str().to_string())
-                        .or_insert_with(HashSet::new)
-                        .insert(s_bn.as_str().to_string());
-                }
+            // Track connections between blank nodes
+            if let (Subject::BlankNode(s_bn), Term::BlankNode(o_bn)) =
+                (&triple.subject, &triple.object)
+            {
+                blank_node_connections
+                    .entry(s_bn.as_str().to_string())
+                    .or_insert_with(HashSet::new)
+                    .insert(o_bn.as_str().to_string());
+                blank_node_connections
+                    .entry(o_bn.as_str().to_string())
+                    .or_insert_with(HashSet::new)
+                    .insert(s_bn.as_str().to_string());
             }
         }
 

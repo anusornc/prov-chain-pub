@@ -1,0 +1,102 @@
+flowchart LR
+    subgraph Client["Client Layer"]
+        WebClient["Web Client / CLI"]
+        MobileClient["Mobile App"]
+    end
+
+    subgraph API["Application Layer"]
+        WebAPI["Web API Container<br/>Axum + JWT<br/>:8080"]
+        WS["WebSocket Handler<br/>P2P Communication"]
+        Metrics["Metrics Exporter<br/>Prometheus :9090"]
+    end
+
+    subgraph Core["Core Layer"]
+        Blockchain["Blockchain Core<br/>Rust + Tokio"]
+        Consensus["Consensus Engine<br/>PoA / PBFT"]
+        Pool["Transaction Pool<br/>Pending Transactions"]
+        Creator["Block Creator<br/>Block Assembly"]
+        Validator["Block Validator<br/>Hash & Signature"]
+    end
+
+    subgraph Semantic["Semantic Layer"]
+        OWL2["OWL2 Reasoner<br/>Tableaux Algorithm"]
+        SHACL["SHACL Validator<br/>Constraint Checking"]
+        Ontology["Ontology Manager<br/>Load/Update"]
+        Optimizer["Query Optimizer<br/>SPARQL"]
+    end
+
+    subgraph Data["Data Layer"]
+        RDFStore["RDF Store<br/>Oxigraph"]
+        TripleStore["Triple Storage<br/>N-Quads"]
+        GraphMgr["Graph Manager<br/>Named Graphs"]
+        QueryEng["Query Engine<br/>SPARQL 1.1"]
+        IndexMgr["Index Manager<br/>B-Tree, Hash"]
+    end
+
+    subgraph P2P["P2P Layer"]
+        Peer1["Peer 1"]
+        Peer2["Peer 2"]
+        Peer3["Peer 3"]
+    end
+
+    %% Client connections
+    WebClient -->|"HTTP/JSON<br/>Submit Transaction"| WebAPI
+    WebClient -->|"HTTP/JSON<br/>SPARQL Query"| WebAPI
+    WebClient -->|"WebSocket<br/>Real-time Updates"| WS
+    MobileClient -->|"HTTP/JSON"| WebAPI
+
+    %% Web API internal connections
+    WebAPI -->|"Validate"| SHACL
+    WebAPI -->|"Add Block"| Blockchain
+    WebAPI -->|"Query"| OWL2
+    WebAPI -->|"Direct Query"| RDFStore
+
+    %% Blockchain Core internal flow
+    Blockchain -->|"Manage"| Pool
+    Blockchain -->|"Execute"| Consensus
+    Pool -->|"Fetch Transactions"| Creator
+    Consensus -->|"Agree"| Creator
+    Creator -->|"Create Block"| Validator
+    Validator -->|"Validate"| Blockchain
+
+    %% Semantic Layer flow
+    SHACL -->|"Load Shapes"| Ontology
+    OWL2 -->|"Load Ontology"| Ontology
+    Optimizer -->|"Optimize Query"| QueryEng
+
+    %% Data Layer flow
+    RDFStore -->|"Manage"| TripleStore
+    RDFStore -->|"Manage"| GraphMgr
+    QueryEng -->|"Use Index"| IndexMgr
+    TripleStore -->|"Query"| QueryEng
+    GraphMgr -->|"Query"| QueryEng
+
+    %% Cross-layer connections
+    Blockchain -->|"Persist"| RDFStore
+    Validator -->|"Verify"| RDFStore
+    SHACL -->|"Validate Constraints"| RDFStore
+    OWL2 -->|"Reasoning Query"| QueryEng
+    WebAPI -->|"Scrape"| Metrics
+
+    %% P2P connections
+    WS -->|"Block Propagation"| Peer1
+    WS -->|"Block Propagation"| Peer2
+    WS -->|"Block Propagation"| Peer3
+    Consensus -->|"Vote"| Peer1
+    Consensus -->|"Vote"| Peer2
+    Consensus -->|"Vote"| Peer3
+
+    %% Styling
+    classDef clientStyle fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef apiStyle fill:#fff4e1,stroke:#ff6f00,stroke-width:2px
+    classDef coreStyle fill:#ffe1f5,stroke:#c51162,stroke-width:2px
+    classDef semanticStyle fill:#e1ffe1,stroke:#1b5e20,stroke-width:2px
+    classDef dataStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef p2pStyle fill:#efebe9,stroke:#3e2723,stroke-width:2px
+
+    class WebClient,MobileClient clientStyle
+    class WebAPI,WS,Metrics apiStyle
+    class Blockchain,Consensus,Pool,Creator,Validator coreStyle
+    class OWL2,SHACL,Ontology,Optimizer semanticStyle
+    class RDFStore,TripleStore,GraphMgr,QueryEng,IndexMgr dataStyle
+    class Peer1,Peer2,Peer3 p2pStyle

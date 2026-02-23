@@ -111,7 +111,9 @@ impl DomainManager {
                     );
                     mapping.insert(
                         serde_yaml::Value::String("domain_ontology_path".to_string()),
-                        serde_yaml::Value::String("src/semantic/ontologies/supply-chain.owl".to_string()),
+                        serde_yaml::Value::String(
+                            "src/semantic/ontologies/supply-chain.owl".to_string(),
+                        ),
                     );
                 }
                 Err(anyhow::anyhow!("OwlDomainAdapter not yet implemented"))
@@ -136,7 +138,9 @@ impl DomainManager {
                     );
                     mapping.insert(
                         serde_yaml::Value::String("domain_ontology_path".to_string()),
-                        serde_yaml::Value::String("src/semantic/ontologies/healthcare.owl".to_string()),
+                        serde_yaml::Value::String(
+                            "src/semantic/ontologies/healthcare.owl".to_string(),
+                        ),
                     );
                 }
                 Err(anyhow::anyhow!("OwlDomainAdapter not yet implemented"))
@@ -161,7 +165,9 @@ impl DomainManager {
                     );
                     mapping.insert(
                         serde_yaml::Value::String("domain_ontology_path".to_string()),
-                        serde_yaml::Value::String("src/semantic/ontologies/pharmaceutical.owl".to_string()),
+                        serde_yaml::Value::String(
+                            "src/semantic/ontologies/pharmaceutical.owl".to_string(),
+                        ),
                     );
                 }
                 Err(anyhow::anyhow!("OwlDomainAdapter not yet implemented"))

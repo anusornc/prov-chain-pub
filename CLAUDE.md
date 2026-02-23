@@ -4,13 +4,14 @@
 
 ProvChainOrg is a distributed blockchain system in Rust that enhances blockchain with embedded ontology and knowledge graph for data traceability. It extends the "GraphChain" concept with semantic technologies, providing high-speed traceability, configurable consensus (PoA/PBFT), and cross-chain interoperability.
 
-## What's New (January 2026)
+## What's New (January-February 2026)
 
 - **100% Test Pass Rate**: All 959 tests passing (71 test suites, 0 failures)
 - **Baseline Comparison Infrastructure**: Native ProvChain + Docker baselines (Neo4j, Jena, Ethereum) for journal publication
 - **owl2-reasoner: Zero Clippy Warnings**: Owl2-reasoner package achieves perfect clippy score (0 warnings)
 - **Main Project: 52 Low-Severity Clippy Warnings** (75% reduction from 205): Code style improvements only, no safety issues
   - Latest reduction: Commit 65caf45 (36% reduction from 81 to 52 warnings)
+- **Configurable Flush Interval** (commit b28c04d): `StorageConfig.flush_interval` for RDF storage batching (default: 1, increase to 10-100 for reduced I/O)
 
 ## Technology Stack
 
@@ -116,6 +117,8 @@ sudo docker compose -f docker-compose.baselines-only.yml down
 - `src/core/` - Blockchain state and block management with Ed25519 signing
   - **DEPRECATED**: `src/ontology/processor.rs` is not maintained (use `src/semantic/owl_reasoner.rs`, `src/semantic/shacl_validator.rs`, or `src/semantic/owl2_enhanced_reasoner.rs`)
 - `src/network/` - P2P networking and consensus (PoA/PBFT)
+- `src/ontology/` - Ontology management and validation
+  - `shacl_validator.rs` - SHACL validator for RDF transaction data with OWL2 reasoner integration and Oxigraph store
 - `src/semantic/` - OWL2 reasoning and SHACL validation
   - `owl2_enhanced_reasoner.rs` - Full OWL2 feature support (hasKey, property chains, qualified cardinality)
   - `owl_reasoner.rs` - Base OWL reasoning with validation
@@ -125,20 +128,24 @@ sudo docker compose -f docker-compose.baselines-only.yml down
   - `blockchain_validator.rs` - Chain reconstruction, hash integrity, corruption detection
   - `sparql_validator.rs` - SPARQL query validation and graph consistency
 - `src/transaction/` - Transaction-based blockchain operations
-  - `blockchain.rs` - `TransactionBlockchain` with wallet manager, transaction pool, UTXO set, persistent storage
-  - Encrypted payload aggregation, transaction indexing, batch block creation
+  - `blockchain.rs` - `TransactionBlockchain` with wallet manager, transaction pool, UTXO set, persistent storage, encrypted payload aggregation, transaction indexing, batch block creation
+  - `transaction.rs` - Structured transaction types (Production, Processing, Transport, Quality, Transfer, Environmental, Compliance, Governance) with Ed25519 signing, multi-signature support, and RDF payloads
+  - `mod.rs` - Transaction processing module re-exports
 - `src/interop/` - Cross-chain bridge implementation
 - `src/web/` - REST API handlers with JWT auth
   - `server.rs` - Axum-based web server with comprehensive security headers
-  - `auth.rs` - JWT authentication with secure user management
+  - `auth.rs` - JWT authentication with secure user management, password validation, bcrypt hashing, `AuthState` with `create_user()` and `update_password()` methods
   - Security headers: CSP, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy
   - CORS configuration with origin whitelisting
   - WebSocket support for real-time blockchain events
   - Static file serving from `src/web/static/`
-  - **SECURITY**: No default users - must be explicitly created via `AuthState::create_user()` or `AuthState::new_with_admin()`
+  - **SECURITY**: No default users - must be explicitly created via `AuthState::create_user()` or `AuthState::new_with_admin()`, JWT_SECRET from env (min 32 chars)
 - `src/knowledge_graph/` - Graph algorithms for traceability
+  - `entity_linking.rs` - Entity resolution, deduplication, and confidence scoring with similarity matchers (ExactMatcher, LevenshteinMatcher, TokenMatcher, PhoneticMatcher)
+  - `graph_db.rs` - Enhanced graph database with advanced operations (shortest path, centrality measures, neighbor discovery, indexing)
 - `src/semantic/` - OWL2 reasoning and SHACL validation
   - `owl2_traceability.rs` - Enhanced traceability using owl2-reasoner for property chain inference and OWL2 reasoning
+  - `shacl_validator.rs` - SHACL validation with `ShaclConfig` (enabled flag, shapes path, fail_on_error), validates graphs against loaded shapes
 - `src/analytics/` - Performance monitoring and predictive analytics
   - `predictive.rs` - Demand forecasting with configurable `ForecastingConfig` (base_demand, growth_rate, noise_amplitude, confidence_interval_pct, seasonal_amplitude)
   - Research-reproducible models with explicit historical data loading via `load_historical_data()`
@@ -241,7 +248,7 @@ The main binary provides a comprehensive CLI interface organized into functional
 
 ### Storage
 - Hybrid storage: RDF triples (public) + encrypted triples (private)
-- Persistent via `src/storage/` module with `StorageConfig`
+- Persistent via `src/storage/rdf_store.rs` with `StorageConfig`
   - `flush_interval`: Blocks to batch before disk flush (default: 1, increase to 10-100 for reduced I/O)
   - `enable_backup`, `backup_interval_hours`, `max_backup_files`: Backup configuration
   - `enable_compression`, `enable_encryption`: Optional data protection
@@ -250,8 +257,11 @@ The main binary provides a comprehensive CLI interface organized into functional
 
 ### Consensus
 - Trait-based consensus manager in `src/network/consensus.rs`
-- Runtime protocol switching via configuration
-- Authority-based block creation
+- Runtime protocol switching via configuration (PoA/PBFT)
+- Authority-based block creation with Ed25519 signatures
+- `ConsensusManager` with active protocol (ProofOfAuthority or PbftConsensus)
+- Authority state tracking (round rotation, performance metrics, reputation)
+- Block proposals with signature verification and validation
 
 ### Security
 - JWT-based API authentication (`jsonwebtoken` crate)
@@ -296,11 +306,19 @@ The main binary provides a comprehensive CLI interface organized into functional
 - `tests/websocket_integration_tests.rs` - WebSocket integration tests (connection management, event broadcasting, multi-client scenarios)
 - `tests/owl2_feature_tests.rs` - OWL2 feature integration tests (hasKey constraints, property chains, qualified cardinality)
 - `tests/enhanced_owl2_comprehensive_tests.rs` - Comprehensive OWL2 feature processing tests
+- `tests/enhanced_owl2_tests.rs` - Enhanced OWL2 feature processing tests (process_owl2_features, hasKey, property chains, qualified cardinality)
 - `tests/owl2_generic_traceability_tests.rs` - Generic traceability tests with OWL2 reasoning
 - `tests/shacl_validation_tests.rs` - SHACL validation tests (conformance, required properties, datatype validation)
 - `tests/backup_restore_test.rs` - Backup/restore functionality tests (corruption handling, missing files, max_backups limit)
 - `tests/persistence_integration_tests.rs` - Persistence workflow tests (memory cache, backup/restore cycles, integrity verification)
 - `tests/transaction_pipeline_profile.rs` - Transaction pipeline profiling (flush_interval batching performance, TPS measurements)
+- `tests/e2e_test_runner.rs` - End-to-end test runner infrastructure (TestResult, TestSuiteConfig, E2ETestRunner)
+- `tests/e2e_user_journeys.rs` - End-to-end user journey tests (supply chain manager, quality auditor workflows)
+- `tests/performance_benchmarks.rs` - Performance benchmark tests (blockchain, SPARQL query, RDF canonicalization, concurrent access)
+- `tests/project_requirements_test.rs` - Project requirements validation (consensus switching, cross-chain foundation)
+- `tests/real_world_traceability_tests.rs` - Real-world traceability with knowledge graph integration (entity linking, multi-industry compliance)
+- `tests/stress_tests.rs` - Comprehensive stress testing (system capacity, resource exhaustion, failure point identification)
+- `tests/three_node_validation_test.rs` - Three-node distributed blockchain validation test
 
 ### owl2-reasoner Sub-Project
 The project includes `owl2-reasoner` as a workspace member - a high-performance OWL2 reasoning engine.
@@ -346,6 +364,12 @@ cargo test --workspace
 - Research benchmarks: `docs/benchmarking/`
 - Cargo benchmarks: `cargo bench`
 - Baseline comparisons: `docs/publication/` (Neo4j, Jena, Ethereum)
+- `benches/comprehensive_performance_benchmarks.rs` - Production-ready performance validation with adaptive configuration:
+  - Blockchain operations (100-10000 volumes) with sample size scaling (100→50→20→10)
+  - API concurrent performance (10-1000 users)
+  - Real-time traceability queries (simple lookup to cross-ontology reasoning)
+  - Resource utilization patterns (steady, burst, sustained load)
+  - Supply chain workflows (UHT milk, pharmaceutical, automotive)
 
 ## Deployment
 

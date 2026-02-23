@@ -707,7 +707,12 @@ impl Blockchain {
     }
 
     /// Create a block proposal that can be signed by a validator
-    pub fn create_block_proposal(&mut self, data: String, encrypted_data: Option<String>, validator: String) -> Result<Block> {
+    pub fn create_block_proposal(
+        &mut self,
+        data: String,
+        encrypted_data: Option<String>,
+        validator: String,
+    ) -> Result<Block> {
         // Ensure we have at least a genesis block
         if self.chain.is_empty() {
             let mut genesis_block = self.create_genesis_block();
@@ -937,7 +942,9 @@ impl Blockchain {
 
     /// Fallback method for hardcoded ontology loading
     fn load_ontology_hardcoded(&mut self) {
-        if let Ok(ontology_data) = std::fs::read_to_string("src/semantic/ontologies/generic_core.owl") {
+        if let Ok(ontology_data) =
+            std::fs::read_to_string("src/semantic/ontologies/generic_core.owl")
+        {
             if let Ok(ontology_graph) = NamedNode::new("http://provchain.org/ontology") {
                 self.rdf_store
                     .load_ontology(&ontology_data, &ontology_graph);

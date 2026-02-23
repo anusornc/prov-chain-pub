@@ -215,6 +215,7 @@ async fn test_multiple_event_types() {
     let broadcaster = BlockchainEventBroadcaster::new(state.clone());
 
     // Test different event types
+    #[allow(clippy::type_complexity)]
     let test_events: Vec<(&str, Box<dyn Fn()>)> = vec![
         (
             "transaction_submitted",

@@ -651,33 +651,25 @@ impl ShaclValidator {
                                         format!("SELECT ?type WHERE {{ <{}> a ?type }}", value);
 
                                     let mut is_instance = false;
-                                    if let Ok(type_results) = data_store.query(&type_query) {
-                                        if let QueryResults::Solutions(type_solutions) =
-                                            type_results
-                                        {
-                                            for type_sol in type_solutions {
-                                                if let Ok(ts) = type_sol {
-                                                    if let Some(type_term) = ts.get("type") {
-                                                        let type_str = match type_term {
-                                                            Term::NamedNode(n) => {
-                                                                n.as_str().to_string()
-                                                            }
-                                                            _ => type_term.to_string(),
-                                                        };
+                                    if let Ok(QueryResults::Solutions(type_solutions)) =
+                                        data_store.query(&type_query)
+                                    {
+                                        for type_sol in type_solutions.flatten() {
+                                            if let Some(type_term) = type_sol.get("type") {
+                                                let type_str = match type_term {
+                                                    Term::NamedNode(n) => n.as_str().to_string(),
+                                                    _ => type_term.to_string(),
+                                                };
 
-                                                        if let Ok(type_iri) = IRI::new(&type_str) {
-                                                            // Check if type_iri is subclass of expected_class_iri (or same)
-                                                            if let Ok(is_sub) = reasoner
-                                                                .is_subclass_of(
-                                                                    &type_iri,
-                                                                    &expected_class_iri,
-                                                                )
-                                                            {
-                                                                if is_sub {
-                                                                    is_instance = true;
-                                                                    break;
-                                                                }
-                                                            }
+                                                if let Ok(type_iri) = IRI::new(&type_str) {
+                                                    // Check if type_iri is subclass of expected_class_iri (or same)
+                                                    if let Ok(is_sub) = reasoner.is_subclass_of(
+                                                        &type_iri,
+                                                        &expected_class_iri,
+                                                    ) {
+                                                        if is_sub {
+                                                            is_instance = true;
+                                                            break;
                                                         }
                                                     }
                                                 }

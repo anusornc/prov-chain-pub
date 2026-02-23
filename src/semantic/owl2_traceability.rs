@@ -348,7 +348,10 @@ mod tests {
             crate::core::entity::DomainType::SupplyChain,
         );
         let validation_result = enhancer.validate_entity_keys(&[test_entity]);
-        assert!(validation_result.is_ok(), "Entity key validation should succeed");
+        assert!(
+            validation_result.is_ok(),
+            "Entity key validation should succeed"
+        );
     }
 
     #[test]

@@ -1015,6 +1015,7 @@ async fn run_database_contention_stress_test(
     let contention_points = Arc::new(Mutex::new(HashMap::new()));
 
     // Create database contention scenarios
+    #[allow(clippy::type_complexity)]
     let contention_scenarios: Vec<(&str, fn(usize) -> Vec<String>)> = vec![
         ("Concurrent Writes", generate_concurrent_write_operations),
         ("Mixed Read-Write", generate_mixed_read_write_operations),

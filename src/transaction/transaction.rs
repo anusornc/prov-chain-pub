@@ -177,6 +177,7 @@ pub struct TransactionSignature {
 
 impl Transaction {
     /// Create a new transaction with a specific ID
+    #[allow(clippy::too_many_arguments)]
     pub fn new_with_id(
         id: String,
         tx_type: TransactionType,
@@ -875,7 +876,7 @@ mod security_tests {
         #[test]
         fn test_weak_key_rejection() {
             // Test various weak or invalid key scenarios
-            let weak_keys = vec![
+            let weak_keys = [
                 // All zeros key
                 [0u8; 32],
                 // All ones key
@@ -1110,10 +1111,10 @@ mod security_tests {
                 TransactionType::Processing,
                 vec![], // No inputs
                 vec![create_test_output(signer_id)],
-                            "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
-                            None,
-                            metadata2,
-                            TransactionPayload::RdfData(String::new()),
+                "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+                None,
+                metadata2,
+                TransactionPayload::RdfData(String::new()),
             );
             tx2.sign(&signing_key, signer_id)
                 .expect("Signing should succeed");
@@ -1143,10 +1144,10 @@ mod security_tests {
                 TransactionType::Transfer,
                 vec![shared_input.clone()],
                 vec![create_test_output(signer_id)],
-                            "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
-                            None,
-                            metadata.clone(),
-                            TransactionPayload::RdfData(String::new()),
+                "@prefix ex: <http://example.org/> . ex:test ex:value \"test\" .".to_string(),
+                None,
+                metadata.clone(),
+                TransactionPayload::RdfData(String::new()),
             );
             tx1.sign(&signing_key, signer_id)
                 .expect("First signing should succeed");
@@ -1259,7 +1260,7 @@ mod security_tests {
             let signer_id = Uuid::new_v4();
 
             // Test various malicious RDF patterns
-            let malicious_rdf_patterns = vec![
+            let malicious_rdf_patterns = [
                 // Moderately sized literals (reduced from 1M to 10K)
                 format!(
                     "@prefix ex: <http://example.org/> . ex:test ex:value \"{}\" .",

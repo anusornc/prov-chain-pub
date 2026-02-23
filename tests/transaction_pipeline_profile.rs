@@ -93,8 +93,14 @@ fn profile_batch_transactions() {
 
     println!("Total transactions: {}", batch_size);
     println!("Total Time: {:?}", overall_time);
-    println!("Actual TPS: {:.2}", batch_size as f64 / overall_time.as_secs_f64());
-    println!("Avg per transaction: {:?}", overall_time / batch_size as u32);
+    println!(
+        "Actual TPS: {:.2}",
+        batch_size as f64 / overall_time.as_secs_f64()
+    );
+    println!(
+        "Avg per transaction: {:?}",
+        overall_time / batch_size as u32
+    );
 }
 
 /// Profile batch transaction submission with batching (flush_interval=100)
@@ -132,6 +138,12 @@ fn profile_batch_transactions_batched() {
 
     println!("Total transactions: {}", batch_size);
     println!("Total Time: {:?}", overall_time);
-    println!("Actual TPS: {:.2}", batch_size as f64 / overall_time.as_secs_f64());
-    println!("Avg per transaction: {:?}", overall_time / batch_size as u32);
+    println!(
+        "Actual TPS: {:.2}",
+        batch_size as f64 / overall_time.as_secs_f64()
+    );
+    println!(
+        "Avg per transaction: {:?}",
+        overall_time / batch_size as u32
+    );
 }

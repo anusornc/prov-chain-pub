@@ -218,6 +218,7 @@ impl GraphDatabase {
     }
 
     /// Detect communities in the graph using simple connected components
+    #[allow(clippy::explicit_counter_loop)]
     pub fn detect_communities(&self) -> Vec<Vec<String>> {
         let components = connected_components(&self.knowledge_graph.graph);
         let mut communities = vec![Vec::new(); components];
@@ -313,6 +314,7 @@ impl GraphDatabase {
     }
 
     /// Compute embedding from random walks (simplified)
+    #[allow(clippy::needless_range_loop)]
     fn compute_embedding_from_walks(
         &self,
         walks: &[Vec<NodeIndex>],

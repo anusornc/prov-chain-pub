@@ -7,8 +7,10 @@
 pub struct OwlReasonerConfig {
     /// Whether reasoning is enabled
     pub enabled: bool,
-    /// Path to the ontology file
+    /// Path to the primary ontology file
     pub ontology_path: String,
+    /// Additional ontology files to load (e.g., imported ontologies)
+    pub additional_ontology_paths: Vec<String>,
     /// Whether to perform classification
     pub classify: bool,
     /// Whether to perform consistency checking
@@ -28,6 +30,7 @@ impl Default for OwlReasonerConfig {
         Self {
             enabled: true,
             ontology_path: "src/semantic/ontologies/generic_core.owl".to_string(),
+            additional_ontology_paths: Vec::new(),
             classify: true,
             check_consistency: true,
             process_owl2_features: true,

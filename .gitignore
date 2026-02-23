@@ -16,6 +16,9 @@
 # Local changelog (not tracked in git)
 CHANGES.md
 
+# AI agent instructions (local only)
+AGENTS.md
+
 # VS Code
 .vscode/
 
