@@ -59,38 +59,10 @@ enum Commands {
     /// Dump the blockchain to stdout as JSON
     Dump,
 
-    /// Run the built-in UHT manufacturing demo
-    Demo {
-        /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
-        #[arg(long)]
-        ontology: Option<String>,
-    },
-
-    /// Run transaction blockchain demos
-    TransactionDemo {
-        /// Demo type: uht, basic, signing, multi, all, interactive
-        #[arg(short, long, default_value = "interactive")]
-        demo_type: String,
-        /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
-        #[arg(long)]
-        ontology: Option<String>,
-    },
-
-    /// Start the web server for Phase 2 REST API
-    WebServer {
-        /// Port to run the web server on
-        #[arg(short, long, default_value = "8080")]
-        port: u16,
-        /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
-        #[arg(long)]
-        ontology: Option<String>,
-    },
-
-    /// Run OWL2 integration and enhanced features demo
-    Owl2Demo {
-        /// Domain ontology to use for validation (e.g., ontologies/uht_manufacturing.owl)
-        #[arg(long)]
-        ontology: Option<String>,
+    /// Run example demonstrations and demos
+    Examples {
+        #[command(subcommand)]
+        command: ExampleCommands,
     },
 
     /// Run enhanced traceability using OWL2 reasoning
@@ -142,6 +114,53 @@ enum Commands {
         /// Output file path for the private key
         #[arg(short, long)]
         out: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum ExampleCommands {
+    /// List all available examples and demos
+    List,
+
+    /// Run basic supply chain demo (simple traceability)
+    BasicSupplyChain {
+        /// Domain ontology to use for validation
+        #[arg(long)]
+        ontology: Option<String>,
+    },
+
+    /// Run transaction workflow demo (signing, multi-party)
+    TransactionWorkflow {
+        /// Demo type: uht, basic, signing, multi, all, interactive
+        #[arg(short, long, default_value = "interactive")]
+        workflow_type: String,
+        /// Domain ontology to use for validation
+        #[arg(long)]
+        ontology: Option<String>,
+    },
+
+    /// Run OWL2 reasoning demo (hasKey, property chains, cardinality)
+    Owl2Reasoning {
+        /// Domain ontology to use for validation
+        #[arg(long)]
+        ontology: Option<String>,
+    },
+
+    /// Run GS1 EPCIS UHT supply chain demo (comprehensive)
+    Gs1EpcisUht {
+        /// Domain ontology to use for validation
+        #[arg(long)]
+        ontology: Option<String>,
+    },
+
+    /// Start web server with demo data
+    WebServer {
+        /// Port to run the web server on
+        #[arg(short, long, default_value = "8080")]
+        port: u16,
+        /// Domain ontology to use for validation
+        #[arg(long)]
+        ontology: Option<String>,
     },
 }
 
@@ -373,100 +392,126 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        Commands::Demo { ontology } => {
-            let _blockchain = create_blockchain_with_ontology(ontology)?;
+        Commands::Examples { command } => {
+            match command {
+                ExampleCommands::List => {
+                    println!("\n╔══════════════════════════════════════════════════════════════════╗");
+                    println!("║              AVAILABLE EXAMPLES AND DEMOS                        ║");
+                    println!("╠══════════════════════════════════════════════════════════════════╣");
+                    println!("║                                                                  ║");
+                    println!("║  Built-in Examples:                                              ║");
+                    println!("║    examples basic-supply-chain    Simple supply chain demo       ║");
+                    println!("║    examples transaction-workflow  Signing & multi-party          ║");
+                    println!("║    examples owl2-reasoning        OWL2 features demo             ║");
+                    println!("║    examples gs1-epcis-uht         GS1 EPCIS UHT supply chain     ║");
+                    println!("║    examples web-server            Web UI with demo data          ║");
+                    println!("║                                                                  ║");
+                    println!("║  Standalone Examples (cargo run --example <name>):              ║");
+                    println!("║    gs1_epcis_uht_demo             Full UHT demo (776 lines)      ║");
+                    println!("║    demo_ui                        Web UI starter                 ║");
+                    println!("║    persistence_demo               Persistence layer demo         ║");
+                    println!("║                                                                  ║");
+                    println!("║  Legacy Commands (still available):                              ║");
+                    println!("║    transaction-demo               (use: examples list)           ║");
+                    println!("║    demo                           (use: examples list)           ║");
+                    println!("║                                                                  ║");
+                    println!("╚══════════════════════════════════════════════════════════════════╝\n");
+                }
+                ExampleCommands::BasicSupplyChain { ontology } => {
+                    let _blockchain = create_blockchain_with_ontology(ontology)?;
+                    info!("Running basic supply chain demo...\n");
+                    demo::run_demo();
+                }
+                ExampleCommands::TransactionWorkflow { workflow_type, ontology } => {
+                    let _blockchain = create_blockchain_with_ontology(ontology)?;
+                    info!("Running transaction workflow demo: {}\n", workflow_type);
+                    let args = vec!["provchain".to_string(), workflow_type];
+                    if let Err(e) = run_demo_with_args(args) {
+                        eprintln!("Demo error: {}\n", e);
+                        std::process::exit(1);
+                    }
+                }
+                ExampleCommands::Owl2Reasoning { ontology } => {
+                    let _blockchain = create_blockchain_with_ontology(ontology)?;
+                    info!("Running OWL2 reasoning demo...\n");
+                    
+                    println!("\n--- Phase 1: Simple Integration Test ---\n");
+                    if let Err(e) = simple_owl2_integration_test() {
+                        eprintln!("OWL2 integration test failed: {}\n", e);
+                        std::process::exit(1);
+                    }
+                    println!("✅ OWL2 integration test passed!\n");
 
-            info!("Running built-in demo...\n");
-            demo::run_demo();
-        }
-        Commands::TransactionDemo {
-            demo_type,
-            ontology,
-        } => {
-            let _blockchain = create_blockchain_with_ontology(ontology)?;
+                    println!("\n--- Phase 2: Enhanced OWL2 Features Demo ---\n");
+                    run_enhanced_owl2_demo();
+                    println!("✅ Enhanced OWL2 demo completed successfully!\n");
+                }
+                ExampleCommands::Gs1EpcisUht { ontology: _ } => {
+                    println!("\nℹ️  To run the full GS1 EPCIS UHT demo, use:\n");
+                    println!("   cargo run --example gs1_epcis_uht_demo\n");
+                    println!("   This provides the complete 8-phase demonstration\n");
+                }
+                ExampleCommands::WebServer { port, ontology } => {
+                    // Initialize blockchain with ontology configuration
+                    let mut blockchain = create_blockchain_with_ontology(ontology.clone())?;
 
-            info!("Running transaction blockchain demo: {}\n", demo_type);
-            let args = vec!["provchain".to_string(), demo_type];
-            if let Err(e) = run_demo_with_args(args) {
-                eprintln!("Demo error: {}\n", e);
-                std::process::exit(1);
+                    info!("Starting web server with demo data on port {}\n", port);
+
+                    // Load ontology data first
+                    info!("Loading core ontology...\n");
+                    let ontology_data = fs::read_to_string("src/semantic/ontologies/generic_core.owl")
+                        .map_err(|e| format!("Cannot read ontology file: {e}\n"))?;
+                    blockchain
+                        .add_block(ontology_data)
+                        .map_err(|e| format!("Failed to add ontology block: {e}\n"))?;
+
+                    // Generate ontology-aware demo data
+                    let ontology_config =
+                        OntologyConfig::new(ontology, &Config::load_or_default("config/config.toml"))
+                            .map_err(|e| format!("Failed to create ontology config: {e}\n"))?;
+                    let demo_data = generate_demo_data(&ontology_config);
+
+                    let demo_data_count = demo_data.len();
+
+                    // Add each piece of demo data as a separate block
+                    for data in demo_data {
+                        blockchain
+                            .add_block(data)
+                            .map_err(|e| format!("Failed to add block: {e}\n"))?;
+                    }
+
+                    info!(
+                        "Loaded {} blocks (1 ontology + {} demo data)\n",
+                        blockchain.chain.len(),
+                        demo_data_count
+                    );
+
+                    // Create config with custom port
+                    let mut config = Config::load_or_default("config/config.toml");
+                    config.web.port = port;
+
+                    // Create and start the web server
+                    let web_server = create_web_server(blockchain, Some(config)).await?;
+
+                    info!("🚀 Web server starting...\n");
+                    info!("📡 API available at: http://localhost:{}\n", port);
+                    info!("🔍 Health check: http://localhost:{}/health\n", port);
+                    info!("🔐 Login endpoint: http://localhost:{}/auth/login\n", port);
+                    info!(
+                        "📊 Blockchain status: http://localhost:{}/api/blockchain/status\n",
+                        port
+                    );
+                    info!("");
+                    info!("Default users for testing:\n");
+                    info!("  - admin/admin123 (Admin role)\n");
+                    info!("  - farmer1/farmer123 (Farmer role)\n");
+                    info!("  - processor1/processor123 (Processor role)\n");
+                    info!("");
+                    info!("Press Ctrl+C to stop the server\n");
+
+                    web_server.start().await?;
+                }
             }
-        }
-        Commands::WebServer { port, ontology } => {
-            // Initialize blockchain with ontology configuration
-            let mut blockchain = create_blockchain_with_ontology(ontology.clone())?;
-
-            info!("Starting Phase 2 web server on port {}\n", port);
-
-            // Load ontology data first
-            info!("Loading core ontology...\n");
-            let ontology_data = fs::read_to_string("src/semantic/ontologies/generic_core.owl")
-                .map_err(|e| format!("Cannot read ontology file: {e}\n"))?;
-            blockchain
-                .add_block(ontology_data)
-                .map_err(|e| format!("Failed to add ontology block: {e}\n"))?;
-
-            // Generate ontology-aware demo data
-            let ontology_config =
-                OntologyConfig::new(ontology, &Config::load_or_default("config/config.toml"))
-                    .map_err(|e| format!("Failed to create ontology config: {e}\n"))?;
-            let demo_data = generate_demo_data(&ontology_config);
-
-            let demo_data_count = demo_data.len();
-
-            // Add each piece of demo data as a separate block
-            for data in demo_data {
-                blockchain
-                    .add_block(data)
-                    .map_err(|e| format!("Failed to add block: {e}\n"))?;
-            }
-
-            info!(
-                "Loaded {} blocks (1 ontology + {} demo data)\n",
-                blockchain.chain.len(),
-                demo_data_count
-            );
-
-            // Create config with custom port
-            let mut config = Config::load_or_default("config/config.toml");
-            config.web.port = port;
-
-            // Create and start the web server
-            let web_server = create_web_server(blockchain, Some(config)).await?;
-
-            info!("🚀 Web server starting...\n");
-            info!("📡 API available at: http://localhost:{}\n", port);
-            info!("🔍 Health check: http://localhost:{}/health\n", port);
-            info!("🔐 Login endpoint: http://localhost:{}/auth/login\n", port);
-            info!(
-                "📊 Blockchain status: http://localhost:{}/api/blockchain/status\n",
-                port
-            );
-            info!("");
-            info!("Default users for testing:\n");
-            info!("  - admin/admin123 (Admin role)\n");
-            info!("  - farmer1/farmer123 (Farmer role)\n");
-            info!("  - processor1/processor123 (Processor role)\n");
-            info!("");
-            info!("Press Ctrl+C to stop the server\n");
-
-            web_server.start().await?;
-        }
-        Commands::Owl2Demo { ontology } => {
-            let _blockchain = create_blockchain_with_ontology(ontology)?;
-
-            info!("Running OWL2 integration and enhanced features demo...\n");
-
-            println!("\n--- Phase 1: Simple Integration Test ---\n");
-            if let Err(e) = simple_owl2_integration_test() {
-                eprintln!("OWL2 integration test failed: {}\n", e);
-                std::process::exit(1);
-            }
-            println!("✅ OWL2 integration test passed!\n");
-
-            println!("\n--- Phase 2: Enhanced OWL2 Features Demo ---\n");
-            run_enhanced_owl2_demo();
-            println!("✅ Enhanced OWL2 demo completed successfully!\n");
         }
         Commands::EnhancedTrace {
             batch_id,
