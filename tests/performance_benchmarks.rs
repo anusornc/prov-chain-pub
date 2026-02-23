@@ -452,7 +452,7 @@ fn test_complex_query_performance() -> Result<()> {
     }
 
     // Test various complex queries
-    let queries = vec![
+    let queries = [
         // Simple filter
         r#"
         PREFIX tc: <http://provchain.org/trace#>

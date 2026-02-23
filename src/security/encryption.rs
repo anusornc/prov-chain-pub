@@ -51,11 +51,14 @@ impl PrivacyManager {
 
         let nonce_bytes =
             hex::decode(&encrypted.nonce).map_err(|_| anyhow!("Invalid nonce hex"))?;
-        
+
         if nonce_bytes.len() != 24 {
-             return Err(anyhow!("Invalid nonce length: expected 24 bytes, got {}", nonce_bytes.len()));
+            return Err(anyhow!(
+                "Invalid nonce length: expected 24 bytes, got {}",
+                nonce_bytes.len()
+            ));
         }
-        
+
         let nonce = XNonce::from_slice(&nonce_bytes);
 
         let ciphertext_bytes =

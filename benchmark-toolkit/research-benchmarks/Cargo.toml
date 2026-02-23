@@ -22,7 +22,8 @@ sparql-client = "0.1"
 rio_api = "0.8"
 rio_turtle = "0.8"
 
-# Database clients (TODO: Add neo4rs = "0.9" when implementing Neo4j benchmarks)
+# Database clients
+neo4rs = "0.8"
 
 # Metrics and monitoring
 prometheus = { version = "0.13", features = ["process"] }
@@ -57,6 +58,10 @@ async-trait = "0.1"
 # Performance measurement
 criterion = "0.5"
 
+[lib]
+name = "benchmark_runner"
+path = "src/lib.rs"
+
 [[bin]]
 name = "benchmark-runner"
 path = "src/main.rs"
@@ -69,3 +74,6 @@ strip = true
 
 [dev-dependencies]
 mockito = "1.2"
+
+# Independent workspace (not part of main ProvChain workspace)
+[workspace]

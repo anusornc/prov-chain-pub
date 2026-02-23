@@ -24,9 +24,9 @@ async fn test_data_visibility_control() {
         let mut bc = blockchain.write().await;
         let block = bc
             .create_block_proposal(
-                "PUBLIC_METADATA_ONLY".to_string(), 
+                "PUBLIC_METADATA_ONLY".to_string(),
                 Some(encrypted_json.clone()),
-                "VALIDATOR".to_string()
+                "VALIDATOR".to_string(),
             )
             .expect("Failed to create block");
 

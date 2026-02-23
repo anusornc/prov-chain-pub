@@ -194,7 +194,10 @@ ex:subject ex:predicate ex:object ."#
     }
 
     // 5. Teardown
-    authority_node.kill().unwrap();
-    node2.kill().unwrap();
-    node3.kill().unwrap();
+    let _ = authority_node.kill();
+    let _ = node2.kill();
+    let _ = node3.kill();
+    let _ = authority_node.wait();
+    let _ = node2.wait();
+    let _ = node3.wait();
 }

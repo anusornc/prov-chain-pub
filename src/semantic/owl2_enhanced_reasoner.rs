@@ -154,36 +154,35 @@ impl Owl2EnhancedReasoner {
             Ok(QueryResults::Solutions(solutions)) => {
                 info!("Found owl:hasKey axioms");
                 for sol in solutions.flatten() {
-                        if let (Some(class_term), Some(property_term)) =
-                            (sol.get("class"), sol.get("property"))
-                        {
-                            let class_iri = class_term.to_string();
-                            let property_iri = property_term.to_string();
+                    if let (Some(class_term), Some(property_term)) =
+                        (sol.get("class"), sol.get("property"))
+                    {
+                        let class_iri = class_term.to_string();
+                        let property_iri = property_term.to_string();
 
-                            // Remove angle brackets from NamedNode representation
-                            let class_iri =
-                                if class_iri.starts_with('<') && class_iri.ends_with('>') {
-                                    class_iri[1..class_iri.len() - 1].to_string()
-                                } else {
-                                    class_iri
-                                };
-                            let property_iri =
-                                if property_iri.starts_with('<') && property_iri.ends_with('>') {
-                                    property_iri[1..property_iri.len() - 1].to_string()
-                                } else {
-                                    property_iri
-                                };
+                        // Remove angle brackets from NamedNode representation
+                        let class_iri = if class_iri.starts_with('<') && class_iri.ends_with('>') {
+                            class_iri[1..class_iri.len() - 1].to_string()
+                        } else {
+                            class_iri
+                        };
+                        let property_iri =
+                            if property_iri.starts_with('<') && property_iri.ends_with('>') {
+                                property_iri[1..property_iri.len() - 1].to_string()
+                            } else {
+                                property_iri
+                            };
 
-                            info!(
-                                "Processing class: {} with property: {}",
-                                class_iri, property_iri
-                            );
+                        info!(
+                            "Processing class: {} with property: {}",
+                            class_iri, property_iri
+                        );
 
-                            // Add to has_key_constraints
-                            self.has_key_constraints
-                                .entry(class_iri)
-                                .or_default()
-                                .push(property_iri);
+                        // Add to has_key_constraints
+                        self.has_key_constraints
+                            .entry(class_iri)
+                            .or_default()
+                            .push(property_iri);
                     }
                 }
             }
@@ -234,43 +233,42 @@ impl Owl2EnhancedReasoner {
 
                     // Populate the map with all first/rest pairs
                     for sol in solutions.flatten() {
-                            if let Some(s_term) = sol.get("s") {
-                                let s_str = s_term.to_string();
+                        if let Some(s_term) = sol.get("s") {
+                            let s_str = s_term.to_string();
+                            // Remove angle brackets if present
+                            let s_str = if s_str.starts_with('<') && s_str.ends_with('>') {
+                                s_str[1..s_str.len() - 1].to_string()
+                            } else {
+                                s_str
+                            };
+
+                            if let Some(property_term) = sol.get("property") {
+                                let property_str = property_term.to_string();
                                 // Remove angle brackets if present
-                                let s_str = if s_str.starts_with('<') && s_str.ends_with('>') {
-                                    s_str[1..s_str.len() - 1].to_string()
+                                let property_str = if property_str.starts_with('<')
+                                    && property_str.ends_with('>')
+                                {
+                                    property_str[1..property_str.len() - 1].to_string()
                                 } else {
-                                    s_str
+                                    property_str
                                 };
 
-                                if let Some(property_term) = sol.get("property") {
-                                    let property_str = property_term.to_string();
+                                let rest_opt = if let Some(rest_term) = sol.get("rest") {
+                                    let rest_str = rest_term.to_string();
                                     // Remove angle brackets if present
-                                    let property_str = if property_str.starts_with('<')
-                                        && property_str.ends_with('>')
-                                    {
-                                        property_str[1..property_str.len() - 1].to_string()
-                                    } else {
-                                        property_str
-                                    };
-
-                                    let rest_opt = if let Some(rest_term) = sol.get("rest") {
-                                        let rest_str = rest_term.to_string();
-                                        // Remove angle brackets if present
-                                        let rest_str = if rest_str.starts_with('<')
-                                            && rest_str.ends_with('>')
-                                        {
+                                    let rest_str =
+                                        if rest_str.starts_with('<') && rest_str.ends_with('>') {
                                             rest_str[1..rest_str.len() - 1].to_string()
                                         } else {
                                             rest_str
                                         };
-                                        Some(rest_str)
-                                    } else {
-                                        None
-                                    };
+                                    Some(rest_str)
+                                } else {
+                                    None
+                                };
 
-                                    list_map.insert(s_str, (property_str, rest_opt));
-                                }
+                                list_map.insert(s_str, (property_str, rest_opt));
+                            }
                         }
                     }
 
@@ -322,19 +320,18 @@ impl Owl2EnhancedReasoner {
             match self.base_reasoner.ontology_store.query(&query) {
                 Ok(QueryResults::Solutions(solutions)) => {
                     for sol in solutions.flatten() {
-                            // Extract the property
-                            if let Some(property_term) = sol.get("property") {
-                                let property = property_term.to_string();
-                                info!("Raw property: {}", property);
-                                // Remove angle brackets from NamedNode representation
-                                let property =
-                                    if property.starts_with('<') && property.ends_with('>') {
-                                        property[1..property.len() - 1].to_string()
-                                    } else {
-                                        property
-                                    };
-                                info!("Processed property: {}", property);
-                                properties.push(property);
+                        // Extract the property
+                        if let Some(property_term) = sol.get("property") {
+                            let property = property_term.to_string();
+                            info!("Raw property: {}", property);
+                            // Remove angle brackets from NamedNode representation
+                            let property = if property.starts_with('<') && property.ends_with('>') {
+                                property[1..property.len() - 1].to_string()
+                            } else {
+                                property
+                            };
+                            info!("Processed property: {}", property);
+                            properties.push(property);
 
                             // Check if there's a rest node
                             if let Some(rest_term) = sol.get("rest") {
@@ -398,37 +395,37 @@ impl Owl2EnhancedReasoner {
             Ok(QueryResults::Solutions(solutions)) => {
                 info!("Found property chain axioms");
                 for sol in solutions.flatten() {
-                        if let (Some(super_prop_term), Some(property_term)) =
-                            (sol.get("superProperty"), sol.get("property"))
+                    if let (Some(super_prop_term), Some(property_term)) =
+                        (sol.get("superProperty"), sol.get("property"))
+                    {
+                        let super_property_iri = super_prop_term.to_string();
+                        let property_iri = property_term.to_string();
+
+                        // Remove angle brackets from NamedNode representation
+                        let super_property_iri = if super_property_iri.starts_with('<')
+                            && super_property_iri.ends_with('>')
                         {
-                            let super_property_iri = super_prop_term.to_string();
-                            let property_iri = property_term.to_string();
-
-                            // Remove angle brackets from NamedNode representation
-                            let super_property_iri = if super_property_iri.starts_with('<')
-                                && super_property_iri.ends_with('>')
-                            {
-                                super_property_iri[1..super_property_iri.len() - 1].to_string()
+                            super_property_iri[1..super_property_iri.len() - 1].to_string()
+                        } else {
+                            super_property_iri
+                        };
+                        let property_iri =
+                            if property_iri.starts_with('<') && property_iri.ends_with('>') {
+                                property_iri[1..property_iri.len() - 1].to_string()
                             } else {
-                                super_property_iri
+                                property_iri
                             };
-                            let property_iri =
-                                if property_iri.starts_with('<') && property_iri.ends_with('>') {
-                                    property_iri[1..property_iri.len() - 1].to_string()
-                                } else {
-                                    property_iri
-                                };
 
-                            info!(
-                                "Processing super property: {} with property: {}",
-                                super_property_iri, property_iri
-                            );
+                        info!(
+                            "Processing super property: {} with property: {}",
+                            super_property_iri, property_iri
+                        );
 
-                            // Add to property_chains
-                            self.property_chains
-                                .entry(super_property_iri)
-                                .or_default()
-                                .push(property_iri);
+                        // Add to property_chains
+                        self.property_chains
+                            .entry(super_property_iri)
+                            .or_default()
+                            .push(property_iri);
                     }
                 }
             }
@@ -482,43 +479,42 @@ impl Owl2EnhancedReasoner {
 
                     // Populate the map with all first/rest pairs
                     for sol in solutions.flatten() {
-                            if let Some(s_term) = sol.get("s") {
-                                let s_str = s_term.to_string();
+                        if let Some(s_term) = sol.get("s") {
+                            let s_str = s_term.to_string();
+                            // Remove angle brackets if present
+                            let s_str = if s_str.starts_with('<') && s_str.ends_with('>') {
+                                s_str[1..s_str.len() - 1].to_string()
+                            } else {
+                                s_str
+                            };
+
+                            if let Some(property_term) = sol.get("property") {
+                                let property_str = property_term.to_string();
                                 // Remove angle brackets if present
-                                let s_str = if s_str.starts_with('<') && s_str.ends_with('>') {
-                                    s_str[1..s_str.len() - 1].to_string()
+                                let property_str = if property_str.starts_with('<')
+                                    && property_str.ends_with('>')
+                                {
+                                    property_str[1..property_str.len() - 1].to_string()
                                 } else {
-                                    s_str
+                                    property_str
                                 };
 
-                                if let Some(property_term) = sol.get("property") {
-                                    let property_str = property_term.to_string();
+                                let rest_opt = if let Some(rest_term) = sol.get("rest") {
+                                    let rest_str = rest_term.to_string();
                                     // Remove angle brackets if present
-                                    let property_str = if property_str.starts_with('<')
-                                        && property_str.ends_with('>')
-                                    {
-                                        property_str[1..property_str.len() - 1].to_string()
-                                    } else {
-                                        property_str
-                                    };
-
-                                    let rest_opt = if let Some(rest_term) = sol.get("rest") {
-                                        let rest_str = rest_term.to_string();
-                                        // Remove angle brackets if present
-                                        let rest_str = if rest_str.starts_with('<')
-                                            && rest_str.ends_with('>')
-                                        {
+                                    let rest_str =
+                                        if rest_str.starts_with('<') && rest_str.ends_with('>') {
                                             rest_str[1..rest_str.len() - 1].to_string()
                                         } else {
                                             rest_str
                                         };
-                                        Some(rest_str)
-                                    } else {
-                                        None
-                                    };
+                                    Some(rest_str)
+                                } else {
+                                    None
+                                };
 
-                                    list_map.insert(s_str, (property_str, rest_opt));
-                                }
+                                list_map.insert(s_str, (property_str, rest_opt));
+                            }
                         }
                     }
 
@@ -573,19 +569,18 @@ impl Owl2EnhancedReasoner {
             match self.base_reasoner.ontology_store.query(&query) {
                 Ok(QueryResults::Solutions(solutions)) => {
                     for sol in solutions.flatten() {
-                            // Extract the property
-                            if let Some(property_term) = sol.get("property") {
-                                let property = property_term.to_string();
-                                info!("Raw property: {}", property);
-                                // Remove angle brackets from NamedNode representation
-                                let property =
-                                    if property.starts_with('<') && property.ends_with('>') {
-                                        property[1..property.len() - 1].to_string()
-                                    } else {
-                                        property
-                                    };
-                                info!("Processed property: {}", property);
-                                properties.push(property);
+                        // Extract the property
+                        if let Some(property_term) = sol.get("property") {
+                            let property = property_term.to_string();
+                            info!("Raw property: {}", property);
+                            // Remove angle brackets from NamedNode representation
+                            let property = if property.starts_with('<') && property.ends_with('>') {
+                                property[1..property.len() - 1].to_string()
+                            } else {
+                                property
+                            };
+                            info!("Processed property: {}", property);
+                            properties.push(property);
 
                             // Check if there's a rest node
                             if let Some(rest_term) = sol.get("rest") {
@@ -664,69 +659,69 @@ impl Owl2EnhancedReasoner {
             Ok(QueryResults::Solutions(solutions)) => {
                 info!("Found qualified cardinality restrictions");
                 for sol in solutions.flatten() {
-                        if let (
-                            Some(class_term),
-                            Some(property_term),
-                            Some(card_term),
-                            Some(filler_term),
-                        ) = (
-                            sol.get("class"),
-                            sol.get("property"),
-                            sol.get("cardinality"),
-                            sol.get("filler"),
-                        ) {
-                            let class_iri = class_term.to_string();
-                            let property_iri = property_term.to_string();
-                            let cardinality_str = card_term.to_string();
-                            let filler_iri = filler_term.to_string();
+                    if let (
+                        Some(class_term),
+                        Some(property_term),
+                        Some(card_term),
+                        Some(filler_term),
+                    ) = (
+                        sol.get("class"),
+                        sol.get("property"),
+                        sol.get("cardinality"),
+                        sol.get("filler"),
+                    ) {
+                        let class_iri = class_term.to_string();
+                        let property_iri = property_term.to_string();
+                        let cardinality_str = card_term.to_string();
+                        let filler_iri = filler_term.to_string();
 
-                            // Remove angle brackets from NamedNode representation
-                            let class_iri =
-                                if class_iri.starts_with('<') && class_iri.ends_with('>') {
-                                    class_iri[1..class_iri.len() - 1].to_string()
-                                } else {
-                                    class_iri
-                                };
-                            let property_iri =
-                                if property_iri.starts_with('<') && property_iri.ends_with('>') {
-                                    property_iri[1..property_iri.len() - 1].to_string()
-                                } else {
-                                    property_iri
-                                };
-                            let filler_iri =
-                                if filler_iri.starts_with('<') && filler_iri.ends_with('>') {
-                                    filler_iri[1..filler_iri.len() - 1].to_string()
-                                } else {
-                                    filler_iri
-                                };
+                        // Remove angle brackets from NamedNode representation
+                        let class_iri = if class_iri.starts_with('<') && class_iri.ends_with('>') {
+                            class_iri[1..class_iri.len() - 1].to_string()
+                        } else {
+                            class_iri
+                        };
+                        let property_iri =
+                            if property_iri.starts_with('<') && property_iri.ends_with('>') {
+                                property_iri[1..property_iri.len() - 1].to_string()
+                            } else {
+                                property_iri
+                            };
+                        let filler_iri = if filler_iri.starts_with('<') && filler_iri.ends_with('>')
+                        {
+                            filler_iri[1..filler_iri.len() - 1].to_string()
+                        } else {
+                            filler_iri
+                        };
 
-                            info!("Processing qualified cardinality restriction: class={}, property={}, cardinality={}, filler={}",
+                        info!("Processing qualified cardinality restriction: class={}, property={}, cardinality={}, filler={}",
                                 class_iri, property_iri, cardinality_str, filler_iri);
 
-                            // Extract the numeric value from the typed literal
-                            let cardinality_value = if cardinality_str.starts_with('"') {
-                                // Handle typed literal format: "2"^^<http://www.w3.org/2001/XMLSchema#integer>
-                                if let Some(end_quote) = cardinality_str[1..].find('"') {
-                                    &cardinality_str[1..end_quote + 1]
-                                } else {
-                                    // Handle simple quoted format: "2"
-                                    &cardinality_str[1..cardinality_str.len() - 1]
-                                }
-                            } else {
-                                &cardinality_str
-                            };
+                        // Extract the numeric value from the typed literal
+                        // Oxigraph returns typed literals as: "value"^^datatypeIRI
+                        let cardinality_value = if cardinality_str.contains("^^") {
+                            // Split on ^^ to get the value part before the datatype
+                            cardinality_str
+                                .split("^^")
+                                .next()
+                                .unwrap_or(&cardinality_str)
+                                .trim_matches('"')
+                        } else {
+                            // Simple string without datatype
+                            &cardinality_str
+                        };
 
-                            if let Ok(cardinality) = cardinality_value.parse::<u32>() {
-                                // Add to qualified_cardinality_restrictions
-                                self.qualified_cardinality_restrictions.push(
-                                    QualifiedCardinalityRestriction {
-                                        class: class_iri,
-                                        property: property_iri,
-                                        cardinality,
-                                        filler_class: filler_iri,
-                                    },
-                                );
-                            }
+                        if let Ok(cardinality) = cardinality_value.parse::<u32>() {
+                            // Add to qualified_cardinality_restrictions
+                            self.qualified_cardinality_restrictions.push(
+                                QualifiedCardinalityRestriction {
+                                    class: class_iri,
+                                    property: property_iri,
+                                    cardinality,
+                                    filler_class: filler_iri,
+                                },
+                            );
+                        }
                     }
                 }
             }
@@ -899,15 +894,15 @@ impl Owl2EnhancedReasoner {
         match self.base_reasoner.ontology_store.query(query) {
             Ok(QueryResults::Solutions(solutions)) => {
                 for sol in solutions.flatten() {
-                        if let (Some(subject_term), Some(predicate_term), Some(object_term)) = (
-                            sol.get("x0"),
-                            sol.get("predicate"), // This would be the super_property
-                            sol.get("x_end"),
-                        ) {
-                            let subject = subject_term.to_string();
-                            let predicate = predicate_term.to_string();
-                            let object = object_term.to_string();
-                            inferred_triples.push((subject, predicate, object));
+                    if let (Some(subject_term), Some(predicate_term), Some(object_term)) = (
+                        sol.get("x0"),
+                        sol.get("predicate"), // This would be the super_property
+                        sol.get("x_end"),
+                    ) {
+                        let subject = subject_term.to_string();
+                        let predicate = predicate_term.to_string();
+                        let object = object_term.to_string();
+                        inferred_triples.push((subject, predicate, object));
                     }
                 }
             }
@@ -1001,12 +996,15 @@ mod tests {
 
     #[test]
     fn test_enhanced_owl2_feature_processing() -> Result<()> {
-        let mut config = OwlReasonerConfig::default();
-        config.ontology_path = "src/semantic/ontologies/test-owl2.owl".to_string();
-        config.process_owl2_features = true;
-        config.enable_has_key_validation = true;
-        config.enable_property_chain_inference = true;
-        config.enable_qualified_cardinality_validation = true;
+        let config = OwlReasonerConfig {
+            ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
+            additional_ontology_paths: vec!["src/semantic/ontologies/generic_core.owl".to_string()],
+            process_owl2_features: true,
+            enable_has_key_validation: true,
+            enable_property_chain_inference: true,
+            enable_qualified_cardinality_validation: true,
+            ..Default::default()
+        };
 
         let mut reasoner = Owl2EnhancedReasoner::new(config)?;
 
@@ -1028,10 +1026,13 @@ mod tests {
 
     #[test]
     fn test_has_key_constraint_extraction() -> Result<()> {
-        let mut config = OwlReasonerConfig::default();
-        config.ontology_path = "src/semantic/ontologies/test-owl2.owl".to_string();
-        config.process_owl2_features = true;
-        config.enable_has_key_validation = true;
+        let config = OwlReasonerConfig {
+            ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
+            additional_ontology_paths: vec!["src/semantic/ontologies/generic_core.owl".to_string()],
+            process_owl2_features: true,
+            enable_has_key_validation: true,
+            ..Default::default()
+        };
 
         let mut reasoner = Owl2EnhancedReasoner::new(config)?;
 
@@ -1068,10 +1069,13 @@ mod tests {
 
     #[test]
     fn test_property_chain_extraction() -> Result<()> {
-        let mut config = OwlReasonerConfig::default();
-        config.ontology_path = "src/semantic/ontologies/test-owl2.owl".to_string();
-        config.process_owl2_features = true;
-        config.enable_property_chain_inference = true;
+        let config = OwlReasonerConfig {
+            ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
+            additional_ontology_paths: vec!["src/semantic/ontologies/generic_core.owl".to_string()],
+            process_owl2_features: true,
+            enable_property_chain_inference: true,
+            ..Default::default()
+        };
 
         let mut reasoner = Owl2EnhancedReasoner::new(config)?;
 
@@ -1089,10 +1093,13 @@ mod tests {
 
     #[test]
     fn test_qualified_cardinality_extraction() -> Result<()> {
-        let mut config = OwlReasonerConfig::default();
-        config.ontology_path = "src/semantic/ontologies/test-owl2.owl".to_string();
-        config.process_owl2_features = true;
-        config.enable_qualified_cardinality_validation = true;
+        let config = OwlReasonerConfig {
+            ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
+            additional_ontology_paths: vec!["src/semantic/ontologies/generic_core.owl".to_string()],
+            process_owl2_features: true,
+            enable_qualified_cardinality_validation: true,
+            ..Default::default()
+        };
 
         let mut reasoner = Owl2EnhancedReasoner::new(config)?;
 

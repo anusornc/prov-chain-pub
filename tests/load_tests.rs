@@ -29,11 +29,11 @@ pub struct LoadTestConfig {
 impl Default for LoadTestConfig {
     fn default() -> Self {
         Self {
-            concurrent_users: 100,                // Increased from 50
-            requests_per_user: 50,                // Increased from 20
-            duration_seconds: 60,                 // Increased from 30
-            ramp_up_time: Duration::from_secs(5), // Same
-            think_time: Duration::from_millis(50),// Same
+            concurrent_users: 100,                 // Increased from 50
+            requests_per_user: 50,                 // Increased from 20
+            duration_seconds: 60,                  // Increased from 30
+            ramp_up_time: Duration::from_secs(5),  // Same
+            think_time: Duration::from_millis(50), // Same
         }
     }
 }
@@ -69,11 +69,11 @@ async fn test_high_volume_transaction_processing() -> Result<()> {
     println!("Theoretical Max TPS: 333 (development environment)");
 
     let config = LoadTestConfig {
-        concurrent_users: 200,                // Increased from 20 (10x)
-        requests_per_user: 100,               // Increased from 50 (2x)
-        duration_seconds: 60,                 // Increased from 30 (2x)
-        ramp_up_time: Duration::from_secs(5), // Reduced from 10
-        think_time: Duration::from_millis(10),// Reduced from 50 (5x faster)
+        concurrent_users: 200,                 // Increased from 20 (10x)
+        requests_per_user: 100,                // Increased from 50 (2x)
+        duration_seconds: 60,                  // Increased from 30 (2x)
+        ramp_up_time: Duration::from_secs(5),  // Reduced from 10
+        think_time: Duration::from_millis(10), // Reduced from 50 (5x faster)
     };
 
     let results = run_transaction_load_test(config).await?;
@@ -912,6 +912,7 @@ trace:product{} a trace:Product ;
 }
 
 fn generate_traceability_query(user_id: usize, req_id: usize) -> String {
+    #[allow(clippy::useless_vec)] // Need vec! for format! macro
     let query_types = vec![
         // Simple lookup
         format!(
@@ -1274,7 +1275,7 @@ food:hasHACCPPlan a owl:ObjectProperty ;
 }
 
 fn generate_reasoning_query(_user_id: usize, req_id: usize) -> String {
-    let query_types = vec![
+    let query_types = [
         // Subclass reasoning
         r#"
         PREFIX owl: <http://www.w3.org/2002/07/owl#>

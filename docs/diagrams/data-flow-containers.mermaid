@@ -1,0 +1,111 @@
+sequenceDiagram
+    autonumber
+    participant Client as Client Application
+    participant WebAPI as Web API Container
+    participant JWT as JWT Auth Handler
+    participant Semantic as Semantic Layer
+    participant Blockchain as Blockchain Core
+    participant RDFStore as RDF Store
+    participant Pool as Transaction Pool
+    participant Consensus as Consensus Engine
+    participant P2P as P2P Network
+
+    Note over Client,P2P: Transaction Submission Flow
+
+    Client->>WebAPI: POST /api/transactions<br/>(RDF Turtle data)
+    activate WebAPI
+
+    WebAPI->>JWT: Validate JWT Token
+    activate JWT
+    JWT-->>WebAPI: Token Valid (User: supply_chain_mgr)
+    deactivate JWT
+
+    WebAPI->>Semantic: Validate RDF with SHACL
+    activate Semantic
+    Semantic->>RDFStore: Load Ontology Shapes
+    activate RDFStore
+    RDFStore-->>Semantic: SHACL Shapes Loaded
+    deactivate RDFStore
+
+    Semantic->>Semantic: Check Constraints
+    Semantic-->>WebAPI: Validation Passed ✅
+    deactivate Semantic
+
+    WebAPI->>Blockchain: Add Transaction to Pool
+    activate Blockchain
+    Blockchain->>Pool: Store Pending Transaction
+    activate Pool
+    Pool-->>Blockchain: Transaction Queued
+    deactivate Pool
+
+    Note over Blockchain,P2P: Block Creation (1 second interval)
+
+    Blockchain->>Pool: Get Pending Transactions
+    activate Pool
+    Pool-->>Blockchain: Return 100 Transactions
+    deactivate Pool
+
+    Blockchain->>Blockchain: Create Block
+    Note right of Blockchain: - Assemble transactions<br/>- Calculate Merkle root<br/>- Set timestamp
+
+    Blockchain->>Blockchain: Sign Block (Ed25519)
+    Note right of Blockchain: Validator public key:<br/>0xabc123...
+
+    Blockchain->>Consensus: Broadcast Proposed Block
+    activate Consensus
+
+    par Collect Votes from Peers
+        Consensus->>P2P: Broadcast to Peer 1
+        P2P-->>Consensus: Vote: APPROVE
+        and
+        Consensus->>P2P: Broadcast to Peer 2
+        P2P-->>Consensus: Vote: APPROVE
+        and
+        Consensus->>P2P: Broadcast to Peer 3
+        P2P-->>Consensus: Vote: APPROVE
+    end
+
+    Consensus-->>Blockchain: Consensus Reached (3/3)
+    deactivate Consensus
+
+    Blockchain->>RDFStore: Persist Block Triples
+    activate RDFStore
+    Note right of RDFStore: Graph: http://provchain.org/block/42
+    RDFStore-->>Blockchain: Triples Persisted (250 triples)
+    deactivate RDFStore
+
+    Blockchain-->>WebAPI: Block Created ✅<br/>Hash: 0xdef456...
+    deactivate Blockchain
+
+    WebAPI-->>Client: 201 Created<br/>Block: 42, Hash: 0xdef456...
+    deactivate WebAPI
+
+    Note over Client,P2P: SPARQL Query Flow
+
+    Client->>WebAPI: POST /api/query<br/>(SPARQL SELECT query)
+    activate WebAPI
+
+    WebAPI->>JWT: Validate JWT Token
+    JWT-->>WebAPI: Token Valid
+
+    WebAPI->>Semantic: Execute SPARQL with OWL2 Reasoning
+    activate Semantic
+
+    Semantic->>RDFStore: Load Ontology
+    activate RDFStore
+    RDFStore-->>Semantic: Ontology Loaded
+    deactivate RDFStore
+
+    Semantic->>Semantic: Apply Tableaux Reasoning
+    Note right of Semantic: Property chains,<br/>Qualified cardinality
+
+    Semantic->>RDFStore: Execute SPARQL
+    activate RDFStore
+    RDFStore-->>Semantic: Query Results
+    deactivate RDFStore
+
+    Semantic-->>WebAPI: Results (5 product traceability records)
+    deactivate Semantic
+
+    WebAPI-->>Client: 200 OK<br/>JSON Results
+    deactivate WebAPI

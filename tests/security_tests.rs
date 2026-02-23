@@ -13,7 +13,10 @@ use tokio::time::sleep;
 /// Test helper for setting up a test server with authentication
 async fn setup_test_server_with_auth() -> Result<(u16, tokio::task::JoinHandle<()>)> {
     // Set JWT_SECRET for tests (required for authentication to work)
-    std::env::set_var("JWT_SECRET", "test-secret-for-integration-tests-must-be-32-chars-long");
+    std::env::set_var(
+        "JWT_SECRET",
+        "test-secret-for-integration-tests-must-be-32-chars-long",
+    );
 
     let blockchain = Blockchain::new();
 
@@ -95,7 +98,11 @@ async fn test_invalid_authentication() -> Result<()> {
         .await?;
 
     eprintln!("Login response status: {}", login_response.status());
-    assert!(login_response.status().is_client_error(), "Expected 4xx, got {}", login_response.status());
+    assert!(
+        login_response.status().is_client_error(),
+        "Expected 4xx, got {}",
+        login_response.status()
+    );
 
     // Test login with non-existent user
     let login_response = client

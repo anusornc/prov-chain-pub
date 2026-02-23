@@ -356,8 +356,7 @@ impl TurtleParser {
         if let Some(stripped) = token.strip_prefix("_:") {
             // Blank node - generate temporary IRI for processing using arena allocation
             let blank_iri = self.alloc_string(stripped);
-            Self::arc_to_iri(IRI::new_optimized(format!("http://blank.node/{blank_iri}")))
-            .ok()
+            Self::arc_to_iri(IRI::new_optimized(format!("http://blank.node/{blank_iri}"))).ok()
         } else {
             let arena_token = self.alloc_string(token);
             self.parse_curie_or_iri(arena_token).ok()
@@ -516,7 +515,9 @@ impl TurtleParser {
                 let arena_iri_string = self.alloc_string(&iri_string);
                 Self::arc_to_iri(IRI::new_optimized(arena_iri_string))
             } else if self.config.strict_validation {
-                Err(crate::error::OwlError::ParseError(format!("Undefined prefix: {prefix}")))
+                Err(crate::error::OwlError::ParseError(format!(
+                    "Undefined prefix: {prefix}"
+                )))
             } else {
                 // Treat as full IRI in non-strict mode
                 let arena_s = self.alloc_string(s);

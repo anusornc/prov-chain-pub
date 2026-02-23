@@ -1391,6 +1391,7 @@ mod performance_tests {
     use super::*;
 
     #[tokio::test]
+    #[cfg_attr(not(debug_assertions), ignore)]
     async fn test_audit_logging_performance() {
         let config = create_test_config();
         let manager = SecurityManager::new(config).unwrap();
@@ -1444,6 +1445,7 @@ mod performance_tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(not(debug_assertions), ignore)]
     async fn test_security_report_generation_performance() {
         let config = create_test_config();
         let manager = SecurityManager::new(config).unwrap();

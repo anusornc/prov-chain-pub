@@ -387,6 +387,7 @@ impl ExternalResolver for CompanyResolver {
 }
 
 /// Calculate Levenshtein distance between two strings
+#[allow(clippy::needless_range_loop)]
 fn levenshtein_distance(str1: &str, str2: &str) -> usize {
     let chars1: Vec<char> = str1.chars().collect();
     let chars2: Vec<char> = str2.chars().collect();

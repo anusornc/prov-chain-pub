@@ -15,6 +15,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+/// Type alias for auth middleware future
+type AuthFuture = std::pin::Pin<
+    Box<dyn std::future::Future<Output = Result<Response, (StatusCode, Json<ApiError>)>> + Send>,
+>;
+
 /// JWT secret key (loaded from environment variable only for security)
 pub fn get_jwt_secret() -> Result<Vec<u8>, crate::error::WebError> {
     // Only use environment variable for security - no config file secrets
@@ -406,14 +411,7 @@ pub async fn auth_middleware(
 }
 
 /// Role-based authorization middleware
-pub fn require_role(
-    required_role: ActorRole,
-) -> impl Fn(
-    Request,
-    Next,
-) -> std::pin::Pin<
-    Box<dyn std::future::Future<Output = Result<Response, (StatusCode, Json<ApiError>)>> + Send>,
-> + Clone {
+pub fn require_role(required_role: ActorRole) -> impl Fn(Request, Next) -> AuthFuture + Clone {
     move |request: Request, next: Next| {
         let required_role = required_role.clone();
         Box::pin(async move {

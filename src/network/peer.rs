@@ -97,10 +97,12 @@ impl PeerConnection {
     /// This method is async and will wait if the channel is full (backpressure).
     /// Returns an error if the channel is closed (peer disconnected).
     pub async fn send_message(&self, message: P2PMessage) -> Result<()> {
-        self.sender
-            .send(message)
-            .await
-            .map_err(|_| anyhow::anyhow!("Failed to send message to peer {}: channel closed", self.info.node_id))?;
+        self.sender.send(message).await.map_err(|_| {
+            anyhow::anyhow!(
+                "Failed to send message to peer {}: channel closed",
+                self.info.node_id
+            )
+        })?;
         Ok(())
     }
 

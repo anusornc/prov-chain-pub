@@ -6,10 +6,11 @@ mod tests {
     #[test]
     fn test_owl2_feature_processing_with_test_ontology() -> Result<()> {
         let mut config = OwlReasonerConfig {
-    ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
-    process_owl2_features: true,
-    ..Default::default()
-};
+            ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
+            additional_ontology_paths: vec!["src/semantic/ontologies/generic_core.owl".to_string()],
+            process_owl2_features: true,
+            ..Default::default()
+        };
         config.enable_has_key_validation = true;
         config.enable_property_chain_inference = true;
         config.enable_qualified_cardinality_validation = true;
@@ -35,10 +36,11 @@ mod tests {
     #[test]
     fn test_has_key_constraint_extraction() -> Result<()> {
         let mut config = OwlReasonerConfig {
-    ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
-    process_owl2_features: true,
-    ..Default::default()
-};
+            ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
+            additional_ontology_paths: vec!["src/semantic/ontologies/generic_core.owl".to_string()],
+            process_owl2_features: true,
+            ..Default::default()
+        };
         config.enable_has_key_validation = true;
 
         let mut reasoner = OwlReasoner::new(config)?;
@@ -77,10 +79,11 @@ mod tests {
     #[test]
     fn test_property_chain_extraction() -> Result<()> {
         let mut config = OwlReasonerConfig {
-    ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
-    process_owl2_features: true,
-    ..Default::default()
-};
+            ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
+            additional_ontology_paths: vec!["src/semantic/ontologies/generic_core.owl".to_string()],
+            process_owl2_features: true,
+            ..Default::default()
+        };
         config.enable_property_chain_inference = true;
 
         let mut reasoner = OwlReasoner::new(config)?;
@@ -100,10 +103,11 @@ mod tests {
     #[test]
     fn test_qualified_cardinality_extraction() -> Result<()> {
         let mut config = OwlReasonerConfig {
-    ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
-    process_owl2_features: true,
-    ..Default::default()
-};
+            ontology_path: "src/semantic/ontologies/test-owl2.owl".to_string(),
+            additional_ontology_paths: vec!["src/semantic/ontologies/generic_core.owl".to_string()],
+            process_owl2_features: true,
+            ..Default::default()
+        };
         config.enable_qualified_cardinality_validation = true;
 
         let mut reasoner = OwlReasoner::new(config)?;

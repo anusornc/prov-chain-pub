@@ -107,19 +107,17 @@ pub fn validate_sparql_identifier(identifier: &str) -> Result<NamedNode, String>
     }
 
     // Check for special characters that could break out of IRI context
-    let dangerous_chars = ['<', '>', '{', '}', '|', '^', '`', '\\', '"', '\n', '\r', '\0'];
+    let dangerous_chars = [
+        '<', '>', '{', '}', '|', '^', '`', '\\', '"', '\n', '\r', '\0',
+    ];
     for ch in dangerous_chars {
         if identifier.contains(ch) {
-            return Err(format!(
-                "Identifier contains invalid character: {:?}",
-                ch
-            ));
+            return Err(format!("Identifier contains invalid character: {:?}", ch));
         }
     }
 
     // Validate as a proper NamedNode (IRI)
-    NamedNode::new(identifier)
-        .map_err(|e| format!("Invalid IRI format: {}", e))
+    NamedNode::new(identifier).map_err(|e| format!("Invalid IRI format: {}", e))
 }
 
 /// Validates that a string is safe to use as a SPARQL prefixed name local part.

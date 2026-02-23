@@ -302,108 +302,103 @@ impl ShaclValidator {
             }
         }
 
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                // Extract shape information
-                let target_class = sol.get("targetClass").map(|t| t.to_string());
-                let path = sol.get("path").map(|t| t.to_string());
-                let _min_count = sol
-                    .get("minCount")
-                    .and_then(|t| {
-                        if let Term::Literal(lit) = t {
-                            lit.value().parse::<i32>().ok()
-                        } else {
-                            None
-                        }
-                    })
-                    .unwrap_or(0);
-                let name = sol.get("name").map(|t| t.to_string());
-
-                debug!(
-                    "Processing constraint: targetClass={:?}, path={:?}",
-                    target_class, path
-                );
-                println!(
-                    "Processing constraint: targetClass={:?}, path={:?}",
-                    target_class, path
-                );
-
-                if let (Some(target_class), Some(path)) = (target_class, path) {
-                    // Check if instances of this class in the data graph have the required property
-                    // Remove angle brackets if they're already present
-                    let clean_target_class =
-                        if target_class.starts_with('<') && target_class.ends_with('>') {
-                            &target_class[1..target_class.len() - 1]
-                        } else {
-                            &target_class
-                        };
-                    let clean_path = if path.starts_with('<') && path.ends_with('>') {
-                        &path[1..path.len() - 1]
+        for sol in solutions.into_iter().flatten() {
+            // Extract shape information
+            let target_class = sol.get("targetClass").map(|t| t.to_string());
+            let path = sol.get("path").map(|t| t.to_string());
+            let _min_count = sol
+                .get("minCount")
+                .and_then(|t| {
+                    if let Term::Literal(lit) = t {
+                        lit.value().parse::<i32>().ok()
                     } else {
-                        &path
-                    };
+                        None
+                    }
+                })
+                .unwrap_or(0);
+            let name = sol.get("name").map(|t| t.to_string());
 
-                    let validation_query = format!(
-                        r#"
-                        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                        
-                        SELECT ?instance WHERE {{
-                            GRAPH <{graph_name}> {{
-                                ?instance rdf:type <{clean_target_class}> .
-                                FILTER NOT EXISTS {{
-                                    ?instance <{clean_path}> ?value .
-                                }}
+            debug!(
+                "Processing constraint: targetClass={:?}, path={:?}",
+                target_class, path
+            );
+            println!(
+                "Processing constraint: targetClass={:?}, path={:?}",
+                target_class, path
+            );
+
+            if let (Some(target_class), Some(path)) = (target_class, path) {
+                // Check if instances of this class in the data graph have the required property
+                // Remove angle brackets if they're already present
+                let clean_target_class =
+                    if target_class.starts_with('<') && target_class.ends_with('>') {
+                        &target_class[1..target_class.len() - 1]
+                    } else {
+                        &target_class
+                    };
+                let clean_path = if path.starts_with('<') && path.ends_with('>') {
+                    &path[1..path.len() - 1]
+                } else {
+                    &path
+                };
+
+                let validation_query = format!(
+                    r#"
+                    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+                    SELECT ?instance WHERE {{
+                        GRAPH <{graph_name}> {{
+                            ?instance rdf:type <{clean_target_class}> .
+                            FILTER NOT EXISTS {{
+                                ?instance <{clean_path}> ?value .
                             }}
                         }}
-                    "#,
-                        graph_name = graph_name.as_str(),
-                        clean_target_class = clean_target_class,
-                        clean_path = clean_path
-                    );
+                    }}
+                "#,
+                    graph_name = graph_name.as_str(),
+                    clean_target_class = clean_target_class,
+                    clean_path = clean_path
+                );
 
-                    debug!("Executing validation query: {}", validation_query);
-                    println!("Executing validation query: {}", validation_query);
-                    match data_store.query(&validation_query) {
-                        Ok(QueryResults::Solutions(data_solutions)) => {
-                            let mut count = 0;
-                            for data_solution in data_solutions {
-                                if let Ok(data_sol) = data_solution {
-                                    println!("Data solution: {:?}", data_sol);
-                                    if let Some(instance) = data_sol.get("instance") {
-                                        let property_name =
-                                            name.clone().unwrap_or_else(|| path.clone());
-                                        debug!(
-                                            "Found missing property: instance={}, property={}",
-                                            instance, property_name
-                                        );
-                                        println!(
-                                            "Found missing property: instance={}, property={}",
-                                            instance, property_name
-                                        );
-                                        errors.push(ShaclValidationError {
-                                            message: format!(
-                                                "Instance {} missing required property '{}'",
-                                                instance, property_name
-                                            ),
-                                            focus_node: Some(instance.to_string()),
-                                            path: Some(path.clone()),
-                                            value: None,
-                                        });
-                                    }
-                                }
-                                count += 1;
+                debug!("Executing validation query: {}", validation_query);
+                println!("Executing validation query: {}", validation_query);
+                match data_store.query(&validation_query) {
+                    Ok(QueryResults::Solutions(data_solutions)) => {
+                        let mut count = 0;
+                        for data_sol in data_solutions.flatten() {
+                            println!("Data solution: {:?}", data_sol);
+                            if let Some(instance) = data_sol.get("instance") {
+                                let property_name = name.clone().unwrap_or_else(|| path.clone());
+                                debug!(
+                                    "Found missing property: instance={}, property={}",
+                                    instance, property_name
+                                );
+                                println!(
+                                    "Found missing property: instance={}, property={}",
+                                    instance, property_name
+                                );
+                                errors.push(ShaclValidationError {
+                                    message: format!(
+                                        "Instance {} missing required property '{}'",
+                                        instance, property_name
+                                    ),
+                                    focus_node: Some(instance.to_string()),
+                                    path: Some(path.clone()),
+                                    value: None,
+                                });
                             }
-                            println!("Found {} data solutions", count);
+                            count += 1;
                         }
-                        Ok(_) => {
-                            // Other query results (Boolean or Graph) are not expected for this query
-                            warn!("Unexpected query result type for validation query");
-                            println!("Unexpected query result type for validation query");
-                        }
-                        Err(e) => {
-                            warn!("Failed to execute validation query: {}", e);
-                            println!("Failed to execute validation query: {}", e);
-                        }
+                        println!("Found {} data solutions", count);
+                    }
+                    Ok(_) => {
+                        // Other query results (Boolean or Graph) are not expected for this query
+                        warn!("Unexpected query result type for validation query");
+                        println!("Unexpected query result type for validation query");
+                    }
+                    Err(e) => {
+                        warn!("Failed to execute validation query: {}", e);
+                        println!("Failed to execute validation query: {}", e);
                     }
                 }
             }
@@ -449,87 +444,83 @@ impl ShaclValidator {
             "Found {} SHACL property constraints with datatype",
             solutions.len()
         );
-        for solution in solutions {
-            if let Ok(sol) = solution {
-                // Extract shape information
-                let target_class = sol.get("targetClass").map(|t| t.to_string());
-                let path = sol.get("path").map(|t| t.to_string());
-                let datatype = sol.get("datatype").map(|t| t.to_string());
-                let name = sol.get("name").map(|t| t.to_string());
+        for sol in solutions.into_iter().flatten() {
+            // Extract shape information
+            let target_class = sol.get("targetClass").map(|t| t.to_string());
+            let path = sol.get("path").map(|t| t.to_string());
+            let datatype = sol.get("datatype").map(|t| t.to_string());
+            let name = sol.get("name").map(|t| t.to_string());
 
-                debug!(
-                    "Processing datatype constraint: targetClass={:?}, path={:?}, datatype={:?}",
-                    target_class, path, datatype
+            debug!(
+                "Processing datatype constraint: targetClass={:?}, path={:?}, datatype={:?}",
+                target_class, path, datatype
+            );
+
+            if let (Some(target_class), Some(path), Some(datatype)) = (target_class, path, datatype)
+            {
+                // Remove angle brackets if they're already present
+                let clean_target_class =
+                    if target_class.starts_with('<') && target_class.ends_with('>') {
+                        &target_class[1..target_class.len() - 1]
+                    } else {
+                        &target_class
+                    };
+                let clean_path = if path.starts_with('<') && path.ends_with('>') {
+                    &path[1..path.len() - 1]
+                } else {
+                    &path
+                };
+                let clean_datatype = if datatype.starts_with('<') && datatype.ends_with('>') {
+                    &datatype[1..datatype.len() - 1]
+                } else {
+                    &datatype
+                };
+
+                // Check if instances of this class have values with correct datatype
+                let validation_query = format!(
+                    r#"
+                    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+                    SELECT ?instance ?value WHERE {{
+                        GRAPH <{graph_name}> {{
+                            ?instance rdf:type <{clean_target_class}> ;
+                                      <{clean_path}> ?value .
+                            FILTER(DATATYPE(?value) != <{clean_datatype}>)
+                        }}
+                    }}
+                "#,
+                    graph_name = graph_name.as_str(),
+                    clean_target_class = clean_target_class,
+                    clean_path = clean_path,
+                    clean_datatype = clean_datatype
                 );
 
-                if let (Some(target_class), Some(path), Some(datatype)) =
-                    (target_class, path, datatype)
-                {
-                    // Remove angle brackets if they're already present
-                    let clean_target_class =
-                        if target_class.starts_with('<') && target_class.ends_with('>') {
-                            &target_class[1..target_class.len() - 1]
-                        } else {
-                            &target_class
-                        };
-                    let clean_path = if path.starts_with('<') && path.ends_with('>') {
-                        &path[1..path.len() - 1]
-                    } else {
-                        &path
-                    };
-                    let clean_datatype = if datatype.starts_with('<') && datatype.ends_with('>') {
-                        &datatype[1..datatype.len() - 1]
-                    } else {
-                        &datatype
-                    };
-
-                    // Check if instances of this class have values with correct datatype
-                    let validation_query = format!(
-                        r#"
-                        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                        
-                        SELECT ?instance ?value WHERE {{
-                            GRAPH <{graph_name}> {{
-                                ?instance rdf:type <{clean_target_class}> ;
-                                          <{clean_path}> ?value .
-                                FILTER(DATATYPE(?value) != <{clean_datatype}>)
-                            }}
-                        }}
-                    "#,
-                        graph_name = graph_name.as_str(),
-                        clean_target_class = clean_target_class,
-                        clean_path = clean_path,
-                        clean_datatype = clean_datatype
-                    );
-
-                    debug!("Executing datatype validation query: {}", validation_query);
-                    match data_store.query(&validation_query) {
-                        Ok(QueryResults::Solutions(data_solutions)) => {
-                            for data_sol in data_solutions.flatten() {
-                                if let (Some(instance), Some(value)) =
-                                    (data_sol.get("instance"), data_sol.get("value"))
-                                {
-                                    let property_name =
-                                        name.clone().unwrap_or_else(|| path.clone());
-                                    debug!("Found incorrect datatype: instance={}, property={}, expected={}, found={}", 
-                                           instance, property_name, datatype, self.get_literal_datatype(value));
-                                    errors.push(ShaclValidationError {
-                                        message: format!("Property '{}' on instance {} has incorrect datatype. Expected: {}, Found: {}", 
+                debug!("Executing datatype validation query: {}", validation_query);
+                match data_store.query(&validation_query) {
+                    Ok(QueryResults::Solutions(data_solutions)) => {
+                        for data_sol in data_solutions.flatten() {
+                            if let (Some(instance), Some(value)) =
+                                (data_sol.get("instance"), data_sol.get("value"))
+                            {
+                                let property_name = name.clone().unwrap_or_else(|| path.clone());
+                                debug!("Found incorrect datatype: instance={}, property={}, expected={}, found={}",
+                                       instance, property_name, datatype, self.get_literal_datatype(value));
+                                errors.push(ShaclValidationError {
+                                    message: format!("Property '{}' on instance {} has incorrect datatype. Expected: {}, Found: {}",
                                                        property_name, instance, datatype, self.get_literal_datatype(value)),
-                                        focus_node: Some(instance.to_string()),
-                                        path: Some(path.clone()),
-                                        value: Some(value.to_string()),
-                                    });
-                                }
+                                    focus_node: Some(instance.to_string()),
+                                    path: Some(path.clone()),
+                                    value: Some(value.to_string()),
+                                });
                             }
                         }
-                        Ok(_) => {
-                            // Other query results (Boolean or Graph) are not expected for this query
-                            warn!("Unexpected query result type for validation query");
-                        }
-                        Err(e) => {
-                            warn!("Failed to execute validation query: {}", e);
-                        }
+                    }
+                    Ok(_) => {
+                        // Other query results (Boolean or Graph) are not expected for this query
+                        warn!("Unexpected query result type for validation query");
+                    }
+                    Err(e) => {
+                        warn!("Failed to execute validation query: {}", e);
                     }
                 }
             }
@@ -563,146 +554,142 @@ impl ShaclValidator {
         "#;
 
         if let QueryResults::Solutions(solutions) = self.shapes_store.query(shapes_query).unwrap() {
-            for solution in solutions {
-                if let Ok(sol) = solution {
-                    // Extract shape information
-                    let target_class = sol.get("targetClass").map(|t| t.to_string());
-                    let path = sol.get("path").map(|t| t.to_string());
-                    let class = sol.get("class").map(|t| t.to_string());
-                    let name = sol.get("name").map(|t| t.to_string());
+            for sol in solutions.into_iter().flatten() {
+                // Extract shape information
+                let target_class = sol.get("targetClass").map(|t| t.to_string());
+                let path = sol.get("path").map(|t| t.to_string());
+                let class = sol.get("class").map(|t| t.to_string());
+                let name = sol.get("name").map(|t| t.to_string());
 
-                    if let (Some(target_class), Some(path), Some(class)) =
-                        (target_class, path, class)
-                    {
-                        // Remove angle brackets if they're already present
-                        let clean_target_class =
-                            if target_class.starts_with('<') && target_class.ends_with('>') {
-                                &target_class[1..target_class.len() - 1]
-                            } else {
-                                &target_class
-                            };
-                        let clean_path = if path.starts_with('<') && path.ends_with('>') {
-                            &path[1..path.len() - 1]
+                if let (Some(target_class), Some(path), Some(class)) = (target_class, path, class) {
+                    // Remove angle brackets if they're already present
+                    let clean_target_class =
+                        if target_class.starts_with('<') && target_class.ends_with('>') {
+                            &target_class[1..target_class.len() - 1]
                         } else {
-                            &path
+                            &target_class
                         };
-                        let clean_class = if class.starts_with('<') && class.ends_with('>') {
-                            &class[1..class.len() - 1]
-                        } else {
-                            &class
-                        };
+                    let clean_path = if path.starts_with('<') && path.ends_with('>') {
+                        &path[1..path.len() - 1]
+                    } else {
+                        &path
+                    };
+                    let clean_class = if class.starts_with('<') && class.ends_with('>') {
+                        &class[1..class.len() - 1]
+                    } else {
+                        &class
+                    };
 
-                        // First, let's debug what's in the data store
-                        debug!(
-                            "Checking class constraint: target_class={}, path={}, class={}",
-                            clean_target_class, clean_path, clean_class
-                        );
+                    // First, let's debug what's in the data store
+                    debug!(
+                        "Checking class constraint: target_class={}, path={}, class={}",
+                        clean_target_class, clean_path, clean_class
+                    );
 
-                        // Check if objects of this property have the correct class or are subclasses
-                        // We use a more complex query that checks both direct type and subclass relationships
-                        // We need to check across all graphs since ontology data might be in a different graph
-                        let validation_query = format!(
-                            r#"
-                            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                            
-                            SELECT ?instance ?value WHERE {{
+                    // Check if objects of this property have the correct class or are subclasses
+                    // We use a more complex query that checks both direct type and subclass relationships
+                    // We need to check across all graphs since ontology data might be in a different graph
+                    let validation_query = format!(
+                        r#"
+                        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+                        SELECT ?instance ?value WHERE {{
+                            GRAPH <{graph_name}> {{
+                                ?instance rdf:type <{clean_target_class}> ;
+                                          <{clean_path}> ?value .
+                            }}
+                            FILTER NOT EXISTS {{
                                 GRAPH <{graph_name}> {{
-                                    ?instance rdf:type <{clean_target_class}> ;
-                                              <{clean_path}> ?value .
-                                }}
-                                FILTER NOT EXISTS {{
-                                    GRAPH <{graph_name}> {{
-                                        {{
-                                            ?value rdf:type <{clean_class}> .
-                                        }}
-                                        UNION
-                                        {{
-                                            ?value rdf:type ?type .
-                                            ?type rdfs:subClassOf* <{clean_class}> .
-                                        }}
+                                    {{
+                                        ?value rdf:type <{clean_class}> .
+                                    }}
+                                    UNION
+                                    {{
+                                        ?value rdf:type ?type .
+                                        ?type rdfs:subClassOf* <{clean_class}> .
                                     }}
                                 }}
                             }}
-                        "#,
-                            graph_name = graph_name.as_str(),
-                            clean_target_class = clean_target_class,
-                            clean_path = clean_path,
-                            clean_class = clean_class
-                        );
+                        }}
+                    "#,
+                        graph_name = graph_name.as_str(),
+                        clean_target_class = clean_target_class,
+                        clean_path = clean_path,
+                        clean_class = clean_class
+                    );
 
-                        // First, let's debug what's in the data store
-                        debug!(
-                            "Checking class constraint: target_class={}, path={}, class={}",
-                            clean_target_class, clean_path, clean_class
-                        );
-                        println!(
-                            "Checking class constraint: target_class={}, path={}, class={}",
-                            clean_target_class, clean_path, clean_class
-                        );
+                    // First, let's debug what's in the data store
+                    debug!(
+                        "Checking class constraint: target_class={}, path={}, class={}",
+                        clean_target_class, clean_path, clean_class
+                    );
+                    println!(
+                        "Checking class constraint: target_class={}, path={}, class={}",
+                        clean_target_class, clean_path, clean_class
+                    );
 
-                        // Let's first check what values we have for the property
-                        let debug_query = format!(
-                            r#"
-                            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                            
-                            SELECT ?instance ?value ?type WHERE {{
-                                GRAPH <{graph_name}> {{
-                                    ?instance rdf:type <{clean_target_class}> ;
-                                              <{clean_path}> ?value .
-                                    OPTIONAL {{ ?value rdf:type ?type . }}
-                                }}
+                    // Let's first check what values we have for the property
+                    let debug_query = format!(
+                        r#"
+                        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+                        SELECT ?instance ?value ?type WHERE {{
+                            GRAPH <{graph_name}> {{
+                                ?instance rdf:type <{clean_target_class}> ;
+                                          <{clean_path}> ?value .
+                                OPTIONAL {{ ?value rdf:type ?type . }}
                             }}
-                        "#,
-                            graph_name = graph_name.as_str(),
-                            clean_target_class = clean_target_class,
-                            clean_path = clean_path
-                        );
+                        }}
+                    "#,
+                        graph_name = graph_name.as_str(),
+                        clean_target_class = clean_target_class,
+                        clean_path = clean_path
+                    );
 
-                        println!("Executing debug query: {}", debug_query);
-                        match data_store.query(&debug_query) {
-                            Ok(QueryResults::Solutions(debug_solutions)) => {
-                                println!("Debug query results:");
-                                for debug_sol in debug_solutions.flatten() {
-                                    println!("  Debug solution: {:?}", debug_sol);
-                                }
-                            }
-                            Ok(_) => {
-                                println!("Debug query returned unexpected result type");
-                            }
-                            Err(e) => {
-                                println!("Failed to execute debug query: {}", e);
+                    println!("Executing debug query: {}", debug_query);
+                    match data_store.query(&debug_query) {
+                        Ok(QueryResults::Solutions(debug_solutions)) => {
+                            println!("Debug query results:");
+                            for debug_sol in debug_solutions.flatten() {
+                                println!("  Debug solution: {:?}", debug_sol);
                             }
                         }
+                        Ok(_) => {
+                            println!("Debug query returned unexpected result type");
+                        }
+                        Err(e) => {
+                            println!("Failed to execute debug query: {}", e);
+                        }
+                    }
 
-                        match data_store.query(&validation_query) {
-                            Ok(QueryResults::Solutions(data_solutions)) => {
-                                println!("Validation query results:");
-                                for data_sol in data_solutions.flatten() {
-                                    println!("  Data solution: {:?}", data_sol);
-                                    if let (Some(instance), Some(value)) =
-                                        (data_sol.get("instance"), data_sol.get("value"))
-                                    {
-                                        let property_name =
-                                            name.clone().unwrap_or_else(|| path.clone());
-                                        errors.push(ShaclValidationError {
-                                            message: format!("Property '{}' on instance {} has value {} that is not of class {}", 
-                                                           property_name, instance, value, class),
-                                            focus_node: Some(instance.to_string()),
-                                            path: Some(path.clone()),
-                                            value: Some(value.to_string()),
-                                        });
-                                    }
+                    match data_store.query(&validation_query) {
+                        Ok(QueryResults::Solutions(data_solutions)) => {
+                            println!("Validation query results:");
+                            for data_sol in data_solutions.flatten() {
+                                println!("  Data solution: {:?}", data_sol);
+                                if let (Some(instance), Some(value)) =
+                                    (data_sol.get("instance"), data_sol.get("value"))
+                                {
+                                    let property_name =
+                                        name.clone().unwrap_or_else(|| path.clone());
+                                    errors.push(ShaclValidationError {
+                                        message: format!("Property '{}' on instance {} has value {} that is not of class {}",
+                                                       property_name, instance, value, class),
+                                        focus_node: Some(instance.to_string()),
+                                        path: Some(path.clone()),
+                                        value: Some(value.to_string()),
+                                    });
                                 }
                             }
-                            Ok(_) => {
-                                // Other query results (Boolean or Graph) are not expected for this query
-                                warn!("Unexpected query result type for validation query");
-                            }
-                            Err(e) => {
-                                warn!("Failed to execute validation query: {}", e);
-                            }
+                        }
+                        Ok(_) => {
+                            // Other query results (Boolean or Graph) are not expected for this query
+                            warn!("Unexpected query result type for validation query");
+                        }
+                        Err(e) => {
+                            warn!("Failed to execute validation query: {}", e);
                         }
                     }
                 }
@@ -738,86 +725,82 @@ impl ShaclValidator {
         "#;
 
         if let QueryResults::Solutions(solutions) = self.shapes_store.query(shapes_query).unwrap() {
-            for solution in solutions {
-                if let Ok(sol) = solution {
-                    // Extract shape information
-                    let target_class = sol.get("targetClass").map(|t| t.to_string());
-                    let path = sol.get("path").map(|t| t.to_string());
-                    let max_count = sol
-                        .get("maxCount")
-                        .and_then(|t| {
-                            if let Term::Literal(lit) = t {
-                                lit.value().parse::<i32>().ok()
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or(i32::MAX);
-                    let name = sol.get("name").map(|t| t.to_string());
-
-                    if let (Some(target_class), Some(path)) = (target_class, path) {
-                        // Remove angle brackets if they're already present
-                        let clean_target_class =
-                            if target_class.starts_with('<') && target_class.ends_with('>') {
-                                &target_class[1..target_class.len() - 1]
-                            } else {
-                                &target_class
-                            };
-                        let clean_path = if path.starts_with('<') && path.ends_with('>') {
-                            &path[1..path.len() - 1]
+            for sol in solutions.into_iter().flatten() {
+                // Extract shape information
+                let target_class = sol.get("targetClass").map(|t| t.to_string());
+                let path = sol.get("path").map(|t| t.to_string());
+                let max_count = sol
+                    .get("maxCount")
+                    .and_then(|t| {
+                        if let Term::Literal(lit) = t {
+                            lit.value().parse::<i32>().ok()
                         } else {
-                            &path
+                            None
+                        }
+                    })
+                    .unwrap_or(i32::MAX);
+                let name = sol.get("name").map(|t| t.to_string());
+
+                if let (Some(target_class), Some(path)) = (target_class, path) {
+                    // Remove angle brackets if they're already present
+                    let clean_target_class =
+                        if target_class.starts_with('<') && target_class.ends_with('>') {
+                            &target_class[1..target_class.len() - 1]
+                        } else {
+                            &target_class
                         };
+                    let clean_path = if path.starts_with('<') && path.ends_with('>') {
+                        &path[1..path.len() - 1]
+                    } else {
+                        &path
+                    };
 
-                        // Check if instances of this class have more than maxCount values for this property
-                        let validation_query = format!(
-                            r#"
-                            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                            
-                            SELECT ?instance (COUNT(?value) as ?count) WHERE {{
-                                GRAPH <{graph_name}> {{
-                                    ?instance rdf:type <{clean_target_class}> ;
-                                              <{clean_path}> ?value .
-                                }}
+                    // Check if instances of this class have more than maxCount values for this property
+                    let validation_query = format!(
+                        r#"
+                        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+                        SELECT ?instance (COUNT(?value) as ?count) WHERE {{
+                            GRAPH <{graph_name}> {{
+                                ?instance rdf:type <{clean_target_class}> ;
+                                          <{clean_path}> ?value .
                             }}
-                            GROUP BY ?instance
-                            HAVING(?count > {max_count})
-                        "#,
-                            graph_name = graph_name.as_str(),
-                            clean_target_class = clean_target_class,
-                            clean_path = clean_path,
-                            max_count = max_count
-                        );
+                        }}
+                        GROUP BY ?instance
+                        HAVING(?count > {max_count})
+                    "#,
+                        graph_name = graph_name.as_str(),
+                        clean_target_class = clean_target_class,
+                        clean_path = clean_path,
+                        max_count = max_count
+                    );
 
-                        match data_store.query(&validation_query) {
-                            Ok(QueryResults::Solutions(data_solutions)) => {
-                                for data_sol in data_solutions.flatten() {
-                                    if let (Some(instance), Some(count_term)) =
-                                        (data_sol.get("instance"), data_sol.get("count"))
-                                    {
-                                        if let Term::Literal(count_lit) = count_term {
-                                            if let Ok(count) = count_lit.value().parse::<i32>() {
-                                                let property_name =
-                                                    name.clone().unwrap_or_else(|| path.clone());
-                                                errors.push(ShaclValidationError {
-                                                    message: format!("Instance {} has {} values for property '{}' which exceeds maximum of {}", 
-                                                                   instance, count, property_name, max_count),
-                                                    focus_node: Some(instance.to_string()),
-                                                    path: Some(path.clone()),
-                                                    value: None,
-                                                });
-                                            }
-                                        }
+                    match data_store.query(&validation_query) {
+                        Ok(QueryResults::Solutions(data_solutions)) => {
+                            for data_sol in data_solutions.flatten() {
+                                if let (Some(instance), Some(Term::Literal(count_lit))) =
+                                    (data_sol.get("instance"), data_sol.get("count"))
+                                {
+                                    if let Ok(count) = count_lit.value().parse::<i32>() {
+                                        let property_name =
+                                            name.clone().unwrap_or_else(|| path.clone());
+                                        errors.push(ShaclValidationError {
+                                            message: format!("Instance {} has {} values for property '{}' which exceeds maximum of {}",
+                                                           instance, count, property_name, max_count),
+                                            focus_node: Some(instance.to_string()),
+                                            path: Some(path.clone()),
+                                            value: None,
+                                        });
                                     }
                                 }
                             }
-                            Ok(_) => {
-                                // Other query results (Boolean or Graph) are not expected for this query
-                                warn!("Unexpected query result type for validation query");
-                            }
-                            Err(e) => {
-                                warn!("Failed to execute validation query: {}", e);
-                            }
+                        }
+                        Ok(_) => {
+                            // Other query results (Boolean or Graph) are not expected for this query
+                            warn!("Unexpected query result type for validation query");
+                        }
+                        Err(e) => {
+                            warn!("Failed to execute validation query: {}", e);
                         }
                     }
                 }
@@ -948,15 +931,24 @@ mod tests {
         let validation_result = validator.validate_graph(&rdf_store.store, &graph);
 
         // The validation should complete without error
-        assert!(validation_result.is_ok(), "Validation should complete successfully");
+        assert!(
+            validation_result.is_ok(),
+            "Validation should complete successfully"
+        );
 
         let result = validation_result.unwrap();
 
         // The data should NOT conform (missing required property)
-        assert!(!result.conforms, "Data with missing required property should not conform");
+        assert!(
+            !result.conforms,
+            "Data with missing required property should not conform"
+        );
 
         // Should have validation errors
-        assert!(!result.errors.is_empty(), "Should have validation errors for missing property");
+        assert!(
+            !result.errors.is_empty(),
+            "Should have validation errors for missing property"
+        );
 
         // At least one error should mention the missing property or minimum count
         let error_text = result
@@ -966,7 +958,9 @@ mod tests {
             .collect::<Vec<_>>()
             .join(" ");
         assert!(
-            error_text.contains("requiredProperty") || error_text.contains("minCount") || error_text.to_lowercase().contains("required"),
+            error_text.contains("requiredProperty")
+                || error_text.contains("minCount")
+                || error_text.to_lowercase().contains("required"),
             "Error should mention the missing property. Got: {}",
             error_text
         );

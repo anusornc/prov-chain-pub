@@ -116,8 +116,7 @@ impl PredictiveAnalyzer {
             let date = Utc::now() + Duration::days(i as i64);
             let seasonal_factor = self.calculate_seasonal_factor(date);
             let trend_factor = 1.0 + (self.config.growth_rate * i as f64);
-            let noise_factor =
-                1.0 + (self.config.noise_amplitude * ((i as f64 * 0.5).sin())); // Uncertainty modeling
+            let noise_factor = 1.0 + (self.config.noise_amplitude * ((i as f64 * 0.5).sin())); // Uncertainty modeling
 
             let predicted_demand =
                 self.config.base_demand * trend_factor * seasonal_factor * noise_factor;
@@ -455,7 +454,7 @@ impl PredictiveAnalyzer {
             0.50 - (cv - 0.6) * 0.25 // Min 0.25 accuracy for highly volatile data
         };
 
-        let accuracy = accuracy.max(0.25).min(0.98);
+        let accuracy = accuracy.clamp(0.25, 0.98);
 
         tracing::debug!(
             "Forecast accuracy: {:.2} (mean: {:.2}, cv: {:.2})",

@@ -5,11 +5,13 @@ mod tests {
 
     #[test]
     fn test_enhanced_owl2_feature_processing() -> Result<()> {
-        let mut config = OwlReasonerConfig::default();
-        config.process_owl2_features = true;
-        config.enable_has_key_validation = true;
-        config.enable_property_chain_inference = true;
-        config.enable_qualified_cardinality_validation = true;
+        let config = OwlReasonerConfig {
+            process_owl2_features: true,
+            enable_has_key_validation: true,
+            enable_property_chain_inference: true,
+            enable_qualified_cardinality_validation: true,
+            ..Default::default()
+        };
 
         let mut reasoner = OwlReasoner::new(config)?;
 

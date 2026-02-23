@@ -143,7 +143,8 @@ mod tests {
     #[test]
     fn test_extract_domain_name() {
         assert_eq!(
-            OntologyConfig::extract_domain_name("src/semantic/ontologies/uht_manufacturing.owl").unwrap(),
+            OntologyConfig::extract_domain_name("src/semantic/ontologies/uht_manufacturing.owl")
+                .unwrap(),
             "uht_manufacturing"
         );
         assert_eq!(

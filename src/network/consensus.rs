@@ -1305,6 +1305,7 @@ impl PbftConsensus {
     }
 
     /// Handle PRE-PREPARE message
+    #[allow(clippy::too_many_arguments)]
     async fn handle_pre_prepare(
         &self,
         view: u64,
@@ -1634,9 +1635,9 @@ mod tests {
     #[tokio::test]
     async fn test_pbft_switching() {
         let config = ConsensusConfig {
-    consensus_type: "pbft".to_string(),
-    ..Default::default()
-};
+            consensus_type: "pbft".to_string(),
+            ..Default::default()
+        };
 
         let node_config = NodeConfig::default();
         let network = Arc::new(NetworkManager::new(node_config));

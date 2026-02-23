@@ -46,6 +46,7 @@ impl Default for TestSuiteConfig {
 
 /// Comprehensive test suite runner
 pub struct E2ETestRunner {
+    #[allow(dead_code)] // Stored for future configuration use
     config: TestSuiteConfig,
     results: Vec<TestResult>,
 }
@@ -65,24 +66,27 @@ impl E2ETestRunner {
 
         let overall_start = Instant::now();
 
-        // Test suites to run
-        let test_suites = vec![
-            ("User Journey Tests", Self::run_user_journey_tests),
-            ("Web Interface Tests", Self::run_web_interface_tests),
-            ("API Workflow Tests", Self::run_api_workflow_tests),
-            ("Data Integrity Tests", Self::run_data_integrity_tests),
-            ("Performance Tests", Self::run_performance_tests),
-            ("Compliance Tests", Self::run_compliance_tests),
-            ("Security Tests", Self::run_security_tests),
-            ("Stress Tests", Self::run_stress_tests),
+        // Run each test suite directly (avoids type mismatch with function pointers)
+        let test_results = vec![
+            ("User Journey Tests", self.run_user_journey_tests().await),
+            ("Web Interface Tests", self.run_web_interface_tests().await),
+            ("API Workflow Tests", self.run_api_workflow_tests().await),
+            (
+                "Data Integrity Tests",
+                self.run_data_integrity_tests().await,
+            ),
+            ("Performance Tests", self.run_performance_tests().await),
+            ("Compliance Tests", self.run_compliance_tests().await),
+            ("Security Tests", self.run_security_tests().await),
+            ("Stress Tests", self.run_stress_tests().await),
         ];
 
-        for (suite_name, test_fn) in test_suites {
+        for (suite_name, result) in test_results {
             println!("\n📋 Running {}", suite_name);
             println!("{}", "=".repeat(50));
 
             let suite_start = Instant::now();
-            match test_fn(self).await {
+            match result {
                 Ok(suite_results) => {
                     let suite_duration = suite_start.elapsed();
                     println!("✅ {} completed in {:?}", suite_name, suite_duration);
@@ -283,7 +287,7 @@ impl E2ETestRunner {
             ("Backup & Recovery", Duration::from_secs(30)),
         ];
 
-        for (test_name, expected_duration) in tests {
+        for (test_name, _expected_duration) in tests {
             let start = Instant::now();
             tokio::time::sleep(Duration::from_millis(100)).await;
 
@@ -321,7 +325,7 @@ impl E2ETestRunner {
             ("Network Throughput", Duration::from_secs(90)),
         ];
 
-        for (test_name, expected_duration) in tests {
+        for (test_name, _expected_duration) in tests {
             let start = Instant::now();
             tokio::time::sleep(Duration::from_millis(300)).await;
 
@@ -363,7 +367,7 @@ impl E2ETestRunner {
             ("SOX Financial Compliance", Duration::from_secs(50)),
         ];
 
-        for (test_name, expected_duration) in tests {
+        for (test_name, _expected_duration) in tests {
             let start = Instant::now();
             tokio::time::sleep(Duration::from_millis(150)).await;
 
@@ -403,7 +407,7 @@ impl E2ETestRunner {
             ("Audit Logging", Duration::from_secs(20)),
         ];
 
-        for (test_name, expected_duration) in tests {
+        for (test_name, _expected_duration) in tests {
             let start = Instant::now();
             tokio::time::sleep(Duration::from_millis(100)).await;
 
@@ -441,7 +445,7 @@ impl E2ETestRunner {
             ("Database Stress", Duration::from_secs(200)),
         ];
 
-        for (test_name, expected_duration) in tests {
+        for (test_name, _expected_duration) in tests {
             let start = Instant::now();
             tokio::time::sleep(Duration::from_millis(500)).await;
 
@@ -656,7 +660,7 @@ mod tests {
     #[tokio::test]
     async fn test_e2e_runner_basic_functionality() {
         let config = TestSuiteConfig::default();
-        let mut runner = E2ETestRunner::new(config);
+        let runner = E2ETestRunner::new(config);
 
         // This would run a subset of tests in a real scenario
         let user_journey_results = runner.run_user_journey_tests().await.unwrap();

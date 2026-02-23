@@ -525,10 +525,7 @@ async fn test_product_traceability_pipeline() -> Result<()> {
     // Step 2: Test traceability query
     let trace_start = Instant::now();
     let trace_response = client
-        .get(format!(
-            "{}/api/products/trace?batch_id=BATCH456",
-            base_url
-        ))
+        .get(format!("{}/api/products/trace?batch_id=BATCH456", base_url))
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
@@ -665,11 +662,13 @@ async fn test_blockchain_validation_pipeline() -> Result<()> {
     );
 
     // Step 2: Add multiple blocks
-    let test_blocks = ["Test block 1 data",
+    let test_blocks = [
+        "Test block 1 data",
         "Test block 2 data",
         "Test block 3 data",
         "Test block 4 data",
-        "Test block 5 data"];
+        "Test block 5 data",
+    ];
 
     for (i, block_data) in test_blocks.iter().enumerate() {
         let triple_data = json!({

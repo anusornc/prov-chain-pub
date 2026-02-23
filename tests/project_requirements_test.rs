@@ -10,8 +10,10 @@ use uuid::Uuid;
 #[tokio::test]
 async fn test_consensus_switching_mechanism() {
     // 1. Test PoA Configuration
-    let mut poa_config = ConsensusConfig::default();
-    poa_config.consensus_type = "poa".to_string();
+    let poa_config = ConsensusConfig {
+        consensus_type: "poa".to_string(),
+        ..Default::default()
+    };
 
     let node_config = NodeConfig::default();
     let network = Arc::new(NetworkManager::new(node_config.clone()));
@@ -25,8 +27,10 @@ async fn test_consensus_switching_mechanism() {
     assert_eq!(stats.protocol_type, "PoA", "Should be running PoA protocol");
 
     // 2. Test PBFT Configuration
-    let mut pbft_config = ConsensusConfig::default();
-    pbft_config.consensus_type = "pbft".to_string();
+    let pbft_config = ConsensusConfig {
+        consensus_type: "pbft".to_string(),
+        ..Default::default()
+    };
 
     let pbft_manager = ConsensusManager::new(pbft_config, network.clone(), blockchain.clone())
         .await

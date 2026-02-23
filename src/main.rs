@@ -110,7 +110,11 @@ enum Commands {
     /// Run advanced OWL2 reasoning using the owl2-reasoner library
     AdvancedOwl2 {
         /// Ontology file to process
-        #[arg(short, long, default_value = "src/semantic/ontologies/generic_core.owl")]
+        #[arg(
+            short,
+            long,
+            default_value = "src/semantic/ontologies/generic_core.owl"
+        )]
         ontology: String,
     },
     /// Trace the shortest path between two entities in the knowledge graph

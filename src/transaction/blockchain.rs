@@ -105,22 +105,28 @@ impl TransactionBlockchain {
         let block_data = self.create_block_rdf_data(&transactions)?;
 
         // Aggregate encrypted data
-        let encrypted_payloads: HashMap<String, String> = transactions.iter()
+        let encrypted_payloads: HashMap<String, String> = transactions
+            .iter()
             .filter_map(|tx| tx.encrypted_data.clone().map(|data| (tx.id.clone(), data)))
             .collect();
-        
+
         let block_encrypted_data = if encrypted_payloads.is_empty() {
             None
         } else {
-            Some(serde_json::to_string(&encrypted_payloads).map_err(|e| anyhow!("Failed to serialize encrypted data: {}", e))?)
+            Some(
+                serde_json::to_string(&encrypted_payloads)
+                    .map_err(|e| anyhow!("Failed to serialize encrypted data: {}", e))?,
+            )
         };
 
         // Create block proposal
         // Note: We use the hex string representation of the public key as the validator ID in the block
         let validator_pub_key = hex::encode(validator_wallet.public_key.as_bytes());
-        let mut block = self
-            .blockchain
-            .create_block_proposal(block_data, block_encrypted_data, validator_pub_key)?;
+        let mut block = self.blockchain.create_block_proposal(
+            block_data,
+            block_encrypted_data,
+            validator_pub_key,
+        )?;
 
         // Sign the block
         let signature = validator_wallet.sign(block.hash.as_bytes())?;
@@ -257,7 +263,7 @@ impl TransactionBlockchain {
         };
 
         if !has_permission {
-             return Err(anyhow!("Permission denied"));
+            return Err(anyhow!("Permission denied"));
         }
 
         // Create transaction output
@@ -275,10 +281,14 @@ impl TransactionBlockchain {
         };
 
         // Get wallet name for RDF generation
-        let producer_name = self.wallet_manager.get_wallet(producer_id)
+        let producer_name = self
+            .wallet_manager
+            .get_wallet(producer_id)
             .ok_or_else(|| anyhow!("Producer wallet not found"))?
-            .participant.name.clone();
-        
+            .participant
+            .name
+            .clone();
+
         let tx_id = Uuid::new_v4().to_string();
 
         // Create RDF data
@@ -315,7 +325,9 @@ ex:participant_{} a trace:Farmer ;
         let (final_rdf, encrypted_payload) = if encrypt_data {
             // Get or create encryption key
             let key_id = "private_data_key";
-            let wallet = self.wallet_manager.get_wallet_mut(producer_id)
+            let wallet = self
+                .wallet_manager
+                .get_wallet_mut(producer_id)
                 .ok_or_else(|| anyhow!("Producer wallet not found for key generation"))?;
 
             let key_hex = if let Some(k) = wallet.get_secret(key_id) {
@@ -328,9 +340,13 @@ ex:participant_{} a trace:Farmer ;
             };
 
             let key_bytes = hex::decode(&key_hex).map_err(|_| anyhow!("Invalid key hex"))?;
-            let key_array: [u8; 32] = key_bytes.try_into().map_err(|_| anyhow!("Invalid key length"))?;
+            let key_array: [u8; 32] = key_bytes
+                .try_into()
+                .map_err(|_| anyhow!("Invalid key length"))?;
 
-            let encrypted = crate::security::encryption::PrivacyManager::encrypt(&rdf_data, &key_array, key_id)?;
+            let encrypted = crate::security::encryption::PrivacyManager::encrypt(
+                &rdf_data, &key_array, key_id,
+            )?;
             let encrypted_json = serde_json::to_string(&encrypted)?;
 
             // Create public placeholder RDF
@@ -341,9 +357,7 @@ ex:{} a trace:ProductBatch ;
     trace:hasTransactionID "{}" ;
     trace:isEncrypted "true"^^xsd:boolean .
 "#,
-                batch_id,
-                batch_id,
-                tx_id
+                batch_id, batch_id, tx_id
             );
 
             (public_rdf, Some(encrypted_json))
@@ -352,7 +366,9 @@ ex:{} a trace:ProductBatch ;
         };
 
         // Re-borrow wallet immutably for signing
-        let wallet = self.wallet_manager.get_wallet(producer_id)
+        let wallet = self
+            .wallet_manager
+            .get_wallet(producer_id)
             .ok_or_else(|| anyhow!("Producer wallet not found for signing"))?;
 
         let mut transaction = Transaction::new_with_id(
@@ -392,11 +408,15 @@ ex:{} a trace:ProductBatch ;
             if !wallet.has_permission("process") {
                 return Err(anyhow!("Processor does not have processing permission"));
             }
-            (true, wallet.participant.name.clone(), wallet.participant.location.clone())
+            (
+                true,
+                wallet.participant.name.clone(),
+                wallet.participant.location.clone(),
+            )
         };
 
         if !has_permission {
-             return Err(anyhow!("Permission denied"));
+            return Err(anyhow!("Permission denied"));
         }
 
         // Create transaction inputs (simplified - in reality we'd look up the actual UTXOs)
@@ -469,7 +489,9 @@ ex:participant_{} a trace:Manufacturer ;
         let (final_rdf, encrypted_payload) = if encrypt_data {
             // Get or create encryption key
             let key_id = "private_data_key";
-            let wallet = self.wallet_manager.get_wallet_mut(processor_id)
+            let wallet = self
+                .wallet_manager
+                .get_wallet_mut(processor_id)
                 .ok_or_else(|| anyhow!("Processor wallet not found for key generation"))?;
 
             let key_hex = if let Some(k) = wallet.get_secret(key_id) {
@@ -482,9 +504,13 @@ ex:participant_{} a trace:Manufacturer ;
             };
 
             let key_bytes = hex::decode(&key_hex).map_err(|_| anyhow!("Invalid key hex"))?;
-            let key_array: [u8; 32] = key_bytes.try_into().map_err(|_| anyhow!("Invalid key length"))?;
+            let key_array: [u8; 32] = key_bytes
+                .try_into()
+                .map_err(|_| anyhow!("Invalid key length"))?;
 
-            let encrypted = crate::security::encryption::PrivacyManager::encrypt(&rdf_data, &key_array, key_id)?;
+            let encrypted = crate::security::encryption::PrivacyManager::encrypt(
+                &rdf_data, &key_array, key_id,
+            )?;
             let encrypted_json = serde_json::to_string(&encrypted)?;
 
             // Create public placeholder RDF
@@ -495,9 +521,7 @@ ex:{} a trace:ProductBatch ;
     trace:hasTransactionID "{}" ;
     trace:isEncrypted "true"^^xsd:boolean .
 "#,
-                output_batch_id,
-                output_batch_id,
-                tx_id
+                output_batch_id, output_batch_id, tx_id
             );
 
             (public_rdf, Some(encrypted_json))
@@ -505,7 +529,9 @@ ex:{} a trace:ProductBatch ;
             (rdf_data.clone(), None)
         };
 
-        let wallet = self.wallet_manager.get_wallet(processor_id)
+        let wallet = self
+            .wallet_manager
+            .get_wallet(processor_id)
             .ok_or_else(|| anyhow!("Processor wallet not found for signing"))?;
 
         let mut transaction = Transaction::new_with_id(
@@ -544,7 +570,11 @@ ex:{} a trace:ProductBatch ;
             if !wallet.has_permission("quality_test") {
                 return Err(anyhow!("Lab does not have quality testing permission"));
             }
-            (true, wallet.participant.name.clone(), wallet.participant.location.clone())
+            (
+                true,
+                wallet.participant.name.clone(),
+                wallet.participant.location.clone(),
+            )
         };
 
         if !has_permission {
@@ -596,7 +626,9 @@ ex:participant_{} a trace:QualityLab ;
         let (final_rdf, encrypted_payload) = if encrypt_data {
             // Get or create encryption key
             let key_id = "private_data_key";
-            let wallet = self.wallet_manager.get_wallet_mut(lab_id)
+            let wallet = self
+                .wallet_manager
+                .get_wallet_mut(lab_id)
                 .ok_or_else(|| anyhow!("Lab wallet not found for key generation"))?;
 
             let key_hex = if let Some(k) = wallet.get_secret(key_id) {
@@ -609,9 +641,13 @@ ex:participant_{} a trace:QualityLab ;
             };
 
             let key_bytes = hex::decode(&key_hex).map_err(|_| anyhow!("Invalid key hex"))?;
-            let key_array: [u8; 32] = key_bytes.try_into().map_err(|_| anyhow!("Invalid key length"))?;
+            let key_array: [u8; 32] = key_bytes
+                .try_into()
+                .map_err(|_| anyhow!("Invalid key length"))?;
 
-            let encrypted = crate::security::encryption::PrivacyManager::encrypt(&rdf_data, &key_array, key_id)?;
+            let encrypted = crate::security::encryption::PrivacyManager::encrypt(
+                &rdf_data, &key_array, key_id,
+            )?;
             let encrypted_json = serde_json::to_string(&encrypted)?;
 
             // Create public placeholder RDF
@@ -622,9 +658,7 @@ ex:quality_test_{} a trace:QualityCheck ;
     trace:hasTransactionID "{}" ;
     trace:isEncrypted "true"^^xsd:boolean .
 "#,
-                batch_id,
-                batch_id,
-                tx_id
+                batch_id, batch_id, tx_id
             );
 
             (public_rdf, Some(encrypted_json))
@@ -632,7 +666,9 @@ ex:quality_test_{} a trace:QualityCheck ;
             (rdf_data.clone(), None)
         };
 
-        let wallet = self.wallet_manager.get_wallet(lab_id)
+        let wallet = self
+            .wallet_manager
+            .get_wallet(lab_id)
             .ok_or_else(|| anyhow!("Lab wallet not found for signing"))?;
 
         let mut transaction = Transaction::new_with_id(
@@ -675,7 +711,7 @@ ex:quality_test_{} a trace:QualityCheck ;
         };
 
         if !has_permission {
-             return Err(anyhow!("Permission denied"));
+            return Err(anyhow!("Permission denied"));
         }
 
         let tx_id = Uuid::new_v4().to_string();
@@ -714,7 +750,9 @@ ex:participant_{} a trace:LogisticsProvider ;
         let (final_rdf, encrypted_payload) = if encrypt_data {
             // Get or create encryption key
             let key_id = "private_data_key";
-            let wallet = self.wallet_manager.get_wallet_mut(logistics_id)
+            let wallet = self
+                .wallet_manager
+                .get_wallet_mut(logistics_id)
                 .ok_or_else(|| anyhow!("Logistics wallet not found for key generation"))?;
 
             let key_hex = if let Some(k) = wallet.get_secret(key_id) {
@@ -727,9 +765,13 @@ ex:participant_{} a trace:LogisticsProvider ;
             };
 
             let key_bytes = hex::decode(&key_hex).map_err(|_| anyhow!("Invalid key hex"))?;
-            let key_array: [u8; 32] = key_bytes.try_into().map_err(|_| anyhow!("Invalid key length"))?;
+            let key_array: [u8; 32] = key_bytes
+                .try_into()
+                .map_err(|_| anyhow!("Invalid key length"))?;
 
-            let encrypted = crate::security::encryption::PrivacyManager::encrypt(&rdf_data, &key_array, key_id)?;
+            let encrypted = crate::security::encryption::PrivacyManager::encrypt(
+                &rdf_data, &key_array, key_id,
+            )?;
             let encrypted_json = serde_json::to_string(&encrypted)?;
 
             // Create public placeholder RDF
@@ -740,9 +782,7 @@ ex:transport_{} a trace:TransportActivity ;
     trace:hasTransactionID "{}" ;
     trace:isEncrypted "true"^^xsd:boolean .
 "#,
-                batch_id,
-                batch_id,
-                tx_id
+                batch_id, batch_id, tx_id
             );
 
             (public_rdf, Some(encrypted_json))
@@ -750,7 +790,9 @@ ex:transport_{} a trace:TransportActivity ;
             (rdf_data.clone(), None)
         };
 
-        let wallet = self.wallet_manager.get_wallet(logistics_id)
+        let wallet = self
+            .wallet_manager
+            .get_wallet(logistics_id)
             .ok_or_else(|| anyhow!("Logistics wallet not found for signing"))?;
 
         let mut transaction = Transaction::new_with_id(
@@ -1171,9 +1213,8 @@ mod security_tests {
                 let participant =
                     Participant::new_farmer(format!("Farm {}", i), format!("Location {}", i));
 
-                let registration_result = blockchain.register_participant(participant);
-                if registration_result.is_ok() {
-                    participant_ids.push(registration_result.unwrap());
+                if let Ok(id) = blockchain.register_participant(participant) {
+                    participant_ids.push(id);
                 }
             }
 
@@ -1191,17 +1232,15 @@ mod security_tests {
 
             // Test that creating many transactions doesn't break the system
             for (i, &participant_id) in participant_ids.iter().take(10).enumerate() {
-                let tx = blockchain.create_production_transaction(
+                if let Ok(tx) = blockchain.create_production_transaction(
                     participant_id,
                     format!("SYBIL-{}", i),
                     10.0,
                     format!("Location {}", i),
                     None,
                     false,
-                );
-
-                if tx.is_ok() {
-                    let _submit_result = blockchain.submit_transaction(tx.unwrap());
+                ) {
+                    let _submit_result = blockchain.submit_transaction(tx);
                     // System should handle high transaction volume gracefully
                 }
             }
@@ -1397,23 +1436,17 @@ mod security_tests {
                     let participant =
                         Participant::new_farmer(format!("Farm {}", i), format!("Location {}", i));
 
-                    let participant_id = blockchain.register_participant(participant);
-
-                    if participant_id.is_ok() {
-                        let pid = participant_id.unwrap();
-
+                    if let Ok(pid) = blockchain.register_participant(participant) {
                         // Create transaction
-                        let tx = blockchain.create_production_transaction(
+                        if let Ok(tx) = blockchain.create_production_transaction(
                             pid,
                             format!("CONCURRENT-{}", i),
                             100.0,
                             format!("Location {}", i),
                             None,
                             false,
-                        );
-
-                        if tx.is_ok() {
-                            let _ = blockchain.submit_transaction(tx.unwrap());
+                        ) {
+                            let _ = blockchain.submit_transaction(tx);
                         }
                     }
 

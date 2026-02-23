@@ -17,14 +17,16 @@ pub fn run_universal_traceability_demo() -> Result<()> {
 
     // Create a default ontology configuration for demo
     let config = crate::config::Config::default();
-    let ontology_config =
-        match OntologyConfig::new(Some("src/semantic/ontologies/healthcare.owl".to_string()), &config) {
-            Ok(config) => config,
-            Err(e) => {
-                println!("   Failed to create ontology config: {}", e);
-                return Ok(());
-            }
-        };
+    let ontology_config = match OntologyConfig::new(
+        Some("src/semantic/ontologies/healthcare.owl".to_string()),
+        &config,
+    ) {
+        Ok(config) => config,
+        Err(e) => {
+            println!("   Failed to create ontology config: {}", e);
+            return Ok(());
+        }
+    };
 
     let ontology_manager = match OntologyManager::new(ontology_config) {
         Ok(manager) => manager,

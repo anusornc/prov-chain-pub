@@ -230,9 +230,7 @@ impl ErrorContext {
             OwlError::ReasoningError(msg) => {
                 OwlError::ReasoningError(format!("{context_str}:{msg}"))
             }
-            OwlError::StorageError(msg) => {
-                OwlError::StorageError(format!("{context_str}:{msg}"))
-            }
+            OwlError::StorageError(msg) => OwlError::StorageError(format!("{context_str}:{msg}")),
             OwlError::ParseError(msg) => OwlError::ParseError(format!("{context_str}:{msg}")),
             _ => error,
         }
