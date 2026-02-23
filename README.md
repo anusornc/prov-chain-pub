@@ -54,7 +54,10 @@ git clone https://github.com/anusornc/provchain-org.git
 cd provchain-org
 
 # Run the supply chain traceability demo
-cargo run demo
+cargo run -- examples basic-supply-chain
+
+# Or try the full GS1 EPCIS UHT demo
+cargo run --example gs1_epcis_uht_demo
 ```
 
 ### CLI Usage
@@ -76,6 +79,73 @@ cargo run -- dump
 # Start web server
 cargo run -- web-server --port 8080
 ```
+
+## 🎮 Examples & Demos
+
+ProvChain includes multiple examples demonstrating different features and complexity levels:
+
+### Built-in CLI Examples
+
+| Command | Description | Complexity |
+|---------|-------------|------------|
+| `cargo run -- examples list` | List all available examples | - |
+| `cargo run -- examples basic-supply-chain` | Simple supply chain traceability | ⭐⭐ |
+| `cargo run -- examples transaction-workflow` | Transaction signing & multi-party | ⭐⭐⭐ |
+| `cargo run -- examples owl2-reasoning` | OWL2 features (hasKey, property chains) | ⭐⭐⭐ |
+| `cargo run -- examples web-server` | Web UI with demo data | ⭐⭐ |
+| `cargo run -- examples gs1-epcis-uht` | GS1 EPCIS reference demo | ⭐⭐⭐ |
+
+### Standalone Examples
+
+```bash
+# Full GS1 EPCIS UHT Supply Chain (113 blocks, 2076 triples)
+cargo run --example gs1_epcis_uht_demo
+
+# Web UI starter with sample data
+cargo run --example demo_ui
+
+# WAL persistence demonstration
+cargo run --example persistence_demo
+```
+
+### Demo Complexity Overview
+
+```
+Simple                              Complex
+   │                                   │
+   ▼                                   ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│ persistence  │  │ basic-supply │  │ transaction  │  │ gs1_epcis    │
+│ _demo        │  │ -chain       │  │ -workflow    │  │ _uht_demo    │
+│              │  │              │  │              │  │              │
+│ • WAL basics │  │ • 4 blocks   │  │ • Signing    │  │ • 113 blocks │
+│ • 1 block    │  │ • Simple RDF │  │ • UTXO       │  │ • 2076 triples│
+│ • ~2s        │  │ • ~2s        │  │ • Multi-party│  │ • 8 phases   │
+│              │  │              │  │ • ~5s        │  │ • ~7s        │
+└──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘
+     10 lines          100 lines         500 lines         776 lines
+```
+
+### GS1 EPCIS UHT Demo Phases
+
+The `gs1_epcis_uht_demo` example demonstrates a complete UHT milk supply chain:
+
+1. **Milk Collection** - Farm (Wisconsin Organic Dairy)
+2. **Cold Chain Transport** - Farm to Processing Plant
+3. **Quality Control** - Reception & Pre-Processing (4 tests)
+4. **UHT Processing** - 137°C/4 seconds aseptic processing
+5. **Aseptic Packaging** - Tetra Pak cartons
+6. **Cold Storage** - 4°C hold
+7. **Distribution** - Plant to Distribution Center
+8. **Retail Delivery** - Stocking at Metro Supermarkets
+
+Features demonstrated:
+- ✅ GS1 EPCIS standard compliance
+- ✅ OWL2 hasKey validation (batch uniqueness)
+- ✅ Property chain inference
+- ✅ Qualified cardinality (4 QC tests)
+- ✅ Full SPARQL traceability queries
+- ✅ 100-event load test (64ms/event)
 
 ### Running Project Benchmarks
 To generate performance data for the project evaluation:
