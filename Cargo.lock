@@ -400,6 +400,15 @@ dependencies = [
 
 [[package]]
 name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "bincode"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36eaf5d7b090263e8150820482d5d93cd964a81e4019913c972f4edcc6edb740"
@@ -3410,7 +3419,7 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bincode",
+ "bincode 2.0.1",
  "bit-set 0.5.3",
  "bumpalo",
  "chrono",
@@ -4036,10 +4045,12 @@ dependencies = [
  "axum 0.7.9",
  "base64 0.21.7",
  "bcrypt",
+ "bincode 1.3.3",
  "chacha20poly1305",
  "chrono",
  "clap",
  "config",
+ "crc32fast",
  "criterion",
  "dirs 5.0.1",
  "ed25519-dalek",
