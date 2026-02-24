@@ -1,0 +1,257 @@
+@prefix : <https://provchain.org/uht/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix epcis: <https://ref.gs1.org/epcis/> .
+@prefix cbv: <https://ref.gs1.org/cbv/> .
+@prefix gs1: <https://gs1.org/voc/> .
+
+<https://provchain.org/uht/> rdf:type owl:Ontology ;
+    owl:versionInfo "1.0" ;
+    owl:imports <https://ref.gs1.org/epcis/> ;
+    rdfs:label "UHT Supply Chain Ontology" ;
+    rdfs:comment "Extension of GS1 EPCIS for Ultra-High Temperature milk supply chain traceability" .
+
+#################################################################
+#    Classes
+#################################################################
+
+:UHTProcessingEvent rdf:type owl:Class ;
+    rdfs:subClassOf epcis:TransformationEvent ;
+    rdfs:label "UHT Processing Event" ;
+    rdfs:comment "Transformation of raw milk to UHT milk through ultra-high temperature processing" .
+
+:MilkCollectionEvent rdf:type owl:Class ;
+    rdfs:subClassOf epcis:ObjectEvent ;
+    rdfs:label "Milk Collection Event" ;
+    rdfs:comment "Collection of raw milk from dairy farm" .
+
+:QualityTestEvent rdf:type owl:Class ;
+    rdfs:subClassOf epcis:ObjectEvent ;
+    rdfs:label "Quality Test Event" ;
+    rdfs:comment "Laboratory quality testing of milk" .
+
+:ColdChainEvent rdf:type owl:Class ;
+    rdfs:subClassOf epcis:ObjectEvent ;
+    rdfs:label "Cold Chain Event" ;
+    rdfs:comment "Temperature-controlled logistics event" .
+
+:PackagingEvent rdf:type owl:Class ;
+    rdfs:subClassOf epcis:AggregationEvent ;
+    rdfs:label "Packaging Event" ;
+    rdfs:comment "Packaging UHT milk into cartons, cases, pallets" .
+
+:QualityTestResult rdf:type owl:Class ;
+    rdfs:label "Quality Test Result" ;
+    rdfs:comment "Result of a quality test performed on milk" .
+
+:TemperatureReading rdf:type owl:Class ;
+    rdfs:label "Temperature Reading" ;
+    rdfs:comment "Temperature sensor reading for cold chain monitoring" .
+
+#################################################################
+#    Properties
+#################################################################
+
+:pasteurizationTemperature rdf:type owl:DatatypeProperty ;
+    rdfs:domain :UHTProcessingEvent ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "pasteurization temperature" ;
+    rdfs:comment "Temperature in Celsius for UHT treatment (typically 135-150°C)" .
+
+:holdingTime rdf:type owl:DatatypeProperty ;
+    rdfs:domain :UHTProcessingEvent ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "holding time" ;
+    rdfs:comment "Time in seconds for UHT treatment (typically 2-5 seconds)" .
+
+:homogenizationPressure rdf:type owl:DatatypeProperty ;
+    rdfs:domain :UHTProcessingEvent ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "homogenization pressure" ;
+    rdfs:comment "Pressure in bar for homogenization (typically 150-250 bar)" .
+
+:batchNumber rdf:type owl:DatatypeProperty ;
+    rdfs:domain epcis:EPCISEvent ;
+    rdfs:range xsd:string ;
+    rdfs:label "batch number" ;
+    rdfs:comment "Unique batch identifier for the milk batch" .
+
+:milkVolume rdf:type owl:DatatypeProperty ;
+    rdfs:domain :MilkCollectionEvent ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "milk volume" ;
+    rdfs:comment "Volume of milk in liters" .
+
+:collectionTemperature rdf:type owl:DatatypeProperty ;
+    rdfs:domain :MilkCollectionEvent ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "collection temperature" ;
+    rdfs:comment "Temperature of milk at collection in Celsius" .
+
+:fatContent rdf:type owl:DatatypeProperty ;
+    rdfs:domain epcis:EPCISEvent ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "fat content" ;
+    rdfs:comment "Fat content percentage" .
+
+:proteinContent rdf:type owl:DatatypeProperty ;
+    rdfs:domain epcis:EPCISEvent ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "protein content" ;
+    rdfs:comment "Protein content percentage" .
+
+:acidity rdf:type owl:DatatypeProperty ;
+    rdfs:domain :QualityTestResult ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "acidity" ;
+    rdfs:comment "pH level of milk (typically 6.6-6.8)" .
+
+:bacteriaCount rdf:type owl:DatatypeProperty ;
+    rdfs:domain :QualityTestResult ;
+    rdfs:range xsd:integer ;
+    rdfs:label "bacteria count" ;
+    rdfs:comment "Bacteria count in CFU/ml" .
+
+:antibioticsTest rdf:type owl:DatatypeProperty ;
+    rdfs:domain :QualityTestResult ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "antibiotics test" ;
+    rdfs:comment "True if antibiotics detected, false otherwise" .
+
+:testType rdf:type owl:DatatypeProperty ;
+    rdfs:domain :QualityTestResult ;
+    rdfs:range xsd:string ;
+    rdfs:label "test type" ;
+    rdfs:comment "Type of quality test: acidity, fat, protein, bacteria, antibiotics" .
+
+:testResult rdf:type owl:DatatypeProperty ;
+    rdfs:domain :QualityTestResult ;
+    rdfs:range xsd:string ;
+    rdfs:label "test result" ;
+    rdfs:comment "Result value of the test" .
+
+:testPassed rdf:type owl:DatatypeProperty ;
+    rdfs:domain :QualityTestResult ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "test passed" ;
+    rdfs:comment "True if test passed quality standards" .
+
+:temperature rdf:type owl:DatatypeProperty ;
+    rdfs:domain :TemperatureReading ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "temperature" ;
+    rdfs:comment "Temperature reading in Celsius" .
+
+:minTemperature rdf:type owl:DatatypeProperty ;
+    rdfs:domain :ColdChainEvent ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "minimum temperature" ;
+    rdfs:comment "Minimum temperature observed during transport" .
+
+:maxTemperature rdf:type owl:DatatypeProperty ;
+    rdfs:domain :ColdChainEvent ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "maximum temperature" ;
+    rdfs:comment "Maximum temperature observed during transport" .
+
+:transportDuration rdf:type owl:DatatypeProperty ;
+    rdfs:domain :ColdChainEvent ;
+    rdfs:range xsd:duration ;
+    rdfs:label "transport duration" ;
+    rdfs:comment "Duration of transport" .
+
+:hasQualityTest rdf:type owl:ObjectProperty ;
+    rdfs:domain :QualityTestEvent ;
+    rdfs:range :QualityTestResult ;
+    rdfs:label "has quality test" ;
+    rdfs:comment "Links an event to its quality test results" .
+
+:hasTemperatureReading rdf:type owl:ObjectProperty ;
+    rdfs:domain :ColdChainEvent ;
+    rdfs:range :TemperatureReading ;
+    rdfs:label "has temperature reading" ;
+    rdfs:comment "Links an event to temperature sensor readings" .
+
+:performedBy rdf:type owl:ObjectProperty ;
+    rdfs:domain :QualityTestEvent ;
+    rdfs:range gs1:Organization ;
+    rdfs:label "performed by" ;
+    rdfs:comment "Organization that performed the quality test" .
+
+:processingFacility rdf:type owl:ObjectProperty ;
+    rdfs:domain :UHTProcessingEvent ;
+    rdfs:range gs1:Place ;
+    rdfs:label "processing facility" ;
+    rdfs:comment "Facility where UHT processing occurred" .
+
+#################################################################
+#    Individuals (Example Values)
+#################################################################
+
+:UHT_FULL_CREAM rdf:type gs1:MilkButterCreamYogurtCheeseEggsSubstitutes ;
+    rdfs:label "UHT Full Cream Milk" ;
+    gs1:productName "UHT Full Cream Milk" ;
+    gs1:fatInDryMatter "4.0"^^xsd:decimal ;
+    gs1:milkFatPercentage "4.0"^^xsd:decimal ;
+    gs1:preservationTechnique gs1:PreservationTechnique-UHT ;
+    gs1:storageTemperatureType gs1:StorageTemperatureType-AMBIENT .
+
+:UHT_SKIMMED rdf:type gs1:MilkButterCreamYogurtCheeseEggsSubstitutes ;
+    rdfs:label "UHT Skimmed Milk" ;
+    gs1:productName "UHT Skimmed Milk" ;
+    gs1:milkFatPercentage "0.5"^^xsd:decimal ;
+    gs1:preservationTechnique gs1:PreservationTechnique-UHT ;
+    gs1:storageTemperatureType gs1:StorageTemperatureType-AMBIENT .
+
+#################################################################
+#    SHACL Validation Rules
+#################################################################
+
+:UHTProcessingEventShape rdf:type <http://www.w3.org/ns/shacl#NodeShape> ;
+    <http://www.w3.org/ns/shacl#targetClass> :UHTProcessingEvent ;
+    <http://www.w3.org/ns/shacl#property> [
+        <http://www.w3.org/ns/shacl#path> :pasteurizationTemperature ;
+        <http://www.w3.org/ns/shacl#datatype> xsd:decimal ;
+        <http://www.w3.org/ns/shacl#minInclusive> "135"^^xsd:decimal ;
+        <http://www.w3.org/ns/shacl#maxInclusive> "150"^^xsd:decimal ;
+        <http://www.w3.org/ns/shacl#minCount> "1"^^xsd:integer ;
+        <http://www.w3.org/ns/shacl#maxCount> "1"^^xsd:integer ;
+        <http://www.w3.org/ns/shacl#message> "UHT processing temperature must be between 135-150°C"
+    ] ;
+    <http://www.w3.org/ns/shacl#property> [
+        <http://www.w3.org/ns/shacl#path> :holdingTime ;
+        <http://www.w3.org/ns/shacl#datatype> xsd:decimal ;
+        <http://www.w3.org/ns/shacl#minInclusive> "2"^^xsd:decimal ;
+        <http://www.w3.org/ns/shacl#maxInclusive> "5"^^xsd:decimal ;
+        <http://www.w3.org/ns/shacl#minCount> "1"^^xsd:integer ;
+        <http://www.w3.org/ns/shacl#maxCount> "1"^^xsd:integer ;
+        <http://www.w3.org/ns/shacl#message> "UHT holding time must be between 2-5 seconds"
+    ] .
+
+:QualityTestResultShape rdf:type <http://www.w3.org/ns/shacl#NodeShape> ;
+    <http://www.w3.org/ns/shacl#targetClass> :QualityTestResult ;
+    <http://www.w3.org/ns/shacl#property> [
+        <http://www.w3.org/ns/shacl#path> :testType ;
+        <http://www.w3.org/ns/shacl#datatype> xsd:string ;
+        <http://www.w3.org/ns/shacl#minCount> "1"^^xsd:integer ;
+        <http://www.w3.org/ns/shacl#maxCount> "1"^^xsd:integer ;
+        <http://www.w3.org/ns/shacl#in> ("acidity" "fat" "protein" "bacteria" "antibiotics")
+    ] ;
+    <http://www.w3.org/ns/shacl#property> [
+        <http://www.w3.org/ns/shacl#path> :testPassed ;
+        <http://www.w3.org/ns/shacl#datatype> xsd:boolean ;
+        <http://www.w3.org/ns/shacl#minCount> "1"^^xsd:integer ;
+        <http://www.w3.org/ns/shacl#maxCount> "1"^^xsd:integer
+    ] .
+
+:ColdChainEventShape rdf:type <http://www.w3.org/ns/shacl#NodeShape> ;
+    <http://www.w3.org/ns/shacl#targetClass> :ColdChainEvent ;
+    <http://www.w3.org/ns/shacl#property> [
+        <http://www.w3.org/ns/shacl#path> :maxTemperature ;
+        <http://www.w3.org/ns/shacl#datatype> xsd:decimal ;
+        <http://www.w3.org/ns/shacl#maxInclusive> "8"^^xsd:decimal ;
+        <http://www.w3.org/ns/shacl#message> "Cold chain temperature must not exceed 8°C"
+    ] .

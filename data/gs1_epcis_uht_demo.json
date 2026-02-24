@@ -1,0 +1,126 @@
+{
+  "@context": [
+    "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
+    {
+      "uht": "https://provchain.org/uht/"
+    }
+  ],
+  "@type": "EPCISDocument",
+  "creationDate": "2026-02-23T16:06:39.791565977+00:00",
+  "epcisBody": {
+    "eventList": [
+      {
+        "@context": [
+          "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
+          {
+            "uht": "https://provchain.org/uht/"
+          }
+        ],
+        "@id": "https://provchain.org/uht/UHT-BATCH-2024-001/collection",
+        "@type": "ObjectEvent",
+        "epcis:action": "ADD",
+        "epcis:bizLocation": "urn:epc:id:sgln:1234567.12345.0",
+        "epcis:bizStep": "https://ref.gs1.org/cbv/BizStep-commissioning",
+        "epcis:disposition": "https://ref.gs1.org/cbv/Disp-active",
+        "epcis:readPoint": "urn:epc:id:sgln:1234567.12345.1",
+        "uht:batchNumber": "UHT-BATCH-2024-001"
+      },
+      {
+        "@context": [
+          "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
+          {
+            "uht": "https://provchain.org/uht/"
+          }
+        ],
+        "@id": "https://provchain.org/uht/UHT-BATCH-2024-001/quality-test",
+        "@type": "ObjectEvent",
+        "epcis:action": "OBSERVE",
+        "epcis:bizLocation": "urn:epc:id:sgln:1234567.12346.0",
+        "epcis:bizStep": "https://ref.gs1.org/cbv/BizStep-inspecting",
+        "epcis:disposition": "https://ref.gs1.org/cbv/Disp-conformant",
+        "epcis:readPoint": "urn:epc:id:sgln:1234567.12346.1",
+        "uht:batchNumber": "UHT-BATCH-2024-001"
+      },
+      {
+        "@context": [
+          "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
+          {
+            "uht": "https://provchain.org/uht/"
+          }
+        ],
+        "@id": "https://provchain.org/uht/UHT-BATCH-2024-001/processing",
+        "@type": "TransformationEvent",
+        "epcis:bizLocation": "urn:epc:id:sgln:1234567.12347.0",
+        "epcis:bizStep": "https://ref.gs1.org/cbv/BizStep-creating_class_instance",
+        "epcis:disposition": "https://ref.gs1.org/cbv/Disp-in_progress",
+        "epcis:readPoint": "urn:epc:id:sgln:1234567.12347.1",
+        "uht:batchNumber": "UHT-BATCH-2024-001"
+      },
+      {
+        "@context": [
+          "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
+          {
+            "uht": "https://provchain.org/uht/"
+          }
+        ],
+        "@id": "https://provchain.org/uht/UHT-BATCH-2024-001/packaging",
+        "@type": "AggregationEvent",
+        "epcis:action": "ADD",
+        "epcis:bizLocation": "urn:epc:id:sgln:1234567.12347.0",
+        "epcis:bizStep": "https://ref.gs1.org/cbv/BizStep-packing",
+        "epcis:disposition": "https://ref.gs1.org/cbv/Disp-in_progress",
+        "epcis:readPoint": "urn:epc:id:sgln:1234567.12347.2",
+        "uht:batchNumber": "UHT-BATCH-2024-001"
+      },
+      {
+        "@context": [
+          "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
+          {
+            "uht": "https://provchain.org/uht/"
+          }
+        ],
+        "@id": "https://provchain.org/uht/UHT-BATCH-2024-001/storage",
+        "@type": "ObjectEvent",
+        "epcis:action": "OBSERVE",
+        "epcis:bizLocation": "urn:epc:id:sgln:1234567.12347.0",
+        "epcis:bizStep": "https://ref.gs1.org/cbv/BizStep-storing",
+        "epcis:disposition": "https://ref.gs1.org/cbv/Disp-in_progress",
+        "epcis:readPoint": "urn:epc:id:sgln:1234567.12347.3",
+        "uht:batchNumber": "UHT-BATCH-2024-001"
+      },
+      {
+        "@context": [
+          "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
+          {
+            "uht": "https://provchain.org/uht/"
+          }
+        ],
+        "@id": "https://provchain.org/uht/UHT-BATCH-2024-001/shipping",
+        "@type": "ObjectEvent",
+        "epcis:action": "OBSERVE",
+        "epcis:bizLocation": "urn:epc:id:sgln:1234567.12347.0",
+        "epcis:bizStep": "https://ref.gs1.org/cbv/BizStep-shipping",
+        "epcis:disposition": "https://ref.gs1.org/cbv/Disp-in_transit",
+        "epcis:readPoint": "urn:epc:id:sgln:1234567.12347.4",
+        "uht:batchNumber": "UHT-BATCH-2024-001"
+      },
+      {
+        "@context": [
+          "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
+          {
+            "uht": "https://provchain.org/uht/"
+          }
+        ],
+        "@id": "https://provchain.org/uht/UHT-BATCH-2024-001/receiving",
+        "@type": "ObjectEvent",
+        "epcis:action": "OBSERVE",
+        "epcis:bizLocation": "urn:epc:id:sgln:1234567.12348.0",
+        "epcis:bizStep": "https://ref.gs1.org/cbv/BizStep-receiving",
+        "epcis:disposition": "https://ref.gs1.org/cbv/Disp-in_progress",
+        "epcis:readPoint": "urn:epc:id:sgln:1234567.12348.1",
+        "uht:batchNumber": "UHT-BATCH-2024-001"
+      }
+    ]
+  },
+  "schemaVersion": "2.0"
+}
