@@ -1,0 +1,294 @@
+@prefix : <https://provchain.org/uht/example/> .
+@prefix uht: <https://provchain.org/uht/> .
+@prefix epcis: <https://ref.gs1.org/epcis/> .
+@prefix cbv: <https://ref.gs1.org/cbv/> .
+@prefix gs1: <https://gs1.org/voc/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+#################################################################
+# EPCIS Document Header
+#################################################################
+
+:UHT-Demo-Document-2024 a epcis:EPCISDocument ;
+    dcterms:created "2024-01-15T00:00:00Z"^^xsd:dateTime ;
+    owl:versionInfo "2.0" ;
+    epcis:sender "Green Valley Dairy Farm" ;
+    epcis:receiver "Metro Supermarkets" ;
+    epcis:instanceIdentifier "UHT-DEMO-2024-001" ;
+    epcis:epcisBody :EventList .
+
+:EventList a epcis:EPCISDocumentBody ;
+    epcis:eventList :Collection-001, :Transport-001, :QualityTest-001, 
+                    :Processing-001, :Packaging-001, :Storage-001, 
+                    :Shipping-001, :Receiving-001 .
+
+#################################################################
+# Phase 1: Milk Collection at Farm
+#################################################################
+
+:Collection-001 a epcis:ObjectEvent, uht:MilkCollectionEvent ;
+    epcis:eventTime "2024-01-15T06:00:00Z"^^xsd:dateTimeStamp ;
+    epcis:eventTimeZoneOffset "+00:00" ;
+    epcis:action "ADD" ;
+    epcis:bizStep cbv:BizStep-commissioning ;
+    epcis:disposition cbv:Disp-active ;
+    epcis:readPoint <urn:epc:id:sgln:1234567.12345.1> ;
+    epcis:bizLocation <urn:epc:id:sgln:1234567.12345.0> ;
+    epcis:quantityList [
+        epcis:epcClass <urn:epc:id:gtin:12345678901234> ;
+        epcis:quantity "10000"^^xsd:decimal ;
+        epcis:uom "LTR"
+    ] ;
+    uht:batchNumber "UHT-BATCH-2024-001" ;
+    uht:milkVolume "10000"^^xsd:decimal ;
+    uht:collectionTemperature "4.0"^^xsd:decimal ;
+    uht:fatContent "4.0"^^xsd:decimal ;
+    uht:proteinContent "3.3"^^xsd:decimal .
+
+#################################################################
+# Phase 2: Transport to Processing Plant
+#################################################################
+
+:Transport-001 a epcis:ObjectEvent, uht:ColdChainEvent ;
+    epcis:eventTime "2024-01-15T08:15:00Z"^^xsd:dateTimeStamp ;
+    epcis:eventTimeZoneOffset "+00:00" ;
+    epcis:action "OBSERVE" ;
+    epcis:bizStep cbv:BizStep-transporting ;
+    epcis:disposition cbv:Disp-in_transit ;
+    epcis:readPoint <urn:epc:id:sgln:1234567.12345.2> ;
+    epcis:bizLocation <urn:epc:id:sgln:1234567.99999.1> ;
+    epcis:quantityList [
+        epcis:epcClass <urn:epc:id:gtin:12345678901234> ;
+        epcis:quantity "10000"^^xsd:decimal ;
+        epcis:uom "LTR"
+    ] ;
+    epcis:sourceList [
+        epcis:sourceOrDestination <urn:epc:id:sgln:1234567.12345.0> ;
+        epcis:sourceOrDestinationType <https://ref.gs1.org/cbv/SDT-owning_party>
+    ] ;
+    epcis:destinationList [
+        epcis:sourceOrDestination <urn:epc:id:sgln:1234567.12346.0> ;
+        epcis:sourceOrDestinationType <https://ref.gs1.org/cbv/SDT-owning_party>
+    ] ;
+    uht:batchNumber "UHT-BATCH-2024-001" ;
+    uht:minTemperature "3.8"^^xsd:decimal ;
+    uht:maxTemperature "4.2"^^xsd:decimal ;
+    uht:transportDuration "PT2H15M"^^xsd:duration ;
+    epcis:sensorElementList [
+        epcis:sensorReport [
+            epcis:measurementType gs1:MeasurementType-TEMPERATURE ;
+            epcis:value "4.0"^^xsd:double ;
+            epcis:uom "CEL"
+        ]
+    ] .
+
+#################################################################
+# Phase 3: Quality Testing
+#################################################################
+
+:QualityTest-001 a epcis:ObjectEvent, uht:QualityTestEvent ;
+    epcis:eventTime "2024-01-15T10:45:00Z"^^xsd:dateTimeStamp ;
+    epcis:eventTimeZoneOffset "+00:00" ;
+    epcis:action "OBSERVE" ;
+    epcis:bizStep cbv:BizStep-inspecting ;
+    epcis:disposition cbv:Disp-in_progress ;
+    epcis:readPoint <urn:epc:id:sgln:1234567.12346.1> ;
+    epcis:bizLocation <urn:epc:id:sgln:1234567.12346.0> ;
+    epcis:quantityList [
+        epcis:epcClass <urn:epc:id:gtin:12345678901234> ;
+        epcis:quantity "10"^^xsd:decimal ;
+        epcis:uom "LTR"
+    ] ;
+    uht:batchNumber "UHT-BATCH-2024-001" ;
+    uht:hasQualityTest :AcidityTest-001 ;
+    uht:hasQualityTest :FatTest-001 ;
+    uht:hasQualityTest :ProteinTest-001 ;
+    uht:hasQualityTest :BacteriaTest-001 ;
+    uht:hasQualityTest :AntibioticsTest-001 .
+
+:AcidityTest-001 a uht:QualityTestResult ;
+    uht:testType "acidity" ;
+    uht:acidity "6.7"^^xsd:decimal ;
+    uht:testResult "6.7 pH" ;
+    uht:testPassed "true"^^xsd:boolean .
+
+:FatTest-001 a uht:QualityTestResult ;
+    uht:testType "fat" ;
+    uht:fatContent "4.0"^^xsd:decimal ;
+    uht:testResult "4.0%" ;
+    uht:testPassed "true"^^xsd:boolean .
+
+:ProteinTest-001 a uht:QualityTestResult ;
+    uht:testType "protein" ;
+    uht:proteinContent "3.3"^^xsd:decimal ;
+    uht:testResult "3.3%" ;
+    uht:testPassed "true"^^xsd:boolean .
+
+:BacteriaTest-001 a uht:QualityTestResult ;
+    uht:testType "bacteria" ;
+    uht:bacteriaCount "8"^^xsd:integer ;
+    uht:testResult "<10 CFU/ml" ;
+    uht:testPassed "true"^^xsd:boolean .
+
+:AntibioticsTest-001 a uht:QualityTestResult ;
+    uht:testType "antibiotics" ;
+    uht:antibioticsTest "false"^^xsd:boolean ;
+    uht:testResult "Negative" ;
+    uht:testPassed "true"^^xsd:boolean .
+
+#################################################################
+# Phase 4: UHT Processing
+#################################################################
+
+:Processing-001 a epcis:TransformationEvent, uht:UHTProcessingEvent ;
+    epcis:eventTime "2024-01-15T12:00:00Z"^^xsd:dateTimeStamp ;
+    epcis:eventTimeZoneOffset "+00:00" ;
+    epcis:bizStep cbv:BizStep-creating_class_instance ;
+    epcis:disposition cbv:Disp-in_progress ;
+    epcis:readPoint <urn:epc:id:sgln:1234567.12347.1> ;
+    epcis:bizLocation <urn:epc:id:sgln:1234567.12347.0> ;
+    epcis:inputQuantityList [
+        epcis:epcClass <urn:epc:id:gtin:12345678901234> ;
+        epcis:quantity "10000"^^xsd:decimal ;
+        epcis:uom "LTR"
+    ] ;
+    epcis:outputQuantityList [
+        epcis:epcClass <urn:epc:id:gtin:12345678901235> ;
+        epcis:quantity "9500"^^xsd:decimal ;
+        epcis:uom "LTR"
+    ] ;
+    uht:batchNumber "UHT-BATCH-2024-001" ;
+    uht:pasteurizationTemperature "137"^^xsd:decimal ;
+    uht:holdingTime "4"^^xsd:decimal ;
+    uht:homogenizationPressure "200"^^xsd:decimal .
+
+#################################################################
+# Phase 5: Packaging
+#################################################################
+
+:Packaging-001 a epcis:AggregationEvent, uht:PackagingEvent ;
+    epcis:eventTime "2024-01-15T14:30:00Z"^^xsd:dateTimeStamp ;
+    epcis:eventTimeZoneOffset "+00:00" ;
+    epcis:action "ADD" ;
+    epcis:bizStep cbv:BizStep-packing ;
+    epcis:disposition cbv:Disp-in_progress ;
+    epcis:readPoint <urn:epc:id:sgln:1234567.12347.2> ;
+    epcis:bizLocation <urn:epc:id:sgln:1234567.12347.0> ;
+    epcis:parentID <urn:epc:id:sscc:1234567.1234567890> ;
+    epcis:childQuantityList [
+        epcis:epcClass <urn:epc:id:gtin:12345678901236> ;
+        epcis:quantity "12"^^xsd:decimal ;
+        epcis:uom "C62"
+    ] ;
+    uht:batchNumber "UHT-BATCH-2024-001" .
+
+#################################################################
+# Phase 6: Cold Storage
+#################################################################
+
+:Storage-001 a epcis:ObjectEvent, uht:ColdChainEvent ;
+    epcis:eventTime "2024-01-15T16:00:00Z"^^xsd:dateTimeStamp ;
+    epcis:eventTimeZoneOffset "+00:00" ;
+    epcis:action "OBSERVE" ;
+    epcis:bizStep cbv:BizStep-storing ;
+    epcis:disposition cbv:Disp-in_progress ;
+    epcis:readPoint <urn:epc:id:sgln:1234567.12347.3> ;
+    epcis:bizLocation <urn:epc:id:sgln:1234567.12347.0> ;
+    epcis:epcList <urn:epc:id:sscc:1234567.1234567891> ;
+    uht:batchNumber "UHT-BATCH-2024-001" ;
+    uht:minTemperature "3.5"^^xsd:decimal ;
+    uht:maxTemperature "4.5"^^xsd:decimal ;
+    epcis:sensorElementList [
+        epcis:sensorMetadata [
+            epcis:startTime "2024-01-15T16:00:00Z"^^xsd:dateTimeStamp ;
+            epcis:endTime "2024-01-17T08:00:00Z"^^xsd:dateTimeStamp
+        ] ;
+        epcis:sensorReport [
+            epcis:measurementType gs1:MeasurementType-TEMPERATURE ;
+            epcis:minValue "3.5"^^xsd:double ;
+            epcis:maxValue "4.5"^^xsd:double ;
+            epcis:meanValue "4.0"^^xsd:double ;
+            epcis:uom "CEL"
+        ]
+    ] .
+
+#################################################################
+# Phase 7: Shipping to DC
+#################################################################
+
+:Shipping-001 a epcis:ObjectEvent ;
+    epcis:eventTime "2024-01-17T08:30:00Z"^^xsd:dateTimeStamp ;
+    epcis:eventTimeZoneOffset "+00:00" ;
+    epcis:action "OBSERVE" ;
+    epcis:bizStep cbv:BizStep-shipping ;
+    epcis:disposition cbv:Disp-in_transit ;
+    epcis:readPoint <urn:epc:id:sgln:1234567.12347.4> ;
+    epcis:bizLocation <urn:epc:id:sgln:1234567.12347.0> ;
+    epcis:epcList <urn:epc:id:sscc:1234567.1234567891>, <urn:epc:id:sscc:1234567.1234567892> ;
+    epcis:bizTransactionList :BOL-2024-001234 ;
+    epcis:sourceList [
+        epcis:sourceOrDestination <urn:epc:id:sgln:1234567.12347.0> ;
+        epcis:sourceOrDestinationType <https://ref.gs1.org/cbv/SDT-owning_party>
+    ] ;
+    epcis:destinationList [
+        epcis:sourceOrDestination <urn:epc:id:sgln:1234567.12348.0> ;
+        epcis:sourceOrDestinationType <https://ref.gs1.org/cbv/SDT-owning_party>
+    ] ;
+    uht:batchNumber "UHT-BATCH-2024-001" .
+
+:BOL-2024-001234 a epcis:BizTransaction ;
+    epcis:bizTransactionType cbv:BTT-bol ;
+    rdfs:label "Bill of Lading 2024-001234" .
+
+#################################################################
+# Phase 8: Receiving at Distribution Center
+#################################################################
+
+:Receiving-001 a epcis:ObjectEvent ;
+    epcis:eventTime "2024-01-17T14:00:00Z"^^xsd:dateTimeStamp ;
+    epcis:eventTimeZoneOffset "+00:00" ;
+    epcis:action "OBSERVE" ;
+    epcis:bizStep cbv:BizStep-receiving ;
+    epcis:disposition cbv:Disp-in_progress ;
+    epcis:readPoint <urn:epc:id:sgln:1234567.12348.1> ;
+    epcis:bizLocation <urn:epc:id:sgln:1234567.12348.0> ;
+    epcis:epcList <urn:epc:id:sscc:1234567.1234567891>, <urn:epc:id:sscc:1234567.1234567892> ;
+    epcis:bizTransactionList :BOL-2024-001234 ;
+    uht:batchNumber "UHT-BATCH-2024-001" ;
+    epcis:sensorElementList [
+        epcis:sensorReport [
+            epcis:measurementType gs1:MeasurementType-TEMPERATURE ;
+            epcis:value "4.1"^^xsd:double ;
+            epcis:uom "CEL"
+        ]
+    ] .
+
+#################################################################
+# Master Data - Product Information
+#################################################################
+
+<urn:epc:id:gtin:12345678901234> a gs1:Product ;
+    gs1:gtin "12345678901234" ;
+    gs1:productName "Raw Organic Whole Milk" ;
+    gs1:productDescription "Fresh raw milk from grass-fed cows" .
+
+<urn:epc:id:gtin:12345678901235> a gs1:MilkButterCreamYogurtCheeseEggsSubstitutes ;
+    gs1:gtin "12345678901235" ;
+    gs1:productName "Organic UHT Whole Milk" ;
+    gs1:productDescription "Ultra-High Temperature processed organic milk" ;
+    gs1:preservationTechnique gs1:PreservationTechnique-UHT ;
+    gs1:storageTemperatureType gs1:StorageTemperatureType-AMBIENT ;
+    gs1:shelfLife "P180D"^^xsd:duration ;
+    gs1:fatInDryMatter "4.0"^^xsd:decimal ;
+    gs1:milkFatPercentage "4.0"^^xsd:decimal ;
+    gs1:ingredientStatement "Organic whole milk, vitamin D3" ;
+    gs1:allergenInformation [
+        gs1:allergenType gs1:AllergenType-MILK ;
+        gs1:levelOfContainment gs1:LevelOfContainment-CONTAINS
+    ] .
+
+<urn:epc:id:gtin:12345678901236> a gs1:Product ;
+    gs1:gtin "12345678901236" ;
+    gs1:productName "Organic UHT Milk 1L Carton" .
