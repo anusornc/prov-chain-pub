@@ -14,8 +14,13 @@ Complete journal paper submission package for **Computers and Electronics in Agr
 
 | File | Description |
 |------|-------------|
-| `main.tex` | Complete LaTeX manuscript (~29KB) |
-| `references.bib` | BibTeX references (22 citations) |
+| `main.tex` | Complete LaTeX manuscript (~37KB) |
+| `references.bib` | BibTeX references (52 citations) |
+| `compile.sh` | Bash script for compiling (executable) |
+| `Makefile` | Make commands for compilation |
+| `COMPILATION_GUIDE.md` | Detailed compilation instructions |
+| `REVISION_SUMMARY.md` | Summary of changes from review |
+| `review_report.md` | Original reviewer report |
 | `README.md` | This file |
 
 ## Paper Structure
@@ -51,22 +56,48 @@ Complete journal paper submission package for **Computers and Electronics in Agr
 - LaTeX distribution (TeX Live or MiKTeX)
 - BibTeX or Biber
 
-### Compile Commands
+See [COMPILATION_GUIDE.md](COMPILATION_GUIDE.md) for detailed instructions.
+
+### Quick Compile Commands
 
 ```bash
 cd docs/paper_submission
 
-# Method 1: Manual compilation
+# Option 1: Using the bash script (recommended)
+./compile.sh
+
+# Option 2: Using make
+make
+
+# Option 3: Using latexmk
+latexmk -pdf main.tex
+
+# Option 4: Manual compilation
 pdflatex main.tex
 bibtex main
 pdflatex main.tex
 pdflatex main.tex
+```
 
-# Method 2: Using latexmk (recommended)
-latexmk -pdf main.tex
+### Additional Commands
+
+```bash
+# Watch mode (auto-recompile on file changes)
+./compile.sh watch
+make watch
 
 # Clean auxiliary files
-latexmk -c
+./compile.sh clean
+make clean
+
+# Check for common issues
+make check
+
+# Count words
+make wordcount
+
+# Create submission package
+make submit
 ```
 
 ## Pre-Submission Checklist
