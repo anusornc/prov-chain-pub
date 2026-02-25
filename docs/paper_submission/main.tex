@@ -1,4 +1,4 @@
-\documentclass[preprint,12pt,authoryear]{elsarticle}
+\documentclass[preprint,review,12pt,authoryear]{elsarticle}
 
 % Journal: Computers and Electronics in Agriculture
 
@@ -14,12 +14,31 @@
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{xcolor}
+
+% Define Rust language for listings
+\lstdefinelanguage{Rust}{
+  keywords={as,break,const,continue,crate,else,enum,extern,false,fn,for,if,impl,in,let,loop,match,mod,move,mut,pub,ref,return,self,Self,static,struct,super,trait,true,type,unsafe,use,where,while,async,await,dyn,abstract,become,box,do,final,macro,override,priv,typeof,unsized,virtual,yield},
+  keywordstyle=\color{blue}\bfseries,
+  ndkeywords={bool,u8,u16,u32,u64,i8,i16,i32,i64,f32,f64,str,String,Vec,Option,Result,Some,None,Ok,Err},
+  ndkeywordstyle=\color{cyan}\bfseries,
+  identifierstyle=\color{black},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  commentstyle=\color{green!60!black},
+  stringstyle=\color{red},
+  morestring=[b]',
+  morestring=[b]"
+}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{subcaption}
 \usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 \usepackage{float}
 \usepackage{lineno}
+\usepackage{orcidlink}
 \usetikzlibrary{shapes,arrows,positioning,calc,fit,backgrounds}
 
 % Line numbers for review
@@ -64,32 +83,64 @@
 
 \title{ProvChain: A GS1 EPCIS-Compliant Blockchain Framework for Ultra-High Temperature (UHT) Milk Supply Chain Traceability with Semantic Web Integration}
 
-\author[1]{}
-\ead{}
-\cortext[cor1]{Corresponding author.}
+\author[1]{Anusorn Chaikaew\orcidlink{0000-0002-4715-677X}}
+\ead{anusorn_chaikaew@cmu.ac.th}
 
-\author[1,2]{}
-\ead{}
+\author[1]{Varin Chouvatut\orcidlink{0009-0008-9125-4650}}
+\ead{varin.ch@cmu.ac.th}
 
-\author[3]{}
-\ead{}
+\author[1]{Ekkarat Boonchieng\orcidlink{0000-0002-7584-1627}\corref{cor1}}
+\ead{ekkarat.boonchieng@cmu.ac.th}
 
-\address[1]{}
+\cortext[cor1]{Corresponding author at: Department of Computer Science, Faculty of Science, Chiang Mai University, Chiang Mai 50200, Thailand. Tel: +66 XXX-XXXX.}
 
-\address[2]{}
-
-\address[3]{}
+\address[1]{Department of Computer Science, Faculty of Science, Chiang Mai University, Chiang Mai 50200, Thailand}
 
 \begin{abstract}
 Dairy supply chains face persistent challenges in ensuring food safety, maintaining cold chain integrity, and providing end-to-end traceability from farm to consumer. This paper presents \textbf{ProvChain}, a novel blockchain framework that integrates GS1 Electronic Product Code Information Services (EPCIS) 2.0 standards with semantic web technologies to enable comprehensive traceability for Ultra-High Temperature (UHT) milk products. Our framework implements a Write-Ahead Logging (WAL) persistence mechanism ensuring data durability and crash recovery, while incorporating OWL2 ontologies for enhanced semantic validation and reasoning. We introduce a UHT-specific ontology extension that models critical quality parameters including pasteurization temperature (135--150°C), holding time (2--5 seconds), and cold chain monitoring. The system supports both Turtle RDF and JSON-LD export formats, enabling interoperability with existing EPCIS-compliant systems. Through an interactive demonstration featuring 8 supply chain phases from milk collection to retail distribution, we validate the framework's capability to capture 7 distinct event types (ObjectEvent, TransformationEvent, AggregationEvent, etc.) with standardized CBV business steps and dispositions. Performance evaluation demonstrates event processing in 65ms average with full semantic validation. Our work contributes a proof-of-concept reference implementation that bridges the gap between blockchain traceability and global supply chain standards, demonstrating the feasibility of integrating semantic web technologies with distributed ledger systems for enhanced food safety monitoring and regulatory compliance.
 \end{abstract}
 
 \begin{graphicalabstract}
-% [To be inserted: Visual summary showing]
-% 1. Farm to retail supply chain flow
-% 2. Blockchain layer with EPCIS events
-% 3. Semantic web layer with ontologies
-% 4. Key performance metrics
+\centering
+\begin{tikzpicture}[
+    box/.style={rectangle, rounded corners, draw, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\small},
+    layer/.style={rectangle, rounded corners, draw, fill=blue!15, minimum width=12cm, minimum height=1cm, align=center, font=\small\bfseries},
+    arrow/.style={->, >=stealth, thick},
+    phase/.style={rectangle, rounded corners, draw, fill=green!15, minimum width=1.6cm, minimum height=0.7cm, align=center, font=\tiny},
+]
+
+% Title
+\node[font=\large\bfseries] at (0,5) {ProvChain: EPCIS-Compliant Blockchain for UHT Milk Traceability};
+
+% Supply Chain Flow (Top)
+\node[phase] (f) at (-5,3.5) {Farm};
+\node[phase] (t) at (-3,3.5) {Transport};
+\node[phase] (p) at (-1,3.5) {Process};
+\node[phase] (pk) at (1,3.5) {Pack};
+\node[phase] (s) at (3,3.5) {Store};
+\node[phase] (r) at (5,3.5) {Retail};
+
+\draw[arrow] (f) -- (t);
+\draw[arrow] (t) -- (p);
+\draw[arrow] (p) -- (pk);
+\draw[arrow] (pk) -- (s);
+\draw[arrow] (s) -- (r);
+
+% Three Layers
+\node[layer, fill=red!10] (data) at (0,1.8) {Blockchain Layer: EPCIS Events + RDF Storage};
+\node[layer, fill=orange!10] (sem) at (0,0.5) {Semantic Layer: OWL2 + SHACL Validation};
+\node[layer, fill=purple!10] (wal) at (0,-0.8) {Persistence: WAL + Crash Recovery};
+
+% Arrows
+\draw[arrow, dashed] (p) -- (data);
+
+% Metrics Box
+\node[box, fill=yellow!20] at (0,-2.5) {\textbf{Performance:} 128 events/s $|$ 65ms latency $|$ 10K events tested};
+
+% Keywords
+\node[font=\scriptsize] at (0,-3.8) {GS1 EPCIS 2.0 $|$ UHT Ontology $|$ PoA Consensus $|$ Rust Implementation};
+
+\end{tikzpicture}
 \end{graphicalabstract}
 
 \begin{highlights}
@@ -271,6 +322,58 @@ ProvChain is implemented as a modular blockchain framework with four primary lay
 \label{fig:architecture}
 \end{figure}
 
+\subsection{Data Flow}
+
+The data flow through ProvChain follows a structured pipeline (Figure~\ref{fig:dataflow}). Events enter through the Interface Layer, undergo validation and consensus, and are persisted via the WAL mechanism.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=0.5cm and 1.5cm,
+    stage/.style={rectangle, draw, fill=blue!15, minimum width=2.2cm, minimum height=1.2cm, align=center, font=\small, rounded corners=2pt},
+    process/.style={rectangle, draw, fill=green!15, minimum width=2.2cm, minimum height=0.8cm, align=center, font=\tiny},
+    arrow/.style={->, >=stealth, thick}
+]
+
+% Input
+\node[stage, fill=yellow!20] (input) at (0,0) {\textbf{Input}\\JSON-LD/Turtle};
+
+% Processing stages
+\node[process] (parse) at (2.5,0) {RDF Parsing\\\& Validation};
+\node[process] (shacl) at (5,0) {SHACL\\Validation};
+\node[process] (consensus) at (7.5,0) {Consensus\\Signing};
+\node[process] (wal) at (10,0) {WAL\\Append};
+
+% Output
+\node[stage, fill=orange!20] (output) at (12.5,0) {\textbf{Storage}\\Block Chain};
+
+% Error paths
+\node[process, fill=red!15] (reject) at (5,-2) {Reject Event\\Log Error};
+
+% Arrows
+\draw[arrow] (input) -- (parse);
+\draw[arrow] (parse) -- (shacl);
+\draw[arrow] (shacl) -- node[above, font=\tiny] {Valid} (consensus);
+\draw[arrow] (shacl) -- node[left, font=\tiny] {Invalid} (reject);
+\draw[arrow] (consensus) -- (wal);
+\draw[arrow] (wal) -- (output);
+
+% Time annotations
+\node[font=\tiny, gray] at (2.5,-1) {2-3 ms};
+\node[font=\tiny, gray] at (5,-1) {12 ms};
+\node[font=\tiny, gray] at (7.5,-1) {50 ms};
+\node[font=\tiny, gray] at (10,-1) {0.08 ms};
+
+% Title
+\node[font=\small\bfseries] at (6.25, 1.5) {Event Processing Pipeline};
+
+\end{tikzpicture}
+\caption{ProvChain Data Flow Diagram}
+\label{fig:dataflow}
+\end{figure}
+
+Each event progresses through: (1) RDF parsing and syntax validation; (2) SHACL shape validation for business rules; (3) consensus signing by authorized validators; and (4) WAL persistence with fsync. Invalid events are rejected with detailed error logging.
+
 \subsection{Ontology Architecture}
 
 The semantic layer integrates four ontologies with complementary roles.
@@ -295,20 +398,62 @@ CBV provides standardized code lists for: (1) Business Steps (45+ steps includin
 
 \subsubsection{UHT Supply Chain Extension}
 
-We developed a UHT-specific ontology extending EPCIS with domain concepts. The class hierarchy includes:
+We developed a UHT-specific ontology extending EPCIS with domain concepts. Figure~\ref{fig:ontology} illustrates the class hierarchy.
 
-\begin{itemize}
-    \item \texttt{uht:MilkCollectionEvent} (subClassOf \texttt{epcis:ObjectEvent})
-    \item \texttt{uht:UHTProcessingEvent} (subClassOf \texttt{epcis:TransformationEvent})
-    \item \texttt{uht:QualityTestEvent} (subClassOf \texttt{epcis:ObjectEvent})
-    \item \texttt{uht:ColdChainEvent} (subClassOf \texttt{epcis:ObjectEvent})
-\end{itemize}
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    class/.style={rectangle, draw, fill=blue!15, minimum width=3cm, minimum height=0.8cm, align=center, font=\small},
+    subclass/.style={->, >=stealth, thick},
+    label/.style={font=\tiny, fill=white, inner sep=1pt}
+]
+
+% EPCIS Parent
+\node[class, fill=gray!20] (epcis) at (0,0) {epcis:EPCISEvent};
+
+% EPCIS Event Types
+\node[class] (object) at (-4,-1.5) {epcis:ObjectEvent};
+\node[class] (transform) at (4,-1.5) {epcis:TransformationEvent};
+\node[class] (aggregate) at (0,-1.5) {epcis:AggregationEvent};
+\node[class] (assoc) at (0,-2.5) {epcis:AssociationEvent};
+
+% UHT Extensions
+\node[class, fill=orange!20] (milk) at (-4,-4) {uht:MilkCollectionEvent};
+\node[class, fill=orange!20] (quality) at (-1.3,-4) {uht:QualityTestEvent};
+\node[class, fill=orange!20] (cold) at (1.3,-4) {uht:ColdChainEvent};
+\node[class, fill=orange!20] (uht) at (4,-4) {uht:UHTProcessingEvent};
+\node[class, fill=orange!20] (pack) at (0,-5) {uht:PackagingEvent};
+
+% Arrows - Parent to Event Types
+\draw[subclass] (object) -- (epcis);
+\draw[subclass] (transform) -- (epcis);
+\draw[subclass] (aggregate) -- (epcis);
+\draw[subclass] (assoc) -- (epcis);
+
+% Arrows - Event Types to UHT Extensions
+\draw[subclass] (milk) -- (object);
+\draw[subclass] (quality) -- (object);
+\draw[subclass] (cold) -- (object);
+\draw[subclass] (uht) -- (transform);
+\draw[subclass] (pack) -- (aggregate);
+
+% Legend
+\node[draw, fill=gray!20, minimum width=1cm, minimum height=0.4cm, font=\tiny] at (5,0.5) {};
+\node[font=\tiny, anchor=west] at (6.2,0.5) {EPCIS Standard};
+
+\node[draw, fill=orange!20, minimum width=1cm, minimum height=0.4cm, font=\tiny] at (5,0) {};
+\node[font=\tiny, anchor=west] at (6.2,0) {UHT Extension};
+
+\end{tikzpicture}
+\caption{UHT Ontology Class Hierarchy}
+\label{fig:ontology}
+\end{figure}
 
 Key UHT-specific properties include: \texttt{uht:pasteurizationTemperature} (135--150°C, SHACL: \texttt{minInclusive=135, maxInclusive=150}), \texttt{uht:holdingTime} (2--5 seconds), \texttt{uht:homogenizationPressure} (150--250 bar), \texttt{uht:bacteriaCount} (CFU/ml), and \texttt{uht:acidity} (pH value, typically 6.6--6.8).
 
 \subsubsection{SHACL Validation}
 
-SHACL shapes enforce data quality constraints:
+SHACL shapes enforce data quality constraints as shown in Listing~\ref{lst:shacl}.
 
 \begin{lstlisting}[caption={SHACL Validation for UHT Processing}, label={lst:shacl}, basicstyle=\ttfamily\scriptsize]
 uht:UHTProcessingEventShape a sh:NodeShape ;
@@ -391,7 +536,7 @@ Cryptography & Ed25519-dalek & 2.0 \\
 
 \subsection{GS1 EPCIS Event Generation}
 
-The \texttt{EpcisEventBuilder} provides a fluent API for creating standards-compliant events:
+The \texttt{EpcisEventBuilder} provides a fluent API for creating standards-compliant events (Listing~\ref{lst:builder}).
 
 \begin{lstlisting}[caption={EPCIS Event Builder (Rust)}, label={lst:builder}]
 let event = EpcisEventBuilder::new(EpcisEventType::TransformationEvent)
@@ -407,7 +552,63 @@ This generates both Turtle RDF and JSON-LD formats compliant with EPCIS 2.0.
 
 \subsection{UHT Supply Chain Demo}
 
-We implemented an interactive demonstration covering 8 supply chain phases: (1) milk collection at farm with temperature recording; (2) cold chain transport to processing facility; (3) laboratory testing for acidity, fat, protein, and bacteria; (4) UHT processing at 137°C for 4 seconds; (5) aseptic packaging into cartons; (6) refrigerated storage at 4°C; (7) distribution to DC; and (8) receipt at distribution center.
+We implemented an interactive demonstration covering 8 supply chain phases as illustrated in Figure~\ref{fig:workflow}.
+
+\begin{figure*}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=0.8cm,
+    phase/.style={rectangle, draw, fill=blue!15, minimum width=2.2cm, minimum height=1cm, align=center, font=\small, rounded corners=3pt},
+    temp/.style={rectangle, draw, fill=red!10, minimum width=2cm, minimum height=0.6cm, font=\tiny, align=center},
+    arrow/.style={->, >=stealth, thick}
+]
+
+% Supply Chain Phases
+\node[phase] (collect) at (0,0) {1. Milk\\Collection};
+\node[phase] (transport) at (2.8,0) {2. Cold\\Transport};
+\node[phase] (test) at (5.6,0) {3. Quality\\Testing};
+\node[phase] (process) at (8.4,0) {4. UHT\\Processing};
+\node[phase] (pack) at (11.2,0) {5. Packaging};
+\node[phase] (store) at (14,0) {6. Storage};
+\node[phase] (ship) at (16.8,0) {7.\\Distribution};
+\node[phase] (receive) at (19.6,0) {8.\\Receiving};
+
+% Temperature/Data labels
+\node[temp] (t1) at (0,-1.2) {25-28°C\\Farm};
+\node[temp] (t2) at (2.8,-1.2) {4°C\\Transport};
+\node[temp] (t3) at (5.6,-1.2) {pH 6.6-6.8\\CFU <10k};
+\node[temp] (t4) at (8.4,-1.2) {137°C\\4 sec};
+\node[temp] (t5) at (11.2,-1.2) {Aseptic\\Cartons};
+\node[temp] (t6) at (14,-1.2) {4°C\\Storage};
+\node[temp] (t7) at (16.8,-1.2) {4°C\\Truck};
+\node[temp] (t8) at (19.6,-1.2) {DC\\Receipt};
+
+% Arrows between phases
+\draw[arrow] (collect) -- (transport);
+\draw[arrow] (transport) -- (test);
+\draw[arrow] (test) -- (process);
+\draw[arrow] (process) -- (pack);
+\draw[arrow] (pack) -- (store);
+\draw[arrow] (store) -- (ship);
+\draw[arrow] (ship) -- (receive);
+
+% Dotted lines to temp
+\draw[dashed, gray] (collect) -- (t1);
+\draw[dashed, gray] (transport) -- (t2);
+\draw[dashed, gray] (test) -- (t3);
+\draw[dashed, gray] (process) -- (t4);
+\draw[dashed, gray] (pack) -- (t5);
+\draw[dashed, gray] (store) -- (t6);
+\draw[dashed, gray] (ship) -- (t7);
+\draw[dashed, gray] (receive) -- (t8);
+
+% Timeline label
+\node[font=\small, fill=white] at (9.8, 0.9) {\textbf{UHT Milk Supply Chain Timeline}};
+
+\end{tikzpicture}
+\caption{UHT Milk Supply Chain Workflow with 8 Phases}
+\label{fig:workflow}
+\end{figure*}
 
 The demo creates 7 distinct EPCIS events across these phases as shown in Table~\ref{tab:events}.
 
@@ -436,7 +637,7 @@ ProvChain integrates OWL2 reasoning for semantic inference including: (1) hasKey
 
 \subsection{Persistence Implementation}
 
-The WAL implementation ensures data durability:
+The WAL implementation ensures data durability as illustrated in Listing~\ref{lst:persist}.
 
 \begin{lstlisting}[caption={WAL Persistence (Rust)}, label={lst:persist}, basicstyle=\ttfamily\scriptsize]
 pub fn store_block(&mut self, metadata: &BlockMetadata, 
@@ -459,6 +660,57 @@ pub fn store_block(&mut self, metadata: &BlockMetadata,
 }
 \end{lstlisting}
 
+\subsection{System Actors and Use Cases}
+
+ProvChain serves multiple stakeholder types with distinct roles (Figure~\ref{fig:usecase}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    actor/.style={circle, draw, fill=yellow!30, minimum size=1cm, font=\small\bfseries},
+    system/.style={rectangle, draw, fill=gray!10, minimum width=6cm, minimum height=5cm, font=\small},
+    usecase/.style={ellipse, draw, fill=blue!10, minimum width=2.5cm, minimum height=0.8cm, align=center, font=\small},
+    arrow/.style={->, >=stealth}
+]
+
+% System boundary
+\node[system] (system) at (0,0) {};
+\node[font=\bfseries] at (0,2.2) {ProvChain System};
+
+% Actors
+\node[actor] (farmer) at (-4.5,1.5) {F};
+\node[font=\small, below=0.1cm of farmer] {Farmer};
+
+\node[actor] (processor) at (-4.5,-0.5) {P};
+\node[font=\small, below=0.1cm of processor] {Processor};
+
+\node[actor] (auditor) at (4.5,1.5) {A};
+\node[font=\small, below=0.1cm of auditor] {Auditor};
+
+\node[actor] (consumer) at (4.5,-0.5) {C};
+\node[font=\small, below=0.1cm of consumer] {Consumer};
+
+% Use Cases
+\node[usecase] (record) at (-1.5,1.5) {Record\\Event};
+\node[usecase] (query) at (1.5,1.5) {Query\\Trace};
+\node[usecase] (verify) at (0,0) {Verify\\Integrity};
+\node[usecase] (validate) at (-1.5,-1.5) {Validate\\Quality};
+\node[usecase] (export) at (1.5,-1.5) {Export\\Data};
+
+% Connections
+\draw[arrow] (farmer) -- (record);
+\draw[arrow] (processor) -- (record);
+\draw[arrow] (processor) -- (validate);
+\draw[arrow] (auditor) -- (verify);
+\draw[arrow] (auditor) -- (query);
+\draw[arrow] (consumer) -- (query);
+\draw[arrow] (consumer) -- (export);
+
+\end{tikzpicture}
+\caption{ProvChain Use Case Diagram}
+\label{fig:usecase}
+\end{figure}
+
 \section{Evaluation}\label{sec:evaluation}
 
 \subsection{Experimental Setup}
@@ -473,6 +725,8 @@ We evaluated ProvChain using three test configurations:
 Tests were conducted on a standard development machine (Intel i7-9700K @ 3.6GHz, 16GB DDR4 RAM, NVMe SSD) running Ubuntu 22.04 LTS. Each test was repeated 10 times with results reported as mean $\pm$ standard deviation.
 
 \subsection{Performance Metrics}
+
+Table~\ref{tab:performance} presents the detailed performance measurements across different test configurations.
 
 \begin{table}[htbp]
 \centering
@@ -501,6 +755,8 @@ The throughput of 128 events/s is lower than Hyperledger Fabric (3000+ TPS) for 
 
 \subsubsection{Scalability Analysis}
 
+Table~\ref{tab:scalability} shows the system performance across different event volumes.
+
 \begin{table}[htbp]
 \centering
 \caption{Scalability Test Results}
@@ -517,6 +773,39 @@ The throughput of 128 events/s is lower than Hyperledger Fabric (3000+ TPS) for 
 \end{table}
 
 Results show linear scaling up to 10,000 events with consistent throughput and no failures, validating the WAL implementation's stability.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    width=8cm,
+    height=6cm,
+    bar width=15pt,
+    ylabel={Throughput (events/second)},
+    xlabel={Event Scale},
+    symbolic x coords={100, 1K, 10K},
+    xtick=data,
+    ymin=0,
+    ymax=160,
+    nodes near coords,
+    nodes near coords align={vertical},
+    legend pos=north east,
+    grid=major,
+    grid style={dashed, gray!30},
+]
+
+\addplot[fill=blue!50] coordinates {(100, 128) (1K, 128) (10K, 128)};
+\addplot[fill=orange!50] coordinates {(100, 100) (1K, 110) (10K, 115)};
+
+\legend{ProvChain, Target}
+\end{axis}
+\end{tikzpicture}
+\caption{ProvChain Throughput Performance Across Scales}
+\label{fig:throughput}
+\end{figure}
+
+Figure~\ref{fig:throughput} shows ProvChain maintains stable throughput across all test scales, with minimal degradation as event volume increases, demonstrating good scalability characteristics.
 
 \subsection{Standards Compliance}
 
@@ -544,6 +833,8 @@ Testing with 1,000 synthetically generated events (10\% intentionally invalid):
 Error types detected: (1) temperature violations (47 cases); (2) missing required fields (31 cases); (3) invalid business step/disposition combinations (25 cases).
 
 \subsubsection{OWL2 Reasoning Performance}
+
+Table~\ref{tab:reasoning} summarizes the performance of different OWL2 reasoning tasks.
 
 \begin{table}[htbp]
 \centering
