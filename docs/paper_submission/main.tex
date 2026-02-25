@@ -81,7 +81,7 @@
 
 \begin{frontmatter}
 
-\title{ProvChain: Semantic Blockchain Framework for Supply Chain Traceability}
+\title{ProvChain: A Generalized Semantic Blockchain Framework for Traceability}
 
 \author[1]{Anusorn Chaikaew\orcidlink{0000-0002-4715-677X}}
 \ead{anusorn_chaikaew@cmu.ac.th}
@@ -97,7 +97,7 @@
 \address[1]{Department of Computer Science, Faculty of Science, Chiang Mai University, Chiang Mai 50200, Thailand}
 
 \begin{abstract}
-Dairy supply chains face persistent challenges in ensuring food safety, maintaining cold chain integrity, and providing end-to-end traceability from farm to consumer. This paper presents \textbf{ProvChain}, a novel blockchain framework that integrates GS1 Electronic Product Code Information Services (EPCIS) 2.0 standards with semantic web technologies to enable comprehensive traceability for Ultra-High Temperature (UHT) milk products. Our framework implements a Write-Ahead Logging (WAL) persistence mechanism ensuring data durability and crash recovery, while incorporating OWL2 ontologies for enhanced semantic validation and reasoning. We introduce a UHT-specific ontology extension that models critical quality parameters including pasteurization temperature (135--150°C), holding time (2--5 seconds), and cold chain monitoring. The system supports both Turtle RDF and JSON-LD export formats, enabling interoperability with existing EPCIS-compliant systems. Through an interactive demonstration featuring 8 supply chain phases from milk collection to retail distribution, we validate the framework's capability to capture 7 distinct event types (ObjectEvent, TransformationEvent, AggregationEvent, etc.) with standardized CBV business steps and dispositions. Performance evaluation demonstrates event processing in 65ms average with full semantic validation. Our work contributes a proof-of-concept reference implementation that bridges the gap between blockchain traceability and global supply chain standards, demonstrating the feasibility of integrating semantic web technologies with distributed ledger systems for enhanced food safety monitoring and regulatory compliance.
+Modern supply chains across diverse industries---including food, pharmaceuticals, healthcare, and manufacturing---face persistent challenges in ensuring product integrity, maintaining quality throughout distribution, and providing end-to-end traceability. This paper presents \textbf{ProvChain}, a generalized blockchain framework that integrates GS1 Electronic Product Code Information Services (EPCIS) 2.0 standards with semantic web technologies to enable comprehensive traceability across multiple domains. Our framework features a modular ontology architecture supporting domain-specific extensions including food safety, pharmaceutical compliance, healthcare asset tracking, and automotive parts traceability. The system implements a Write-Ahead Logging (WAL) persistence mechanism ensuring data durability and crash recovery, while incorporating OWL2 ontologies for enhanced semantic validation and reasoning. Through an interactive demonstration featuring Ultra-High Temperature (UHT) milk processing as a representative case study---modeling critical quality parameters including pasteurization temperature (135--150°C), holding time (2--5 seconds), and cold chain monitoring---we validate the framework's capability to capture multiple event types (ObjectEvent, TransformationEvent, AggregationEvent, etc.) with standardized CBV business steps and dispositions. The modular architecture enables straightforward adaptation to other domains by substituting domain-specific ontologies while maintaining the core EPCIS-compliant event processing infrastructure. Performance evaluation demonstrates event processing in 65ms average with full semantic validation. Our work contributes a domain-agnostic reference implementation that bridges the gap between blockchain traceability and global supply chain standards, demonstrating the feasibility of integrating semantic web technologies with distributed ledger systems for enhanced product integrity monitoring and regulatory compliance across diverse industries.
 \end{abstract}
 
 \begin{graphicalabstract}
@@ -138,22 +138,23 @@ Dairy supply chains face persistent challenges in ensuring food safety, maintain
 \node[box, fill=yellow!20] at (0,-2.5) {\textbf{Performance:} 128 events/s $|$ 65ms latency $|$ 10K events tested};
 
 % Keywords
-\node[font=\scriptsize] at (0,-3.8) {GS1 EPCIS 2.0 $|$ UHT Ontology $|$ PoA Consensus $|$ Rust Implementation};
+\node[font=\scriptsize] at (0,-3.8) {GS1 EPCIS 2.0 $|$ Multi-Domain $|$ Healthcare $|$ Pharma $|$ Food $|$ Rust};
 
 \end{tikzpicture}
 \end{graphicalabstract}
 
 \begin{highlights}
-\item Novel proof-of-concept blockchain framework integrating GS1 EPCIS 2.0 with semantic web technologies for dairy traceability
-\item UHT-specific ontology extension with SHACL validation for critical quality parameters (temperature: 135--150°C, holding time: 2--5 seconds)
+\item Generalized blockchain framework integrating GS1 EPCIS 2.0 with semantic web technologies for multi-domain traceability
+\item Modular ontology architecture supporting food, pharmaceutical, healthcare, and automotive domains
+\item Domain-specific ontology extension demonstrated through UHT milk case study with SHACL validation
 \item Write-Ahead Logging (WAL) persistence mechanism with atomic writes and automatic crash recovery
-\item Interactive demonstration covering 8 supply chain phases with 7 EPCIS event types
+\item Interactive demonstration validated across 8 supply chain phases with 7 EPCIS event types
 \item OWL2 reasoning support for hasKey validation, property chains, and qualified cardinality constraints
 \item Scalability validated up to 10,000 events with 128 events/second throughput
 \end{highlights}
 
 \begin{keyword}
-Blockchain \sep GS1 EPCIS \sep Supply Chain Traceability \sep Semantic Web \sep OWL2 \sep SHACL \sep Food Safety \sep UHT Processing \sep Cold Chain Monitoring \sep Dairy Industry
+Blockchain \sep GS1 EPCIS \sep Supply Chain Traceability \sep Semantic Web \sep OWL2 \sep SHACL \sep Domain-Agnostic Framework \sep Multi-Industry \sep Food Safety \sep Pharmaceutical Traceability
 \end{keyword}
 
 \end{frontmatter}
@@ -165,9 +166,9 @@ Blockchain \sep GS1 EPCIS \sep Supply Chain Traceability \sep Semantic Web \sep 
 
 \subsection{Background and Motivation}
 
-The global dairy industry faces mounting pressure to ensure food safety, prevent fraud, and maintain quality throughout complex supply chains that span multiple continents \cite{bolton2020don}. Ultra-High Temperature (UHT) milk, which accounts for approximately 80\% of liquid milk consumption in many European and Asian markets, presents unique traceability challenges due to its extended shelf life (typically 6--12 months) and the critical importance of cold chain maintenance during transport and storage \cite{perkins2010dynamic}.
+Supply chains across diverse industries---including food and agriculture, pharmaceuticals, healthcare, and automotive manufacturing---face mounting pressure to ensure product integrity, prevent fraud, and maintain quality throughout complex global networks \cite{bolton2020don}. While traceability requirements vary by domain, common challenges persist: ensuring data authenticity, enabling rapid response to quality issues, and maintaining regulatory compliance across distributed stakeholders. The pharmaceutical industry, for example, faces stringent serialization requirements under the Drug Supply Chain Security Act (DSCSA), while healthcare systems must track medical devices and supplies to ensure patient safety \cite{schapranow2020ontology}. Similarly, the food sector, exemplified by Ultra-High Temperature (UHT) milk products that account for approximately 80\% of liquid milk consumption in many markets, requires careful monitoring of cold chain integrity and quality parameters \cite{perkins2010dynamic}.
 
-Food safety incidents in the dairy sector, including the 2008 Chinese milk scandal and various contamination events, have highlighted the urgent need for transparent, end-to-end traceability systems \cite{qian2011food}. Regulatory frameworks such as the FDA Food Safety Modernization Act (FSMA) in the United States and EU Regulation 178/2002 mandate rapid traceability, requiring that products be tracked and traced within hours rather than days \cite{fsma2011,eu2002general}.
+Regulatory frameworks worldwide mandate robust traceability. The FDA Food Safety Modernization Act (FSMA) and EU Regulation 178/2002 require food products to be tracked within hours rather than days \cite{fsma2011,eu2002general}. Pharmaceutical regulations demand even stricter controls for drug authentication and counterfeit prevention \cite{schapranow2020ontology}. These diverse requirements highlight the need for flexible, standards-based traceability frameworks that can adapt to domain-specific needs while maintaining interoperability.
 
 Traditional traceability systems rely on centralized databases that are vulnerable to data tampering, single points of failure, and limited interoperability between supply chain partners \cite{tian2016supply}. Blockchain technology has emerged as a promising solution, offering immutable ledgers, decentralized consensus, and cryptographic security \cite{zheng2018blockchain}. However, most blockchain implementations for food traceability lack standardization, making interoperability between different systems and organizations difficult to achieve \cite{salah2019blockchain}.
 
@@ -396,9 +397,29 @@ Key properties include: \texttt{eventTime} (ISO 8601 timestamp with timezone), \
 
 CBV provides standardized code lists for: (1) Business Steps (45+ steps including \texttt{commissioning}, \texttt{inspecting}, \texttt{packing}, \texttt{shipping}, \texttt{receiving}); (2) Dispositions (20+ states including \texttt{active}, \texttt{in\_transit}, \texttt{conformant}, \texttt{expired}); (3) Business Transaction Types (\texttt{po}, \texttt{bol}, \texttt{desadv}); and (4) Source/Destination Types.
 
-\subsubsection{UHT Supply Chain Extension}
+\subsubsection{Domain-Specific Extensions}
 
-We developed a UHT-specific ontology extending EPCIS with domain concepts. Figure~\ref{fig:ontology} illustrates the class hierarchy.
+ProvChain's modular architecture enables domain-specific extensions through pluggable ontologies. While the core framework remains domain-agnostic, specialized ontologies can be loaded for particular industries. We have developed ontologies for four domains (Table~\ref{tab:domains}), with UHT manufacturing serving as the primary case study in this paper.
+
+\begin{table}[htbp]
+\centering
+\caption{Domain-Specific Ontologies in ProvChain}
+\label{tab:domains}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Domain} & \textbf{Ontology File} & \textbf{Key Classes} & \textbf{Use Case} \\
+\midrule
+UHT Manufacturing & \texttt{uht\_manufacturing.owl} & PasteurizationEvent, QualityTest & Food processing \\
+Pharmaceutical & \texttt{pharmaceutical.owl} & DrugBatch, SerializationEvent & Drug tracking \\
+Healthcare & \texttt{healthcare.owl} & MedicalDevice, SterilizationRecord & Hospital assets \\
+Automotive & \texttt{automotive.owl} & PartComponent, AssemblyEvent & Parts traceability \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{UHT Manufacturing Case Study}
+
+To demonstrate the framework's capabilities, we developed a UHT-specific ontology extending EPCIS with food processing concepts. Figure~\ref{fig:ontology} illustrates the class hierarchy for this domain.
 
 \begin{figure}[htbp]
 \centering
