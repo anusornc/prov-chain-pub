@@ -33,7 +33,8 @@ ProvChainOrg includes the following security features:
 
 - **Ed25519 Digital Signatures**: Block and transaction signing
 - **ChaCha20-Poly1305 Encryption**: Private data encryption
-- **JWT Authentication**: API authentication with configurable secrets
+- **JWT Authentication**: API authentication with `JWT_SECRET` environment variable (32+ chars)
+- **One-Time Admin Bootstrap**: `/auth/bootstrap` gated by `PROVCHAIN_BOOTSTRAP_TOKEN`
 - **TLS/SSL Support**: Secure network communications
 - **Rate Limiting**: DoS protection
 - **CORS Policy**: Configurable origin whitelisting
@@ -58,6 +59,8 @@ For detailed security documentation, see:
 ### For Operators
 
 - Use strong JWT secrets (32+ characters)
+- Set `JWT_SECRET` via environment (no config-file fallback)
+- Set `PROVCHAIN_BOOTSTRAP_TOKEN` only for first-admin provisioning, then rotate/remove it
 - Enable TLS/SSL in production
 - Configure appropriate rate limits
 - Set up audit logging

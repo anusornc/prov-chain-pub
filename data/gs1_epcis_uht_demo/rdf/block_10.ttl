@@ -1,0 +1,31 @@
+
+        @prefix epcis: <https://ns.gs1.org/epcis/> .
+        @prefix provchain: <http://provchain.org/core#> .
+        
+        # Delivery to Retail
+        <http://example.org/event/delivery-retail-UHT-BATCH-2024-001> a epcis:ObjectEvent ;
+            epcis:eventTime "2024-01-18T06:00:00Z" ;
+            epcis:action "OBSERVE" ;
+            epcis:bizStep <https://ns.gs1.org/voc/BizStep-delivering> ;
+            epcis:disposition <https://ns.gs1.org/voc/Disp-active> ;
+            epcis:readPoint <http://example.org/distributor/global-cold-chain/dc-chicago> ;
+            epcis:bizLocation <http://example.org/retailer/metro-supermarkets/store-001> ;
+            epcis:epcList <http://example.org/case/UHT-BATCH-2024-001-case-001> ;
+            provchain:deliveryRoute "CHI-DOWNTOWN-001" ;
+            provchain:driver "Delivery Dave" ;
+            provchain:deliveryTime "06:00" ;
+            provchain:shelfLifeRemaining "178" ;
+            provchain:unit "days" .
+        
+        # Stocking
+        <http://example.org/event/stocking-UHT-BATCH-2024-001> a epcis:ObjectEvent ;
+            epcis:eventTime "2024-01-18T07:30:00Z" ;
+            epcis:action "ADD" ;
+            epcis:bizStep <https://ns.gs1.org/voc/BizStep-stocking> ;
+            epcis:readPoint <http://example.org/retailer/metro-supermarkets/store-001/dairy-aisle> ;
+            epcis:epcList <http://example.org/unit/UHT-BATCH-2024-001-001> ;
+            provchain:shelfLocation "Dairy-Aisle-B3" ;
+            provchain:facingUnits "24" ;
+            provchain:retailPrice "3.49" ;
+            provchain:currency "USD" .
+        

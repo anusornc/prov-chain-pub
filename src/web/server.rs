@@ -3,7 +3,10 @@
 use crate::config::{Config, CorsConfig};
 use crate::core::blockchain::Blockchain;
 use crate::web::{
-    auth::{auth_middleware, authenticate, AuthState},
+    auth::{
+        auth_middleware, authenticate, bootstrap_admin, create_user_admin, delete_user_admin,
+        list_users_admin, update_user_password_admin, AuthState,
+    },
     handlers::{
         add_triple,
         create_participant,
@@ -47,7 +50,7 @@ use crate::web::{
 };
 use axum::{
     middleware,
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 use std::{
@@ -174,6 +177,21 @@ impl WebServer {
         let public_routes = Router::new()
             .route("/health", get(health_check))
             .route("/auth/login", post(authenticate))
+            .route("/auth/bootstrap", post(bootstrap_admin))
+            .with_state(self.auth_state.clone());
+
+        // Admin routes (authentication + admin authorization in handlers)
+        let admin_routes = Router::new()
+            .route(
+                "/api/admin/users",
+                get(list_users_admin).post(create_user_admin),
+            )
+            .route("/api/admin/users/:username", delete(delete_user_admin))
+            .route(
+                "/api/admin/users/:username/password",
+                put(update_user_password_admin),
+            )
+            .layer(middleware::from_fn(auth_middleware))
             .with_state(self.auth_state.clone());
 
         // Protected routes (authentication required)
@@ -234,6 +252,7 @@ impl WebServer {
         Router::new()
             .merge(websocket_routes)
             .merge(public_routes)
+            .merge(admin_routes)
             .merge(protected_routes)
             .nest_service("/", static_service)
             .layer(
@@ -293,6 +312,11 @@ impl WebServer {
         info!("  GET  /health - Health check");
         info!("  GET  /ws - WebSocket connection for real-time updates");
         info!("  POST /auth/login - Authentication");
+        info!("  POST /auth/bootstrap - One-time first admin bootstrap");
+        info!("  GET  /api/admin/users - List users (admin)");
+        info!("  POST /api/admin/users - Create user (admin)");
+        info!("  DELETE /api/admin/users/:username - Delete user (admin)");
+        info!("  PUT /api/admin/users/:username/password - Rotate password (admin)");
         info!("  POST /api/wallet/register - Register new wallet");
         info!("  POST /api/transactions/create - Create new transaction");
         info!("  POST /api/transactions/sign - Sign transaction");

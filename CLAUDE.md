@@ -120,8 +120,9 @@ sudo docker compose -f docker-compose.baselines-only.yml down
 - `src/ontology/` - Ontology management and validation
   - `shacl_validator.rs` - SHACL validator for RDF transaction data with OWL2 reasoner integration and Oxigraph store
 - `src/semantic/` - OWL2 reasoning and SHACL validation
-  - `owl2_enhanced_reasoner.rs` - Full OWL2 feature support (hasKey, property chains, qualified cardinality)
-  - `owl_reasoner.rs` - Base OWL reasoning with validation
+  - `owl2_config.rs` - OWL2 configuration module with `OwlReasonerConfig` for feature toggling (hasKey, property chains, qualified cardinality)
+  - `owl2_enhanced_reasoner.rs` - Full OWL2 feature support (hasKey, property chains, qualified cardinality) with `Owl2EnhancedReasoner`
+  - `owl_reasoner.rs` - Base OWL reasoning with validation, integrates `OwlReasonerConfig`
 - `src/security/` - Encryption and wallet management
 - `src/integrity/` - Blockchain integrity validation
   - `transaction_counter.rs` - RDF parsing-based accurate transaction counting
@@ -255,6 +256,12 @@ The main binary provides a comprehensive CLI interface organized into functional
   - `cache_size`, `warm_cache_on_startup`: LRU memory cache configuration
 - Oxigraph as RDF store backend with RDFC-1.0 canonicalization support
 
+### OWL2 Configuration Pattern
+- Feature-based configuration via `OwlReasonerConfig` in `owl2_config.rs` and `owl_reasoner.rs`
+- Granular feature toggles: `process_owl2_features`, `enable_has_key_validation`, `enable_property_chain_inference`, `enable_qualified_cardinality_validation`
+- Default config enables all OWL2 features for maximum semantic reasoning capability
+- Ontology path configuration: primary `ontology_path` plus `additional_ontology_paths` for imports
+
 ### Consensus
 - Trait-based consensus manager in `src/network/consensus.rs`
 - Runtime protocol switching via configuration (PoA/PBFT)
@@ -302,9 +309,9 @@ The main binary provides a comprehensive CLI interface organized into functional
 - Unit tests alongside source code (including `src/config/mod.rs` with debug/release mode split)
 - Benchmark suites in `benches/` (main) and `owl2-reasoner/benches/` (sub-project)
 - Load tests in `tests/load_tests.rs`
-- `tests/production_security_tests.rs` - Production security test suite (JWT validation, rate limiting, GDPR compliance, security policies)
+- `tests/production_security_tests.rs` - Production security test suite (JWT validation with token creation/expiry, rate limiting, GDPR compliance, security policies including password/session/API access policies)
 - `tests/websocket_integration_tests.rs` - WebSocket integration tests (connection management, event broadcasting, multi-client scenarios)
-- `tests/owl2_feature_tests.rs` - OWL2 feature integration tests (hasKey constraints, property chains, qualified cardinality)
+- `tests/owl2_feature_tests.rs` - OWL2 feature integration tests (hasKey constraints, property chains, qualified cardinality) using test-owl2.owl and generic_core.owl ontologies
 - `tests/enhanced_owl2_comprehensive_tests.rs` - Comprehensive OWL2 feature processing tests
 - `tests/enhanced_owl2_tests.rs` - Enhanced OWL2 feature processing tests (process_owl2_features, hasKey, property chains, qualified cardinality)
 - `tests/owl2_generic_traceability_tests.rs` - Generic traceability tests with OWL2 reasoning

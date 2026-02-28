@@ -190,7 +190,7 @@ cd ~
 **Step A1.2: Clone the repository**
 
 ```bash
-git clone https://github.com/anusornc/provchain-org2.git
+git clone https://github.com/anusornc/prov-chain.git
 ```
 
 **Expected output:**
@@ -604,7 +604,7 @@ Then log out and log back in.
 
 ```bash
 cd ~
-git clone https://github.com/anusornc/provchain-org2.git
+git clone https://github.com/anusornc/prov-chain.git
 cd provchain-org/deploy
 ```
 
@@ -1358,7 +1358,7 @@ docker ps -a
 - `/docs/deployment/SETUP_INSTALLATION_GUIDE.md`
 
 4. **Open an issue:**
-https://github.com/anusornc/provchain-org2/issues
+https://github.com/anusornc/prov-chain/issues
 
 **When reporting issues, include:**
 - Output of `docker ps`

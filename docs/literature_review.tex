@@ -1,0 +1,76 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{titlesec}
+\usepackage{abstract}
+\usepackage{setspace}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue,
+    pdftitle={GS1 EPCIS-Based Blockchain Traceability in Dairy Supply Chains},
+    pdfauthor={},
+}
+
+% Title formatting
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection.}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection.}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection.}{1em}{}
+
+% Line spacing
+\onehalfspacing
+
+% Title and author information
+\title{\textbf{GS1 EPCIS-Based Blockchain Traceability in Dairy Supply Chains: Integrating Semantic Web Technologies for Food Safety and Cold Chain Monitoring}}
+
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent
+Dairy supply chains face critical challenges in ensuring food safety, maintaining cold chain integrity, and providing end-to-end traceability in an increasingly complex global marketplace. This manuscript examines the integration of GS1 Electronic Product Code Information Services (EPCIS) standards with blockchain technology and semantic web approaches to address these challenges. Through a comprehensive review of recent literature (2020-2025), we analyze how standardized event-based traceability frameworks combined with distributed ledger technology enable transparent, immutable, and interoperable tracking of dairy products from farm to consumer. We explore the role of ontology-based semantic models in enhancing data interoperability and enabling intelligent querying across heterogeneous supply chain systems. Key applications in food safety monitoring, cold chain temperature tracking, and quality assurance are examined through multiple case studies in the dairy sector. The manuscript identifies technical architectures, implementation challenges, and future research directions for deploying these integrated technologies at scale. Our analysis reveals that while hybrid on-chain/off-chain EPCIS implementations show promise for balancing transparency with scalability, significant barriers remain in standardization, stakeholder adoption, and real-time monitoring integration. This work provides a foundation for researchers and practitioners seeking to implement next-generation traceability systems in dairy and broader food supply chains.
+\end{abstract}
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} Blockchain, GS1 EPCIS, Dairy Supply Chain, Traceability, Semantic Web, Ontology, Food Safety, Cold Chain Monitoring, IoT, Supply Chain Transparency
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\input{sections/introduction}
+\input{sections/background}
+\input{sections/epcis_standards}
+\input{sections/blockchain_integration}
+\input{sections/semantic_web}
+\input{sections/food_safety}
+\input{sections/case_studies}
+\input{sections/challenges}
+\input{sections/conclusion}
+
+\newpage
+\input{sections/references}
+
+\end{document}

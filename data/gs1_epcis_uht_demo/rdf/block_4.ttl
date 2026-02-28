@@ -1,0 +1,28 @@
+
+        @prefix epcis: <https://ns.gs1.org/epcis/> .
+        @prefix provchain: <http://provchain.org/core#> .
+        
+        # Transport Event
+        <http://example.org/event/transport-UHT-BATCH-2024-001> a epcis:ObjectEvent ;
+            epcis:eventTime "2024-01-15T08:30:00Z" ;
+            epcis:action "OBSERVE" ;
+            epcis:bizStep <https://ns.gs1.org/voc/BizStep-shipping> ;
+            epcis:disposition <https://ns.gs1.org/voc/Disp-in_transit> ;
+            epcis:readPoint <http://example.org/farm/wisconsin-organic-dairy> ;
+            epcis:bizLocation <http://example.org/processor/national-dairy-foods> ;
+            epcis:epcList <http://example.org/batch/UHT-BATCH-2024-001> ;
+            provchain:transportMode "Refrigerated_Truck" ;
+            provchain:startTime "2024-01-15T08:30:00Z" ;
+            provchain:endTime "2024-01-15T10:45:00Z" ;
+            provchain:transportTemperature "4.0" ;
+            provchain:vehicleId "TRUCK-REF-001" ;
+            provchain:driver "Mike Transport" .
+        
+        # Environmental Sensor Data
+        <http://example.org/sensor/temp-001> a provchain:TemperatureSensor ;
+            provchain:recordedFor <http://example.org/event/transport-UHT-BATCH-2024-001> ;
+            provchain:minTemperature "3.8" ;
+            provchain:maxTemperature "4.2" ;
+            provchain:avgTemperature "4.0" ;
+            provchain:unit "CELSIUS" .
+        

@@ -1,0 +1,35 @@
+
+        @prefix epcis: <https://ns.gs1.org/epcis/> .
+        @prefix provchain: <http://provchain.org/core#> .
+        
+        # Packaging Event
+        <http://example.org/event/packaging-UHT-BATCH-2024-001> a epcis:AggregationEvent ;
+            epcis:eventTime "2024-01-15T14:00:00Z" ;
+            epcis:action "ADD" ;
+            epcis:bizStep <https://ns.gs1.org/voc/BizStep-packing> ;
+            epcis:disposition <https://ns.gs1.org/voc/Disp-active> ;
+            epcis:readPoint <http://example.org/processor/national-dairy-foods/packaging-line-01> ;
+            epcis:parentID <http://example.org/batch/UHT-BATCH-2024-001> ;
+            provchain:packageType "Aseptic_Carton_1L" ;
+            provchain:material <http://example.org/packager/eco-packaging-solutions> ;
+            provchain:unitsProduced "10000" ;
+            provchain:packagingMaterial "Tetra_Pak_TBA8" ;
+            provchain:capColor "Blue" .
+        
+        # Individual Units (SSCC)
+        <http://example.org/unit/UHT-BATCH-2024-001-001> a provchain:ProductUnit,
+                gs1:Product ;
+            provchain:parentBatch <http://example.org/batch/UHT-BATCH-2024-001> ;
+            gs1:gtin "01234567890128" ;
+            gs1:serialNumber "SNUHT-BATCH-2024-001001" ;
+            gs1:sscc "000123450000000001" ;
+            provchain:productionTimestamp "2024-01-15T14:00:00Z" ;
+            provchain:useByDate "2024-07-15" .
+        
+        # Case Level
+        <http://example.org/case/UHT-BATCH-2024-001-case-001> a provchain:ProductCase ;
+            provchain:containsUnit <http://example.org/unit/UHT-BATCH-2024-001-001> ;
+            provchain:quantityPerCase "12" ;
+            provchain:totalCases "834" ;
+            gs1:sscc "000123450000100001" .
+        

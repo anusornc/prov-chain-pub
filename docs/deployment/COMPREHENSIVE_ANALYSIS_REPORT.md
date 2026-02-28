@@ -1744,7 +1744,7 @@ Use this checklist to ensure complete deployment:
 
 **Codebase:**
 - [ ] Clone ProvChain repository to each VM
-  - `git clone https://github.com/anusornc/provchain-org2.git`
+  - `git clone https://github.com/anusornc/prov-chain.git`
 - [ ] Verify git branch/tag (e.g., `main`, `v1.0.0`)
 - [ ] Run initial tests locally
   - [ ] `cargo test --lib` (unit tests)
@@ -3401,8 +3401,8 @@ kubectl delete namespace provchain
 ### Useful Links
 
 #### Official Documentation
-- **ProvChain Repository**: `https://github.com/anusornc/provchain-org2`
-- **Issue Tracker**: `https://github.com/anusornc/provchain-org2/issues`
+- **ProvChain Repository**: `https://github.com/anusornc/prov-chain`
+- **Issue Tracker**: `https://github.com/anusornc/prov-chain/issues`
 
 #### Rust Documentation
 - **The Rust Book**: https://doc.rust-lang.org/book/
@@ -3517,8 +3517,8 @@ ProvChain-Org is **production-ready** with excellent infrastructure:
 6. Monitor for 24-48 hours
 
 **Support:**
-- GitHub Issues: `https://github.com/anusornc/provchain-org2/issues`
-- Documentation: `https://github.com/anusornc/provchain-org2/docs`
+- GitHub Issues: `https://github.com/anusornc/prov-chain/issues`
+- Documentation: `https://github.com/anusornc/prov-chain/docs`
 
 ---
 

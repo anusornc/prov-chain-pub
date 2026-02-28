@@ -300,8 +300,7 @@ impl ProofOfAuthority {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No authority keypair"))?;
         let block = self.create_block().await?;
-        let block_data = self.serialize_block_for_signing(&block)?;
-        let signature = keypair.sign(&block_data);
+        let signature = keypair.sign(block.hash.as_bytes());
 
         let proposal = BlockProposal {
             block: block.clone(),
@@ -353,17 +352,6 @@ impl ProofOfAuthority {
         Ok(())
     }
 
-    fn serialize_block_for_signing(&self, block: &Block) -> Result<Vec<u8>> {
-        let data = format!(
-            "{}
-{}
-{}
-{}",
-            block.index, block.timestamp, block.previous_hash, block.data
-        );
-        Ok(data.into_bytes())
-    }
-
     async fn broadcast_block_proposal(&self, proposal: BlockProposal) -> Result<()> {
         let announcement = P2PMessage::new_block_announcement(
             &proposal.block,
@@ -411,7 +399,7 @@ impl ProofOfAuthority {
         } else if block.previous_hash != "0".repeat(64) {
             return Ok(false);
         }
-        let expected_hash = block.calculate_hash_with_store(Some(&blockchain.rdf_store));
+        let expected_hash = block.calculate_hash();
         if block.hash != expected_hash {
             return Ok(false);
         }
@@ -501,6 +489,11 @@ impl ConsensusProtocol for ProofOfAuthority {
         } else {
             ("0".repeat(64), 0)
         };
+        let validator = self
+            .authority_keypair
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No authority keypair"))?
+            .verifying_key();
         let state_root = self
             .blockchain
             .read()
@@ -516,7 +509,7 @@ impl ConsensusProtocol for ProofOfAuthority {
             rdf_data,
             previous_hash,
             state_root,
-            self.network.node_id.to_string(),
+            hex::encode(validator.to_bytes()),
         ))
     }
 
@@ -531,10 +524,15 @@ impl ConsensusProtocol for ProofOfAuthority {
             return Ok(false);
         }
 
-        let block_data = self.serialize_block_for_signing(&proposal.block)?;
+        let expected_validator = hex::encode(proposal.authority_key.to_bytes());
+        if proposal.block.validator != expected_validator {
+            warn!("Validator identity mismatch in block proposal");
+            return Ok(false);
+        }
+
         if proposal
             .authority_key
-            .verify(&block_data, &proposal.signature)
+            .verify(proposal.block.hash.as_bytes(), &proposal.signature)
             .is_err()
         {
             warn!("Invalid signature");
@@ -1003,7 +1001,7 @@ impl PbftConsensus {
             return Ok(false);
         }
 
-        let expected_hash = block.calculate_hash_with_store(Some(&blockchain.rdf_store));
+        let expected_hash = block.calculate_hash();
         if block.hash != expected_hash {
             return Ok(false);
         }
@@ -1051,6 +1049,10 @@ impl ConsensusProtocol for PbftConsensus {
         } else {
             ("0".repeat(64), 0)
         };
+        let keypair = self
+            .authority_keypair
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No signing key available"))?;
         let state_root = self
             .blockchain
             .read()
@@ -1063,13 +1065,17 @@ impl ConsensusProtocol for PbftConsensus {
             index
         );
 
-        Ok(Block::new(
+        let mut block = Block::new(
             index,
             rdf_data,
             previous_hash,
             state_root,
-            self.network.node_id.to_string(),
-        ))
+            hex::encode(keypair.verifying_key().to_bytes()),
+        );
+
+        let signature = keypair.sign(block.hash.as_bytes());
+        block.signature = hex::encode(signature.to_bytes());
+        Ok(block)
     }
 
     async fn validate_block_proposal(&self, proposal: &BlockProposal) -> Result<bool> {
@@ -1101,16 +1107,15 @@ impl ConsensusProtocol for PbftConsensus {
         }
 
         // 4. Verify signature
-        let block_data = format!(
-            "{}{}{}{}",
-            proposal.block.index,
-            proposal.block.timestamp,
-            proposal.block.previous_hash,
-            proposal.block.data
-        );
+        let expected_validator = hex::encode(proposal.authority_key.to_bytes());
+        if proposal.block.validator != expected_validator {
+            debug!("PBFT: Validator identity mismatch");
+            return Ok(false);
+        }
+
         if proposal
             .authority_key
-            .verify(block_data.as_bytes(), &proposal.signature)
+            .verify(proposal.block.hash.as_bytes(), &proposal.signature)
             .is_err()
         {
             debug!("PBFT: Invalid signature");

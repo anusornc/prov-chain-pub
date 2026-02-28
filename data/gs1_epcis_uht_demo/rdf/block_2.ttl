@@ -1,0 +1,58 @@
+
+        @prefix provchain: <http://provchain.org/core#> .
+        @prefix schema: <http://schema.org/> .
+        @prefix gs1: <https://gs1.org/voc/> .
+        
+        # Dairy Farm - Raw Milk Producer
+        <http://example.org/farm/wisconsin-organic-dairy> a provchain:Farm,
+                gs1:Organization,
+                schema:Organization ;
+            schema:name "Wisconsin Organic Dairy Farm" ;
+            gs1:organizationName "Wisconsin Organic Dairy Farm" ;
+            schema:location "Wisconsin, USA" ;
+            provchain:hasCertification "USDA Organic", "ISO 22000" ;
+            provchain:role "RawMilkSupplier" ;
+            gs1:latitude "43.7844" ;
+            gs1:longitude "-88.7879" .
+        
+        # UHT Processing Plant
+        <http://example.org/processor/national-dairy-foods> a provchain:ProcessingFacility,
+                gs1:Organization,
+                schema:Organization ;
+            schema:name "National Dairy Foods UHT Plant" ;
+            gs1:organizationName "National Dairy Foods UHT Plant" ;
+            schema:location "Illinois, USA" ;
+            provchain:hasCertification "FSSC 22000", "HALAL", "KOSHER" ;
+            provchain:role "UHTProcessor" ;
+            provchain:processingType "UHT_Aseptic" ;
+            gs1:latitude "40.6331" ;
+            gs1:longitude "-89.3985" .
+        
+        # Packaging Manufacturer
+        <http://example.org/packager/eco-packaging-solutions> a provchain:PackagingProvider,
+                gs1:Organization ;
+            schema:name "EcoPackaging Solutions" ;
+            provchain:role "PackagingSupplier" ;
+            provchain:materialType "Recyclable_Carton" .
+        
+        # Distribution Center
+        <http://example.org/distributor/global-cold-chain> a provchain:LogisticsProvider,
+                gs1:Organization ;
+            schema:name "Global Cold Chain Logistics" ;
+            provchain:role "ColdChainDistributor" ;
+            provchain:hasCertification "GDP", "HACCP" .
+        
+        # Retailer
+        <http://example.org/retailer/metro-supermarkets> a provchain:Retailer,
+                gs1:Organization ;
+            schema:name "Metro Supermarkets" ;
+            provchain:role "Retailer" ;
+            schema:location "Chicago, IL" .
+        
+        # Quality Lab
+        <http://example.org/lab/food-safety-analytics> a provchain:QualityControlLab,
+                gs1:Organization ;
+            schema:name "Food Safety Analytics Lab" ;
+            provchain:role "QualityAssurance" ;
+            provchain:hasCertification "ISO/IEC 17025" .
+    

@@ -654,7 +654,7 @@ Receiving & ObjectEvent & receiving & in\_progress \\
 
 \subsection{OWL2 Reasoning Integration}
 
-ProvChain integrates OWL2 reasoning for semantic inference including: (1) hasKey validation ensuring batch ID uniqueness; (2) property chain inference for supplier relationships; and (3) qualified cardinality validating 4 quality tests per batch.
+ProvChain integrates OWL2 reasoning for semantic inference including: (1) hasKey validation ensuring batch ID uniqueness; (2) property chain inference for supplier relationships; and (3) qualified cardinality validating 4 quality tests per batch. To optimize performance while maintaining semantic expressivity, the framework employs a hybrid reasoning engine that combines a native OWL2 reasoner for complex assertions with specialized, high-performance logic for common supply chain property chains.
 
 \subsection{Persistence Implementation}
 
@@ -908,7 +908,7 @@ EPCIS compliance enables data exchange with GS1-compliant trading partners, inte
 
 The current implementation exhibits several scalability limitations:
 
-\textbf{Throughput bottleneck:} At 128 events/s, ProvChain is significantly slower than Hyperledger Fabric (3000+ TPS). This is primarily due to: (1) RDF parsing and serialization overhead (~40\% of processing time); (2) SHACL validation requiring SPARQL queries (~25\%); (3) OWL2 reasoning for each batch (~15\%); and (4) synchronous fsync calls for WAL durability (~20\%). For context, typical dairy processors generate 50-200 events per minute, making ProvChain suitable for SME deployments but requiring optimization for large-scale industrial operations.
+\textbf{Throughput bottleneck:} At 128 events/s, ProvChain is significantly slower than Hyperledger Fabric (3000+ TPS). This is primarily due to: (1) RDF parsing and serialization overhead (~40\% of processing time); (2) SHACL validation requiring SPARQL queries (~25\%); (3) OWL2 reasoning for each batch (~15\%); and (4) synchronous fsync calls for WAL durability (~20\%). Additionally, the current implementation performs full N-Quads serialization for storage checkpoints, which may introduce latency as the graph grows. Future work includes implementing incremental RDF indexing and delta-based storage to improve I/O efficiency. For context, typical dairy processors generate 50-200 events per minute, making ProvChain suitable for SME deployments but requiring optimization for large-scale industrial operations.
 
 \textbf{Single-node RDF store:} Oxigraph runs on a single node, limiting horizontal scaling. Federated triple stores (e.g., Apache Jena Fuseki cluster) could address this but were not implemented in the current prototype.
 
@@ -940,7 +940,7 @@ For the dairy industry, this framework offers a path toward transparent, interop
 
 \section*{Data Availability}
 
-The source code, ontologies, and example data used in this study are publicly available in the ProvChain GitHub repository: \url{https://github.com/anusornc/provchain-org2}. The repository includes: (1) complete Rust source code for the blockchain implementation; (2) GS1 EPCIS and UHT ontology files in Turtle format; (3) SHACL validation shapes; (4) example EPCIS events in JSON-LD format; and (5) interactive demonstration scripts.
+The source code, ontologies, and example data used in this study are publicly available in the ProvChain GitHub repository: \url{https://github.com/anusornc/prov-chain}. The repository includes: (1) complete Rust source code for the blockchain implementation; (2) GS1 EPCIS and UHT ontology files in Turtle format; (3) SHACL validation shapes; (4) example EPCIS events in JSON-LD format; and (5) interactive demonstration scripts.
 
 \bibliographystyle{elsarticle-harv}
 \bibliography{references}

@@ -743,48 +743,37 @@ mod jwt_validation_tests {
     }
 
     #[test]
-    fn test_validate_jwt_rejects_short_secret() {
+    fn test_validate_jwt_requires_env_secret() {
         use jsonwebtoken::{encode, EncodingKey, Header};
 
-        // This test must run without JWT_SECRET environment variable
-        // to test the config secret validation
-        // Skip if JWT_SECRET is set (e.g., by other tests running in parallel)
+        // This test must run without JWT_SECRET environment variable.
         if std::env::var("JWT_SECRET").is_ok() {
-            return; // Skip: JWT_SECRET env var takes precedence over config
+            return;
         }
 
-        const SHORT_SECRET: &str = "short"; // Less than 32 characters
-
-        let config = SecurityConfig {
-            jwt_secret: SHORT_SECRET.to_string(),
-            ..Default::default()
-        };
-
+        let config = SecurityConfig::default();
         let middleware = SecurityMiddleware::new(config);
 
-        // Create a token signed with the short secret (not the standard TEST_JWT_SECRET)
+        // Token content does not matter when JWT_SECRET is missing.
         let now = chrono::Utc::now();
-        let exp = (now + chrono::Duration::hours(1)).timestamp();
         let claims = ProductionClaims {
             sub: "test-user".to_string(),
             iat: now.timestamp(),
-            exp,
+            exp: (now + chrono::Duration::hours(1)).timestamp(),
             iss: "provchain-test".to_string(),
             role: Some("test".to_string()),
         };
         let token = encode(
             &Header::default(),
             &claims,
-            &EncodingKey::from_secret(SHORT_SECRET.as_bytes()),
+            &EncodingKey::from_secret(TEST_JWT_SECRET.as_bytes()),
         )
         .expect("Failed to encode test JWT token");
 
         let result = middleware.validate_jwt(&token);
-
-        // Should fail because secret is too short
         assert!(
             result.is_err(),
-            "Should reject short config secret when JWT_SECRET env var is not set"
+            "Should fail when JWT_SECRET env var is not set"
         );
     }
 

@@ -1,0 +1,12 @@
+
+            @prefix provchain: <http://provchain.org/core#> .
+            @prefix epcis: <https://ns.gs1.org/epcis/> .
+            
+            <http://example.org/event/loadtest-43> a epcis:ObjectEvent ;
+                epcis:eventTime "2024-01-14T19:00:00Z" ;
+                epcis:action "OBSERVE" ;
+                epcis:bizStep <https://ns.gs1.org/voc/BizStep-storing> ;
+                epcis:readPoint <http://example.org/location/4> ;
+                provchain:loadTestIndex "43" ;
+                provchain:temperature "4.0" .
+            

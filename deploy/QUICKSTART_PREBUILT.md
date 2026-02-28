@@ -239,7 +239,7 @@ If you prefer to build from source or need to make modifications:
 
 ```bash
 # Clone repository
-git clone https://github.com/anusornc/provchain-org2.git
+git clone https://github.com/anusornc/prov-chain.git
 cd provchain-org/deploy
 
 # Use the default docker-compose files (they build from source)
@@ -249,6 +249,6 @@ docker compose -f docker-compose.node.yml up -d --build
 ---
 
 **Need help?**
-- Repository: https://github.com/anusornc/provchain-org2
-- Issues: https://github.com/anusornc/provchain-org2/issues
+- Repository: https://github.com/anusornc/prov-chain
+- Issues: https://github.com/anusornc/prov-chain/issues
 - Docker Hub: https://hub.docker.com/r/anusornc/provchain-org

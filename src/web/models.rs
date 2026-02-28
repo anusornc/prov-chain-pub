@@ -107,12 +107,61 @@ pub struct AuthRequest {
     pub password: String,
 }
 
+/// Initial admin bootstrap request
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BootstrapAdminRequest {
+    pub username: String,
+    pub password: String,
+    pub bootstrap_token: String,
+}
+
 /// Authentication response
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthResponse {
     pub token: String,
     pub expires_at: DateTime<Utc>,
     pub user_role: String,
+}
+
+/// Admin request to create a user account
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AdminCreateUserRequest {
+    pub username: String,
+    pub password: String,
+    pub role: String,
+}
+
+/// Admin user summary response model
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AdminUserInfo {
+    pub username: String,
+    pub role: String,
+}
+
+/// Admin list-users response model
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AdminUserListResponse {
+    pub users: Vec<AdminUserInfo>,
+    pub total_users: usize,
+    pub filtered_users: usize,
+    pub page: u32,
+    pub limit: u32,
+    pub total_pages: u32,
+}
+
+/// Admin list-users query parameters
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AdminListUsersQuery {
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
+    pub role: Option<String>,
+    pub q: Option<String>,
+}
+
+/// Admin password rotation request
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AdminUpdatePasswordRequest {
+    pub new_password: String,
 }
 
 /// User claims for JWT

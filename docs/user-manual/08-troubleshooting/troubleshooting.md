@@ -856,7 +856,7 @@ docker exec provchain-org du -sh /app/data
 ### Before Asking for Help
 
 1. **Check this guide** - Your issue might be covered
-2. **Search existing issues** - https://github.com/anusornc/provchain-org2/issues
+2. **Search existing issues** - https://github.com/anusornc/prov-chain/issues
 3. **Gather diagnostic info**:
    ```bash
    # System info
@@ -888,7 +888,7 @@ Include:
 ### Resources
 
 - 📖 [Full User Manual](../README.md)
-- 🐛 [GitHub Issues](https://github.com/anusornc/provchain-org2/issues)
+- 🐛 [GitHub Issues](https://github.com/anusornc/prov-chain/issues)
 - 💬 [Community Discord](#) (when available)
 - 📧 [Email Support](mailto:support@example.org) (if available)
 

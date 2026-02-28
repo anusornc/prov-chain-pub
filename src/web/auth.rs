@@ -1,8 +1,12 @@
 //! Authentication and authorization module for web API
 
-use crate::web::models::{ActorRole, ApiError, AuthRequest, AuthResponse, UserClaims};
+use crate::web::models::{
+    ActorRole, AdminCreateUserRequest, AdminListUsersQuery, AdminUpdatePasswordRequest,
+    AdminUserInfo, AdminUserListResponse, ApiError, AuthRequest, AuthResponse,
+    BootstrapAdminRequest, UserClaims,
+};
 use axum::{
-    extract::{Request, State},
+    extract::{Extension, Path, Query, Request, State},
     http::{header::AUTHORIZATION, StatusCode},
     middleware::Next,
     response::Response,
@@ -12,6 +16,9 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use std::collections::HashMap;
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::path::Path as FsPath;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -50,6 +57,25 @@ pub fn get_jwt_secret() -> Result<Vec<u8>, crate::error::WebError> {
     }
 
     Ok(secret.into_bytes())
+}
+
+/// Bootstrap token for first-admin provisioning (environment variable only)
+fn get_bootstrap_token() -> Result<String, crate::error::WebError> {
+    let token = std::env::var("PROVCHAIN_BOOTSTRAP_TOKEN").map_err(|_| {
+        crate::error::WebError::AuthenticationFailed(
+            "PROVCHAIN_BOOTSTRAP_TOKEN environment variable must be set for /auth/bootstrap"
+                .to_string(),
+        )
+    })?;
+
+    if token.len() < 32 {
+        return Err(crate::error::WebError::AuthenticationFailed(format!(
+            "PROVCHAIN_BOOTSTRAP_TOKEN must be at least 32 characters (current: {})",
+            token.len()
+        )));
+    }
+
+    Ok(token)
 }
 
 /// Generate a cryptographically secure random JWT secret
@@ -156,6 +182,40 @@ impl AuthState {
                 username,
                 password_hash,
                 role,
+            },
+        );
+
+        Ok(())
+    }
+
+    /// Bootstrap the very first admin account.
+    ///
+    /// This operation is intentionally one-time: it fails as soon as any user exists.
+    pub async fn bootstrap_first_admin(
+        &self,
+        username: String,
+        password: String,
+    ) -> Result<(), crate::error::WebError> {
+        validate_username(&username)?;
+        validate_password(&password)?;
+
+        let password_hash = hash(&password, DEFAULT_COST).map_err(|e| {
+            crate::error::WebError::ServerError(format!("Password hashing failed: {}", e))
+        })?;
+
+        let mut users = self.users.write().await;
+        if !users.is_empty() {
+            return Err(crate::error::WebError::InvalidRequest(
+                "Bootstrap is only allowed when no users exist".to_string(),
+            ));
+        }
+
+        users.insert(
+            username.clone(),
+            UserInfo {
+                username,
+                password_hash,
+                role: ActorRole::Admin,
             },
         );
 
@@ -348,6 +408,360 @@ pub async fn authenticate(
             }),
         ))
     }
+}
+
+/// One-time bootstrap endpoint for creating the first admin account.
+pub async fn bootstrap_admin(
+    State(auth_state): State<AuthState>,
+    Json(request): Json<BootstrapAdminRequest>,
+) -> Result<Json<AuthResponse>, (StatusCode, Json<ApiError>)> {
+    let bootstrap_token = get_bootstrap_token().map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                error: "bootstrap_token_error".to_string(),
+                message: e.to_string(),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    if request.bootstrap_token != bootstrap_token {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(ApiError {
+                error: "invalid_bootstrap_token".to_string(),
+                message: "Invalid bootstrap token".to_string(),
+                timestamp: Utc::now(),
+            }),
+        ));
+    }
+
+    auth_state
+        .bootstrap_first_admin(request.username.clone(), request.password)
+        .await
+        .map_err(|e| {
+            let status = match &e {
+                crate::error::WebError::InvalidRequest(message)
+                    if message.contains("only allowed when no users exist") =>
+                {
+                    StatusCode::CONFLICT
+                }
+                crate::error::WebError::InvalidRequest(_) => StatusCode::BAD_REQUEST,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            };
+
+            (
+                status,
+                Json(ApiError {
+                    error: "bootstrap_failed".to_string(),
+                    message: e.to_string(),
+                    timestamp: Utc::now(),
+                }),
+            )
+        })?;
+
+    let jwt_secret = get_jwt_secret().map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                error: "jwt_secret_error".to_string(),
+                message: e.to_string(),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    let token =
+        generate_token(&request.username, &ActorRole::Admin, &jwt_secret).map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    error: "token_generation_failed".to_string(),
+                    message: "Failed to generate authentication token".to_string(),
+                    timestamp: Utc::now(),
+                }),
+            )
+        })?;
+
+    let expires_at = Utc::now() + Duration::hours(24);
+    Ok(Json(AuthResponse {
+        token,
+        expires_at,
+        user_role: ActorRole::Admin.to_string(),
+    }))
+}
+
+/// Parse actor role from API input.
+fn parse_actor_role(role: &str) -> Option<ActorRole> {
+    match role.trim().to_ascii_lowercase().as_str() {
+        "farmer" => Some(ActorRole::Farmer),
+        "processor" => Some(ActorRole::Processor),
+        "transporter" => Some(ActorRole::Transporter),
+        "retailer" => Some(ActorRole::Retailer),
+        "consumer" => Some(ActorRole::Consumer),
+        "auditor" => Some(ActorRole::Auditor),
+        "admin" => Some(ActorRole::Admin),
+        _ => None,
+    }
+}
+
+/// Ensure the authenticated user has admin role.
+fn ensure_admin(claims: &UserClaims) -> Result<(), (StatusCode, Json<ApiError>)> {
+    if claims.role.eq_ignore_ascii_case("admin") {
+        Ok(())
+    } else {
+        Err((
+            StatusCode::FORBIDDEN,
+            Json(ApiError {
+                error: "insufficient_permissions".to_string(),
+                message: "Admin role required".to_string(),
+                timestamp: Utc::now(),
+            }),
+        ))
+    }
+}
+
+fn normalize_pagination(page: Option<u32>, limit: Option<u32>) -> (u32, u32) {
+    let page = page.unwrap_or(1).max(1);
+    let limit = limit.unwrap_or(50).clamp(1, 200);
+    (page, limit)
+}
+
+fn append_admin_audit_event(path: &FsPath, event: &serde_json::Value) -> std::io::Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let mut file = OpenOptions::new().create(true).append(true).open(path)?;
+    writeln!(file, "{}", event)?;
+    Ok(())
+}
+
+fn log_admin_audit_event(
+    actor: &str,
+    action: &str,
+    target: &str,
+    details: serde_json::Value,
+) -> std::io::Result<()> {
+    let path = std::env::var("PROVCHAIN_AUDIT_LOG_PATH")
+        .unwrap_or_else(|_| "./data/admin_audit.log".to_string());
+    let event = serde_json::json!({
+        "timestamp": Utc::now(),
+        "actor": actor,
+        "action": action,
+        "target": target,
+        "details": details
+    });
+    append_admin_audit_event(FsPath::new(&path), &event)
+}
+
+/// Admin endpoint: create a new user.
+pub async fn create_user_admin(
+    State(auth_state): State<AuthState>,
+    Extension(claims): Extension<UserClaims>,
+    Json(request): Json<AdminCreateUserRequest>,
+) -> Result<Json<AdminUserInfo>, (StatusCode, Json<ApiError>)> {
+    ensure_admin(&claims)?;
+
+    let role = parse_actor_role(&request.role).ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "invalid_role".to_string(),
+                message: "Role must be one of: farmer, processor, transporter, retailer, consumer, auditor, admin".to_string(),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    auth_state
+        .create_user(request.username.clone(), request.password, role.clone())
+        .await
+        .map_err(|e| {
+            let status = match e {
+                crate::error::WebError::InvalidRequest(_) => StatusCode::BAD_REQUEST,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            };
+
+            (
+                status,
+                Json(ApiError {
+                    error: "user_creation_failed".to_string(),
+                    message: e.to_string(),
+                    timestamp: Utc::now(),
+                }),
+            )
+        })?;
+
+    if let Err(e) = log_admin_audit_event(
+        &claims.sub,
+        "create_user",
+        &request.username,
+        serde_json::json!({ "role": role.to_string() }),
+    ) {
+        tracing::warn!("Failed to write admin audit event: {}", e);
+    }
+
+    Ok(Json(AdminUserInfo {
+        username: request.username,
+        role: role.to_string(),
+    }))
+}
+
+/// Admin endpoint: list all users.
+pub async fn list_users_admin(
+    State(auth_state): State<AuthState>,
+    Extension(claims): Extension<UserClaims>,
+    Query(query): Query<AdminListUsersQuery>,
+) -> Result<Json<AdminUserListResponse>, (StatusCode, Json<ApiError>)> {
+    ensure_admin(&claims)?;
+
+    let (page, limit) = normalize_pagination(query.page, query.limit);
+    let role_filter = query.role.as_ref().map(|r| r.to_ascii_lowercase());
+    let search_query = query.q.as_ref().map(|q| q.to_ascii_lowercase());
+
+    let all_users = auth_state.list_users().await;
+    let total_users = all_users.len();
+
+    let filtered_users: Vec<AdminUserInfo> = all_users
+        .into_iter()
+        .filter(|(username, role)| {
+            let role_match = role_filter
+                .as_ref()
+                .map(|rf| role.to_string() == *rf)
+                .unwrap_or(true);
+            let query_match = search_query
+                .as_ref()
+                .map(|sq| username.to_ascii_lowercase().contains(sq))
+                .unwrap_or(true);
+            role_match && query_match
+        })
+        .map(|(username, role)| AdminUserInfo {
+            username,
+            role: role.to_string(),
+        })
+        .collect();
+
+    let filtered_count = filtered_users.len();
+    let total_pages = if filtered_count == 0 {
+        0
+    } else {
+        ((filtered_count as u32 - 1) / limit) + 1
+    };
+
+    let start = ((page - 1) * limit) as usize;
+    let page_users: Vec<AdminUserInfo> = if start < filtered_count {
+        filtered_users
+            .into_iter()
+            .skip(start)
+            .take(limit as usize)
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    Ok(Json(AdminUserListResponse {
+        users: page_users,
+        total_users,
+        filtered_users: filtered_count,
+        page,
+        limit,
+        total_pages,
+    }))
+}
+
+/// Admin endpoint: rotate/update a user's password.
+pub async fn update_user_password_admin(
+    State(auth_state): State<AuthState>,
+    Extension(claims): Extension<UserClaims>,
+    Path(username): Path<String>,
+    Json(request): Json<AdminUpdatePasswordRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
+    ensure_admin(&claims)?;
+
+    auth_state
+        .update_password(&username, request.new_password)
+        .await
+        .map_err(|e| {
+            let status = match e {
+                crate::error::WebError::InvalidRequest(_) => StatusCode::BAD_REQUEST,
+                crate::error::WebError::ResourceNotFound(_) => StatusCode::NOT_FOUND,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            };
+
+            (
+                status,
+                Json(ApiError {
+                    error: "password_update_failed".to_string(),
+                    message: e.to_string(),
+                    timestamp: Utc::now(),
+                }),
+            )
+        })?;
+
+    if let Err(e) = log_admin_audit_event(
+        &claims.sub,
+        "rotate_password",
+        &username,
+        serde_json::json!({}),
+    ) {
+        tracing::warn!("Failed to write admin audit event: {}", e);
+    }
+
+    Ok(Json(serde_json::json!({
+        "message": format!("Password updated successfully for '{}'", username),
+        "updated_by": claims.sub,
+        "timestamp": Utc::now(),
+    })))
+}
+
+/// Admin endpoint: delete a user account.
+pub async fn delete_user_admin(
+    State(auth_state): State<AuthState>,
+    Extension(claims): Extension<UserClaims>,
+    Path(username): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
+    ensure_admin(&claims)?;
+
+    if username == claims.sub {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "invalid_operation".to_string(),
+                message: "Admin cannot delete their own account".to_string(),
+                timestamp: Utc::now(),
+            }),
+        ));
+    }
+
+    auth_state.delete_user(&username).await.map_err(|e| {
+        let status = match e {
+            crate::error::WebError::ResourceNotFound(_) => StatusCode::NOT_FOUND,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+
+        (
+            status,
+            Json(ApiError {
+                error: "user_delete_failed".to_string(),
+                message: e.to_string(),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    if let Err(e) =
+        log_admin_audit_event(&claims.sub, "delete_user", &username, serde_json::json!({}))
+    {
+        tracing::warn!("Failed to write admin audit event: {}", e);
+    }
+
+    Ok(Json(serde_json::json!({
+        "message": format!("User '{}' deleted successfully", username),
+        "deleted_by": claims.sub,
+        "timestamp": Utc::now(),
+    })))
 }
 
 /// Middleware to verify JWT token
@@ -1785,5 +2199,331 @@ mod auth_security_tests {
                 assert_eq!(retrieved_role, *expected_role);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod bootstrap_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_bootstrap_first_admin_only_once() {
+        let auth_state = AuthState::new();
+
+        auth_state
+            .bootstrap_first_admin(
+                "firstadmin".to_string(),
+                "VeryStrongPassword123!".to_string(),
+            )
+            .await
+            .expect("First admin bootstrap should succeed");
+
+        let users = auth_state.list_users().await;
+        assert_eq!(users.len(), 1);
+        assert_eq!(users[0].0, "firstadmin");
+        assert_eq!(users[0].1, ActorRole::Admin);
+
+        let second_bootstrap = auth_state
+            .bootstrap_first_admin(
+                "secondadmin".to_string(),
+                "AnotherStrongPassword123!".to_string(),
+            )
+            .await;
+
+        assert!(
+            matches!(
+                second_bootstrap,
+                Err(crate::error::WebError::InvalidRequest(_))
+            ),
+            "Second bootstrap should be rejected once users exist"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_bootstrap_first_admin_validates_credentials() {
+        let auth_state = AuthState::new();
+        let result = auth_state
+            .bootstrap_first_admin("ad".to_string(), "weak".to_string())
+            .await;
+
+        assert!(
+            matches!(result, Err(crate::error::WebError::InvalidRequest(_))),
+            "Bootstrap should validate username/password requirements"
+        );
+    }
+}
+
+#[cfg(test)]
+mod admin_user_management_api_tests {
+    use super::*;
+    use std::sync::{Mutex, OnceLock};
+
+    fn default_admin_query() -> Query<AdminListUsersQuery> {
+        Query(AdminListUsersQuery {
+            page: None,
+            limit: None,
+            role: None,
+            q: None,
+        })
+    }
+
+    fn env_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
+
+    fn test_claims(sub: &str, role: &str) -> UserClaims {
+        UserClaims {
+            sub: sub.to_string(),
+            role: role.to_string(),
+            exp: (Utc::now() + Duration::hours(1)).timestamp() as usize,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_create_user_admin_requires_admin_role() {
+        let auth_state = AuthState::new();
+        let claims = test_claims("farmer1", "farmer");
+        let request = AdminCreateUserRequest {
+            username: "newuser".to_string(),
+            password: "StrongPassword123!".to_string(),
+            role: "processor".to_string(),
+        };
+
+        let result = create_user_admin(State(auth_state), Extension(claims), Json(request)).await;
+
+        assert!(result.is_err(), "Non-admin should be denied");
+        let (status, _) = result.err().expect("Expected forbidden result");
+        assert_eq!(status, StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn test_admin_user_management_flow_create_list_delete() {
+        let auth_state = AuthState::new();
+        auth_state
+            .bootstrap_first_admin("adminroot".to_string(), "AdminRootPassword123!".to_string())
+            .await
+            .expect("Bootstrap admin should succeed");
+
+        let admin_claims = test_claims("adminroot", "admin");
+
+        // Create a user
+        let create_result = create_user_admin(
+            State(auth_state.clone()),
+            Extension(admin_claims.clone()),
+            Json(AdminCreateUserRequest {
+                username: "processor1".to_string(),
+                password: "ProcessorPass123!".to_string(),
+                role: "processor".to_string(),
+            }),
+        )
+        .await
+        .expect("Admin should be able to create user");
+        assert_eq!(create_result.0.username, "processor1");
+        assert_eq!(create_result.0.role, "processor");
+
+        // List users
+        let list_result = list_users_admin(
+            State(auth_state.clone()),
+            Extension(admin_claims.clone()),
+            default_admin_query(),
+        )
+        .await
+        .expect("Admin should be able to list users");
+        assert_eq!(list_result.0.total_users, 2);
+        assert_eq!(list_result.0.filtered_users, 2);
+        assert_eq!(list_result.0.page, 1);
+        assert_eq!(list_result.0.limit, 50);
+        assert_eq!(list_result.0.total_pages, 1);
+        assert!(list_result
+            .0
+            .users
+            .iter()
+            .any(|user| user.username == "processor1" && user.role == "processor"));
+
+        // Delete user
+        let delete_result = delete_user_admin(
+            State(auth_state.clone()),
+            Extension(admin_claims),
+            Path("processor1".to_string()),
+        )
+        .await;
+        assert!(
+            delete_result.is_ok(),
+            "Admin should be able to delete other users"
+        );
+
+        let users_after_delete = auth_state.list_users().await;
+        assert_eq!(users_after_delete.len(), 1);
+        assert_eq!(users_after_delete[0].0, "adminroot");
+    }
+
+    #[tokio::test]
+    async fn test_admin_cannot_delete_self_via_api() {
+        let auth_state = AuthState::new();
+        auth_state
+            .bootstrap_first_admin("adminroot".to_string(), "AdminRootPassword123!".to_string())
+            .await
+            .expect("Bootstrap admin should succeed");
+
+        let admin_claims = test_claims("adminroot", "admin");
+        let result = delete_user_admin(
+            State(auth_state),
+            Extension(admin_claims),
+            Path("adminroot".to_string()),
+        )
+        .await;
+
+        assert!(result.is_err(), "Self-delete should be rejected");
+        let (status, _) = result.err().expect("Expected rejection");
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn test_list_users_admin_with_pagination_and_filters() {
+        let auth_state = AuthState::new();
+        auth_state
+            .bootstrap_first_admin("adminroot".to_string(), "AdminRootPassword123!".to_string())
+            .await
+            .expect("Bootstrap admin should succeed");
+        auth_state
+            .create_user(
+                "processor_alpha".to_string(),
+                "ProcessorPass123!".to_string(),
+                ActorRole::Processor,
+            )
+            .await
+            .expect("Create processor alpha");
+        auth_state
+            .create_user(
+                "processor_beta".to_string(),
+                "ProcessorPass123!".to_string(),
+                ActorRole::Processor,
+            )
+            .await
+            .expect("Create processor beta");
+        auth_state
+            .create_user(
+                "farmer_one".to_string(),
+                "FarmerPass123!".to_string(),
+                ActorRole::Farmer,
+            )
+            .await
+            .expect("Create farmer");
+
+        let admin_claims = test_claims("adminroot", "admin");
+        let query = Query(AdminListUsersQuery {
+            page: Some(1),
+            limit: Some(1),
+            role: Some("processor".to_string()),
+            q: Some("processor".to_string()),
+        });
+
+        let result = list_users_admin(State(auth_state), Extension(admin_claims), query)
+            .await
+            .expect("List should succeed");
+
+        assert_eq!(result.0.total_users, 4);
+        assert_eq!(result.0.filtered_users, 2);
+        assert_eq!(result.0.page, 1);
+        assert_eq!(result.0.limit, 1);
+        assert_eq!(result.0.total_pages, 2);
+        assert_eq!(result.0.users.len(), 1);
+        assert!(result.0.users[0].username.contains("processor"));
+    }
+
+    #[tokio::test]
+    async fn test_update_user_password_admin() {
+        let auth_state = AuthState::new();
+        auth_state
+            .bootstrap_first_admin("adminroot".to_string(), "AdminRootPassword123!".to_string())
+            .await
+            .expect("Bootstrap admin should succeed");
+        auth_state
+            .create_user(
+                "processor1".to_string(),
+                "ProcessorPass123!".to_string(),
+                ActorRole::Processor,
+            )
+            .await
+            .expect("Create processor");
+
+        let admin_claims = test_claims("adminroot", "admin");
+        let response = update_user_password_admin(
+            State(auth_state.clone()),
+            Extension(admin_claims),
+            Path("processor1".to_string()),
+            Json(AdminUpdatePasswordRequest {
+                new_password: "ProcessorNewPass456!".to_string(),
+            }),
+        )
+        .await;
+
+        assert!(response.is_ok(), "Admin password rotation should succeed");
+
+        let users = auth_state.users.read().await;
+        let user = users.get("processor1").expect("User should exist");
+        assert!(
+            verify("ProcessorNewPass456!", &user.password_hash).expect("verify new password"),
+            "New password should verify"
+        );
+        assert!(
+            !verify("ProcessorPass123!", &user.password_hash).expect("verify old password"),
+            "Old password should no longer verify"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_admin_actions_write_audit_log() {
+        let _guard = env_lock().lock().expect("env lock poisoned");
+        let temp_dir = tempfile::tempdir().expect("create temp dir");
+        let log_path = temp_dir.path().join("admin-audit.log");
+        std::env::set_var("PROVCHAIN_AUDIT_LOG_PATH", &log_path);
+
+        let auth_state = AuthState::new();
+        auth_state
+            .bootstrap_first_admin("adminroot".to_string(), "AdminRootPassword123!".to_string())
+            .await
+            .expect("Bootstrap admin should succeed");
+
+        let admin_claims = test_claims("adminroot", "admin");
+        let _ = create_user_admin(
+            State(auth_state.clone()),
+            Extension(admin_claims.clone()),
+            Json(AdminCreateUserRequest {
+                username: "auditor1".to_string(),
+                password: "AuditorPass123!".to_string(),
+                role: "auditor".to_string(),
+            }),
+        )
+        .await
+        .expect("Admin create user should succeed");
+
+        let _ = update_user_password_admin(
+            State(auth_state.clone()),
+            Extension(admin_claims.clone()),
+            Path("auditor1".to_string()),
+            Json(AdminUpdatePasswordRequest {
+                new_password: "AuditorPass456!".to_string(),
+            }),
+        )
+        .await
+        .expect("Admin update password should succeed");
+
+        let _ = delete_user_admin(
+            State(auth_state),
+            Extension(admin_claims),
+            Path("auditor1".to_string()),
+        )
+        .await
+        .expect("Admin delete user should succeed");
+
+        let audit_content =
+            std::fs::read_to_string(&log_path).expect("audit log should be written to disk");
+        assert!(audit_content.contains("\"action\":\"create_user\""));
+        assert!(audit_content.contains("\"action\":\"rotate_password\""));
+        assert!(audit_content.contains("\"action\":\"delete_user\""));
+
+        std::env::remove_var("PROVCHAIN_AUDIT_LOG_PATH");
     }
 }

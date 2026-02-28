@@ -178,7 +178,7 @@ curl -X POST http://localhost:8080/api/sparql/query \
 - **Main README**: [../../README.md](../../README.md) - Project overview
 - **Contributing Guide**: [../../CONTRIBUTING.md](../../CONTRIBUTING.md) - Development setup
 - **Deployment Guide**: [../deployment/HANDS_ON_DEPLOYMENT_GUIDE.md](../deployment/HANDS_ON_DEPLOYMENT_GUIDE.md) - Deployment instructions
-- **Issues**: [GitHub Issues](https://github.com/anusornc/provchain-org2/issues)
+- **Issues**: [GitHub Issues](https://github.com/anusornc/prov-chain/issues)
 - **FAQ**: [../FAQ.md](../FAQ.md) - Frequently asked questions
 
 ### Related Documentation

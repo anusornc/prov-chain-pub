@@ -20,36 +20,25 @@ export JWT_SECRET="your-super-secret-jwt-key-at-least-32-chars-long"
 
 **⚠️ WARNING:** Never commit JWT secrets to version control or use predictable secrets.
 
-### 2. User Management Setup
+### 2. First Admin Bootstrap (REQUIRED)
 
-The system no longer creates default users with hardcoded credentials. You have two options:
+The system does not create default users. Bootstrap the first admin explicitly:
 
-#### Option A: Development Mode (NOT FOR PRODUCTION)
 ```bash
-# Allow default users for development only
-export ALLOW_DEFAULT_USERS=1
+# One-time bootstrap token (32+ chars)
+export PROVCHAIN_BOOTSTRAP_TOKEN=$(openssl rand -base64 32)
 
-# This creates:
-# - admin / admin123 (Admin role)
-# - farmer1 / farmer123 (Farmer role)
-# - processor1 / processor123 (Processor role)
-```
-
-#### Option B: Create Admin User (RECOMMENDED)
-```bash
-# First-time setup - create admin user
-cargo run -- setup-admin --username "your-admin" --password "SecurePassword123!"
-
-# Or add users programmatically via API
-curl -X POST http://localhost:8080/api/users/register \
+# Create first admin account
+curl -X POST http://localhost:8080/auth/bootstrap \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <admin-token>" \
   -d '{
-    "username": "newuser",
-    "password": "SecurePassword123!",
-    "role": "farmer"
+    "username":"your-admin",
+    "password":"SecurePassword123!",
+    "bootstrap_token":"'"$PROVCHAIN_BOOTSTRAP_TOKEN"'"
   }'
 ```
+
+After any user exists, `/auth/bootstrap` is disabled.
 
 ## 🔧 Environment Variables
 
@@ -58,8 +47,8 @@ curl -X POST http://localhost:8080/api/users/register \
 # JWT Authentication
 export JWT_SECRET="your-secure-32+character-secret"
 
-# Optional: Restrict default users
-unset ALLOW_DEFAULT_USERS  # Prevents default user creation
+# First-admin bootstrap protection
+export PROVCHAIN_BOOTSTRAP_TOKEN="one-time-bootstrap-token-32+chars"
 ```
 
 ### Optional Security Enhancements
@@ -116,13 +105,17 @@ export ALLOWED_ORIGINS="https://yourdomain.com"
 export PROVCHAIN_LOG_LEVEL="warn"
 ```
 
-### 2. Create Admin User
+### 2. Create First Admin User
 ```bash
-# Option 1: Interactive setup
-cargo run -- setup-admin
+export PROVCHAIN_BOOTSTRAP_TOKEN=$(openssl rand -base64 32)
 
-# Option 2: Direct parameters
-cargo run -- setup-admin --username "admin" --password "YourSecurePassword123!"
+curl -X POST http://localhost:8080/auth/bootstrap \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username":"admin",
+    "password":"YourSecurePassword123!",
+    "bootstrap_token":"'"$PROVCHAIN_BOOTSTRAP_TOKEN"'"
+  }'
 ```
 
 ### 3. Start the Server
@@ -134,7 +127,43 @@ cargo run -- web-server --port 8080
 cargo run --release -- web-server --port 8080
 ```
 
-### 4. Verify Security Setup
+### 4. Admin User Management (Post-Bootstrap)
+```bash
+# Login as admin to get token
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"YourSecurePassword123!"}'
+
+# List users
+curl -X GET http://localhost:8080/api/admin/users \
+  -H "Authorization: Bearer <admin-token>"
+
+# Create user
+curl -X POST http://localhost:8080/api/admin/users \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <admin-token>" \
+  -d '{"username":"processor1","password":"ProcessorPass123!","role":"processor"}'
+
+# Delete user
+curl -X DELETE http://localhost:8080/api/admin/users/processor1 \
+  -H "Authorization: Bearer <admin-token>"
+
+# Filter/paginate users
+curl -X GET "http://localhost:8080/api/admin/users?page=1&limit=25&role=processor&q=proc" \
+  -H "Authorization: Bearer <admin-token>"
+
+# Rotate user password
+curl -X PUT http://localhost:8080/api/admin/users/processor1/password \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <admin-token>" \
+  -d '{"new_password":"ProcessorNewPass456!"}'
+```
+
+Admin actions are written to an audit log file.
+Default path: `./data/admin_audit.log`
+Override path: `PROVCHAIN_AUDIT_LOG_PATH=/secure/path/admin-audit.log`
+
+### 5. Verify Security Setup
 ```bash
 # Check health endpoint for security status
 curl http://localhost:8080/health
@@ -240,7 +269,8 @@ If locked out due to rate limiting:
 Before production deployment:
 
 - [ ] JWT secret is set and 32+ characters
-- [ ] No default users in production (ALLOW_DEFAULT_USERS not set)
+- [ ] First admin bootstrapped via `/auth/bootstrap`
+- [ ] `PROVCHAIN_BOOTSTRAP_TOKEN` rotated/removed after bootstrap
 - [ ] HTTPS is configured with valid certificate
 - [ ] CORS origins are restricted to your domains
 - [ ] Admin account is created with strong password
