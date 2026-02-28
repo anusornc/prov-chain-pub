@@ -1,0 +1,33 @@
+
+        @prefix epcis: <https://ns.gs1.org/epcis/> .
+        @prefix provchain: <http://provchain.org/core#> .
+        
+        # Quality Check 1: Reception
+        <http://example.org/event/qc-reception-UHT-BATCH-2024-001> a epcis:TransformationEvent ;
+            epcis:eventTime "2024-01-15T11:00:00Z" ;
+            epcis:bizStep <https://ns.gs1.org/voc/BizStep-inspecting> ;
+            epcis:disposition <https://ns.gs1.org/voc/Disp-quarantine> ;
+            epcis:readPoint <http://example.org/processor/national-dairy-foods/receiving> ;
+            epcis:inputEPCList <http://example.org/batch/UHT-BATCH-2024-001> ;
+            provchain:qualityCheckType "Reception_Inspection" ;
+            provchain:inspector "Sarah Quality" ;
+            provchain:lab <http://example.org/lab/food-safety-analytics> ;
+            provchain:testResults """
+                Acidity: 6.7 pH - PASS
+                Fat: 4.0% - PASS
+                Protein: 3.3% - PASS
+                Bacteria: <10 CFU/ml - PASS
+                Antibiotics: Negative - PASS
+            """ .
+        
+        # Quality Check 2: Pre-Processing
+        <http://example.org/event/qc-preproc-UHT-BATCH-2024-001> a epcis:TransformationEvent ;
+            epcis:eventTime "2024-01-15T11:30:00Z" ;
+            epcis:bizStep <https://ns.gs1.org/voc/BizStep-inspecting> ;
+            epcis:disposition <https://ns.gs1.org/voc/Disp-active> ;
+            epcis:readPoint <http://example.org/processor/national-dairy-foods/lab> ;
+            provchain:qualityCheckType "Pre_Processing_Analysis" ;
+            provchain:inspector "Lab Technician A" ;
+            provchain:fatStandardized "3.5" ;
+            provchain:proteinStandardized "3.4" .
+        

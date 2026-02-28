@@ -1,0 +1,42 @@
+
+        @prefix epcis: <https://ns.gs1.org/epcis/> .
+        @prefix provchain: <http://provchain.org/core#> .
+        @prefix gs1: <https://gs1.org/voc/> .
+        
+        # Raw Milk Batch
+        <http://example.org/batch/UHT-BATCH-2024-001> a provchain:UHTMilkBatch,
+                gs1:ProductBatch,
+                epcis:PhysicalObject ;
+            provchain:batchId "UHT-BATCH-2024-001" ;
+            gs1:batchNumber "UHT-BATCH-2024-001" ;
+            provchain:productType "UHT_Whole_Milk_1L" ;
+            gs1:productName "UHT Whole Milk 1L" ;
+            provchain:rawMaterial <http://example.org/raw-milk/rm-2024-001> ;
+            provchain:productionDate "2024-01-15" ;
+            provchain:expirationDate "2024-07-15" ;
+            provchain:fatContent "3.5" ;
+            provchain:proteinContent "3.4" ;
+            provchain:quantity "10000" ;
+            provchain:unit "liters" .
+        
+        # Raw Milk Source
+        <http://example.org/raw-milk/rm-2024-001> a provchain:RawMaterial ;
+            provchain:materialType "Raw_Cow_Milk" ;
+            provchain:collectedFrom <http://example.org/farm/wisconsin-organic-dairy> ;
+            provchain:collectionDate "2024-01-15T06:00:00Z" ;
+            provchain:initialTemperature "4.0" ;
+            provchain:fatContent "4.0" ;
+            provchain:proteinContent "3.3" .
+        
+        # EPCIS Event: Collection
+        <http://example.org/event/coll-UHT-BATCH-2024-001> a epcis:ObjectEvent ;
+            epcis:eventTime "2024-01-15T06:00:00Z" ;
+            epcis:action "ADD" ;
+            epcis:bizStep <https://ns.gs1.org/voc/BizStep-commissioning> ;
+            epcis:disposition <https://ns.gs1.org/voc/Disp-active> ;
+            epcis:readPoint <http://example.org/farm/wisconsin-organic-dairy/tank-01> ;
+            epcis:epcList <http://example.org/batch/UHT-BATCH-2024-001> ;
+            provchain:operator "John Farmer" ;
+            provchain:temperature "4.0" ;
+            provchain:humidity "65" .
+        

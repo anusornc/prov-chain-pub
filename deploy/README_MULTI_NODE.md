@@ -115,7 +115,7 @@ docker --version
 docker compose version
 
 # Clone repository
-git clone https://github.com/anusornc/provchain-org2.git
+git clone https://github.com/anusornc/prov-chain.git
 cd provchain-org/deploy
 ```
 
@@ -605,7 +605,7 @@ For more detailed information, see:
 
 ## Support
 
-- **Issues:** https://github.com/anusornc/provchain-org2/issues
+- **Issues:** https://github.com/anusornc/prov-chain/issues
 - **Documentation:** `/docs/deployment/`
 - **Logs:** Always check container logs first: `docker logs provchain-node`
 

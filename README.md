@@ -17,6 +17,7 @@ This project satisfies the following research objectives:
 
 - **Embedded Ontology Engine**: Built-in **Oxigraph** triplestore with full **SPARQL** and **SHACL** validation support.
 - **Selectable Consensus**: Runtime protocol switching between **Proof-of-Authority (PoA)** and **PBFT (Prototype)** via configuration.
+- **Verified Block Signatures**: Consensus nodes sign `block.hash` with **Ed25519** and use validator public-key hex identities.
 - **Granular Privacy**: Hybrid on-chain storage supporting both public triples and **ChaCha20-Poly1305 encrypted** private data.
 - **Secure Cross-Chain Bridge**: Lock-and-Mint foundation using **Ed25519 digital signatures** and automated **SHACL compliance** checks for ingested data.
 - **Optimized Traceability**: Implements **Frontier Reduction** and **Pivot Selection** for high-performance supply chain backtracking.
@@ -220,11 +221,66 @@ validate_data = true # Enables SHACL validation for every block
 
 ## 🔐 API Authentication
 
-The REST API and load tests require a `JWT_SECRET` for secure token generation. In development, you can set it as follows:
+The REST API and load tests require a `JWT_SECRET` (environment variable, 32+ chars). In development, you can set it as follows:
 
 ```bash
 export JWT_SECRET="dev-secret-32-chars-long-minimum-for-testing"
 ```
+
+### First Admin Bootstrap (One-Time)
+
+No default users are created. For initial setup, configure a bootstrap token and call `/auth/bootstrap` once:
+
+```bash
+export PROVCHAIN_BOOTSTRAP_TOKEN="$(openssl rand -base64 32)"
+
+curl -X POST http://localhost:8080/auth/bootstrap \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "AdminPassword123!",
+    "bootstrap_token": "'"$PROVCHAIN_BOOTSTRAP_TOKEN"'"
+  }'
+```
+
+After the first user exists, `/auth/bootstrap` is disabled and returns conflict.
+
+### Admin User Management API
+
+With an admin JWT token, manage users via:
+
+```bash
+# List users
+curl -X GET http://localhost:8080/api/admin/users \
+  -H "Authorization: Bearer <admin-token>"
+
+# List users with filters + pagination
+curl -X GET "http://localhost:8080/api/admin/users?page=1&limit=20&role=processor&q=proc" \
+  -H "Authorization: Bearer <admin-token>"
+
+# Create user
+curl -X POST http://localhost:8080/api/admin/users \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <admin-token>" \
+  -d '{
+    "username":"processor1",
+    "password":"ProcessorPass123!",
+    "role":"processor"
+  }'
+
+# Delete user
+curl -X DELETE http://localhost:8080/api/admin/users/processor1 \
+  -H "Authorization: Bearer <admin-token>"
+
+# Rotate user password
+curl -X PUT http://localhost:8080/api/admin/users/processor1/password \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <admin-token>" \
+  -d '{"new_password":"ProcessorNewPass456!"}'
+```
+
+Admin actions are audit-logged to `./data/admin_audit.log` by default.
+Set `PROVCHAIN_AUDIT_LOG_PATH` to override the log file path.
 
 ## 🧪 Verification
 

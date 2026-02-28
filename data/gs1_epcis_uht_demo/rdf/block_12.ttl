@@ -1,0 +1,43 @@
+
+        @prefix epcis: <https://ns.gs1.org/epcis/> .
+        @prefix provchain: <http://provchain.org/core#> .
+        
+        # Required QC Checks (exactly 2 for UHT)
+        <http://example.org/qc/final-UHT-BATCH-2024-001> a provchain:QualityControlProcess ;
+            provchain:checksBatch <http://example.org/batch/UHT-BATCH-2024-001> ;
+            provchain:qcType "Final_Product_Test" ;
+            provchain:result "PASS" ;
+            provchain:testDate "2024-01-15" ;
+            provchain:testItems "Microbial, Chemical, Physical, Sensory" ;
+            provchain:testedBy "Lab Technician B" .
+        
+        # Check: Microbial
+        <http://example.org/qc/microbial-UHT-BATCH-2024-001> a provchain:QualityTest ;
+            provchain:partOf <http://example.org/qc/final-UHT-BATCH-2024-001> ;
+            provchain:testName "Total_Aerobic_Count" ;
+            provchain:result "<10_CFU_ml" ;
+            provchain:specLimit "<100_CFU_ml" ;
+            provchain:status "PASS" .
+        
+        # Check: Chemical
+        <http://example.org/qc/chemical-UHT-BATCH-2024-001> a provchain:QualityTest ;
+            provchain:partOf <http://example.org/qc/final-UHT-BATCH-2024-001> ;
+            provchain:testName "Fat_Content" ;
+            provchain:result "3.5%" ;
+            provchain:specRange "3.4-3.6%" ;
+            provchain:status "PASS" .
+        
+        # Check: Physical
+        <http://example.org/qc/physical-UHT-BATCH-2024-001> a provchain:QualityTest ;
+            provchain:partOf <http://example.org/qc/final-UHT-BATCH-2024-001> ;
+            provchain:testName "Packaging_Integrity" ;
+            provchain:result "No_Leaks" ;
+            provchain:status "PASS" .
+        
+        # Check: Sensory
+        <http://example.org/qc/sensory-UHT-BATCH-2024-001> a provchain:QualityTest ;
+            provchain:partOf <http://example.org/qc/final-UHT-BATCH-2024-001> ;
+            provchain:testName "Taste_Smell_Appearance" ;
+            provchain:result "Normal" ;
+            provchain:status "PASS" .
+        

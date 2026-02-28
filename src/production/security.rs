@@ -29,7 +29,8 @@ pub struct SecurityConfig {
     pub cors_origins: Vec<String>,
     /// Enable security headers
     pub security_headers_enabled: bool,
-    /// JWT secret key
+    /// Deprecated: JWT secret key in config (kept for backward compatibility only).
+    /// Runtime validation uses the `JWT_SECRET` environment variable exclusively.
     pub jwt_secret: String,
     /// JWT expiration time in hours
     pub jwt_expiration_hours: u64,
@@ -56,7 +57,7 @@ impl Default for SecurityConfig {
                 "https://dashboard.provchain.local".to_string(),
             ],
             security_headers_enabled: true,
-            jwt_secret: "your-super-secret-jwt-key-change-in-production".to_string(),
+            jwt_secret: String::new(),
             jwt_expiration_hours: 24,
             audit_logging_enabled: true,
             audit_log_path: "/var/log/provchain/audit.log".to_string(),
@@ -725,33 +726,18 @@ impl SecurityMiddleware {
             return Ok(false);
         }
 
-        // Get JWT secret from environment variable (most secure) or config (fallback)
-        let jwt_secret = if let Ok(secret) = std::env::var("JWT_SECRET") {
-            if secret.len() < 32 {
-                return Err(ProductionError::Security(format!(
-                    "JWT_SECRET from environment is too short ({} chars), minimum 32 required",
-                    secret.len()
-                )));
-            }
-            secret
-        } else {
-            // Fallback to config secret (with security warning)
-            if self.config.jwt_secret.len() < 32 {
-                return Err(ProductionError::Security(format!(
-                    "Configured JWT secret is too short ({} chars), minimum 32 required. \
-                            Set JWT_SECRET environment variable for production!",
-                    self.config.jwt_secret.len()
-                )));
-            }
-
-            // Log warning about using config secret instead of environment variable
-            tracing::warn!(
-                "SECURITY WARNING: Using JWT secret from config instead of environment variable. \
-                           Set JWT_SECRET environment variable for better security."
-            );
-
-            self.config.jwt_secret.clone()
-        };
+        // Require JWT secret from environment for consistent security posture.
+        let jwt_secret = std::env::var("JWT_SECRET").map_err(|_| {
+            ProductionError::Security(
+                "JWT_SECRET environment variable must be set (minimum 32 characters)".to_string(),
+            )
+        })?;
+        if jwt_secret.len() < 32 {
+            return Err(ProductionError::Security(format!(
+                "JWT_SECRET from environment is too short ({} chars), minimum 32 required",
+                jwt_secret.len()
+            )));
+        }
 
         // Configure validation to check signature and expiration
         let mut validation = Validation::new(jsonwebtoken::Algorithm::HS256);

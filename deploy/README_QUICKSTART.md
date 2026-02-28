@@ -35,7 +35,7 @@ newgrp docker
 ### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/anusornc/provchain-org2.git
+git clone https://github.com/anusornc/prov-chain.git
 cd provchain-org/deploy
 ```
 
@@ -418,7 +418,7 @@ For production use, consider:
 
 - **Full Documentation:** `/docs/deployment/`
 - **Architecture:** `/docs/deployment/DOCKER_DEPLOYMENT_ARCHITECTURE.md`
-- **Issues:** https://github.com/anusornc/provchain-org2/issues
+- **Issues:** https://github.com/anusornc/prov-chain/issues
 
 ---
 

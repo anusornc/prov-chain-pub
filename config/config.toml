@@ -70,8 +70,9 @@ format = "pretty"
 # Web server configuration
 host = "0.0.0.0"
 port = 8080
-# JWT secret - overridden by JWT_SECRET environment variable if set
-jwt_secret = "development-secret-key-min-32-chars-for-demo-mode-only"
+# Deprecated: runtime auth requires JWT_SECRET environment variable.
+# This field is retained for backward compatibility and is ignored by auth.
+jwt_secret = ""
 
 [web.cors]
 # CORS (Cross-Origin Resource Sharing) configuration

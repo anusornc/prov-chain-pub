@@ -1,0 +1,30 @@
+
+        @prefix epcis: <https://ns.gs1.org/epcis/> .
+        @prefix provchain: <http://provchain.org/core#> .
+        
+        # UHT Processing Event
+        <http://example.org/event/uht-process-UHT-BATCH-2024-001> a epcis:TransformationEvent ;
+            epcis:eventTime "2024-01-15T13:00:00Z" ;
+            epcis:bizStep <https://ns.gs1.org/voc/BizStep-commissioning> ;
+            epcis:disposition <https://ns.gs1.org/voc/Disp-active> ;
+            epcis:readPoint <http://example.org/processor/national-dairy-foods/uht-line-01> ;
+            epcis:inputEPCList <http://example.org/raw-milk/rm-2024-001> ;
+            epcis:outputEPCList <http://example.org/batch/UHT-BATCH-2024-001> ;
+            provchain:processType "UHT_Aseptic_Processing" ;
+            provchain:heatingTemperature "137" ;
+            provchain:heatingTime "4" ;
+            provchain:holdingTime "4" ;
+            provchain:unit "seconds" ;
+            provchain:operator "Process Engineer Tom" ;
+            provchain:equipmentId "UHT-LINE-01" ;
+            provchain:sterilizationMethod "Direct_Steam_Injection" .
+        
+        # Homogenization
+        <http://example.org/event/homogenize-UHT-BATCH-2024-001> a epcis:TransformationEvent ;
+            epcis:eventTime "2024-01-15T13:05:00Z" ;
+            epcis:bizStep <https://ns.gs1.org/voc/BizStep-commissioning> ;
+            epcis:readPoint <http://example.org/processor/national-dairy-foods/homogenizer-01> ;
+            provchain:processType "High_Pressure_Homogenization" ;
+            provchain:pressure "200" ;
+            provchain:unit "bar" .
+        

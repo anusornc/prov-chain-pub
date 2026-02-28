@@ -138,7 +138,7 @@
 ```latex
 The source code, ontologies, and example data used in this study 
 are publicly available in the ProvChain GitHub repository: 
-\url{https://github.com/anusornc/provchain-org2}
+\url{https://github.com/anusornc/prov-chain}
 ```
 
 **Repository Contents Listed:**
@@ -150,7 +150,7 @@ are publicly available in the ProvChain GitHub repository:
 
 **Rationale:** Reviewer noted that paper claimed "open-source" but no repository URL was provided.
 
-**Status:** GitHub repository confirmed: `https://github.com/anusornc/provchain-org2.git`
+**Status:** GitHub repository confirmed: `https://github.com/anusornc/prov-chain.git`
 
 ---
 
@@ -188,7 +188,7 @@ The following items still need to be completed by the authors before submission:
    - Add grant numbers and funding sources
 
 3. **[x] GitHub Repository** ✅ COMPLETED
-   - Repository: https://github.com/anusornc/provchain-org2
+   - Repository: https://github.com/anusornc/prov-chain
    - URL updated in Data Availability section
 
 4. **[ ] Graphical Abstract**
@@ -212,7 +212,7 @@ The following items still need to be completed by the authors before submission:
 | Scale to 10,000 events | ✅ Fixed | Table 4 shows 10,000 event results |
 | Statistical analysis (SD, etc.) | ✅ Fixed | All tables show mean ± SD |
 | Ontology metrics | ✅ Fixed | Table 6 with classes/properties |
-| GitHub URL | ✅ Fixed | https://github.com/anusornc/provchain-org2 |
+| GitHub URL | ✅ Fixed | https://github.com/anusornc/prov-chain |
 | Cost/complexity analysis | ✅ Fixed | Limitations section now has estimates |
 
 ## Recommendation

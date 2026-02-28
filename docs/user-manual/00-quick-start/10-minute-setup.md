@@ -375,7 +375,7 @@ Look for "Server listening on 0.0.0.0:8080" message.
 Still stuck? Check these resources:
 
 - 📚 [Troubleshooting Guide](../08-troubleshooting/)
-- 🐛 [GitHub Issues](https://github.com/anusornc/provchain-org2/issues)
+- 🐛 [GitHub Issues](https://github.com/anusornc/prov-chain/issues)
 - 📖 [Full User Manual](../README.md)
 
 ---
