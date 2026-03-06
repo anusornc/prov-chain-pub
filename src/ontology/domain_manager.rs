@@ -6,7 +6,7 @@ use crate::ontology::error::{
 use crate::ontology::OntologyConfig;
 use crate::ontology::ShaclValidator;
 use owl2_reasoner::parser::ParserFactory;
-use owl2_reasoner::reasoning::{OwlReasoner, Reasoner};
+use owl2_reasoner::{IRI, SimpleReasoner};
 use oxigraph::store::Store;
 use std::collections::HashMap;
 use std::fs;
@@ -67,7 +67,7 @@ pub struct OntologyManager {
     /// Loaded ontology store
     ontology_store: Store,
     /// OWL2 Reasoner for advanced validation
-    pub reasoner: Option<Arc<std::sync::Mutex<OwlReasoner>>>,
+    pub reasoner: Option<Arc<std::sync::Mutex<SimpleReasoner>>>,
 }
 
 impl std::fmt::Debug for OntologyManager {
@@ -138,7 +138,7 @@ impl OntologyManager {
     }
 
     /// Initialize OWL2 Reasoner with core and domain ontologies
-    fn initialize_reasoner(config: &OntologyConfig) -> Result<OwlReasoner, OntologyError> {
+    fn initialize_reasoner(config: &OntologyConfig) -> Result<SimpleReasoner, OntologyError> {
         // 1. Load Core Ontology
         let core_content = fs::read_to_string(&config.core_ontology_path).map_err(|e| {
             OntologyError::OntologyLoadError {
@@ -201,7 +201,7 @@ impl OntologyManager {
         }
 
         // 3. Create Reasoner
-        Ok(OwlReasoner::new(ontology))
+        Ok(SimpleReasoner::new(ontology))
     }
 
     /// Load domain configuration from ontology
@@ -451,7 +451,7 @@ impl OntologyManager {
             // Get all classes in the ontology
             // We need to collect them first to avoid borrowing issues with the reasoner
             let classes: Vec<String> = reasoner
-                .ontology()
+                .ontology
                 .classes()
                 .iter()
                 .map(|c| c.iri().to_string())
@@ -463,7 +463,7 @@ impl OntologyManager {
             for class_iri_str in classes {
                 // Only check classes in the domain namespace
                 if class_iri_str.starts_with(&domain_namespace) {
-                    let class_iri = owl2_reasoner::iri::IRI::new(&class_iri_str).map_err(|e| {
+                    let class_iri = IRI::new(&class_iri_str).map_err(|e| {
                         ValidationError::with_violations(
                             "Invalid IRI encountered during validation".to_string(),
                             vec![ShapeViolation::new(
@@ -478,9 +478,7 @@ impl OntologyManager {
                     let mut is_valid_extension = false;
 
                     for core_class_str in &core_classes {
-                        let core_class_iri = owl2_reasoner::iri::IRI::new(
-                            core_class_str.to_string(),
-                        )
+                        let core_class_iri = IRI::new(*core_class_str)
                         .map_err(|e| {
                             ValidationError::with_violations(
                                 "Invalid Core IRI encountered".to_string(),

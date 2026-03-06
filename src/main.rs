@@ -564,19 +564,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             match validate_ontology(&ontology) {
                 Ok(report) => {
                     println!("Validation Report:\n");
-                    println!("  Overall Score: {:.2}\n", report.overall_score);
-                    println!("  Completeness: {:.2}\n", report.completeness_score);
-                    println!("  Structural: {:.2}\n", report.structural_score);
-                    println!("  Readiness: {:?}\n", report.publication_readiness);
+                    println!("  All Passed: {}\n", report.all_passed);
+                    println!("  Total Tests: {}\n", report.statistics.total_tests);
+                    println!("  Passed: {}\n", report.statistics.passed_tests);
+                    println!("  Failed: {}\n", report.statistics.failed_tests);
+                    println!(
+                        "  Total Time: {} ms\n",
+                        report.statistics.total_execution_time_ms
+                    );
 
-                    if !report.recommendations.is_empty() {
-                        println!("  Recommendations:\n");
-                        for rec in &report.recommendations {
-                            println!("    - {}\n", rec);
+                    if !report.results.is_empty() {
+                        println!("  Results:\n");
+                        for result in &report.results {
+                            println!(
+                                "    - {}: {} ({})\n",
+                                result.test_name,
+                                if result.passed { "PASS" } else { "FAIL" },
+                                result.message
+                            );
                         }
                     }
 
-                    if report.is_valid() {
+                    if report.all_passed {
                         println!("✅ Ontology is valid according to AcademicValidator\n");
                     } else {
                         println!("⚠️  Ontology needs improvement\n");

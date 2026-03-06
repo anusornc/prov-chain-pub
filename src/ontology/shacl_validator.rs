@@ -1,6 +1,5 @@
 use crate::ontology::error::{ConstraintType, ShapeViolation, ValidationError, ValidationResult};
-use owl2_reasoner::iri::IRI;
-use owl2_reasoner::reasoning::{OwlReasoner, Reasoner};
+use owl2_reasoner::{IRI, SimpleReasoner};
 use oxigraph::model::*;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
@@ -18,7 +17,7 @@ pub struct ShaclValidator {
     /// Whether validation is enabled
     pub validation_enabled: bool,
     /// OWL2 Reasoner for advanced validation
-    pub reasoner: Option<Arc<Mutex<OwlReasoner>>>,
+    pub reasoner: Option<Arc<Mutex<SimpleReasoner>>>,
     /// Oxigraph store for SHACL validation queries
     #[allow(dead_code)]
     store: Store,
@@ -64,7 +63,7 @@ impl ShaclValidator {
         core_shacl_path: &str,
         domain_shacl_path: &str,
         ontology_hash: String,
-        reasoner: Option<Arc<Mutex<OwlReasoner>>>,
+        reasoner: Option<Arc<Mutex<SimpleReasoner>>>,
     ) -> Result<Self, ValidationError> {
         let core_shapes = Self::load_shacl_shapes(core_shacl_path)?;
         let domain_shapes = Self::load_shacl_shapes(domain_shacl_path)?;
