@@ -4,9 +4,6 @@ version = "0.1.0"
 edition = "2021"
 default-run = "provchain-org"
 
-[workspace]
-members = ["owl2-reasoner"]
-
 [lib]
 name = "provchain_org"
 path = "src/lib.rs"
@@ -101,7 +98,7 @@ thiserror = "1.0"         # Error handling
 async-trait = "0.1"       # Async traits
 
 # OWL2 library for enhanced ontology support
-owl2-reasoner = { path = "./owl2-reasoner" }
+owl2-reasoner = { git = "https://github.com/anusornc/SPACL.git", rev = "86f5a2e24f088198181f7d66953c1f6bad706569", package = "owl2-reasoner" }
 chacha20poly1305 = "0.10.1"
 argon2 = "0.5"  # Password-based key derivation for wallet encryption
 zeroize = { version = "1.8", features = ["derive", "serde"] }  # Secure memory clearing
