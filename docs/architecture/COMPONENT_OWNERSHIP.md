@@ -157,7 +157,7 @@
 
 ---
 
-### 7. OWL2 Reasoner (Crate)
+### 7. OWL2 Reasoner (External Dependency)
 
 **Owner**: @anusorn (primary)
 **Backup**: ⚠️ None
@@ -165,13 +165,13 @@
 
 | Component | File | Complexity | Status |
 |-----------|------|------------|--------|
-| Tableaux Algorithm | `owl2-reasoner/src/reasoning/tableaux.rs` | Very High | Needs documentation |
-| Query Engine | `owl2-reasoner/src/reasoning/query/engine.rs` | Very High | Partially documented |
-| Cache System | `owl2-reasoner/src/reasoning/query/cache.rs` | High | Needs documentation |
-| Profile System | `owl2-reasoner/src/profiles/*.rs` | High | Needs documentation |
+| Tableaux Algorithm | `SPACL/owl2-reasoner/src/reasoning/tableaux.rs` | Very High | Needs documentation |
+| Query Engine | `SPACL/owl2-reasoner/src/reasoning/query/engine.rs` | Very High | Partially documented |
+| Cache System | `SPACL/owl2-reasoner/src/reasoning/query/cache.rs` | High | Needs documentation |
+| Profile System | `SPACL/owl2-reasoner/src/profiles/*.rs` | High | Needs documentation |
 
 **Documentation**:
-- [owl2-reasoner/CLAUDE.md](../../owl2-reasoner/CLAUDE.md)
+- [SPACL Repository](https://github.com/anusornc/SPACL)
 
 ---
 

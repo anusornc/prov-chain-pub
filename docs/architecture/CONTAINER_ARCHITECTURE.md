@@ -27,7 +27,7 @@ In this context, a **container** is:
 |-----------|-----------|---------|-------|
 | **Web API** | Axum + Tokio | REST API, WebSocket, JWT auth | Horizontal (multiple instances) |
 | **Blockchain Core** | Rust + Tokio | Block management, consensus engine | Single instance per node |
-| **Semantic Layer** | owl2-reasoner + Oxigraph | OWL2 reasoning, SHACL validation | Single instance per node |
+| **Semantic Layer** | SPACL `owl2-reasoner` + Oxigraph | OWL2 reasoning, SHACL validation | Single instance per node |
 | **RDF Store** | Oxigraph | Triple/quad storage, SPARQL queries | Single instance per node |
 | **P2P Network** | WebSocket | Peer communication, block sync | Embedded in Blockchain Core |
 | **Monitoring** | Prometheus + Grafana | Metrics, dashboards, tracing | Per cluster |
@@ -168,7 +168,7 @@ pub struct Blockchain {
 ### 3.3 Semantic Layer Container
 
 **Technology Stack:**
-- OWL2 Reasoner: owl2-reasoner (workspace member)
+- OWL2 Reasoner: `owl2-reasoner` from SPACL (git dependency)
 - RDF Store: Oxigraph integration
 - Validation: SHACL Shapes
 - Query: SPARQL 1.1

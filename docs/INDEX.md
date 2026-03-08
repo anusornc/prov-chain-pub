@@ -112,26 +112,28 @@ docs/
 3. Follow **[Run.md](Run.md)** for execution instructions
 4. Review **[USER_MANUAL.md](USER_MANUAL.md)** for usage guides
 
-## 📊 Current Project Health (January 2026)
+## 📊 Current Project Health (March 2026)
 
 | Metric | Status |
 |--------|--------|
-| Test Pass Rate | 100% (959/959) ✅ |
-| Test Failures | 0 ✅ |
-| owl2-reasoner Clippy | 0 warnings ✅ |
+| Latest Validation Run | 2026-03-08 ✅ |
+| Backend Regression Check | Passed (sandbox-only permission issues isolated) ✅ |
+| Frontend CI | 86/86 tests passed + production build passed ✅ |
+| OWL2 Dependency Status | SPACL `owl2-reasoner` git dependency ✅ |
 | Main Project Clippy | 205 low-severity warnings |
 
 **Latest Reports**:
+- `project-health/spacl_migration_validation_2026-03-08.md` - Post-migration validation and benchmark summary
 - `project-health/test_results_summary_2026-01-26.md` - Complete test results
 - `project-health/clippy_analysis_2026-01-26.md` - Clippy warnings breakdown
 
-**Latest Test Results (2026-01-26)**:
-- ✅ **100% Test Pass Rate**: 959/959 tests passing
-- ✅ **Zero Test Failures**: All previously failing tests now pass
-- ✅ **owl2-reasoner**: 177 tests, 0 clippy warnings
-- 📊 **Main Project**: 782 tests, 205 low-severity clippy warnings
+**Latest Validation Snapshot (2026-03-08)**:
+- ✅ **SPACL Migration Verified**: Local `owl2-reasoner/` removed; external Git dependency confirmed
+- ✅ **Backend Validation**: Workspace tests passed except sandbox-restricted cases; restricted cases pass outside sandbox
+- ✅ **Frontend Validation**: Jest and production build both passed
+- 📊 **Benchmark Coverage**: Consensus + OWL2 benchmark suites recorded; trace optimization benchmark partially recorded with follow-up noted
 
-See `project-health/test_results_summary_2026-01-26.md` for details.
+See `project-health/spacl_migration_validation_2026-03-08.md` for details.
 
 The ProvChainOrg project documentation has been reorganized:
 - ✅ **Current documentation** aligned with codebase state

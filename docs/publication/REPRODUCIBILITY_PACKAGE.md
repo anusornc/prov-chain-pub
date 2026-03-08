@@ -29,7 +29,7 @@ This document specifies the complete reproducibility package for all experimenta
 **Repository Structure:**
 ```
 provchain-org/
-├── owl2-reasoner/          # OWL2 reasoning engine
+├── Cargo.toml              # Includes SPACL owl2-reasoner git dependency
 ├── src/                    # Blockchain core
 ├── tests/                  # Integration tests
 ├── benches/                # Criterion.rs benchmarks

@@ -116,8 +116,7 @@ provchain-org/
 │   ├── integrity/            # Blockchain validation
 │   ├── web/                  # REST API & WebSocket
 │   └── main.rs               # Application entry point
-├── owl2-reasoner/            # Workspace member (OWL2 reasoning)
-│   └── src/
+├── Cargo.toml               # Dependencies (includes SPACL owl2-reasoner git dependency)
 ├── tests/                    # Integration tests
 ├── benches/                  # Criterion benchmarks
 ├── docs/                     # Documentation
@@ -135,7 +134,7 @@ provchain-org/
 | **Security** | Encryption, signatures, wallets | `src/security/` |
 | **Integrity** | Chain validation, corruption detection | `src/integrity/` |
 | **Web Layer** | REST API, WebSocket handlers | `src/web/` |
-| **OWL2 Reasoner** | Standalone reasoning crate | `owl2-reasoner/` |
+| **OWL2 Reasoner** | External crate from SPACL (git dependency) | `Cargo.toml` |
 
 ---
 

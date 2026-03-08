@@ -50,9 +50,9 @@ The system is already well-architected for distributed deployment with existing 
 
 ### Overview
 
-ProvChain-Org is a Rust workspace containing:
+ProvChain-Org is a Rust project containing:
 - **Main crate**: `provchain-org` (library + binary)
-- **Sub-crate**: `owl2-reasoner` (OWL2 ontology reasoning)
+- **External dependency**: `owl2-reasoner` from SPACL (OWL2 ontology reasoning)
 
 ### Core Components
 
@@ -148,7 +148,7 @@ provchain-org/
 │   ├── error.rs            # Error types
 │   └── wallet.rs           # Wallet management
 │
-├── owl2-reasoner/          # OWL2 reasoning workspace member
+├── Cargo.toml              # Declares SPACL owl2-reasoner git dependency
 │
 ├── tests/                  # Integration tests
 │   ├── three_node_validation_test.rs  # ⭐ 3-node test
@@ -303,7 +303,7 @@ bcrypt = "0.15"
 #### Semantic & RDF
 ```toml
 oxigraph = { version = "0.4", default-features = false }
-owl2-reasoner = { path = "./owl2-reasoner" }
+owl2-reasoner = { git = "https://github.com/anusornc/SPACL.git", package = "owl2-reasoner", rev = "<pinned-rev>" }
 ```
 
 #### Serialization & Data
