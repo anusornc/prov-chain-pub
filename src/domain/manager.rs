@@ -3,10 +3,10 @@
 //! This module provides the domain manager that loads and manages
 //! domain plugins for the universal traceability platform.
 
+use crate::domain::adapters::{HealthcareAdapter, PharmaceuticalAdapter, SupplyChainAdapter};
 use crate::domain::plugin::{
     DomainConfig, DomainPlugin, EntityData, ProcessedEntity, ValidationResult,
 };
-// use crate::domain::adapters::OwlDomainAdapter;
 use anyhow::{Context, Result};
 use std::collections::HashMap;
 use tracing::{info, warn};
@@ -91,87 +91,9 @@ impl DomainManager {
         config: &serde_yaml::Value,
     ) -> Result<Box<dyn DomainPlugin>> {
         match domain_id {
-            "supplychain" => {
-                // Create OWL adapter for supply chain domain
-                let mut domain_config = config.clone();
-                if let Some(mapping) = domain_config.as_mapping_mut() {
-                    mapping.insert(
-                        serde_yaml::Value::String("domain_id".to_string()),
-                        serde_yaml::Value::String("supplychain".to_string()),
-                    );
-                    mapping.insert(
-                        serde_yaml::Value::String("name".to_string()),
-                        serde_yaml::Value::String("Supply Chain Traceability".to_string()),
-                    );
-                    mapping.insert(
-                        serde_yaml::Value::String("description".to_string()),
-                        serde_yaml::Value::String(
-                            "General supply chain and manufacturing traceability".to_string(),
-                        ),
-                    );
-                    mapping.insert(
-                        serde_yaml::Value::String("domain_ontology_path".to_string()),
-                        serde_yaml::Value::String(
-                            "src/semantic/ontologies/supply-chain.owl".to_string(),
-                        ),
-                    );
-                }
-                Err(anyhow::anyhow!("OwlDomainAdapter not yet implemented"))
-            }
-            "healthcare" => {
-                // Create OWL adapter for healthcare domain
-                let mut domain_config = config.clone();
-                if let Some(mapping) = domain_config.as_mapping_mut() {
-                    mapping.insert(
-                        serde_yaml::Value::String("domain_id".to_string()),
-                        serde_yaml::Value::String("healthcare".to_string()),
-                    );
-                    mapping.insert(
-                        serde_yaml::Value::String("name".to_string()),
-                        serde_yaml::Value::String("Healthcare Traceability".to_string()),
-                    );
-                    mapping.insert(
-                        serde_yaml::Value::String("description".to_string()),
-                        serde_yaml::Value::String(
-                            "Healthcare and medical traceability".to_string(),
-                        ),
-                    );
-                    mapping.insert(
-                        serde_yaml::Value::String("domain_ontology_path".to_string()),
-                        serde_yaml::Value::String(
-                            "src/semantic/ontologies/healthcare.owl".to_string(),
-                        ),
-                    );
-                }
-                Err(anyhow::anyhow!("OwlDomainAdapter not yet implemented"))
-            }
-            "pharmaceutical" => {
-                // Create OWL adapter for pharmaceutical domain
-                let mut domain_config = config.clone();
-                if let Some(mapping) = domain_config.as_mapping_mut() {
-                    mapping.insert(
-                        serde_yaml::Value::String("domain_id".to_string()),
-                        serde_yaml::Value::String("pharmaceutical".to_string()),
-                    );
-                    mapping.insert(
-                        serde_yaml::Value::String("name".to_string()),
-                        serde_yaml::Value::String("Pharmaceutical Traceability".to_string()),
-                    );
-                    mapping.insert(
-                        serde_yaml::Value::String("description".to_string()),
-                        serde_yaml::Value::String(
-                            "Pharmaceutical and drug traceability".to_string(),
-                        ),
-                    );
-                    mapping.insert(
-                        serde_yaml::Value::String("domain_ontology_path".to_string()),
-                        serde_yaml::Value::String(
-                            "src/semantic/ontologies/pharmaceutical.owl".to_string(),
-                        ),
-                    );
-                }
-                Err(anyhow::anyhow!("OwlDomainAdapter not yet implemented"))
-            }
+            "supplychain" => Ok(Box::new(SupplyChainAdapter::from_config(config)?)),
+            "healthcare" => Ok(Box::new(HealthcareAdapter::from_config(config)?)),
+            "pharmaceutical" => Ok(Box::new(PharmaceuticalAdapter::from_config(config)?)),
             _ => {
                 // Try to load as external plugin or generic OWL adapter
                 self.load_external_plugin(domain_id, config)
@@ -191,7 +113,8 @@ impl DomainManager {
             plugin_path
         );
 
-        // For now, create a generic OWL adapter
+        // For now, keep external plugin loading explicit instead of silently
+        // claiming support for unimplemented ontology-driven adapters.
         let mut domain_config = config.clone();
         if let Some(mapping) = domain_config.as_mapping_mut() {
             mapping.insert(
@@ -212,7 +135,10 @@ impl DomainManager {
             );
         }
 
-        Err(anyhow::anyhow!("OwlDomainAdapter not yet implemented"))
+        Err(anyhow::anyhow!(
+            "External or OWL-backed domain plugin loading is not yet implemented for {}",
+            domain_id
+        ))
     }
 
     /// Set active domain

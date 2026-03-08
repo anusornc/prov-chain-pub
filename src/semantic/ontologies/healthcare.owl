@@ -5,9 +5,8 @@
 @prefix healthcare: <http://provchain.org/healthcare#> .
 @prefix core: <http://provchain.org/core#> .
 
-owl:imports <http://provchain.org/core> .
-
 healthcare:HealthcareOntology a owl:Ontology ;
+    owl:imports <http://provchain.org/core> ;
     rdfs:label "Healthcare Traceability Ontology" ;
     rdfs:comment "Extension of PROV-O for healthcare traceability" .
 

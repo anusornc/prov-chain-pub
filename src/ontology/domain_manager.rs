@@ -6,7 +6,7 @@ use crate::ontology::error::{
 use crate::ontology::OntologyConfig;
 use crate::ontology::ShaclValidator;
 use owl2_reasoner::parser::ParserFactory;
-use owl2_reasoner::{IRI, SimpleReasoner};
+use owl2_reasoner::SimpleReasoner;
 use oxigraph::store::Store;
 use std::collections::HashMap;
 use std::fs;
@@ -427,115 +427,98 @@ impl OntologyManager {
     ///
     /// This checks that key domain classes are subclasses of core classes.
     pub fn validate_domain_extension(&mut self) -> Result<(), ValidationError> {
-        if let Some(reasoner_lock) = &self.reasoner {
-            let mut reasoner = reasoner_lock.lock().map_err(|_| {
-                ValidationError::with_violations(
-                    "Lock Error".to_string(),
-                    vec![ShapeViolation::new(
-                        "ReasonerLock".to_string(),
-                        ConstraintType::Custom("Locking".to_string()),
-                        "Failed to acquire reasoner lock".to_string(),
-                    )],
-                )
-            })?;
+        use oxigraph::model::Term;
+        use oxigraph::sparql::QueryResults;
 
-            // Define core classes that should be extended
-            // In a real implementation, these IRIs would come from constants or the core ontology itself
-            let core_classes = vec![
-                "http://provchain.org/core#Batch",
-                "http://provchain.org/core#Product",
-                "http://provchain.org/core#Process",
-                "http://provchain.org/core#Participant",
-            ];
+        let core_classes = vec![
+            "http://provchain.org/core#Batch",
+            "http://provchain.org/core#Product",
+            "http://provchain.org/core#Process",
+            "http://provchain.org/core#Participant",
+        ];
 
-            // Get all classes in the ontology
-            // We need to collect them first to avoid borrowing issues with the reasoner
-            let classes: Vec<String> = reasoner
-                .ontology
-                .classes()
-                .iter()
-                .map(|c| c.iri().to_string())
-                .collect();
+        let core_values = core_classes
+            .iter()
+            .map(|iri| format!("<{}>", iri))
+            .collect::<Vec<String>>()
+            .join(" ");
 
-            let domain_namespace =
-                format!("http://provchain.org/{}#", self.domain_config.domain_name);
+        let domain_namespace = format!("http://provchain.org/{}#", self.domain_config.domain_name);
+        let class_query = format!(
+            r#"
+            SELECT DISTINCT ?class WHERE {{
+                ?class a <http://www.w3.org/2002/07/owl#Class> .
+                FILTER(STRSTARTS(STR(?class), "{}"))
+            }}
+            "#,
+            domain_namespace
+        );
 
-            for class_iri_str in classes {
-                // Only check classes in the domain namespace
-                if class_iri_str.starts_with(&domain_namespace) {
-                    let class_iri = IRI::new(&class_iri_str).map_err(|e| {
-                        ValidationError::with_violations(
-                            "Invalid IRI encountered during validation".to_string(),
-                            vec![ShapeViolation::new(
-                                "InvalidIRI".to_string(),
-                                ConstraintType::Custom("IRI Parsing".to_string()),
-                                format!("Invalid class IRI: {}", e),
-                            )
-                            .with_value(class_iri_str.clone())],
-                        )
-                    })?;
+        let class_results = self.ontology_store.query(&class_query).map_err(|e| {
+            ValidationError::with_violations(
+                "Domain extension validation query failed".to_string(),
+                vec![ShapeViolation::new(
+                    "DomainClassQuery".to_string(),
+                    ConstraintType::Custom("SPARQL".to_string()),
+                    format!("Failed to query domain classes: {}", e),
+                )],
+            )
+        })?;
 
-                    let mut is_valid_extension = false;
+        let mut domain_classes: Vec<String> = Vec::new();
+        if let QueryResults::Solutions(solutions) = class_results {
+            for solution in solutions {
+                let solution = solution.map_err(|e| {
+                    ValidationError::with_violations(
+                        "Domain extension validation query result failed".to_string(),
+                        vec![ShapeViolation::new(
+                            "DomainClassQueryResult".to_string(),
+                            ConstraintType::Custom("SPARQL".to_string()),
+                            format!("Failed to read domain class query result: {}", e),
+                        )],
+                    )
+                })?;
 
-                    for core_class_str in &core_classes {
-                        let core_class_iri = IRI::new(*core_class_str)
-                        .map_err(|e| {
-                            ValidationError::with_violations(
-                                "Invalid Core IRI encountered".to_string(),
-                                vec![ShapeViolation::new(
-                                    "InvalidCoreIRI".to_string(),
-                                    ConstraintType::Custom("IRI Parsing".to_string()),
-                                    format!("Invalid core class IRI: {}", e),
-                                )
-                                .with_value(core_class_str.to_string())],
-                            )
-                        })?;
-
-                        // Check if domain class is a subclass of core class
-                        // Note: is_subclass_of returns true if they are the same class,
-                        // but we want strict subclass or at least proper inheritance
-                        let is_sub = reasoner
-                            .is_subclass_of(&class_iri, &core_class_iri)
-                            .unwrap_or(false);
-                        if is_sub {
-                            is_valid_extension = true;
-                            break;
-                        }
-                    }
-
-                    if !is_valid_extension {
-                        return Err(ValidationError::with_violations(
-                            "Domain extension validation failed".to_string(),
-                            vec![ShapeViolation::new(
-                                "DomainExtension".to_string(),
-                                ConstraintType::Class,
-                                format!(
-                                    "Domain class must be a subclass of one of the core classes: {:?}",
-                                    core_classes
-                                ),
-                            )
-                            .with_value(class_iri_str)],
-                        ));
-                    }
+                if let Some(Term::NamedNode(node)) = solution.get("class") {
+                    domain_classes.push(node.as_str().to_string());
                 }
             }
-
-            Ok(())
-        } else {
-            // If no reasoner is available, we can't perform this validation
-            // This might happen if ontology loading failed or reasoner initialization failed
-            // For now, we'll log a warning and pass, or return an error depending on strictness
-            // Let's return an error to enforce the requirement
-            Err(ValidationError::with_violations(
-                "Reasoner not available".to_string(),
-                vec![ShapeViolation::new(
-                    "ReasonerAvailability".to_string(),
-                    ConstraintType::Custom("Initialization".to_string()),
-                    "OWL2 Reasoner is not initialized. Cannot validate domain extension."
-                        .to_string(),
-                )],
-            ))
         }
+
+        for class_iri_str in domain_classes {
+            let subclass_query = format!(
+                r#"
+                ASK {{
+                    <{}> <http://www.w3.org/2000/01/rdf-schema#subClassOf>+ ?core .
+                    VALUES ?core {{ {} }}
+                }}
+                "#,
+                class_iri_str, core_values
+            );
+
+            let is_valid_extension = match self.ontology_store.query(&subclass_query) {
+                Ok(QueryResults::Boolean(result)) => result,
+                Ok(_) => false,
+                Err(_) => false,
+            };
+
+            if !is_valid_extension {
+                return Err(ValidationError::with_violations(
+                    "Domain extension validation failed".to_string(),
+                    vec![ShapeViolation::new(
+                        "DomainExtension".to_string(),
+                        ConstraintType::Class,
+                        format!(
+                            "Domain class must be a subclass of one of the core classes: {:?}",
+                            core_classes
+                        ),
+                    )
+                    .with_value(class_iri_str)],
+                ));
+            }
+        }
+
+        Ok(())
     }
 
     /// Get ontology hash for network consistency checking

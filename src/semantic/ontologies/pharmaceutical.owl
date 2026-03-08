@@ -5,9 +5,8 @@
 @prefix pharma: <http://provchain.org/pharma#> .
 @prefix core: <http://provchain.org/core#> .
 
-owl:imports <http://provchain.org/core> .
-
 pharma:PharmaceuticalOntology a owl:Ontology ;
+    owl:imports <http://provchain.org/core> ;
     rdfs:label "Pharmaceutical Traceability Ontology" ;
     rdfs:comment "Extension of PROV-O for pharmaceutical traceability" .
 

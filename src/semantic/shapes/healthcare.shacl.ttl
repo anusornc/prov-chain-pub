@@ -1,0 +1,73 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix trace: <http://provchain.org/trace#> .
+@prefix healthcare: <http://provchain.org/healthcare#> .
+
+# Minimal healthcare transfer shapes used by the ontology-backed validation path.
+
+healthcare:MedicalDeviceShape
+    a sh:NodeShape ;
+    sh:targetClass healthcare:MedicalDevice ;
+    sh:property [
+        sh:path healthcare:deviceSerialNumber ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z0-9-]{5,24}$" ;
+        sh:message "Medical device must have exactly one valid serial number" ;
+    ] ;
+    sh:property [
+        sh:path trace:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Medical device must have exactly one display name" ;
+    ] ;
+    sh:property [
+        sh:path trace:status ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Sterile" "InUse" "Maintenance" "Retired" ) ;
+        sh:message "Medical device must have a valid lifecycle status" ;
+    ] ;
+    sh:property [
+        sh:path trace:location ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Medical device must have exactly one current location" ;
+    ] ;
+    sh:property [
+        sh:path trace:timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Medical device traceability record must have exactly one timestamp" ;
+    ] .
+
+healthcare:MedicalProcedureShape
+    a sh:NodeShape ;
+    sh:targetClass healthcare:MedicalProcedure ;
+    sh:property [
+        sh:path healthcare:procedureCode ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z0-9-]{4,18}$" ;
+        sh:message "Medical procedure must have exactly one valid procedure code" ;
+    ] ;
+    sh:property [
+        sh:path trace:participant ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Medical procedure must identify the responsible participant" ;
+    ] ;
+    sh:property [
+        sh:path trace:timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Medical procedure must include exactly one timestamp" ;
+    ] .

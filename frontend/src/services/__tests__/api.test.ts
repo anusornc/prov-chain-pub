@@ -32,8 +32,8 @@ describe("API Services", () => {
       mockedAxios.create = mockCreate;
 
       // Import api after mocking
-      jest.isolateModules(async () => {
-        const apiModule = await import("../api");
+      jest.isolateModules(() => {
+        const apiModule = require("../api");
         expect(apiModule).toBeDefined();
       });
 

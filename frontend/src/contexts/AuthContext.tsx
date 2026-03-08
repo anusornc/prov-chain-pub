@@ -4,8 +4,8 @@ import React, {
   useEffect,
   useState,
   useCallback,
-  ReactNode,
 } from "react";
+import type { ReactNode } from "react";
 import { API_ENDPOINTS } from "../config/api";
 
 interface User {

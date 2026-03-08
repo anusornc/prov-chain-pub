@@ -1,10 +1,13 @@
-//! Domain adapters for specific domains
+//! Domain adapters for specific domains.
 //!
-//! This module provides domain adapters for specific domains
-//! that extend the generic traceability system with domain-specific
-//! validation and processing capabilities.
+//! These adapters extend the generic traceability system with
+//! lightweight domain-specific validation and enrichment rules.
 
+pub mod healthcare;
 pub mod owl_adapter;
+pub mod pharmaceutical;
+pub mod supply_chain;
 
-// Re-exports for convenience
-// pub use owl_adapter::OwlDomainAdapter;
+pub use healthcare::HealthcareAdapter;
+pub use pharmaceutical::PharmaceuticalAdapter;
+pub use supply_chain::SupplyChainAdapter;

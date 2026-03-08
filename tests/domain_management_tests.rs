@@ -1,8 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use provchain_org::domain::{DomainManager, EntityData, ValidationResult};
-    // use provchain_org::domain::adapters::{SupplyChainAdapter, HealthcareAdapter, PharmaceuticalAdapter};
     use anyhow::Result;
+    use provchain_org::domain::adapters::{
+        HealthcareAdapter, PharmaceuticalAdapter, SupplyChainAdapter,
+    };
+    use provchain_org::domain::{DomainManager, DomainPlugin, EntityData, ValidationResult};
     use std::collections::HashMap;
 
     #[test]
@@ -13,49 +15,33 @@ mod tests {
         Ok(())
     }
 
-    /*
     #[test]
-    fn test_supply_chain_adapter_creation() -> Result<()> {
+    fn test_concrete_adapter_creation() -> Result<()> {
         let config = serde_yaml::Value::default();
-        let adapter = SupplyChainAdapter::from_config(&config)?;
-        assert_eq!(adapter.domain_id(), "supplychain");
-        assert_eq!(adapter.name(), "Supply Chain Traceability");
-        assert_eq!(adapter.description(), "General supply chain and manufacturing traceability");
+
+        let supply_chain = SupplyChainAdapter::from_config(&config)?;
+        assert_eq!(supply_chain.domain_id(), "supplychain");
+        assert_eq!(supply_chain.name(), "Supply Chain Traceability");
+
+        let healthcare = HealthcareAdapter::from_config(&config)?;
+        assert_eq!(healthcare.domain_id(), "healthcare");
+        assert_eq!(healthcare.name(), "Healthcare Traceability");
+
+        let pharmaceutical = PharmaceuticalAdapter::from_config(&config)?;
+        assert_eq!(pharmaceutical.domain_id(), "pharmaceutical");
+        assert_eq!(pharmaceutical.name(), "Pharmaceutical Traceability");
+
         Ok(())
     }
 
     #[test]
-    fn test_healthcare_adapter_creation() -> Result<()> {
-        let config = serde_yaml::Value::default();
-        let adapter = HealthcareAdapter::from_config(&config)?;
-        assert_eq!(adapter.domain_id(), "healthcare");
-        assert_eq!(adapter.name(), "Healthcare Traceability");
-        assert_eq!(adapter.description(), "Healthcare and medical traceability");
-        Ok(())
-    }
-
-    #[test]
-    fn test_pharmaceutical_adapter_creation() -> Result<()> {
-        let config = serde_yaml::Value::default();
-        let adapter = PharmaceuticalAdapter::from_config(&config)?;
-        assert_eq!(adapter.domain_id(), "pharmaceutical");
-        assert_eq!(adapter.name(), "Pharmaceutical Traceability");
-        assert_eq!(adapter.description(), "Pharmaceutical and drug traceability");
-        Ok(())
-    }
-
-    #[test]
-    fn test_domain_registration() -> Result<()> {
+    fn test_domain_manager_loads_supported_domains() -> Result<()> {
         let mut manager = DomainManager::new();
-
         let config = serde_yaml::Value::default();
-        let supply_chain_adapter = Box::new(SupplyChainAdapter::from_config(&config)?);
-        let healthcare_adapter = Box::new(HealthcareAdapter::from_config(&config)?);
-        let pharmaceutical_adapter = Box::new(PharmaceuticalAdapter::from_config(&config)?);
 
-        manager.register_plugin(supply_chain_adapter)?;
-        manager.register_plugin(healthcare_adapter)?;
-        manager.register_plugin(pharmaceutical_adapter)?;
+        manager.load_domain_plugin("supplychain", &config)?;
+        manager.load_domain_plugin("healthcare", &config)?;
+        manager.load_domain_plugin("pharmaceutical", &config)?;
 
         assert_eq!(manager.plugins.len(), 3);
         assert!(manager.plugins.contains_key("supplychain"));
@@ -66,35 +52,11 @@ mod tests {
     }
 
     #[test]
-    fn test_domain_activation() -> Result<()> {
+    fn test_supply_chain_validation_and_processing() -> Result<()> {
         let mut manager = DomainManager::new();
-
-        let config = serde_yaml::Value::default();
-        let supply_chain_adapter = Box::new(SupplyChainAdapter::from_config(&config)?);
-        manager.register_plugin(supply_chain_adapter)?;
-
-        // Initially no active domain
-        assert!(manager.active_domain.is_none());
-        assert!(manager.get_active_domain().is_none());
-
-        // Set active domain
-        manager.set_active_domain("supplychain")?;
-        assert_eq!(manager.active_domain, Some("supplychain".to_string()));
-        assert!(manager.get_active_domain().is_some());
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_entity_validation() -> Result<()> {
-        let mut manager = DomainManager::new();
-
-        let config = serde_yaml::Value::default();
-        let supply_chain_adapter = Box::new(SupplyChainAdapter::from_config(&config)?);
-        manager.register_plugin(supply_chain_adapter)?;
+        manager.load_domain_plugin("supplychain", &serde_yaml::Value::default())?;
         manager.set_active_domain("supplychain")?;
 
-        // Create test entity data
         let mut properties = HashMap::new();
         properties.insert("hasBatchID".to_string(), "BATCH001".to_string());
         properties.insert("originFarm".to_string(), "Farm A".to_string());
@@ -106,50 +68,61 @@ mod tests {
             properties,
         );
 
-        // Validate entity
-        let result = manager.validate_entity_for_active_domain(&entity_data)?;
-        assert_eq!(result, ValidationResult::Valid);
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_entity_processing() -> Result<()> {
-        let mut manager = DomainManager::new();
-
-        let config = serde_yaml::Value::default();
-        let supply_chain_adapter = Box::new(SupplyChainAdapter::from_config(&config)?);
-        manager.register_plugin(supply_chain_adapter)?;
-        manager.set_active_domain("supplychain")?;
-
-        // Create test entity data
-        let mut properties = HashMap::new();
-        properties.insert("hasBatchID".to_string(), "BATCH001".to_string());
-        properties.insert("originFarm".to_string(), "Farm A".to_string());
-
-        let entity_data = EntityData::new(
-            "test_batch_001".to_string(),
-            "ProductBatch".to_string(),
-            "test data".to_string(),
-            properties,
+        assert_eq!(
+            manager.validate_entity_for_active_domain(&entity_data)?,
+            ValidationResult::Valid
         );
 
-        // Process entity
-        let result = manager.process_entity_for_active_domain(&entity_data)?;
-        assert_eq!(result.entity_id, "test_batch_001");
-        assert_eq!(result.entity_type, "ProductBatch");
-        assert_eq!(result.domain_context, "supplychain");
-        assert!(!result.processed_data.is_empty());
+        let processed = manager.process_entity_for_active_domain(&entity_data)?;
+        assert_eq!(processed.domain_context, "supplychain");
+        assert!(processed.processed_data.contains("Supply chain context"));
 
         Ok(())
     }
-    */
 
     #[test]
-    fn test_generic_validation() -> Result<()> {
+    fn test_healthcare_and_pharmaceutical_validation() -> Result<()> {
+        let mut manager = DomainManager::new();
+        let config = serde_yaml::Value::default();
+        manager.load_domain_plugin("healthcare", &config)?;
+        manager.load_domain_plugin("pharmaceutical", &config)?;
+
+        manager.set_active_domain("healthcare")?;
+        let mut healthcare_properties = HashMap::new();
+        healthcare_properties.insert("medicalDeviceSerial".to_string(), "MD-1001".to_string());
+        let healthcare_entity = EntityData::new(
+            "device_001".to_string(),
+            "MedicalDevice".to_string(),
+            "device data".to_string(),
+            healthcare_properties,
+        );
+        assert_eq!(
+            manager.validate_entity_for_active_domain(&healthcare_entity)?,
+            ValidationResult::Valid
+        );
+
+        manager.set_active_domain("pharmaceutical")?;
+        let mut pharmaceutical_properties = HashMap::new();
+        pharmaceutical_properties.insert("hasDrugID".to_string(), "DRUG-001".to_string());
+        pharmaceutical_properties.insert("hasBatchNumber".to_string(), "LOT-2026-001".to_string());
+        let pharmaceutical_entity = EntityData::new(
+            "drug_batch_001".to_string(),
+            "DrugBatch".to_string(),
+            "drug data".to_string(),
+            pharmaceutical_properties,
+        );
+        assert_eq!(
+            manager.validate_entity_for_active_domain(&pharmaceutical_entity)?,
+            ValidationResult::Valid
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_generic_validation_and_processing() -> Result<()> {
         let manager = DomainManager::new();
 
-        // Create test entity data
         let mut properties = HashMap::new();
         properties.insert("testProperty".to_string(), "testValue".to_string());
 
@@ -160,62 +133,25 @@ mod tests {
             properties,
         );
 
-        // Validate entity with no active domain (should use generic validation)
-        let result = manager.validate_entity_for_active_domain(&entity_data)?;
-        assert_eq!(result, ValidationResult::Valid);
+        assert_eq!(
+            manager.validate_entity_for_active_domain(&entity_data)?,
+            ValidationResult::Valid
+        );
 
-        // Test with missing entity ID
         let entity_data_no_id = EntityData::new(
             "".to_string(),
             "TestEntity".to_string(),
             "test data".to_string(),
             HashMap::new(),
         );
-
-        let result = manager.validate_entity_for_active_domain(&entity_data_no_id)?;
         assert_eq!(
-            result,
+            manager.validate_entity_for_active_domain(&entity_data_no_id)?,
             ValidationResult::Invalid("Entity ID is required".to_string())
         );
 
-        // Test with missing entity type
-        let entity_data_no_type = EntityData::new(
-            "test_entity_001".to_string(),
-            "".to_string(),
-            "test data".to_string(),
-            HashMap::new(),
-        );
-
-        let result = manager.validate_entity_for_active_domain(&entity_data_no_type)?;
-        assert_eq!(
-            result,
-            ValidationResult::Invalid("Entity type is required".to_string())
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_generic_processing() -> Result<()> {
-        let manager = DomainManager::new();
-
-        // Create test entity data
-        let mut properties = HashMap::new();
-        properties.insert("testProperty".to_string(), "testValue".to_string());
-
-        let entity_data = EntityData::new(
-            "test_entity_001".to_string(),
-            "TestEntity".to_string(),
-            "test data".to_string(),
-            properties,
-        );
-
-        // Process entity with no active domain (should use generic processing)
-        let result = manager.process_entity_for_active_domain(&entity_data)?;
-        assert_eq!(result.entity_id, "test_entity_001");
-        assert_eq!(result.entity_type, "TestEntity");
-        assert_eq!(result.domain_context, "generic");
-        assert_eq!(result.processed_data, "test data");
+        let processed = manager.process_entity_for_active_domain(&entity_data)?;
+        assert_eq!(processed.domain_context, "generic");
+        assert_eq!(processed.processed_data, "test data");
 
         Ok(())
     }

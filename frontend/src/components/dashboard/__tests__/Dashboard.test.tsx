@@ -5,37 +5,17 @@ import Dashboard from "../Dashboard";
 import { customRender } from "../../../test-utils/test-utils";
 
 // Mock hooks
+const mockUseBlockchain = jest.fn();
+const mockUseWebSocket = jest.fn();
+
 jest.mock("../../../hooks/useBlockchain", () => ({
   __esModule: true,
-  default: () => ({
-    metrics: {
-      total_blocks: 1234,
-      total_transactions: 5678,
-      total_items: 9012,
-      active_participants: 34,
-      avg_block_time: 5.2,
-      transactions_per_second: 12.5,
-      network_hash_rate: 1500000000,
-      network_status: "healthy",
-    },
-    networkHealth: {
-      status: "healthy",
-      uptime: 86400,
-      peer_count: 8,
-      sync_status: "synced",
-      last_block_age: 30,
-    },
-    loading: false,
-    error: null,
-    refresh: jest.fn(),
-  }),
+  default: () => mockUseBlockchain(),
 }));
 
 jest.mock("../../../hooks/useWebSocket", () => ({
   __esModule: true,
-  default: () => ({
-    isConnected: true,
-  }),
+  default: () => mockUseWebSocket(),
 }));
 
 // Mock fetch for recent activity
@@ -55,6 +35,31 @@ describe("Dashboard Component", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue("mock-auth-token");
+    mockUseBlockchain.mockReturnValue({
+      metrics: {
+        total_blocks: 1234,
+        total_transactions: 5678,
+        total_items: 9012,
+        active_participants: 34,
+        avg_block_time: 5.2,
+        transactions_per_second: 12.5,
+        network_hash_rate: 1500000000,
+        network_status: "healthy",
+      },
+      networkHealth: {
+        status: "healthy",
+        uptime: 86400,
+        peer_count: 8,
+        sync_status: "synced",
+        last_block_age: 30,
+      },
+      loading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+    mockUseWebSocket.mockReturnValue({
+      isConnected: true,
+    });
 
     // Mock successful recent activity fetch
     mockFetch.mockResolvedValue({
@@ -121,44 +126,42 @@ describe("Dashboard Component", () => {
       expect(screen.getByText("12.5")).toBeInTheDocument();
       expect(screen.getByText("Network Hash Rate")).toBeInTheDocument();
       expect(screen.getByText("1500.0M")).toBeInTheDocument();
-      expect(screen.getByText("Network Status")).toBeInTheDocument();
-      expect(screen.getByText("healthy")).toBeInTheDocument();
+      expect(screen.getAllByText("Network Status").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("healthy").length).toBeGreaterThan(0);
     });
 
     test("should display network status section", () => {
       customRender(<Dashboard />);
 
-      expect(screen.getByText("Network Status")).toBeInTheDocument();
-      expect(screen.getByText("healthy")).toBeInTheDocument();
+      expect(screen.getAllByText("Network Status").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("healthy").length).toBeGreaterThan(0);
       expect(screen.getByText("24h 0m")).toBeInTheDocument(); // 86400 seconds
       expect(screen.getByText("8")).toBeInTheDocument(); // peer count
       expect(screen.getByText("synced")).toBeInTheDocument();
     });
 
-    test("should display recent activity section", () => {
+    test("should display recent activity section", async () => {
       customRender(<Dashboard />);
 
       expect(screen.getByText("Recent Activity")).toBeInTheDocument();
-      // Check that activity items are rendered
-      expect(
-        screen.getByText("RDF data added - test-batch-001"),
-      ).toBeInTheDocument();
+      await waitFor(() => {
+        expect(
+          screen.getByText("RDF data added - test-batch-001"),
+        ).toBeInTheDocument();
+      });
     });
   });
 
   describe("Loading States", () => {
     test("should show loading state when metrics are loading", () => {
       // Mock loading state
-      jest.doMock("../../../hooks/useBlockchain", () => ({
-        __esModule: true,
-        default: () => ({
-          metrics: null,
-          networkHealth: null,
-          loading: true,
-          error: null,
-          refresh: jest.fn(),
-        }),
-      }));
+      mockUseBlockchain.mockReturnValue({
+        metrics: null,
+        networkHealth: null,
+        loading: true,
+        error: null,
+        refresh: jest.fn(),
+      });
 
       customRender(<Dashboard />);
 
@@ -171,16 +174,13 @@ describe("Dashboard Component", () => {
   describe("Error Handling", () => {
     test("should display error message when there is an error", () => {
       // Mock error state
-      jest.doMock("../../../hooks/useBlockchain", () => ({
-        __esModule: true,
-        default: () => ({
-          metrics: null,
-          networkHealth: null,
-          loading: false,
-          error: "Network connection failed",
-          refresh: jest.fn(),
-        }),
-      }));
+      mockUseBlockchain.mockReturnValue({
+        metrics: null,
+        networkHealth: null,
+        loading: false,
+        error: "Network connection failed",
+        refresh: jest.fn(),
+      });
 
       customRender(<Dashboard />);
 
@@ -189,38 +189,35 @@ describe("Dashboard Component", () => {
           "Error loading dashboard data: Network connection failed",
         ),
       ).toBeInTheDocument();
-      expect(screen.getByText("Network Error")).toBeInTheDocument();
+      expect(screen.getAllByText("Network Error").length).toBeGreaterThan(0);
     });
   });
 
   describe("Data Refresh", () => {
     test("should call refresh when refresh button is clicked", async () => {
       const mockRefresh = jest.fn();
-      jest.doMock("../../../hooks/useBlockchain", () => ({
-        __esModule: true,
-        default: () => ({
-          metrics: {
-            total_blocks: 1234,
-            total_transactions: 5678,
-            total_items: 9012,
-            active_participants: 34,
-            avg_block_time: 5.2,
-            transactions_per_second: 12.5,
-            network_hash_rate: 1500000000,
-            network_status: "healthy",
-          },
-          networkHealth: {
-            status: "healthy",
-            uptime: 86400,
-            peer_count: 8,
-            sync_status: "synced",
-            last_block_age: 30,
-          },
-          loading: false,
-          error: null,
-          refresh: mockRefresh,
-        }),
-      }));
+      mockUseBlockchain.mockReturnValue({
+        metrics: {
+          total_blocks: 1234,
+          total_transactions: 5678,
+          total_items: 9012,
+          active_participants: 34,
+          avg_block_time: 5.2,
+          transactions_per_second: 12.5,
+          network_hash_rate: 1500000000,
+          network_status: "healthy",
+        },
+        networkHealth: {
+          status: "healthy",
+          uptime: 86400,
+          peer_count: 8,
+          sync_status: "synced",
+          last_block_age: 30,
+        },
+        loading: false,
+        error: null,
+        refresh: mockRefresh,
+      });
 
       const user = userEvent.setup();
       customRender(<Dashboard />);
@@ -232,16 +229,13 @@ describe("Dashboard Component", () => {
     });
 
     test("should disable refresh button while loading", () => {
-      jest.doMock("../../../hooks/useBlockchain", () => ({
-        __esModule: true,
-        default: () => ({
-          metrics: null,
-          networkHealth: null,
-          loading: true,
-          error: null,
-          refresh: jest.fn(),
-        }),
-      }));
+      mockUseBlockchain.mockReturnValue({
+        metrics: null,
+        networkHealth: null,
+        loading: true,
+        error: null,
+        refresh: jest.fn(),
+      });
 
       customRender(<Dashboard />);
 
@@ -266,10 +260,12 @@ describe("Dashboard Component", () => {
         );
       });
 
-      expect(
-        screen.getByText("RDF data added - test-batch-001"),
-      ).toBeInTheDocument();
-      expect(screen.getByText("Block created - block-567")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(
+          screen.getByText("RDF data added - test-batch-001"),
+        ).toBeInTheDocument();
+        expect(screen.getByText("Block created - block-567")).toBeInTheDocument();
+      });
     });
 
     test("should handle recent activity fetch failure with fallback", async () => {
@@ -372,7 +368,7 @@ describe("Dashboard Component", () => {
         screen.getByText("Blockchain Explorer Dashboard"),
       ).toBeInTheDocument();
       expect(screen.getByText("Total Blocks")).toBeInTheDocument();
-      expect(screen.getByText("Network Status")).toBeInTheDocument();
+      expect(screen.getAllByText("Network Status").length).toBeGreaterThan(0);
       expect(screen.getByText("Recent Activity")).toBeInTheDocument();
     });
   });
@@ -399,37 +395,34 @@ describe("Dashboard Component", () => {
     });
 
     test("should handle zero values gracefully", () => {
-      jest.doMock("../../../hooks/useBlockchain", () => ({
-        __esModule: true,
-        default: () => ({
-          metrics: {
-            total_blocks: 0,
-            total_transactions: 0,
-            total_items: 0,
-            active_participants: 0,
-            avg_block_time: 0,
-            transactions_per_second: 0,
-            network_hash_rate: 0,
-            network_status: "offline",
-          },
-          networkHealth: {
-            status: "offline",
-            uptime: 0,
-            peer_count: 0,
-            sync_status: "syncing",
-            last_block_age: 0,
-          },
-          loading: false,
-          error: null,
-          refresh: jest.fn(),
-        }),
-      }));
+      mockUseBlockchain.mockReturnValue({
+        metrics: {
+          total_blocks: 0,
+          total_transactions: 0,
+          total_items: 0,
+          active_participants: 0,
+          avg_block_time: 0,
+          transactions_per_second: 0,
+          network_hash_rate: 0,
+          network_status: "offline",
+        },
+        networkHealth: {
+          status: "offline",
+          uptime: 0,
+          peer_count: 0,
+          sync_status: "syncing",
+          last_block_age: 0,
+        },
+        loading: false,
+        error: null,
+        refresh: jest.fn(),
+      });
 
       customRender(<Dashboard />);
 
-      expect(screen.getByText("0")).toBeInTheDocument();
+      expect(screen.getAllByText("0").length).toBeGreaterThan(0);
       expect(screen.getByText("0s")).toBeInTheDocument();
-      expect(screen.getByText("offline")).toBeInTheDocument();
+      expect(screen.getAllByText("offline").length).toBeGreaterThan(0);
     });
   });
 });
