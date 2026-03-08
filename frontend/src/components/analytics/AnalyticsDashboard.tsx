@@ -65,10 +65,6 @@ const AnalyticsDashboard: React.FC = () => {
   });
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  useEffect(() => {
-    loadAnalyticsData();
-  }, [filters, loadAnalyticsData]);
-
   const loadAnalyticsData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -109,7 +105,7 @@ const AnalyticsDashboard: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filters, loadMockAnalyticsData]);
+  }, [filters]);
 
   const loadMockAnalyticsData = () => {
     const mockData: AnalyticsData = {
@@ -181,6 +177,10 @@ const AnalyticsDashboard: React.FC = () => {
     };
     setAnalyticsData(mockData);
   };
+
+  useEffect(() => {
+    loadAnalyticsData();
+  }, [filters, loadAnalyticsData]);
 
   const generateMockTrendData = (days: number) => {
     const data = [];

@@ -82,14 +82,6 @@ const ParticipantsManager: React.FC = () => {
     "audit",
   ];
 
-  useEffect(() => {
-    loadParticipants();
-  }, [loadParticipants]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [participants, filters, applyFilters]);
-
   const loadParticipants = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -258,6 +250,14 @@ const ParticipantsManager: React.FC = () => {
 
     setFilteredParticipants(filtered);
   }, [participants, filters]);
+
+  useEffect(() => {
+    loadParticipants();
+  }, [loadParticipants]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [participants, filters, applyFilters]);
 
   const handleFilterChange = (
     key: keyof ParticipantFilters,

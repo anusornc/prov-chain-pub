@@ -1323,9 +1323,10 @@ mod tests {
         "#;
         blockchain.add_block(fill_finish_data.to_string())?;
 
-        // Cold chain logistics blocks
-        for i in 1..=5 {
-            let hour = 8 + (i * 4);
+        // Cold chain logistics blocks with denser monitoring coverage
+        for i in 1..=12 {
+            let day = 15 + ((i - 1) / 6);
+            let hour = ((i - 1) % 6) * 4;
             let temp = 3.0 + (i as f64 * 0.3);
             let cold_chain_data = format!(
                 r#"
@@ -1339,9 +1340,9 @@ mod tests {
                 pharma:humidity 65.0 ;
                 pharma:location "Cold Chain Transport - Leg {}" ;
                 pharma:withinSpec "true"^^<http://www.w3.org/2001/XMLSchema#boolean> ;
-                prov:generatedAtTime "2024-01-15T{:02}:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+                prov:generatedAtTime "2024-01-{:02}T{:02}:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
         "#,
-                i, temp, i, hour
+                i, temp, i, day, hour
             );
             blockchain.add_block(cold_chain_data)?;
         }

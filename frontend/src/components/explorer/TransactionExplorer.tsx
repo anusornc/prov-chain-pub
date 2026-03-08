@@ -27,10 +27,6 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({
     "all",
   );
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
-
   const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true);
@@ -62,6 +58,10 @@ const TransactionExplorer: React.FC<TransactionExplorerProps> = ({
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
   const generateMockTransactions = (): Transaction[] => {
     const mockTransactions: Transaction[] = [];
