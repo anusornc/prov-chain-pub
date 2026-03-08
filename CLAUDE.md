@@ -8,7 +8,7 @@ ProvChainOrg is a distributed blockchain system in Rust that enhances blockchain
 
 - **100% Test Pass Rate**: All 959 tests passing (71 test suites, 0 failures)
 - **Baseline Comparison Infrastructure**: Native ProvChain + Docker baselines (Neo4j, Jena, Ethereum) for journal publication
-- **owl2-reasoner: Zero Clippy Warnings**: Owl2-reasoner package achieves perfect clippy score (0 warnings)
+- **OWL2 Reasoning**: Integrated via `owl2-reasoner` package from SPACL Git dependency
 - **Main Project: 52 Low-Severity Clippy Warnings** (75% reduction from 205): Code style improvements only, no safety issues
   - Latest reduction: Commit 65caf45 (36% reduction from 81 to 52 warnings)
 - **Configurable Flush Interval** (commit b28c04d): `StorageConfig.flush_interval` for RDF storage batching (default: 1, increase to 10-100 for reduced I/O)
@@ -21,7 +21,7 @@ ProvChainOrg is a distributed blockchain system in Rust that enhances blockchain
 - **Cryptography**: Ed25519 signatures, ChaCha20-Poly1305 encryption
 - **Web**: Axum framework with JWT authentication
 - **Networking**: WebSockets for P2P communication
-- **Workspace**: Includes `owl2-reasoner` as workspace member
+- **Dependency Model**: Uses `owl2-reasoner` from SPACL as a Git dependency (not a local workspace member)
 
 ## Build & Run Commands
 
@@ -305,9 +305,9 @@ The main binary provides a comprehensive CLI interface organized into functional
 
 ### Test Structure
 - `tests/` - Integration tests (main project)
-- `owl2-reasoner/tests/` - owl2-reasoner sub-project tests
+- OWL2 integration tests in `tests/owl2_*` and `tests/enhanced_owl2_*`
 - Unit tests alongside source code (including `src/config/mod.rs` with debug/release mode split)
-- Benchmark suites in `benches/` (main) and `owl2-reasoner/benches/` (sub-project)
+- Benchmark suites in `benches/` (main project)
 - Load tests in `tests/load_tests.rs`
 - `tests/production_security_tests.rs` - Production security test suite (JWT validation with token creation/expiry, rate limiting, GDPR compliance, security policies including password/session/API access policies)
 - `tests/websocket_integration_tests.rs` - WebSocket integration tests (connection management, event broadcasting, multi-client scenarios)
@@ -327,41 +327,25 @@ The main binary provides a comprehensive CLI interface organized into functional
 - `tests/stress_tests.rs` - Comprehensive stress testing (system capacity, resource exhaustion, failure point identification)
 - `tests/three_node_validation_test.rs` - Three-node distributed blockchain validation test
 
-### owl2-reasoner Sub-Project
-The project includes `owl2-reasoner` as a workspace member - a high-performance OWL2 reasoning engine.
+### OWL2 Dependency (SPACL)
+ProvChain uses `owl2-reasoner` from the SPACL repository via Git dependency in `Cargo.toml`.
 
-**Test Commands for owl2-reasoner:**
+**Validation Commands in this repository:**
 ```bash
-# Test owl2-reasoner specifically
-cargo test -p owl2-reasoner
-
-# Run specific test file in owl2-reasoner
-cargo test -p owl2-reasoner --test turtle_parser_tests
-
-# Run owl2-reasoner benchmarks
-cargo bench -p owl2-reasoner
-
-# Verify owl2-reasoner benchmarks compile
-cargo check --benches --package owl2-reasoner
-
-# Run tests for entire workspace
+# Run full project tests including OWL2 integration paths
 cargo test --workspace
+
+# Run OWL2-focused integration tests
+cargo test --test owl2_feature_tests
+cargo test --test enhanced_owl2_comprehensive_tests
 ```
 
-**owl2-reasoner Structure:**
-- `src/ontology/` - Ontology management with indexed storage
-- `src/reasoning/` - Tableaux algorithm and rule-based inference
-  - `query/` - Query engine with caching and optimization (API updated in commit d5ca53a)
-  - `tableaux/` - Tableaux reasoning implementation
-- `src/parser/` - Multi-format RDF parsing (Turtle, RDF/XML, N-Triples)
-- `tests/` - 12 test files covering parsing, reasoning, and performance
-  - **Turtle parser tests: 12/12 passing** (fixed malformed syntax, missing subjects)
-- `benches/` - 27 benchmark suites for performance validation
-  - **All benchmarks now compile** after API migration (execute_query → execute)
+**To test owl2-reasoner crate internals directly:**
+Clone and test in the upstream SPACL repository.
 
 ### Key Test Files
 - Integration tests in `tests/` directory
-- owl2-reasoner tests in `owl2-reasoner/tests/`
+- OWL2 integration tests in `tests/owl2_*` and `tests/enhanced_owl2_*`
 - Run `cargo test` for all tests
 - See individual test files for specific functionality coverage
 

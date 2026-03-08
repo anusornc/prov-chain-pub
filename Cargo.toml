@@ -190,7 +190,7 @@ futures = "0.3"
 #    - Action: Monitor for alternatives (serde-msgpack, postcard)
 #
 # 5. lru v0.12.5 (RUSTSEC-2026-0002 - Unsound)
-#    - Path: owl2-reasoner (direct dependency)
+#    - Source: SPACL git dependency (owl2-reasoner)
 #    - Issue: IterMut violates Stacked Borrows in specific cases
 #    - Risk: LOW-MEDIUM - Only affects IterMut usage, not common API patterns
 #    - Action: Consider replacement with moka or cached when feasible

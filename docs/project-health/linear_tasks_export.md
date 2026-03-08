@@ -3,6 +3,8 @@
 **Generated**: 2026-01-14
 **Source**: Project Health Check (Overall Score: 72/100)
 
+> Historical note (2026-03-08): This export predates SPACL migration. `owl2-reasoner/` paths referenced here are archival.
+
 ---
 
 ## 🔴 Critical Priority

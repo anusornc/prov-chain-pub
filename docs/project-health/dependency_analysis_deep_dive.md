@@ -4,6 +4,8 @@
 **Analysis Scope**: Full dependency tree
 **Total Dependencies**: 640 (transitive), 67 (direct)
 
+> Historical note (2026-03-08): This report predates SPACL migration. Any local `owl2-reasoner/` path references are archival snapshots.
+
 ---
 
 ## Executive Summary

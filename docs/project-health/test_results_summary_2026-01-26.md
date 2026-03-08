@@ -2,6 +2,8 @@
 
 **Generated from actual test runs on 2026-01-26**
 
+> Historical note (2026-03-08): This report was captured before SPACL migration. Local `owl2-reasoner/` test references are archival.
+
 ## Overview
 
 The ProvChainOrg workspace is in excellent health with **100% test success rate**.
@@ -122,12 +124,12 @@ Reproduce these results with:
 # Run all tests
 cargo test --workspace
 
-# Run owl2-reasoner tests
-cargo test -p owl2-reasoner
+# NOTE (post-migration): owl2-reasoner is now consumed from SPACL Git dependency.
+# Run OWL2 integration coverage in this repo:
+cargo test --test owl2_feature_tests
 
 # Run clippy
 cargo clippy --all-targets
-cargo clippy -p owl2-reasoner --all-targets
 
 # Run benchmarks
 cargo bench --workspace

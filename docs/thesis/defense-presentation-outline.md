@@ -2,6 +2,8 @@
 # "Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability"
 # Student: Mr. Anusorn Chaikaew (640551018)
 
+> Historical note (2026-03-08): Slide metrics that mention local `owl2-reasoner` sub-project reflect pre-SPACL migration state.
+
 ---
 
 ## SLIDE 1: Title Slide

@@ -16,7 +16,6 @@ WORKDIR /app
 
 # Copy Cargo files for dependency caching
 COPY Cargo.toml Cargo.lock ./
-COPY owl2-reasoner/ ./owl2-reasoner/
 COPY benches/ ./benches/
 COPY tests/ ./tests/
 

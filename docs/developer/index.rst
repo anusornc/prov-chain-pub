@@ -141,7 +141,7 @@ Architecture Overview
    - Persistent RDF storage
    - SPARQL query processing
 
-3. **OWL2 Reasoner** (`owl2-reasoner/`): Semantic reasoning engine
+3. **OWL2 Reasoning Integration** (`src/semantic/` + `Cargo.toml`): Semantic reasoning engine via SPACL dependency
    - Tableaux algorithm implementation
    - OWL2 RL support
    - Query optimization
@@ -170,7 +170,6 @@ provchain-org/
 │   ├── interop/        # Cross-chain bridge
 │   ├── web/            # REST API and JWT auth
 │   └── analytics/      # Performance monitoring
-├── owl2-reasoner/      # OWL2 reasoning sub-project
 └── tests/              # Integration tests
 ```
 
@@ -207,8 +206,8 @@ Testing Framework
    # Run benchmarks
    cargo bench
 
-   # Run owl2-reasoner tests
-   cargo test -p owl2-reasoner
+   # Run OWL2 integration tests
+   cargo test --test owl2_feature_tests
 
 **Test Coverage**
 
@@ -217,7 +216,7 @@ Key test files include:
 - `tests/privacy_test.rs` - Encryption and wallet tests
 - `tests/enhanced_traceability_demo.rs` - Traceability validation
 - `tests/load_tests.rs` - Performance testing (200 users × 100 requests)
-- `owl2-reasoner/tests/` - OWL2 reasoner test suite (12 test files)
+- `tests/owl2_*` and `tests/enhanced_owl2_*` - OWL2 integration test suites
 
 Security Guidelines
 -------------------

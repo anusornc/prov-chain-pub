@@ -249,7 +249,7 @@ IoT Device → WebSocket → ProvChainOrg → RDF Triple Storage
 
 **Production Dependencies:**
 - Rust 1.70+ (Edition 2021)
-- Cargo workspace with `owl2-reasoner` member
+- Cargo project with `owl2-reasoner` from SPACL as a Git dependency
 - Docker (for deployment and benchmarking)
 
 **External Services:**

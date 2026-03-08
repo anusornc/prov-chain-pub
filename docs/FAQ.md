@@ -405,7 +405,7 @@ curl http://localhost:8080/api/blockchain/blocks/0 \
 1. **RDF Triple Store**: Oxigraph-based storage
 2. **SPARQL Queries**: Full SPARQL 1.1 support via Oxigraph
 3. **Ontology Loading**: Load OWL2 ontologies from files
-4. **Basic Reasoning**: Using owl2-reasoner library (limited capabilities)
+4. **OWL2 Reasoning**: Using `owl2-reasoner` integrated from SPACL (git dependency)
 5. **SHACL Validation**: Data shape validation (partially implemented)
 
 **Example SPARQL Query:**

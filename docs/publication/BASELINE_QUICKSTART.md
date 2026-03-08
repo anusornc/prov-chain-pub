@@ -207,7 +207,7 @@ docker-compose -f docker-compose.baselines-only.yml down -v
 
 ### Why Native Execution?
 
-1. **Library Dependencies**: ProvChain includes `owl2-reasoner` as a workspace sub-project with complex native dependencies
+1. **Library Dependencies**: ProvChain uses `owl2-reasoner` from SPACL as a Git dependency
 2. **Performance**: Native execution avoids Docker overhead for accurate performance measurement
 3. **Development Workflow**: Supports standard development tools (cargo, rust-analyzer, etc.)
 

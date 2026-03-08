@@ -104,7 +104,7 @@ WORKDIR /app
 
 # Layer 1: Cargo files (for dependency caching)
 COPY Cargo.toml Cargo.lock ./
-COPY owl2-reasoner/ ./owl2-reasoner/
+# owl2-reasoner is fetched from SPACL via Cargo git dependency
 
 # Create dummy main.rs to build dependencies first
 RUN mkdir src && echo "fn main() {}" > src/main.rs

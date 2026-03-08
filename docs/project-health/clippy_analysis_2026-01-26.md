@@ -2,6 +2,8 @@
 
 **Generated from actual clippy output on 2026-01-26**
 
+> Historical note (2026-03-08): This report was generated before migration to SPACL Git dependency. Local `owl2-reasoner/` references in this file are archival.
+
 ## Summary
 
 | Metric | Value |
