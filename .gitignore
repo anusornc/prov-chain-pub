@@ -65,8 +65,10 @@ demo_*/*/
 backup_ontology/
 docs/PAPER*.md
 
-# Claude Code auto-memory
-.claude/auto-memory/dirty-files
+# Local AI tooling directories
+.claude/
+.github/
+.kilocode/
 data/wallets/
 
 # Nested build artifacts (benchmark-toolkit workspace)
