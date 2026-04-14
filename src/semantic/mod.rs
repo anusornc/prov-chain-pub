@@ -3,14 +3,19 @@
 //! This module provides semantic web implementations including
 //! ontology management, SHACL validation, and SPARQL processing.
 //!
+//! Production note:
+//! The production semantic path is implemented in `crate::ontology` and backed by
+//! the SPACL `owl2-reasoner` dependency. Modules in `crate::semantic` are retained
+//! primarily for demos, experimentation, and migration support.
+//!
 //! ## Key Components
-//! - `owl_reasoner`: Basic OWL reasoner with foundational OWL features
-//! - `owl2_enhanced_reasoner`: Enhanced OWL reasoner with full OWL2 feature support
+//! - `owl_reasoner`: Legacy OWL reasoner retained for experimentation
+//! - `owl2_enhanced_reasoner`: Experimental OWL2 feature exploration
 //! - `owl2_integration`: Basic integration with owl2-reasoner library
-//! - `owl2_traceability`: Enhanced traceability using owl2-reasoner for OWL2 reasoning
+//! - `owl2_traceability`: Legacy traceability experiment using owl2-reasoner
 //! - `enhanced_owl2_demo`: Demo of enhanced OWL2 features with hasKey support
 //! - `simple_owl2_test`: Simple test of owl2-reasoner integration
-//! - `shacl_validator`: SHACL validation for data conformance
+//! - `shacl_validator`: Basic SHACL validation for experimental workflows
 //!
 //! ## Implementation Status
 //! This module implements the enhanced OWL2 features as planned in

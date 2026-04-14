@@ -109,9 +109,8 @@ provchain-org/
 │   │   └── transaction.rs    # Transaction handling
 │   ├── network/              # P2P networking
 │   │   └── consensus.rs      # Consensus algorithms
-│   ├── semantic/             # OWL2 reasoning
-│   │   ├── owl2_enhanced_reasoner.rs
-│   │   └── owl_reasoner.rs
+│   ├── ontology/             # Production semantic path (shared ontology packages + SPACL)
+│   ├── semantic/             # Experimental/demo semantic modules
 │   ├── security/             # Cryptography & encryption
 │   ├── integrity/            # Blockchain validation
 │   ├── web/                  # REST API & WebSocket
@@ -130,11 +129,20 @@ provchain-org/
 |-----------|-------------|-------|
 | **Blockchain Core** | Block management, chain state | `src/core/blockchain.rs` |
 | **Consensus** | PoA, PBFT implementations | `src/network/consensus.rs` |
-| **Semantic Layer** | OWL2 reasoning, SHACL validation | `src/semantic/` |
+| **Semantic Layer** | Production ontology packages, SHACL validation, SPACL reasoning | `src/ontology/` |
 | **Security** | Encryption, signatures, wallets | `src/security/` |
 | **Integrity** | Chain validation, corruption detection | `src/integrity/` |
 | **Web Layer** | REST API, WebSocket handlers | `src/web/` |
 | **OWL2 Reasoner** | External crate from SPACL (git dependency) | `Cargo.toml` |
+
+### Semantic Architecture Rule
+
+For future contributions, treat the semantic stack as follows:
+
+- `src/ontology/*` is the production path
+- SPACL `owl2-reasoner` is the production reasoning engine
+- `src/semantic/*` legacy reasoning modules are experimental unless explicitly promoted later
+- UHT, healthcare, and pharmaceutical assets are reference ontology packages and demos, not the fixed scope of the platform
 
 ---
 

@@ -1,0 +1,17 @@
+package,series,scale_factor,mean_us
+healthcare_device,batch_admission,x1,661.179691
+healthcare_device,batch_scaling,x2,960.094072
+healthcare_device,batch_scaling,x4,1545.237496
+healthcare_device,single_record_admission,x1,509.932813
+pharma_storage,batch_admission,x1,824.796679
+pharma_storage,batch_scaling,x2,1188.813124
+pharma_storage,batch_scaling,x4,1896.742297
+pharma_storage,single_record_admission,x1,639.719092
+uht_epcis,batch_admission,x1,1447.360660
+uht_epcis,batch_scaling,x2,2400.527367
+uht_epcis,batch_scaling,x4,4304.869625
+uht_epcis,single_record_admission,x1,786.345153
+uht,batch_admission,x1,1246.717849
+uht,batch_scaling,x2,2029.855402
+uht,batch_scaling,x4,3597.800418
+uht,single_record_admission,x1,713.113773

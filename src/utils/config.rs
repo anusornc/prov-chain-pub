@@ -14,9 +14,13 @@ use uuid::Uuid;
 
 /// Complete node configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct NodeConfig {
     /// Unique identifier for this node
     pub node_id: Uuid,
+
+    /// Optional path to the network-wide profile shared by all nodes
+    pub network_profile_path: Option<String>,
 
     /// Network configuration
     pub network: NetworkConfig,
@@ -36,6 +40,7 @@ pub struct NodeConfig {
 
 /// Network-related configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct NetworkConfig {
     /// Network identifier (must match across all nodes)
     pub network_id: String,
@@ -61,6 +66,7 @@ pub struct NetworkConfig {
 
 /// Consensus-related configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ConsensusConfig {
     /// Consensus protocol type ("poa" or "pbft")
     pub consensus_type: String,
@@ -83,6 +89,7 @@ pub struct ConsensusConfig {
 
 /// Storage-related configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct StorageConfig {
     /// Data directory for persistent storage
     pub data_dir: String,
@@ -99,6 +106,7 @@ pub struct StorageConfig {
 
 /// Logging configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct LoggingConfig {
     /// Log level (trace, debug, info, warn, error)
     pub level: String,
@@ -112,9 +120,13 @@ pub struct LoggingConfig {
 
 /// Ontology configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct OntologyConfig {
     /// Path to the ontology file
     pub path: String,
+
+    /// Optional path to the ontology package manifest
+    pub package_manifest_path: Option<String>,
 
     /// Graph name for the ontology
     pub graph_name: String,
@@ -130,6 +142,7 @@ impl Default for NodeConfig {
     fn default() -> Self {
         Self {
             node_id: Uuid::new_v4(),
+            network_profile_path: None,
             network: NetworkConfig::default(),
             consensus: ConsensusConfig::default(),
             storage: StorageConfig::default(),
@@ -191,6 +204,7 @@ impl Default for OntologyConfig {
     fn default() -> Self {
         Self {
             path: "src/semantic/ontologies/generic_core.owl".to_string(),
+            package_manifest_path: None,
             graph_name: "http://provchain.org/ontology".to_string(),
             auto_load: true,
             validate_data: false,
@@ -254,6 +268,16 @@ impl NodeConfig {
             anyhow::bail!("Network ID cannot be empty");
         }
 
+        if let Some(path) = &self.network_profile_path {
+            if path.trim().is_empty() {
+                anyhow::bail!("Network profile path cannot be empty when provided");
+            }
+
+            if !Path::new(path).exists() {
+                anyhow::bail!("Network profile path does not exist: {}", path);
+            }
+        }
+
         if self.network.listen_port == 0 {
             anyhow::bail!("Listen port must be greater than 0");
         }
@@ -279,6 +303,32 @@ impl NodeConfig {
         // Validate storage configuration
         if self.storage.data_dir.is_empty() {
             anyhow::bail!("Data directory cannot be empty");
+        }
+
+        // Validate ontology configuration when semantic loading or validation is enabled
+        if let Some(ontology) = &self.ontology {
+            if ontology.auto_load || ontology.validate_data {
+                if ontology.path.is_empty() {
+                    anyhow::bail!("Ontology path cannot be empty when ontology loading is enabled");
+                }
+
+                if !Path::new(&ontology.path).exists() {
+                    anyhow::bail!("Ontology path does not exist: {}", ontology.path);
+                }
+            }
+
+            if let Some(manifest_path) = &ontology.package_manifest_path {
+                if manifest_path.trim().is_empty() {
+                    anyhow::bail!("Ontology package manifest path cannot be empty when provided");
+                }
+
+                if !Path::new(manifest_path).exists() {
+                    anyhow::bail!(
+                        "Ontology package manifest path does not exist: {}",
+                        manifest_path
+                    );
+                }
+            }
         }
 
         // Validate logging configuration
@@ -444,5 +494,46 @@ mod tests {
         let config = NodeConfig::default();
         assert_eq!(config.listen_address(), "0.0.0.0:8080");
         assert_eq!(config.public_address(), "127.0.0.1:8080");
+    }
+
+    #[test]
+    fn test_partial_config_uses_defaults_for_missing_fields() {
+        let dir = tempdir().unwrap();
+        let config_path = dir.path().join("partial_config.toml");
+
+        let partial_config = r#"
+node_id = "00000000-0000-0000-0000-000000000000"
+
+[network]
+network_id = "provchain-org-default"
+listen_port = 8080
+bind_address = "0.0.0.0"
+known_peers = []
+max_peers = 50
+connection_timeout = 30
+ping_interval = 30
+
+[consensus]
+is_authority = false
+authority_keys = []
+block_interval = 10
+max_block_size = 1048576
+
+[storage]
+data_dir = "./data"
+persistent = true
+store_type = "oxigraph"
+cache_size_mb = 100
+
+[logging]
+level = "info"
+format = "pretty"
+"#;
+
+        fs::write(&config_path, partial_config).unwrap();
+        let loaded = NodeConfig::load_from_file(&config_path).unwrap();
+
+        assert_eq!(loaded.consensus.consensus_type, "poa");
+        assert!(loaded.ontology.is_some());
     }
 }

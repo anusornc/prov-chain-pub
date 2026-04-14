@@ -12,8 +12,8 @@
 //! ```
 
 use provchain_org::semantic::gs1_epcis::{
-    biz_steps, create_epcis_document, dispositions, EpcisEventBuilder, EpcisEventType,
-    generate_uht_supply_chain_events, namespaces,
+    biz_steps, create_epcis_document, dispositions, generate_uht_supply_chain_events, namespaces,
+    EpcisEventBuilder, EpcisEventType,
 };
 use std::path::Path;
 
@@ -33,11 +33,16 @@ fn main() -> anyhow::Result<()> {
     // Step 2: Check ontologies
     println!("\n📚 Step 2: Checking GS1 EPCIS Ontologies...");
     let ontology_dir = Path::new("docs/ontologies/gs1_epcis");
-    
+
     if ontology_dir.exists() {
         println!("   ✓ Ontology directory found");
-        
-        let files = ["epcis.ttl", "cbv.ttl", "epcis-shacl.ttl", "gs1-web-vocab.ttl"];
+
+        let files = [
+            "epcis.ttl",
+            "cbv.ttl",
+            "epcis-shacl.ttl",
+            "gs1-web-vocab.ttl",
+        ];
         for file in &files {
             let path = ontology_dir.join(file);
             if path.exists() {
@@ -60,7 +65,7 @@ fn main() -> anyhow::Result<()> {
     // Step 4: Create UHT supply chain events
     println!("\n🥛 Step 3: Creating UHT Supply Chain Events...");
     let batch_id = "UHT-BATCH-2024-001";
-    
+
     let events = vec![
         create_milk_collection_event(batch_id),
         create_quality_test_event(batch_id),
@@ -75,7 +80,7 @@ fn main() -> anyhow::Result<()> {
 
     // Step 5: Display events in different formats
     println!("\n📝 Step 4: Event Formats Demo...");
-    
+
     println!("\n   [Turtle RDF Format - Event 1: Milk Collection]");
     println!("   {:-<60}", "");
     println!("{}", events[0].0);
@@ -91,9 +96,9 @@ fn main() -> anyhow::Result<()> {
     println!("📄 Step 5: Creating EPCIS Document...");
     let jsonld_events: Vec<_> = events.iter().map(|(_, jsonld)| jsonld.clone()).collect();
     let epcis_doc = create_epcis_document(jsonld_events);
-    
+
     println!("   ✓ EPCIS Document created with {} events", events.len());
-    
+
     // Save to file
     let output_path = "data/gs1_epcis_uht_demo.json";
     std::fs::create_dir_all("data")?;
@@ -103,13 +108,18 @@ fn main() -> anyhow::Result<()> {
     // Step 7: Generate events using helper function
     println!("\n🔄 Step 6: Auto-generated Supply Chain Events...");
     let auto_events = generate_uht_supply_chain_events(batch_id);
-    println!("   ✓ Generated {} events using helper function", auto_events.len());
-    
+    println!(
+        "   ✓ Generated {} events using helper function",
+        auto_events.len()
+    );
+
     for (i, event) in auto_events.iter().enumerate() {
-        println!("   Event {}: {} - {}", 
+        println!(
+            "   Event {}: {} - {}",
             i + 1,
             event["@type"].as_str().unwrap_or("Unknown"),
-            event.get("epcis:bizStep")
+            event
+                .get("epcis:bizStep")
                 .and_then(|v| v.as_str())
                 .map(|s| s.split('/').last().unwrap_or(s))
                 .unwrap_or("N/A")

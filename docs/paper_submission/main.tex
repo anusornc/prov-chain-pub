@@ -73,12 +73,19 @@
     citecolor=blue,
     urlcolor=blue,
 }
+\pdfstringdefDisableCommands{%
+    \def\orcidlink#1{}%
+    \def\corref#1{}%
+    \def\cnotenum#1{}%
+}
+\setlength{\emergencystretch}{2em}
 
 % Journal name
 \journal{Computers and Electronics in Agriculture}
 
 \begin{document}
 
+\hypersetup{pageanchor=false}
 \begin{frontmatter}
 
 \title{ProvChain: A Generalized Semantic Blockchain Framework for Traceability}
@@ -97,11 +104,12 @@
 \address[1]{Department of Computer Science, Faculty of Science, Chiang Mai University, Chiang Mai 50200, Thailand}
 
 \begin{abstract}
-Modern supply chains across diverse industries---including food, pharmaceuticals, healthcare, and manufacturing---face persistent challenges in ensuring product integrity, maintaining quality throughout distribution, and providing end-to-end traceability. This paper presents \textbf{ProvChain}, a generalized blockchain framework that integrates GS1 Electronic Product Code Information Services (EPCIS) 2.0 standards with semantic web technologies to enable comprehensive traceability across multiple domains. Our framework features a modular ontology architecture supporting domain-specific extensions including food safety, pharmaceutical compliance, healthcare asset tracking, and automotive parts traceability. The system implements a Write-Ahead Logging (WAL) persistence mechanism ensuring data durability and crash recovery, while incorporating OWL2 ontologies for enhanced semantic validation and reasoning. Through an interactive demonstration featuring Ultra-High Temperature (UHT) milk processing as a representative case study---modeling critical quality parameters including pasteurization temperature (135--150°C), holding time (2--5 seconds), and cold chain monitoring---we validate the framework's capability to capture multiple event types (ObjectEvent, TransformationEvent, AggregationEvent, etc.) with standardized CBV business steps and dispositions. The modular architecture enables straightforward adaptation to other domains by substituting domain-specific ontologies while maintaining the core EPCIS-compliant event processing infrastructure. Performance evaluation demonstrates event processing in 65ms average with full semantic validation. Our work contributes a domain-agnostic reference implementation that bridges the gap between blockchain traceability and global supply chain standards, demonstrating the feasibility of integrating semantic web technologies with distributed ledger systems for enhanced product integrity monitoring and regulatory compliance across diverse industries.
+Modern supply chains across diverse industries---including food, pharmaceuticals, healthcare, and manufacturing---face persistent challenges in ensuring product integrity, maintaining quality throughout distribution, and providing end-to-end traceability. This paper presents \textbf{ProvChain}, a generalized permissioned blockchain framework that combines GS1/EPCIS-oriented event modeling with semantic web technologies to support traceability across multiple domains. Our framework features a modular ontology architecture supporting domain-specific extensions, a Write-Ahead Logging (WAL) persistence mechanism for crash recovery, and ontology-backed semantic admission through SHACL validation and SPACL-supported reasoning. Using Ultra-High Temperature (UHT) milk processing as a representative case study, we demonstrate how domain packages can extend a shared provenance core while reusing the same blockchain and validation infrastructure. The current evaluation reports both single-node development load-test behavior and focused ontology-admission benchmarks across UHT, hybrid GS1/EPCIS-UHT, healthcare-device, and pharmaceutical-storage package profiles. In the development load test, the system achieved 19.58 TPS with 100\% request success, while focused ontology-backed \texttt{add\_block} admission remained in the sub-millisecond to low-millisecond range depending on package and batch size. Our work contributes a reference implementation and evaluation artifact that bridge blockchain traceability with ontology-governed validation and standards-facing interoperability.
 \end{abstract}
 
 \begin{graphicalabstract}
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
     box/.style={rectangle, rounded corners, draw, minimum width=2.8cm, minimum height=0.9cm, align=center, font=\small},
     layer/.style={rectangle, rounded corners, draw, fill=blue!15, minimum width=12cm, minimum height=1cm, align=center, font=\small\bfseries},
@@ -110,7 +118,7 @@ Modern supply chains across diverse industries---including food, pharmaceuticals
 ]
 
 % Title
-\node[font=\large\bfseries] at (0,5) {ProvChain: EPCIS-Compliant Blockchain for UHT Milk Traceability};
+\node[font=\large\bfseries] at (0,5) {ProvChain: Standards-Facing Blockchain for UHT Milk Traceability};
 
 % Supply Chain Flow (Top)
 \node[phase] (f) at (-5,3.5) {Farm};
@@ -135,22 +143,23 @@ Modern supply chains across diverse industries---including food, pharmaceuticals
 \draw[arrow, dashed] (p) -- (data);
 
 % Metrics Box
-\node[box, fill=yellow!20] at (0,-2.5) {\textbf{Performance:} 128 events/s $|$ 65ms latency $|$ 10K events tested};
+\node[box, fill=yellow!20] at (0,-2.5) {\textbf{Performance:} 19.58 TPS (dev) $|$ 0.51--1.01ms focused admission $|$ 4 package profiles};
 
 % Keywords
 \node[font=\scriptsize] at (0,-3.8) {GS1 EPCIS 2.0 $|$ Multi-Domain $|$ Healthcare $|$ Pharma $|$ Food $|$ Rust};
 
 \end{tikzpicture}
+}
 \end{graphicalabstract}
 
 \begin{highlights}
-\item Generalized blockchain framework integrating GS1 EPCIS 2.0 with semantic web technologies for multi-domain traceability
-\item Modular ontology architecture supporting food, pharmaceutical, healthcare, and automotive domains
+\item Generalized permissioned blockchain framework for multi-domain traceability using GS1/EPCIS-oriented event modeling and semantic web technologies
+\item Modular ontology architecture supporting food, pharma, healthcare, and automotive packages
 \item Domain-specific ontology extension demonstrated through UHT milk case study with SHACL validation
 \item Write-Ahead Logging (WAL) persistence mechanism with atomic writes and automatic crash recovery
-\item Interactive demonstration validated across 8 supply chain phases with 7 EPCIS event types
-\item OWL2 reasoning support for hasKey validation, property chains, and qualified cardinality constraints
-\item Scalability validated up to 10,000 events with 128 events/second throughput
+\item Interactive demonstration covering 8 supply chain phases with EPCIS-style event flows
+\item Ontology-backed reasoning for hasKey-style validation, property chains, and class-consistency checks on the production semantic path
+\item Single-node load testing reached 19.58 TPS with 100\% request success; focused ontology-admission benchmarks stayed below 1 ms for single-record \texttt{add\_block}
 \end{highlights}
 
 \begin{keyword}
@@ -158,6 +167,7 @@ Blockchain \sep GS1 EPCIS \sep Supply Chain Traceability \sep Semantic Web \sep 
 \end{keyword}
 
 \end{frontmatter}
+\hypersetup{pageanchor=true}
 
 \linenumbers
 
@@ -194,11 +204,11 @@ Our analysis of existing literature reveals several critical gaps:
 
 This paper presents \textbf{ProvChain}, a comprehensive framework addressing these gaps through the following contributions:
 
-\textbf{Contribution 1}: First complete integration of EPCIS 2.0 standards with a permissioned blockchain implementation, supporting all five event types and full CBV vocabulary.
+\textbf{Contribution 1}: A permissioned blockchain framework with shared-ontology semantic validation and GS1/EPCIS-oriented event modeling, demonstrated through a UHT case study and reusable domain-package architecture.
 
 \textbf{Contribution 2}: Novel ontology extension modeling UHT-specific parameters with SHACL validation constraints (temperature: 135--150°C, holding time: 2--5 seconds).
 
-\textbf{Contribution 3}: Integration of OWL2 reasoning capabilities including hasKey validation for batch uniqueness, property chain inference for supplier relationships, and qualified cardinality for quality test validation.
+\textbf{Contribution 3}: Integration of ontology-backed reasoning capabilities including hasKey-style uniqueness validation, property-chain inference for provenance relationships, and semantic constraint checking through the production ontology path.
 
 \textbf{Contribution 4}: Write-Ahead Logging (WAL) implementation with atomic writes, CRC32 checksums, and automatic crash recovery.
 
@@ -240,12 +250,13 @@ SHACL (Shapes Constraint Language)~\cite{knublauch2017shapes} provides a W3C sta
 
 \subsection{Research Positioning}
 
-Table~\ref{tab:comparison} compares ProvChain with existing blockchain traceability systems. Unlike prior work, ProvChain uniquely combines: (1) full GS1 EPCIS 2.0 compliance with all event types; (2) UHT-specific ontology with SHACL validation; (3) OWL2 reasoning for semantic inference; (4) production-grade persistence with WAL; and (5) open-source reference implementation.
+Table~\ref{tab:comparison} compares ProvChain with existing blockchain traceability systems. Unlike prior work, ProvChain combines: (1) standards-oriented GS1/EPCIS event modeling with ontology-governed validation; (2) a UHT-specific ontology package with SHACL validation; (3) ontology-backed reasoning for semantic inference; (4) production-oriented persistence with WAL; and (5) an open-source reference implementation.
 
 \begin{table}[htbp]
 \centering
 \caption{Comparison of Blockchain Traceability Systems}
 \label{tab:comparison}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}lcccccc@{}}
 \toprule
 \textbf{System} & \textbf{Platform} & \textbf{EPCIS} & \textbf{Ontology} & \textbf{TPS} & \textbf{Open} & \textbf{Consensus} \\
@@ -259,9 +270,13 @@ Wang et al.~\cite{wang2023semantic} & Hyperledger & Partial & $\checkmark$ & 180
 Tian~\cite{tian2016supply} & Private & $\times$ & $\times$ & 50 & Yes & PoA \\
 Gr\"assler et al.~\cite{grassler2021semantic} & N/A & Partial & $\checkmark$ & N/A & No & N/A \\
 \midrule
-\textbf{ProvChain} & \textbf{Rust/Oxigraph} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{128} & \textbf{Yes} & \textbf{PoA} \\
+\textbf{ProvChain} & \textbf{Rust/Oxigraph} & \textbf{Partial} & \textbf{$\checkmark$} & \textbf{19.58*} & \textbf{Yes} & \textbf{PoA} \\
 \bottomrule
 \end{tabular}
+}
+\vspace{1mm}
+
+{\footnotesize * Single-node development throughput. Focused ontology-admission benchmarks are reported separately in the evaluation section.}
 \end{table}
 
 \subsection{UHT Processing Background}
@@ -276,104 +291,22 @@ These parameters must be precisely controlled and documented for regulatory comp
 
 \subsection{Overview}
 
-ProvChain is implemented as a modular blockchain framework with four primary layers (Figure~\ref{fig:architecture}):
+ProvChain is implemented as a modular blockchain framework for shared-ontology permissioned traceability networks. The current architecture view distinguishes four operational layers (Figure~\ref{fig:architecture}):
 
 \begin{itemize}
-    \item \textbf{Data Layer}: RDF storage with OWL2 reasoning and SHACL validation
-    \item \textbf{Consensus Layer}: Proof-of-Authority (PoA) with configurable block intervals
-    \item \textbf{Persistence Layer}: Write-Ahead Logging (WAL) with atomic commits
-    \item \textbf{Interface Layer}: REST API, WebSocket, and interactive CLI
+    \item \textbf{Consortium and Organization Layer}: consortium administrators, validator organizations, participant organizations, and auditors
+    \item \textbf{Shared Network Contract Layer}: network profile plus shared ontology package, including PROV-O core, domain extensions, SHACL shapes, and optional GS1/EPCIS mappings
+    \item \textbf{Node Runtime and Semantic Enforcement Layer}: API/event mapping, peer discovery, consensus, ontology management, SHACL validation, and SPACL-backed reasoning
+    \item \textbf{Provenance and Audit Output Layer}: immutable RDF blocks, provenance graph queries, and audit evidence
 \end{itemize}
 
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    box/.style={rectangle, draw, minimum width=4cm, minimum height=1cm, align=center, font=\small},
-    layer/.style={rectangle, draw, fill=blue!10, minimum width=12cm, minimum height=1.2cm, align=center, font=\small},
-    arrow/.style={->, >=stealth, thick}
-]
-
-% Interface Layer
-\node[layer] (interface) at (0,4) {\textbf{Interface Layer}\\REST API | WebSocket | Interactive CLI};
-
-% Consensus Layer
-\node[layer] (consensus) at (0,2.5) {\textbf{Consensus Layer}\\PoA Consensus | Block Validation | Signature Verification};
-
-% Data Layer
-\node[layer] (data) at (0,1) {\textbf{Data Layer}\\Oxigraph RDF Store | OWL2 Reasoner | SHACL Validator};
-
-% Persistence Layer
-\node[layer] (persistence) at (0,-0.5) {\textbf{Persistence Layer}\\WAL | Chain Index | RDF Storage};
-
-% Ontologies
-\node[box, fill=green!10] (ontologies) at (-4,-2.5) {GS1 EPCIS\\Ontology};
-\node[box, fill=green!10] (cbv) at (0,-2.5) {CBV\\Vocabulary};
-\node[box, fill=green!10] (uht) at (4,-2.5) {UHT\\Extension};
-
-% Arrows
-\draw[arrow] (interface) -- (consensus);
-\draw[arrow] (consensus) -- (data);
-\draw[arrow] (data) -- (persistence);
-\draw[arrow] (ontologies) -- (data);
-\draw[arrow] (cbv) -- (data);
-\draw[arrow] (uht) -- (data);
-
-\end{tikzpicture}
-\caption{ProvChain System Architecture}
-\label{fig:architecture}
-\end{figure}
+\input{snippets/architecture_figures}
 
 \subsection{Data Flow}
 
-The data flow through ProvChain follows a structured pipeline (Figure~\ref{fig:dataflow}). Events enter through the Interface Layer, undergo validation and consensus, and are persisted via the WAL mechanism.
+The data flow through ProvChain follows the ontology-backed admission pipeline shown in Figure~\ref{fig:dataflow}. Local source records are mapped into the shared ontology contract, validated through \texttt{OntologyManager}, SHACL constraints, and SPACL-backed reasoning, and only then forwarded to consensus and persistent commit.
 
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    node distance=0.5cm and 1.5cm,
-    stage/.style={rectangle, draw, fill=blue!15, minimum width=2.2cm, minimum height=1.2cm, align=center, font=\small, rounded corners=2pt},
-    process/.style={rectangle, draw, fill=green!15, minimum width=2.2cm, minimum height=0.8cm, align=center, font=\tiny},
-    arrow/.style={->, >=stealth, thick}
-]
-
-% Input
-\node[stage, fill=yellow!20] (input) at (0,0) {\textbf{Input}\\JSON-LD/Turtle};
-
-% Processing stages
-\node[process] (parse) at (2.5,0) {RDF Parsing\\\& Validation};
-\node[process] (shacl) at (5,0) {SHACL\\Validation};
-\node[process] (consensus) at (7.5,0) {Consensus\\Signing};
-\node[process] (wal) at (10,0) {WAL\\Append};
-
-% Output
-\node[stage, fill=orange!20] (output) at (12.5,0) {\textbf{Storage}\\Block Chain};
-
-% Error paths
-\node[process, fill=red!15] (reject) at (5,-2) {Reject Event\\Log Error};
-
-% Arrows
-\draw[arrow] (input) -- (parse);
-\draw[arrow] (parse) -- (shacl);
-\draw[arrow] (shacl) -- node[above, font=\tiny] {Valid} (consensus);
-\draw[arrow] (shacl) -- node[left, font=\tiny] {Invalid} (reject);
-\draw[arrow] (consensus) -- (wal);
-\draw[arrow] (wal) -- (output);
-
-% Time annotations
-\node[font=\tiny, gray] at (2.5,-1) {2-3 ms};
-\node[font=\tiny, gray] at (5,-1) {12 ms};
-\node[font=\tiny, gray] at (7.5,-1) {50 ms};
-\node[font=\tiny, gray] at (10,-1) {0.08 ms};
-
-% Title
-\node[font=\small\bfseries] at (6.25, 1.5) {Event Processing Pipeline};
-
-\end{tikzpicture}
-\caption{ProvChain Data Flow Diagram}
-\label{fig:dataflow}
-\end{figure}
-
-Each event progresses through: (1) RDF parsing and syntax validation; (2) SHACL shape validation for business rules; (3) consensus signing by authorized validators; and (4) WAL persistence with fsync. Invalid events are rejected with detailed error logging.
+Each event progresses through: (1) local data mapping into PROV-O plus network-specific ontology terms; (2) semantic contract checks against the approved ontology package; (3) ontology-backed admission and consensus validation; and (4) immutable persistence and queryable provenance output. Invalid events are rejected before commit with validation details that can be surfaced through the audit path.
 
 \subsection{Ontology Architecture}
 
@@ -405,6 +338,7 @@ ProvChain's modular architecture enables domain-specific extensions through plug
 \centering
 \caption{Domain-Specific Ontologies in ProvChain}
 \label{tab:domains}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}llll@{}}
 \toprule
 \textbf{Domain} & \textbf{Ontology File} & \textbf{Key Classes} & \textbf{Use Case} \\
@@ -415,6 +349,7 @@ Healthcare & \texttt{healthcare.owl} & MedicalDevice, SterilizationRecord & Hosp
 Automotive & \texttt{automotive.owl} & PartComponent, AssemblyEvent & Parts traceability \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
 \subsubsection{UHT Manufacturing Case Study}
@@ -470,7 +405,14 @@ To demonstrate the framework's capabilities, we developed a UHT-specific ontolog
 \label{fig:ontology}
 \end{figure}
 
-Key UHT-specific properties include: \texttt{uht:pasteurizationTemperature} (135--150°C, SHACL: \texttt{minInclusive=135, maxInclusive=150}), \texttt{uht:holdingTime} (2--5 seconds), \texttt{uht:homogenizationPressure} (150--250 bar), \texttt{uht:bacteriaCount} (CFU/ml), and \texttt{uht:acidity} (pH value, typically 6.6--6.8).
+Key UHT-specific properties include:
+\begin{itemize}
+    \item \texttt{uht:pasteurizationTemperature}: 135--150°C with SHACL bounds \texttt{minInclusive=135} and \texttt{maxInclusive=150}
+    \item \texttt{uht:holdingTime}: 2--5 seconds
+    \item \texttt{uht:homogenizationPressure}: 150--250 bar
+    \item \texttt{uht:bacteriaCount}: CFU/ml
+    \item \texttt{uht:acidity}: pH 6.6--6.8
+\end{itemize}
 
 \subsubsection{SHACL Validation}
 
@@ -500,6 +442,7 @@ The UHT ontology extends existing food and supply chain ontologies (Table~\ref{t
 \centering
 \caption{Ontology Reuse and Metrics}
 \label{tab:ontologies}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}lrrrl@{}}
 \toprule
 \textbf{Ontology} & \textbf{Classes} & \textbf{Props} & \textbf{Individuals} & \textbf{Relationship} \\
@@ -513,6 +456,7 @@ FOODON~\cite{griffiths2018foodon} & 1 & 2 & 0 & Reference \\
 \textbf{Total} & \textbf{352} & \textbf{615} & \textbf{159} & \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
 The UHT extension reuses FOODON's \texttt{MilkButterCream} class via owl:equivalentClass alignment, enabling interoperability with existing food safety databases.
@@ -557,7 +501,7 @@ Cryptography & Ed25519-dalek & 2.0 \\
 
 \subsection{GS1 EPCIS Event Generation}
 
-The \texttt{EpcisEventBuilder} provides a fluent API for creating standards-compliant events (Listing~\ref{lst:builder}).
+The \texttt{EpcisEventBuilder} provides a fluent API for creating standards-facing EPCIS-style events (Listing~\ref{lst:builder}).
 
 \begin{lstlisting}[caption={EPCIS Event Builder (Rust)}, label={lst:builder}]
 let event = EpcisEventBuilder::new(EpcisEventType::TransformationEvent)
@@ -569,7 +513,7 @@ let event = EpcisEventBuilder::new(EpcisEventType::TransformationEvent)
     .build_jsonld("event001");
 \end{lstlisting}
 
-This generates both Turtle RDF and JSON-LD formats compliant with EPCIS 2.0.
+This generates both Turtle RDF and JSON-LD formats aligned with the current EPCIS-oriented implementation path.
 
 \subsection{UHT Supply Chain Demo}
 
@@ -577,6 +521,7 @@ We implemented an interactive demonstration covering 8 supply chain phases as il
 
 \begin{figure*}[htbp]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
     node distance=0.8cm,
     phase/.style={rectangle, draw, fill=blue!15, minimum width=2.2cm, minimum height=1cm, align=center, font=\small, rounded corners=3pt},
@@ -627,6 +572,7 @@ We implemented an interactive demonstration covering 8 supply chain phases as il
 \node[font=\small, fill=white] at (9.8, 0.9) {\textbf{UHT Milk Supply Chain Timeline}};
 
 \end{tikzpicture}
+}
 \caption{UHT Milk Supply Chain Workflow with 8 Phases}
 \label{fig:workflow}
 \end{figure*}
@@ -637,6 +583,7 @@ The demo creates 7 distinct EPCIS events across these phases as shown in Table~\
 \centering
 \caption{EPCIS Events in UHT Demo}
 \label{tab:events}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}llll@{}}
 \toprule
 \textbf{Phase} & \textbf{Event Type} & \textbf{Business Step} & \textbf{Disposition} \\
@@ -650,11 +597,12 @@ Shipping & ObjectEvent & shipping & in\_transit \\
 Receiving & ObjectEvent & receiving & in\_progress \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
 \subsection{OWL2 Reasoning Integration}
 
-ProvChain integrates OWL2 reasoning for semantic inference including: (1) hasKey validation ensuring batch ID uniqueness; (2) property chain inference for supplier relationships; and (3) qualified cardinality validating 4 quality tests per batch. To optimize performance while maintaining semantic expressivity, the framework employs a hybrid reasoning engine that combines a native OWL2 reasoner for complex assertions with specialized, high-performance logic for common supply chain property chains.
+ProvChain integrates ontology-backed reasoning through the shared ontology package and the production semantic path implemented in the ontology manager. In the current implementation, semantic admission combines SHACL constraint checking with SPACL-backed reasoning support for tasks such as class-consistency checks, hasKey-style uniqueness validation, and property-chain-based provenance inference. This arrangement keeps the runtime path aligned with the shared-ontology network contract while still allowing domain packages such as the UHT case study to define additional constraints and traceability relations.
 
 \subsection{Persistence Implementation}
 
@@ -736,107 +684,67 @@ ProvChain serves multiple stakeholder types with distinct roles (Figure~\ref{fig
 
 \subsection{Experimental Setup}
 
-We evaluated ProvChain using three test configurations:
+We evaluated ProvChain using two complementary configurations:
 \begin{itemize}
-    \item \textbf{Small-scale}: 113 events (complete UHT demo scenario)
-    \item \textbf{Medium-scale}: 1,000 events (stress testing)
-    \item \textbf{Large-scale}: 10,000 events (scalability benchmark)
+    \item \textbf{Single-node development load test}: 200 concurrent users with 100 requests per user over 60 seconds
+    \item \textbf{Focused ontology-admission benchmarks}: Criterion benchmarks spanning UHT, hybrid GS1/EPCIS-UHT, healthcare-device, and pharmaceutical-storage package profiles
 \end{itemize}
 
-Tests were conducted on a standard development machine (Intel i7-9700K @ 3.6GHz, 16GB DDR4 RAM, NVMe SSD) running Ubuntu 22.04 LTS. Each test was repeated 10 times with results reported as mean $\pm$ standard deviation.
+Tests were conducted on a standard development machine (Intel i7-9700K @ 3.6GHz, 16GB DDR4 RAM, NVMe SSD) running Ubuntu 22.04 LTS. The load-test result reflects the current single-node development environment, while the ontology-admission benchmarks isolate semantic admission behavior using the dataset normalization and emission pipeline.
 
 \subsection{Performance Metrics}
 
-Table~\ref{tab:performance} presents the detailed performance measurements across different test configurations.
+Table~\ref{tab:performance} presents selected measurements from the current load-test and focused ontology-admission benchmark artifacts.
 
 \begin{table}[htbp]
 \centering
-\caption{Performance Results (Mean $\pm$ SD, n=10)}
+\caption{Selected Performance Results from the Current Evaluation Artifacts}
 \label{tab:performance}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}lrrr@{}}
 \toprule
-\textbf{Metric} & \textbf{Value} & \textbf{Unit} & \textbf{Test Scale} \\
+\textbf{Metric} & \textbf{Value} & \textbf{Unit} & \textbf{Context} \\
 \midrule
-Block creation time & 6.74 $\pm$ 0.23 & seconds & 113 blocks \\
-Event latency & 65 $\pm$ 8 & ms & 1,000 events \\
-Event latency (max) & 142 $\pm$ 15 & ms & 10,000 events \\
-Throughput & 128 $\pm$ 12 & events/s & 10,000 events \\
-WAL write time & 0.08 $\pm$ 0.01 & ms & Per event \\
-SHACL validation & 12 $\pm$ 3 & ms & Per event \\
-OWL2 reasoning & 2.4 $\pm$ 0.6 & ms & Per batch \\
-Storage per event & 1.2 $\pm$ 0.1 & KB & RDF + metadata \\
-Peak memory & 156 $\pm$ 18 & MB & 10,000 events \\
+Actual throughput & 19.58 & TPS & Single-node load test \\
+Average response time & 51.02 & ms & Single-node load test \\
+P95 response time & 98.29 & ms & Single-node load test \\
+Request success rate & 100 & \% & 1,397/1,397 requests \\
+Setup-only latency & 5.06--7.78 & ms & Focused Criterion benchmarks \\
+Single-record \texttt{add\_block} latency & 0.51--0.79 & ms & Focused Criterion benchmarks \\
+Single-record end-to-end admission & 0.72--1.01 & ms & Focused Criterion benchmarks \\
+Batch \texttt{x4 add\_block} latency & 1.54--4.31 & ms & Focused Criterion benchmarks \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
 \subsubsection{Throughput Analysis}
 
-The throughput of 128 events/s is lower than Hyperledger Fabric (3000+ TPS) for several reasons: (1) RDF serialization overhead; (2) SHACL validation per event; (3) semantic reasoning; and (4) single-node Oxigraph store. Table~\ref{tab:comparison} shows ProvChain trades raw throughput for semantic richness, which is appropriate for traceability use cases prioritizing data quality over transaction speed.
+The measured throughput of 19.58 TPS reflects the current single-node development environment rather than a production deployment. The main bottlenecks remain RDF parsing and serialization, semantic validation overhead, and single-node state management. Table~\ref{tab:comparison} should therefore be read as a qualitative platform comparison, while the current quantitative throughput evidence is limited to the development load test reported here.
 
 \subsubsection{Scalability Analysis}
 
-Table~\ref{tab:scalability} shows the system performance across different event volumes.
+The current reproducible scaling evidence comes from the focused ontology-admission benchmark suite rather than from a multi-node runtime scalability campaign. In particular, the package-specific Criterion benchmarks now report single-record, batch, and \texttt{x2/x4} scaling curves for the ontology-backed \texttt{add\_block} path, which provide a cleaner view of semantic-admission costs than the single-node throughput test alone.
 
-\begin{table}[htbp]
-\centering
-\caption{Scalability Test Results}
-\label{tab:scalability}
-\begin{tabular}{@{}lrrrr@{}}
-\toprule
-\textbf{Events} & \textbf{Time (s)} & \textbf{Throughput} & \textbf{Memory (MB)} & \textbf{Success} \\
-\midrule
-100 & 0.78 $\pm$ 0.05 & 128 $\pm$ 8 & 45 & 100\% \\
-1,000 & 7.81 $\pm$ 0.42 & 128 $\pm$ 7 & 89 & 100\% \\
-10,000 & 78.1 $\pm$ 3.2 & 128 $\pm$ 5 & 156 & 100\% \\
-\bottomrule
-\end{tabular}
-\end{table}
+\subsubsection{Focused Ontology Admission Benchmarks}
 
-Results show linear scaling up to 10,000 events with consistent throughput and no failures, validating the WAL implementation's stability.
+In addition to the end-to-end throughput measurements above, we ran focused Criterion benchmarks on the ontology-backed admission path using package-specific synthetic records derived from the dataset normalization and emission pipeline. These experiments isolate blockchain setup cost, single-record \texttt{add\_block} admission, batch admission, and cross-package benchmark workloads across the current UHT, hybrid GS1/EPCIS-UHT, healthcare-device, and pharmaceutical-storage packages.
 
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}
-\begin{axis}[
-    ybar,
-    width=8cm,
-    height=6cm,
-    bar width=15pt,
-    ylabel={Throughput (events/second)},
-    xlabel={Event Scale},
-    symbolic x coords={100, 1K, 10K},
-    xtick=data,
-    ymin=0,
-    ymax=160,
-    nodes near coords,
-    nodes near coords align={vertical},
-    legend pos=north east,
-    grid=major,
-    grid style={dashed, gray!30},
-]
+\input{snippets/benchmark_figures}
 
-\addplot[fill=blue!50] coordinates {(100, 128) (1K, 128) (10K, 128)};
-\addplot[fill=orange!50] coordinates {(100, 100) (1K, 110) (10K, 115)};
+Figure~\ref{fig:single_record_breakdown} shows that the pure ontology-backed \texttt{add\_block} path remains below 1 ms for the current benchmark packages in this focused setting, while setup costs dominate the end-to-end single-record measurement. Figure~\ref{fig:batch_scaling} provides the first scaling-curve evidence for the current package set, and Figure~\ref{fig:cross_package_workloads} summarizes heterogeneous benchmark behavior across separate package-specific blockchain instances. These measurements should be interpreted as controlled semantic-admission benchmarks rather than full node-runtime throughput results.
 
-\legend{ProvChain, Target}
-\end{axis}
-\end{tikzpicture}
-\caption{ProvChain Throughput Performance Across Scales}
-\label{fig:throughput}
-\end{figure}
+\subsection{Standards-Facing Interoperability}
 
-Figure~\ref{fig:throughput} shows ProvChain maintains stable throughput across all test scales, with minimal degradation as event volume increases, demonstrating good scalability characteristics.
-
-\subsection{Standards Compliance}
-
-We validated EPCIS 2.0 compliance using the official GS1 conformance test suite (v2.0.1). ProvChain passed all 47 mandatory test cases covering:
+We evaluated a standards-oriented interoperability profile rather than claiming full GS1 conformance coverage. The current evidence shows that ProvChain can process standards-facing hybrid GS1/EPCIS-UHT payloads in the ontology-backed admission path and can reuse CBV-aligned business steps and dispositions in the UHT case-study workflow. The validated coverage currently includes:
 \begin{itemize}
-    \item All five event types (ObjectEvent, AggregationEvent, AssociationEvent, TransactionEvent, TransformationEvent)
-    \item CBV business steps and dispositions (45+ and 20+ respectively)
-    \item JSON-LD and Turtle RDF serialization
-    \item SensorElementList and PersistentDisposition
+    \item hybrid GS1/EPCIS-UHT object-event-style payloads in the focused ontology-admission benchmark
+    \item CBV-oriented business step and disposition usage in the UHT demo workflow
+    \item Turtle-based ontology-package emission for benchmark and validation artifacts
+    \item JSON-LD and Turtle handling in the current implementation and demo paths
 \end{itemize}
+
+These artifacts demonstrate standards-facing interoperability, but they should not be interpreted as an official full-suite GS1 EPCIS 2.0 conformance result across all event types.
 
 \subsection{Semantic Validation}
 
@@ -898,9 +806,9 @@ Crash recovery testing under three failure scenarios:
 
 \subsection{Implications for Industry}
 
-ProvChain addresses several critical needs in the dairy industry. For regulatory compliance, the framework supports FDA FSMA (rapid traceability within hours), EU 178/2002 (full chain of custody), and ISO 22000 (hazard control verification). For quality assurance, semantic validation ensures automatic detection of temperature excursions, validation of UHT processing parameters, and quality test completeness verification.
+ProvChain addresses several critical needs in the dairy industry. For regulatory operations, the framework can help organizations structure provenance records and validation workflows in ways that align with traceability expectations under FDA FSMA, EU 178/2002, and ISO 22000. For quality assurance, semantic validation supports automatic detection of temperature excursions, validation of UHT processing parameters, and quality test completeness verification.
 
-EPCIS compliance enables data exchange with GS1-compliant trading partners, integration with existing ERP/WMS systems, and future-proofing against technology changes.
+EPCIS-oriented modeling may facilitate data exchange with GS1-aligned trading partners, integration with existing ERP/WMS systems, and future migration toward stricter standards-conformance workflows.
 
 \subsection{Limitations}
 
@@ -908,7 +816,7 @@ EPCIS compliance enables data exchange with GS1-compliant trading partners, inte
 
 The current implementation exhibits several scalability limitations:
 
-\textbf{Throughput bottleneck:} At 128 events/s, ProvChain is significantly slower than Hyperledger Fabric (3000+ TPS). This is primarily due to: (1) RDF parsing and serialization overhead (~40\% of processing time); (2) SHACL validation requiring SPARQL queries (~25\%); (3) OWL2 reasoning for each batch (~15\%); and (4) synchronous fsync calls for WAL durability (~20\%). Additionally, the current implementation performs full N-Quads serialization for storage checkpoints, which may introduce latency as the graph grows. Future work includes implementing incremental RDF indexing and delta-based storage to improve I/O efficiency. For context, typical dairy processors generate 50-200 events per minute, making ProvChain suitable for SME deployments but requiring optimization for large-scale industrial operations.
+\textbf{Throughput bottleneck:} At 19.58 TPS in the current single-node development environment, ProvChain remains significantly slower than optimized enterprise blockchain stacks such as Hyperledger Fabric. The main contributors are RDF parsing and serialization overhead, SHACL validation, semantic reasoning, and synchronous persistence. Additionally, the current implementation performs full N-Quads serialization for storage checkpoints, which may introduce latency as the graph grows. Future work includes incremental RDF indexing, delta-based storage, and multi-node performance validation. For context, typical dairy processors generate 50-200 events per minute, making the current prototype suitable for SME-scale case studies but still in need of optimization for larger industrial deployments.
 
 \textbf{Single-node RDF store:} Oxigraph runs on a single node, limiting horizontal scaling. Federated triple stores (e.g., Apache Jena Fuseki cluster) could address this but were not implemented in the current prototype.
 
@@ -924,13 +832,13 @@ Planned enhancements include: (1) distributed RDF with federated triple stores; 
 
 \section{Conclusion}\label{sec:conclusion}
 
-This paper presented ProvChain, a proof-of-concept blockchain framework for UHT milk supply chain traceability that integrates GS1 EPCIS 2.0 standards with semantic web technologies. Our contributions include: (1) first complete integration of EPCIS 2.0 with blockchain supporting all five event types and full CBV vocabulary; (2) UHT extension with SHACL validation for critical processing parameters; (3) OWL2 reasoning capabilities including hasKey validation, property chains, and qualified cardinality; (4) WAL persistence mechanism with atomic writes and crash recovery; and (5) open-source reference implementation with interactive demonstration.
+This paper presented ProvChain, a proof-of-concept blockchain framework for UHT milk supply chain traceability that integrates GS1/EPCIS-oriented event modeling with ontology-governed validation. Our contributions include: (1) a permissioned blockchain framework with reusable domain-package architecture; (2) a UHT extension with SHACL validation for critical processing parameters; (3) ontology-backed reasoning capabilities including hasKey-style validation and property-chain inference; (4) a WAL persistence mechanism with atomic writes and crash recovery; and (5) an open-source reference implementation with interactive demonstration and focused benchmark artifacts.
 
-Performance evaluation demonstrates the feasibility of semantic-rich blockchain traceability with 65ms average event latency and 128 events/second throughput. While lower than pure blockchain systems (e.g., Hyperledger Fabric at 3000+ TPS), this throughput is sufficient for dairy SME use cases (50-200 events/minute) and trades raw speed for data quality through semantic validation. Standards compliance testing confirms full EPCIS 2.0 and CBV 2.0 compatibility.
+Performance evaluation demonstrates the feasibility of semantic-rich blockchain traceability in two complementary views: a single-node development load test reaching 19.58 TPS with 100\% request success, and focused ontology-admission benchmarks showing sub-millisecond to low-millisecond admission behavior depending on package profile and batch size. While these results do not yet establish large-scale production throughput or full official EPCIS conformance, they do show that ontology-governed validation and standards-facing interoperability can be integrated into a runnable permissioned blockchain prototype.
 
 The work addresses critical gaps in blockchain-based food traceability by bridging the divide between distributed ledger technology and global supply chain standards. By leveraging semantic web technologies, ProvChain enables intelligent validation and reasoning capabilities not available in existing systems.
 
-For the dairy industry, this framework offers a path toward transparent, interoperable, and regulatory-compliant traceability. Future work will focus on distributed RDF storage, privacy-preserving validation, and mobile integration to support widespread adoption.
+For the dairy industry, this framework offers a path toward transparent, interoperable traceability aligned with regulatory reporting needs. Future work will focus on distributed RDF storage, privacy-preserving validation, and mobile integration to support wider adoption.
 
 \section*{Acknowledgments}
 

@@ -1,8 +1,10 @@
 # ProvChainOrg: Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability
 
-ProvChainOrg is a research-driven distributed blockchain system implemented in Rust. It serves as the primary implementation for the project: **"Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability"**. 
+ProvChainOrg is a research-driven distributed blockchain system implemented in Rust. It serves as the primary implementation for the project: **"Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability"**.
 
-The project extends the "GraphChain" concept by integrating semantic technologies directly into the blockchain core, providing high-speed traceability, configurable consensus, cross-chain interoperability, and granular data privacy.
+The project extends the "GraphChain" concept by integrating semantic technologies directly into the blockchain core, providing permissioned-network traceability, configurable consensus, cross-chain interoperability, and granular data privacy.
+
+The production semantic model is based on **shared ontology packages**. Organizations participating in the same permissioned network use the same ontology package as the semantic contract for event validation, reasoning, and provenance tracking. UHT, healthcare, and pharmaceutical flows in this repository are reference demos of that model, not the hardcoded scope of the platform.
 
 ## 🎓 Project Objectives & Contributions
 
@@ -15,7 +17,8 @@ This project satisfies the following research objectives:
 
 ## 🚀 Key Features
 
-- **Embedded Ontology Engine**: Built-in **Oxigraph** triplestore with full **SPARQL** and **SHACL** validation support.
+- **Shared Semantic Contract**: Network participants can validate traceability events against a shared ontology package and SHACL shapes.
+- **Production Semantic Path**: SPACL `owl2-reasoner` plus `src/ontology/*` is the authoritative reasoning and validation path for production-aligned workflows.
 - **Selectable Consensus**: Runtime protocol switching between **Proof-of-Authority (PoA)** and **PBFT (Prototype)** via configuration.
 - **Verified Block Signatures**: Consensus nodes sign `block.hash` with **Ed25519** and use validator public-key hex identities.
 - **Granular Privacy**: Hybrid on-chain storage supporting both public triples and **ChaCha20-Poly1305 encrypted** private data.
@@ -30,7 +33,7 @@ This project satisfies the following research objectives:
 - **Cryptography**: Ed25519 (Signatures), ChaCha20-Poly1305 (Encryption)
 - **Web API**: Axum (RESTful Modular Handlers)
 - **Networking**: Tokio / WebSockets (P2P Foundation)
-- **Ontology**: OWL2 / PROV-O / SHACL
+- **Ontology**: OWL2 / PROV-O / SHACL, organized as shared ontology packages
 
 ## 📦 Architecture
 
@@ -40,7 +43,8 @@ This project satisfies the following research objectives:
 - `src/security/encryption.rs`: Privacy engine for data visibility control.
 - `src/interop/bridge.rs`: Cross-chain data interchange logic.
 - `src/web/handlers/`: Modular REST API handlers (Auth, Transaction, Query).
-- `src/semantic/`: OWL2 reasoning and SHACL validation systems.
+- `src/ontology/`: Production ontology management, shared semantic contracts, SPACL-backed validation.
+- `src/semantic/`: Experimental and demo-oriented semantic modules retained for migration support.
 
 ## 🚦 Quick Start
 
@@ -92,9 +96,9 @@ ProvChain includes multiple examples demonstrating different features and comple
 | `cargo run -- examples list` | List all available examples | - |
 | `cargo run -- examples basic-supply-chain` | Simple supply chain traceability | ⭐⭐ |
 | `cargo run -- examples transaction-workflow` | Transaction signing & multi-party | ⭐⭐⭐ |
-| `cargo run -- examples owl2-reasoning` | OWL2 features (hasKey, property chains) | ⭐⭐⭐ |
+| `cargo run -- examples owl2-reasoning` | Experimental OWL2 feature demo | ⭐⭐⭐ |
 | `cargo run -- examples web-server` | Web UI with demo data | ⭐⭐ |
-| `cargo run -- examples gs1-epcis-uht` | GS1 EPCIS reference demo | ⭐⭐⭐ |
+| `cargo run -- examples gs1-epcis-uht` | UHT reference ontology-package demo | ⭐⭐⭐ |
 
 ### Standalone Examples
 
@@ -129,7 +133,7 @@ Simple                              Complex
 
 ### GS1 EPCIS UHT Demo Phases
 
-The `gs1_epcis_uht_demo` example demonstrates a complete UHT milk supply chain:
+The `gs1_epcis_uht_demo` example demonstrates a complete UHT milk supply chain as a **reference ontology-package demo**:
 
 1. **Milk Collection** - Farm (Wisconsin Organic Dairy)
 2. **Cold Chain Transport** - Farm to Processing Plant
@@ -141,12 +145,11 @@ The `gs1_epcis_uht_demo` example demonstrates a complete UHT milk supply chain:
 8. **Retail Delivery** - Stocking at Metro Supermarkets
 
 Features demonstrated:
-- ✅ GS1 EPCIS standard compliance
-- ✅ OWL2 hasKey validation (batch uniqueness)
-- ✅ Property chain inference
-- ✅ Qualified cardinality (4 QC tests)
-- ✅ Full SPARQL traceability queries
-- ✅ 100-event load test (64ms/event)
+- ✅ Shared-ontology traceability workflow
+- ✅ Domain-specific validation and query flow
+- ✅ SPARQL traceability queries
+- ✅ Example reasoning-driven checks for the demo package
+- ✅ Example load and persistence workflow
 
 ### Running Project Benchmarks
 To generate performance data for the project evaluation:

@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -126,6 +127,123 @@ impl MessageHandler for ConsensusManager {
     }
 }
 
+fn authority_id_from_public_key(public_key: &VerifyingKey) -> Uuid {
+    let mut digest = Sha256::new();
+    digest.update(b"provchain-authority-id");
+    digest.update(public_key.to_bytes());
+
+    let mut bytes = [0u8; 16];
+    bytes.copy_from_slice(&digest.finalize()[..16]);
+    bytes[6] = (bytes[6] & 0x0f) | 0x50;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    Uuid::from_bytes(bytes)
+}
+
+fn load_authority_key_map(configured_keys: &[String]) -> HashMap<Uuid, VerifyingKey> {
+    let mut authority_keys = HashMap::new();
+
+    for key_str in configured_keys {
+        match hex::decode(key_str) {
+            Ok(key_bytes) if key_bytes.len() == 32 => {
+                match VerifyingKey::from_bytes(
+                    &key_bytes
+                        .try_into()
+                        .expect("validated authority key length must be 32 bytes"),
+                ) {
+                    Ok(public_key) => {
+                        authority_keys
+                            .insert(authority_id_from_public_key(&public_key), public_key);
+                    }
+                    Err(error) => {
+                        warn!(
+                            "Skipping invalid authority public key '{}': {}",
+                            key_str, error
+                        );
+                    }
+                }
+            }
+            Ok(_) => {
+                warn!(
+                    "Skipping invalid authority public key '{}': expected 32 decoded bytes",
+                    key_str
+                );
+            }
+            Err(error) => {
+                warn!(
+                    "Skipping malformed authority public key '{}': {}",
+                    key_str, error
+                );
+            }
+        }
+    }
+
+    authority_keys
+}
+
+fn sorted_authority_ids(authority_keys: &HashMap<Uuid, VerifyingKey>) -> Vec<Uuid> {
+    let mut authority_ids: Vec<Uuid> = authority_keys.keys().copied().collect();
+    authority_ids.sort();
+    authority_ids
+}
+
+fn load_or_generate_authority_keypair(key_file: &Option<String>) -> Result<SigningKey> {
+    if let Some(file_path) = key_file {
+        if std::path::Path::new(file_path).exists() {
+            let key_data = std::fs::read(file_path)
+                .map_err(|e| anyhow!("Failed to read authority key file: {}", e))?;
+
+            if key_data.len() == 32 {
+                let keypair = SigningKey::from_bytes(
+                    &key_data
+                        .try_into()
+                        .map_err(|_| anyhow!("Invalid key length"))?,
+                );
+                info!("Loaded authority keypair from {}", file_path);
+                return Ok(keypair);
+            }
+
+            return Err(anyhow!("Authority key file must be 32 bytes"));
+        }
+
+        let keypair = generate_signing_key()
+            .map_err(|e| anyhow!("Failed to generate authority key: {}", e))?;
+        std::fs::write(file_path, keypair.to_bytes())
+            .map_err(|e| anyhow!("Failed to write authority key file: {}", e))?;
+        info!("Generated new authority keypair and saved to {}", file_path);
+        Ok(keypair)
+    } else {
+        generate_signing_key().map_err(|e| anyhow!("Failed to generate ephemeral key: {}", e))
+    }
+}
+
+fn reconcile_local_authority(
+    config: &ConsensusConfig,
+    local_authority_id: Option<Uuid>,
+    local_public_key: Option<VerifyingKey>,
+    authority_keys: &mut HashMap<Uuid, VerifyingKey>,
+) -> Result<()> {
+    if !config.is_authority {
+        return Ok(());
+    }
+
+    let local_authority_id = local_authority_id
+        .ok_or_else(|| anyhow!("Authority node is missing a local authority ID"))?;
+    let local_public_key = local_public_key
+        .ok_or_else(|| anyhow!("Authority node is missing a local authority public key"))?;
+
+    if authority_keys.is_empty() {
+        authority_keys.insert(local_authority_id, local_public_key);
+        return Ok(());
+    }
+
+    if !authority_keys.contains_key(&local_authority_id) {
+        anyhow::bail!("Authority node public key is not present in the configured authority set");
+    }
+
+    Ok(())
+}
+
 // ------------------------------------------------------------------------------------------------
 // Proof of Authority Implementation
 // ------------------------------------------------------------------------------------------------
@@ -133,6 +251,7 @@ impl MessageHandler for ConsensusManager {
 pub struct ProofOfAuthority {
     pub config: ConsensusConfig,
     pub authority_keypair: Option<SigningKey>,
+    pub local_authority_id: Option<Uuid>,
     pub authority_keys: Arc<RwLock<HashMap<Uuid, VerifyingKey>>>,
     pub network: Arc<NetworkManager>,
     pub blockchain: Arc<RwLock<Blockchain>>,
@@ -146,82 +265,47 @@ impl ProofOfAuthority {
         blockchain: Arc<RwLock<Blockchain>>,
     ) -> Result<Self> {
         let authority_keypair = if config.is_authority {
-            Some(Self::load_or_generate_keypair(&config.authority_key_file)?)
+            Some(load_or_generate_authority_keypair(
+                &config.authority_key_file,
+            )?)
         } else {
             None
         };
 
-        let authority_keys = Arc::new(RwLock::new(HashMap::new()));
-
-        for key_str in &config.authority_keys {
-            if let Ok(key_bytes) = hex::decode(key_str) {
-                if key_bytes.len() == 32 {
-                    if let Ok(public_key) = VerifyingKey::from_bytes(
-                        &key_bytes
-                            .try_into()
-                            .map_err(|_| anyhow::anyhow!("Invalid key length"))?,
-                    ) {
-                        let authority_id = Uuid::new_v4();
-                        authority_keys
-                            .write()
-                            .await
-                            .insert(authority_id, public_key);
-                    }
-                }
-            }
-        }
+        let mut authority_keys_map = load_authority_key_map(&config.authority_keys);
+        let local_authority_id = authority_keypair
+            .as_ref()
+            .map(|keypair| authority_id_from_public_key(&keypair.verifying_key()));
+        reconcile_local_authority(
+            &config,
+            local_authority_id,
+            authority_keypair
+                .as_ref()
+                .map(|keypair| keypair.verifying_key()),
+            &mut authority_keys_map,
+        )?;
+        let authority_rotation_order = sorted_authority_ids(&authority_keys_map);
+        let current_authority = authority_rotation_order.first().copied();
+        let authority_keys = Arc::new(RwLock::new(authority_keys_map));
 
         let authority_state = AuthorityState {
             current_round: 0,
-            current_authority: None,
+            current_authority,
             last_block_time: Utc::now(),
             authority_performance: HashMap::new(),
-            authority_rotation_order: Vec::new(),
+            authority_rotation_order,
             current_authority_index: 0,
         };
 
         Ok(Self {
             config,
             authority_keypair,
+            local_authority_id,
             authority_keys,
             network,
             blockchain,
             authority_state: Arc::new(RwLock::new(authority_state)),
         })
-    }
-
-    fn load_or_generate_keypair(key_file: &Option<String>) -> Result<SigningKey> {
-        if let Some(file_path) = key_file {
-            // Try to load existing keypair
-            if std::path::Path::new(file_path).exists() {
-                let key_data = std::fs::read(file_path)
-                    .map_err(|e| anyhow::anyhow!("Failed to read authority key file: {}", e))?;
-
-                if key_data.len() == 32 {
-                    let keypair = SigningKey::from_bytes(
-                        &key_data
-                            .try_into()
-                            .map_err(|_| anyhow::anyhow!("Invalid key length"))?,
-                    );
-                    info!("Loaded authority keypair from {}", file_path);
-                    return Ok(keypair);
-                } else {
-                    return Err(anyhow::anyhow!("Authority key file must be 32 bytes"));
-                }
-            }
-
-            // Generate new keypair and save it
-            let keypair = generate_signing_key()
-                .map_err(|e| anyhow::anyhow!("Failed to generate authority key: {}", e))?;
-            std::fs::write(file_path, keypair.to_bytes())
-                .map_err(|e| anyhow::anyhow!("Failed to write authority key file: {}", e))?;
-            info!("Generated new authority keypair and saved to {}", file_path);
-            Ok(keypair)
-        } else {
-            // Generate ephemeral keypair using CSPRNG
-            generate_signing_key()
-                .map_err(|e| anyhow::anyhow!("Failed to generate ephemeral key: {}", e))
-        }
     }
 
     async fn start_authority_duties(self: Arc<Self>) -> Result<()> {
@@ -272,16 +356,7 @@ impl ProofOfAuthority {
             return Ok(false);
         }
 
-        let our_authority_id = if let Some(keypair) = &self.authority_keypair {
-            let public_key = keypair.verifying_key();
-            authority_keys
-                .iter()
-                .find_map(|(id, key)| if key == &public_key { Some(*id) } else { None })
-        } else {
-            None
-        };
-
-        if let Some(our_id) = our_authority_id {
+        if let Some(our_id) = self.local_authority_id {
             if let Some(current_authority) = authority_state.current_authority {
                 Ok(current_authority == our_id)
             } else if !authority_state.authority_rotation_order.is_empty() {
@@ -318,10 +393,26 @@ impl ProofOfAuthority {
 
         self.broadcast_block_proposal(proposal).await?;
 
+        let created_by = self.local_authority_id;
+
         // Update state
         let mut authority_state = self.authority_state.write().await;
         authority_state.last_block_time = Utc::now();
         authority_state.current_round += 1;
+
+        if let Some(authority_id) = created_by {
+            let performance = authority_state
+                .authority_performance
+                .entry(authority_id)
+                .or_insert_with(|| AuthorityPerformance {
+                    blocks_created: 0,
+                    missed_slots: 0,
+                    last_activity: Utc::now(),
+                    reputation: 1.0,
+                });
+            performance.blocks_created += 1;
+            performance.last_activity = Utc::now();
+        }
 
         // Simple rotation
         if !authority_state.authority_rotation_order.is_empty() {
@@ -334,17 +425,6 @@ impl ProofOfAuthority {
                     authority_state.authority_rotation_order
                         [authority_state.current_authority_index],
                 );
-            }
-        }
-
-        // Stats
-        if let Some(current_authority) = authority_state.current_authority {
-            if let Some(performance) = authority_state
-                .authority_performance
-                .get_mut(&current_authority)
-            {
-                performance.blocks_created += 1;
-                performance.last_activity = Utc::now();
             }
         }
 
@@ -381,6 +461,27 @@ impl ProofOfAuthority {
             }
         }
         Ok(())
+    }
+
+    async fn refresh_authority_rotation_state(&self) {
+        let authority_keys = self.authority_keys.read().await;
+        let rotation_order = sorted_authority_ids(&authority_keys);
+        drop(authority_keys);
+
+        let mut authority_state = self.authority_state.write().await;
+        authority_state.authority_rotation_order = rotation_order;
+
+        if authority_state.authority_rotation_order.is_empty() {
+            authority_state.current_authority = None;
+            authority_state.current_authority_index = 0;
+            return;
+        }
+
+        authority_state.current_authority_index %= authority_state.authority_rotation_order.len();
+        authority_state.current_authority = authority_state
+            .authority_rotation_order
+            .get(authority_state.current_authority_index)
+            .copied();
     }
 
     async fn validate_block_structure(
@@ -455,6 +556,7 @@ impl ConsensusProtocol for ProofOfAuthority {
             let clone = Self {
                 config: self.config.clone(),
                 authority_keypair: self.authority_keypair.clone(), // This one is not Arc... SigningKey is small copy? No.
+                local_authority_id: self.local_authority_id,
                 // SigningKey is Copy? No. It's Clone.
                 authority_keys: self.authority_keys.clone(),
                 network: self.network.clone(),
@@ -470,6 +572,7 @@ impl ConsensusProtocol for ProofOfAuthority {
         let clone_mon = Self {
             config: self.config.clone(),
             authority_keypair: self.authority_keypair.clone(),
+            local_authority_id: self.local_authority_id,
             authority_keys: self.authority_keys.clone(),
             network: self.network.clone(),
             blockchain: self.blockchain.clone(),
@@ -570,15 +673,25 @@ impl ConsensusProtocol for ProofOfAuthority {
     }
 
     async fn add_authority(&self, authority_id: Uuid, public_key: VerifyingKey) -> Result<()> {
+        let derived_id = authority_id_from_public_key(&public_key);
+        if authority_id != derived_id {
+            warn!(
+                "PoA: ignoring non-deterministic authority ID {} and using {} derived from public key",
+                authority_id, derived_id
+            );
+        }
+
         self.authority_keys
             .write()
             .await
-            .insert(authority_id, public_key);
+            .insert(derived_id, public_key);
+        self.refresh_authority_rotation_state().await;
         Ok(())
     }
 
     async fn remove_authority(&self, authority_id: Uuid) -> Result<()> {
         self.authority_keys.write().await.remove(&authority_id);
+        self.refresh_authority_rotation_state().await;
         Ok(())
     }
 }
@@ -846,10 +959,10 @@ pub struct PbftConsensus {
     pub network: Arc<NetworkManager>,
     pub blockchain: Arc<RwLock<Blockchain>>,
     pub node_id: Uuid,
+    pub local_authority_id: Option<Uuid>,
     pub authority_keys: Arc<RwLock<HashMap<Uuid, VerifyingKey>>>,
     pub pbft_state: Arc<RwLock<PbftState>>,
     pub authority_keypair: Option<SigningKey>,
-    pub is_primary: bool,
 }
 
 impl PbftConsensus {
@@ -860,47 +973,35 @@ impl PbftConsensus {
     ) -> Result<Self> {
         let node_id = network.node_id;
         let authority_keypair = if config.is_authority {
-            Some(
-                generate_signing_key()
-                    .map_err(|e| anyhow::anyhow!("Failed to generate authority key: {}", e))?,
-            )
+            Some(load_or_generate_authority_keypair(
+                &config.authority_key_file,
+            )?)
         } else {
             None
         };
 
-        let mut authority_keys = HashMap::new();
-        for key_str in &config.authority_keys {
-            if let Ok(key_bytes) = hex::decode(key_str) {
-                if key_bytes.len() == 32 {
-                    if let Ok(public_key) = VerifyingKey::from_bytes(
-                        &key_bytes
-                            .try_into()
-                            .map_err(|_| anyhow::anyhow!("Invalid key length"))?,
-                    ) {
-                        let authority_id = Uuid::new_v4();
-                        authority_keys.insert(authority_id, public_key);
-                    }
-                }
-            }
-        }
-
-        // Determine if we're primary (simple deterministic selection based on node ID)
-        let is_primary = authority_keys.is_empty()
-            || authority_keys
-                .keys()
-                .min()
-                .map(|min_id| *min_id == node_id)
-                .unwrap_or(false);
+        let mut authority_keys = load_authority_key_map(&config.authority_keys);
+        let local_authority_id = authority_keypair
+            .as_ref()
+            .map(|keypair| authority_id_from_public_key(&keypair.verifying_key()));
+        reconcile_local_authority(
+            &config,
+            local_authority_id,
+            authority_keypair
+                .as_ref()
+                .map(|keypair| keypair.verifying_key()),
+            &mut authority_keys,
+        )?;
 
         Ok(Self {
             config,
             network,
             blockchain,
             node_id,
+            local_authority_id,
             authority_keys: Arc::new(RwLock::new(authority_keys)),
             pbft_state: Arc::new(RwLock::new(PbftState::default())),
             authority_keypair,
-            is_primary,
         })
     }
 
@@ -927,7 +1028,8 @@ impl PbftConsensus {
         let primary_index = (view as usize) % sorted_ids.len();
         sorted_ids
             .get(primary_index)
-            .map(|id| *id == self.node_id)
+            .zip(self.local_authority_id)
+            .map(|(id, local_id)| *id == local_id)
             .unwrap_or(false)
     }
 
@@ -1019,7 +1121,7 @@ impl ConsensusProtocol for PbftConsensus {
             "PBFT: Node {}, View={}, Primary={}, Authorities={}",
             self.node_id,
             state.view,
-            self.is_primary,
+            self.is_primary_for_view(state.view).await,
             authority_keys.len()
         );
 
@@ -1150,8 +1252,15 @@ impl ConsensusProtocol for PbftConsensus {
     }
 
     async fn add_authority(&self, id: Uuid, key: VerifyingKey) -> Result<()> {
-        self.authority_keys.write().await.insert(id, key);
-        info!("PBFT: Added authority {}", id);
+        let derived_id = authority_id_from_public_key(&key);
+        if id != derived_id {
+            warn!(
+                "PBFT: ignoring non-deterministic authority ID {} and using {} derived from public key",
+                id, derived_id
+            );
+        }
+        self.authority_keys.write().await.insert(derived_id, key);
+        info!("PBFT: Added authority {}", derived_id);
         Ok(())
     }
 
@@ -1340,10 +1449,20 @@ impl PbftConsensus {
             return Err(anyhow!("Duplicate PRE-PREPARE message from {}", sender));
         }
 
+        let authority_keys = self.authority_keys.read().await;
+        let expected_primary_id = if authority_keys.is_empty() {
+            None
+        } else {
+            sorted_authority_ids(&authority_keys)
+                .get((view as usize) % authority_keys.len())
+                .copied()
+        };
+        drop(authority_keys);
+
         let state = self.pbft_state.read().await;
 
-        // Only accept PRE-PREPARE from primary (authorization check)
-        if !self.is_primary_for_view(view).await || sender != self.node_id {
+        // Only accept PRE-PREPARE from the authority designated as primary for this view.
+        if expected_primary_id != Some(sender) {
             return Ok(());
         }
 
@@ -1595,10 +1714,10 @@ impl Clone for PbftConsensus {
             network: self.network.clone(),
             blockchain: self.blockchain.clone(),
             node_id: self.node_id,
+            local_authority_id: self.local_authority_id,
             authority_keys: self.authority_keys.clone(),
             pbft_state: self.pbft_state.clone(),
             authority_keypair: self.authority_keypair.clone(),
-            is_primary: self.is_primary,
         }
     }
 }
@@ -1621,6 +1740,7 @@ impl MessageHandler for PbftConsensus {
 mod tests {
     use super::*;
     use crate::utils::config::NodeConfig;
+    use tempfile::NamedTempFile;
 
     #[tokio::test]
     async fn test_consensus_manager_creation() {
@@ -1654,5 +1774,111 @@ mod tests {
         let stats = consensus.get_consensus_stats().await;
 
         assert_eq!(stats.protocol_type, "PBFT");
+    }
+
+    fn write_authority_key_file(signing_key: &SigningKey) -> NamedTempFile {
+        let file = NamedTempFile::new().unwrap();
+        std::fs::write(file.path(), signing_key.to_bytes()).unwrap();
+        file
+    }
+
+    #[test]
+    fn test_authority_id_is_deterministic_from_public_key() {
+        let signing_key = SigningKey::from_bytes(&[7u8; 32]);
+        let public_key = signing_key.verifying_key();
+
+        let authority_id_a = authority_id_from_public_key(&public_key);
+        let authority_id_b = authority_id_from_public_key(&public_key);
+
+        assert_eq!(authority_id_a, authority_id_b);
+    }
+
+    #[tokio::test]
+    async fn test_poa_bootstraps_single_authority_rotation_from_local_key() {
+        let signing_key = SigningKey::from_bytes(&[11u8; 32]);
+        let key_file = write_authority_key_file(&signing_key);
+        let expected_authority_id = authority_id_from_public_key(&signing_key.verifying_key());
+
+        let config = ConsensusConfig {
+            is_authority: true,
+            authority_key_file: Some(key_file.path().display().to_string()),
+            authority_keys: vec![],
+            ..Default::default()
+        };
+
+        let network = Arc::new(NetworkManager::new(NodeConfig::default()));
+        let blockchain = Arc::new(RwLock::new(Blockchain::new()));
+
+        let poa = ProofOfAuthority::new(config, network, blockchain)
+            .await
+            .unwrap();
+
+        let authority_keys = poa.authority_keys.read().await;
+        let authority_state = poa.authority_state.read().await;
+
+        assert_eq!(poa.local_authority_id, Some(expected_authority_id));
+        assert_eq!(authority_keys.len(), 1);
+        assert!(authority_keys.contains_key(&expected_authority_id));
+        assert_eq!(
+            authority_state.current_authority,
+            Some(expected_authority_id)
+        );
+        assert_eq!(
+            authority_state.authority_rotation_order,
+            vec![expected_authority_id]
+        );
+    }
+
+    #[tokio::test]
+    async fn test_pbft_uses_authority_key_identity_from_configured_key_file() {
+        let signing_key = SigningKey::from_bytes(&[13u8; 32]);
+        let key_file = write_authority_key_file(&signing_key);
+        let public_key_hex = hex::encode(signing_key.verifying_key().to_bytes());
+        let expected_authority_id = authority_id_from_public_key(&signing_key.verifying_key());
+
+        let config = ConsensusConfig {
+            consensus_type: "pbft".to_string(),
+            is_authority: true,
+            authority_key_file: Some(key_file.path().display().to_string()),
+            authority_keys: vec![public_key_hex],
+            ..Default::default()
+        };
+
+        let network = Arc::new(NetworkManager::new(NodeConfig::default()));
+        let blockchain = Arc::new(RwLock::new(Blockchain::new()));
+
+        let pbft = PbftConsensus::new(config, network, blockchain)
+            .await
+            .unwrap();
+
+        assert_eq!(pbft.local_authority_id, Some(expected_authority_id));
+        assert!(pbft.is_primary_for_view(0).await);
+    }
+
+    #[tokio::test]
+    async fn test_pbft_rejects_authority_node_missing_from_authority_set() {
+        let local_signing_key = SigningKey::from_bytes(&[17u8; 32]);
+        let other_signing_key = SigningKey::from_bytes(&[19u8; 32]);
+        let key_file = write_authority_key_file(&local_signing_key);
+
+        let config = ConsensusConfig {
+            consensus_type: "pbft".to_string(),
+            is_authority: true,
+            authority_key_file: Some(key_file.path().display().to_string()),
+            authority_keys: vec![hex::encode(other_signing_key.verifying_key().to_bytes())],
+            ..Default::default()
+        };
+
+        let network = Arc::new(NetworkManager::new(NodeConfig::default()));
+        let blockchain = Arc::new(RwLock::new(Blockchain::new()));
+
+        let error = PbftConsensus::new(config, network, blockchain)
+            .await
+            .err()
+            .expect("authority node outside configured authority set should fail");
+
+        assert!(error
+            .to_string()
+            .contains("public key is not present in the configured authority set"));
     }
 }

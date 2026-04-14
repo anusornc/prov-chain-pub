@@ -22,6 +22,8 @@ ProvChainOrg is a distributed blockchain system in Rust that enhances blockchain
 - **Web**: Axum framework with JWT authentication
 - **Networking**: WebSockets for P2P communication
 - **Dependency Model**: Uses `owl2-reasoner` from SPACL as a Git dependency (not a local workspace member)
+- **Production Semantic Path**: `src/ontology/*` plus SPACL is the only production-aligned reasoning/validation path
+- **Semantic Contract Model**: A permissioned network shares one ontology package as the semantic contract for interoperable traceability
 
 ## Build & Run Commands
 
@@ -115,14 +117,15 @@ sudo docker compose -f docker-compose.baselines-only.yml down
 
 ### Core Modules
 - `src/core/` - Blockchain state and block management with Ed25519 signing
-  - **DEPRECATED**: `src/ontology/processor.rs` is not maintained (use `src/semantic/owl_reasoner.rs`, `src/semantic/shacl_validator.rs`, or `src/semantic/owl2_enhanced_reasoner.rs`)
+  - **DEPRECATED**: `src/ontology/processor.rs` is not maintained
 - `src/network/` - P2P networking and consensus (PoA/PBFT)
-- `src/ontology/` - Ontology management and validation
-  - `shacl_validator.rs` - SHACL validator for RDF transaction data with OWL2 reasoner integration and Oxigraph store
-- `src/semantic/` - OWL2 reasoning and SHACL validation
-  - `owl2_config.rs` - OWL2 configuration module with `OwlReasonerConfig` for feature toggling (hasKey, property chains, qualified cardinality)
-  - `owl2_enhanced_reasoner.rs` - Full OWL2 feature support (hasKey, property chains, qualified cardinality) with `Owl2EnhancedReasoner`
-  - `owl_reasoner.rs` - Base OWL reasoning with validation, integrates `OwlReasonerConfig`
+- `src/ontology/` - Production ontology management, ontology-package loading, SHACL validation, and SPACL-backed reasoning
+  - `domain_manager.rs` - Production semantic orchestrator for shared ontology packages
+  - `shacl_validator.rs` - Production SHACL validator with SPACL integration
+- `src/semantic/` - Experimental/demo semantic modules retained for migration support and non-production demos
+  - `owl2_config.rs` - Legacy feature toggling config used by experimental modules
+  - `owl2_enhanced_reasoner.rs` - Experimental OWL2 feature exploration
+  - `owl_reasoner.rs` - Legacy OWL reasoning module, not part of the production path
 - `src/security/` - Encryption and wallet management
 - `src/integrity/` - Blockchain integrity validation
   - `transaction_counter.rs` - RDF parsing-based accurate transaction counting
@@ -144,16 +147,16 @@ sudo docker compose -f docker-compose.baselines-only.yml down
 - `src/knowledge_graph/` - Graph algorithms for traceability
   - `entity_linking.rs` - Entity resolution, deduplication, and confidence scoring with similarity matchers (ExactMatcher, LevenshteinMatcher, TokenMatcher, PhoneticMatcher)
   - `graph_db.rs` - Enhanced graph database with advanced operations (shortest path, centrality measures, neighbor discovery, indexing)
-- `src/semantic/` - OWL2 reasoning and SHACL validation
-  - `owl2_traceability.rs` - Enhanced traceability using owl2-reasoner for property chain inference and OWL2 reasoning
-  - `shacl_validator.rs` - SHACL validation with `ShaclConfig` (enabled flag, shapes path, fail_on_error), validates graphs against loaded shapes
+- `src/semantic/` - Experimental and migration-support semantic modules
+  - `owl2_traceability.rs` - Legacy traceability experiment, not part of the production path
+  - `shacl_validator.rs` - Legacy/basic SHACL validator for experimental workflows
 - `src/analytics/` - Performance monitoring and predictive analytics
   - `predictive.rs` - Demand forecasting with configurable `ForecastingConfig` (base_demand, growth_rate, noise_amplitude, confidence_interval_pct, seasonal_amplitude)
   - Research-reproducible models with explicit historical data loading via `load_historical_data()`
 - `src/config/mod.rs` - Basic configuration module with TOML support
   - `Config` - Basic configuration with network, consensus, storage, logging, web, and ontology settings
   - `CorsConfig` - CORS configuration with origin whitelisting (debug mode: localhost:5173-5175, production: env var or restrictive default)
-  - `OntologyConfigFile` - Ontology file configuration with SHACL validation paths (defaults: `src/semantic/ontologies/`, `src/semantic/shapes/`)
+  - `OntologyConfigFile` - Ontology package file configuration with SHACL validation paths (defaults: `src/semantic/ontologies/`, `src/semantic/shapes/`)
   - Tests split for debug/release compatibility: `test_default_config_debug` (cfg!(debug_assertions)), `test_default_config_common` (mode-agnostic)
 - `src/utils/config.rs` - Comprehensive node configuration module
   - `NodeConfig` - Complete node configuration with validation

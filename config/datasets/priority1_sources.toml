@@ -1,0 +1,57 @@
+[sources.gs1_epcis_examples]
+id = "gs1_epcis_examples"
+type = "standards_examples"
+domain = "food"
+provider = "GS1"
+base_url = "https://ref.gs1.org/docs/epcis/examples"
+license = "GS1 website terms"
+format = "html + linked example files"
+retrieval_strategy = "download selected example files and record original URLs"
+notes = "Use for standards-aligned event ingestion and mapping tests."
+
+[sources.openfda_drug_ndc]
+id = "openfda_drug_ndc"
+type = "public_registry"
+domain = "pharma"
+provider = "openFDA"
+base_url = "https://api.fda.gov/drug/ndc.json"
+documentation_url = "https://open.fda.gov/apis/drug/ndc/"
+license = "U.S. Government public data"
+format = "json"
+retrieval_strategy = "query deterministic snapshot using search, limit, and skip parameters"
+notes = "Use for drug identifier normalization and ontology-package mapping."
+
+[sources.accessgudid]
+id = "accessgudid"
+type = "public_registry"
+domain = "device"
+provider = "NLM / FDA GUDID"
+base_url = "https://accessgudid.nlm.nih.gov/download"
+license = "U.S. Government public data"
+format = "zip/csv/xml"
+retrieval_strategy = "download one stable release and record release date plus archive hash"
+notes = "Use for device identifier normalization and ontology-package mapping."
+
+[sources.openfda_drug_shortages]
+id = "openfda_drug_shortages"
+type = "incident_registry"
+domain = "pharma"
+provider = "openFDA"
+base_url = "https://api.fda.gov/drug/drugshortages.json"
+documentation_url = "https://open.fda.gov/apis/drug/drugshortages/"
+license = "U.S. Government public data"
+format = "json"
+retrieval_strategy = "query deterministic snapshot using fixed filters"
+notes = "Use for disruption-aware provenance scenarios."
+
+[sources.fooddata_central]
+id = "fooddata_central"
+type = "public_registry"
+domain = "food"
+provider = "USDA"
+base_url = "https://fdc.nal.usda.gov/download-datasets/"
+license = "U.S. Government public data"
+format = "zip/csv/json"
+retrieval_strategy = "download one named release and record release date"
+notes = "Use for food master data and product normalization."
+

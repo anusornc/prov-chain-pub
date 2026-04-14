@@ -18,6 +18,9 @@ This directory contains all the documentation for the ProvChainOrg blockchain tr
   - C4 Model documentation (System Context, Container, Component)
   - Architectural Decision Records (ADRs)
   - Technology stack and quality attributes
+  - Shared ontology network use-case reference
+  - Shared ontology network working plan
+  - Shared ontology network paper-ready architecture figures
 - **[architecture/COMPONENT_OWNERSHIP.md](architecture/COMPONENT_OWNERSHIP.md)** - Component ownership matrix
 
 ## 🔧 Deployment Guides
@@ -34,10 +37,21 @@ This directory contains all the documentation for the ProvChainOrg blockchain tr
   - Production feature reviews
   - Consensus implementation reviews
   - Test coverage reviews
+  - Top-journal repositioning and novelty roadmap
+  - Structural audit for node startup, config, and ontology runtime
 
 ## 📊 Benchmarking & Performance
 - **[benchmarking/README.md](benchmarking/README.md)** - Research-focused benchmarking guide
 - **[benchmarking/EXPERIMENTAL_RESULTS.md](benchmarking/EXPERIMENTAL_RESULTS.md)** - Real experimental results
+- **[benchmarking/ONTOLOGY_ADMISSION_BENCHMARK_2026-03-10.md](benchmarking/ONTOLOGY_ADMISSION_BENCHMARK_2026-03-10.md)** - Focused benchmark for ontology admission, subclass reasoning, and explanation summaries
+- **[benchmarking/DATASET_ACQUISITION_PLAN_2026-03-10.md](benchmarking/DATASET_ACQUISITION_PLAN_2026-03-10.md)** - Official-source dataset strategy for standards examples, public registries, incident data, and reproducible synthesis
+- **[benchmarking/NORMALIZATION_SCHEMA_2026-03-10.md](benchmarking/NORMALIZATION_SCHEMA_2026-03-10.md)** - Intermediate normalization schema for external datasets before ontology-package emission
+- **[benchmarking/DOMAIN_DATASET_ADMISSION_BENCHMARK_2026-03-10.md](benchmarking/DOMAIN_DATASET_ADMISSION_BENCHMARK_2026-03-10.md)** - Benchmark artifact for UHT, hybrid GS1/EPCIS-UHT, healthcare, and pharmaceutical synthetic events, scaling curves, and cross-package workloads through ontology-backed block admission
+- **[benchmarking/DOMAIN_DATASET_ADMISSION_SUMMARY_TABLES_2026-03-11.md](benchmarking/DOMAIN_DATASET_ADMISSION_SUMMARY_TABLES_2026-03-11.md)** - Publication-ready Markdown tables generated from Criterion benchmark estimates
+- **[benchmarking/DOMAIN_DATASET_ADMISSION_FIGURES_2026-03-11.md](benchmarking/DOMAIN_DATASET_ADMISSION_FIGURES_2026-03-11.md)** - Publication-ready figure package with reproducible PNG/SVG outputs and paper caption guidance
+- **[benchmarking/data/README.md](benchmarking/data/README.md)** - CSV exports for plotting and reproducing the domain dataset admission figures
+- **[architecture/SHARED_ONTOLOGY_NETWORK_ARCHITECTURE_FIGURES_2026-03-11.md](architecture/SHARED_ONTOLOGY_NETWORK_ARCHITECTURE_FIGURES_2026-03-11.md)** - Publication-ready layered architecture and semantic admission pipeline figures for the shared-ontology network model
+- **[../config/datasets/acquisition_manifests/README.md](../config/datasets/acquisition_manifests/README.md)** - Benchmark snapshot manifests for the raw sample fixtures used by normalization and ontology admission
 - **[../BENCHMARKING.md](../BENCHMARKING.md)** - Central benchmarking entry point
 
 ## 📚 Research & Publication
@@ -62,6 +76,8 @@ docs/
 ├── architecture/                       # Architecture documentation
 │   ├── README.md                       # C4 model documentation
 │   ├── ADR/                            # Architecture Decision Records
+│   ├── SHARED_ONTOLOGY_NETWORK_USE_CASES.md
+│   ├── SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md
 │   └── COMPONENT_OWNERSHIP.md          # Component ownership matrix
 │
 ├── deployment/                         # Deployment guides
@@ -75,11 +91,14 @@ docs/
 ├── reviews/                            # Code review reports
 │   ├── CODE_REVIEW_PRODUCTION_FEATURES.md
 │   ├── PBFT_CONSENSUS_CODE_REVIEW.md
+│   ├── STRUCTURAL_AUDIT_NODE_CONFIG_ONTOLOGY_2026-03-09.md
+│   ├── TOP_JOURNAL_REPOSITIONING_ROADMAP.md
 │   └── test_coverage_review_atomic_operations.md
 │
 ├── benchmarking/                       # Performance testing
 │   ├── README.md
-│   └── EXPERIMENTAL_RESULTS.md
+│   ├── EXPERIMENTAL_RESULTS.md
+│   └── ONTOLOGY_ADMISSION_BENCHMARK_2026-03-10.md
 │
 ├── publication/                        # Research materials
 │   ├── README.md
@@ -126,6 +145,18 @@ docs/
 - `project-health/spacl_migration_validation_2026-03-08.md` - Post-migration validation and benchmark summary
 - `project-health/test_results_summary_2026-01-26.md` - Complete test results
 - `project-health/clippy_analysis_2026-01-26.md` - Clippy warnings breakdown
+- `reviews/TOP_JOURNAL_REPOSITIONING_ROADMAP.md` - Research repositioning, novelty, and implementation roadmap for top-tier submission
+- `reviews/STRUCTURAL_AUDIT_NODE_CONFIG_ONTOLOGY_2026-03-09.md` - Current execution-path audit for startup, config, consensus, and ontology wiring
+- `architecture/ADR/0014-use-shared-ontology-packages-and-spacl-production-path.md` - Architectural decision for the production semantic path and ontology-package model
+- `architecture/SHARED_ONTOLOGY_NETWORK_USE_CASES.md` - Canonical actors, lifecycle, boundaries, and end-to-end flows for the shared-ontology network model
+- `architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md` - Long-lived working memory for the shared ontology network design
+- `benchmarking/ONTOLOGY_ADMISSION_BENCHMARK_2026-03-10.md` - First focused benchmark artifact for production ontology admission
+- `benchmarking/DATASET_ACQUISITION_PLAN_2026-03-10.md` - Dataset strategy for real public sources, standards examples, and synthesis-driven evaluation
+- `benchmarking/NORMALIZATION_SCHEMA_2026-03-10.md` - First normalized-record schema for external food, pharmaceutical, and device datasets
+- `benchmarking/DOMAIN_DATASET_ADMISSION_BENCHMARK_2026-03-10.md` - Dataset-derived domain admission benchmark with split setup, single-record admission, batch admission, scaling-curve metrics, and cross-package round-robin workloads across UHT, hybrid GS1/EPCIS-UHT, healthcare, and pharmaceutical paths
+- `benchmarking/DOMAIN_DATASET_ADMISSION_SUMMARY_TABLES_2026-03-11.md` - Paper-ready summary tables generated from Criterion results for direct inclusion in manuscript drafts
+- `benchmarking/data/domain_dataset_admission_summary_2026-03-11.csv` - Machine-readable export of all domain dataset admission metrics
+- `benchmarking/data/domain_dataset_admission_plot_data_2026-03-11.csv` - Figure-ready benchmark data for grouped bar charts and scaling plots
 
 **Latest Validation Snapshot (2026-03-08)**:
 - ✅ **SPACL Migration Verified**: Local `owl2-reasoner/` removed; external Git dependency confirmed

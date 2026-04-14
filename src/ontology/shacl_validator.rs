@@ -1,10 +1,19 @@
 use crate::ontology::error::{ConstraintType, ShapeViolation, ValidationError, ValidationResult};
-use owl2_reasoner::{IRI, SimpleReasoner};
+use owl2_reasoner::{SimpleReasoner, IRI};
 use oxigraph::model::*;
 use oxigraph::sparql::QueryResults;
 use oxigraph::store::Store;
 use std::fs;
 use std::sync::{Arc, Mutex};
+
+#[derive(Debug, Default)]
+struct ReasoningValidationStats {
+    class_constraints_checked: u32,
+    exact_class_matches: u32,
+    subclass_matches: u32,
+    fallback_exact_class_checks: u32,
+    reasoner_subclass_checks: u32,
+}
 
 /// SHACL validator for RDF transaction data
 pub struct ShaclValidator {
@@ -378,11 +387,13 @@ impl ShaclValidator {
         rdf_data: &str,
     ) -> Result<ValidationResult, ValidationError> {
         let start_time = std::time::Instant::now();
+        let mut reasoning_stats = ReasoningValidationStats::default();
 
         if !self.validation_enabled {
             return Ok(ValidationResult::success(0)
                 .with_execution_time(start_time.elapsed().as_millis() as u64)
-                .with_metadata("validation_enabled".to_string(), "false".to_string()));
+                .with_metadata("validation_enabled".to_string(), "false".to_string())
+                .with_metadata("reasoner_enabled".to_string(), "false".to_string()));
         }
 
         // Create a temporary store for the transaction data
@@ -403,7 +414,9 @@ impl ShaclValidator {
         // Validate against core shapes
         for shape in &self.core_shapes {
             constraints_checked += shape.properties.len() as u32 + shape.constraints.len() as u32;
-            if let Err(mut shape_violations) = self.validate_against_shape(&data_store, shape) {
+            if let Err(mut shape_violations) =
+                self.validate_against_shape(&data_store, shape, &mut reasoning_stats)
+            {
                 violations.append(&mut shape_violations);
             }
         }
@@ -411,36 +424,64 @@ impl ShaclValidator {
         // Validate against domain shapes
         for shape in &self.domain_shapes {
             constraints_checked += shape.properties.len() as u32 + shape.constraints.len() as u32;
-            if let Err(mut shape_violations) = self.validate_against_shape(&data_store, shape) {
+            if let Err(mut shape_violations) =
+                self.validate_against_shape(&data_store, shape, &mut reasoning_stats)
+            {
                 violations.append(&mut shape_violations);
             }
         }
 
         let execution_time = start_time.elapsed().as_millis() as u64;
 
-        if violations.is_empty() {
-            Ok(ValidationResult::success(constraints_checked)
-                .with_execution_time(execution_time)
-                .with_metadata(
-                    "core_shapes".to_string(),
-                    self.core_shapes.len().to_string(),
-                )
-                .with_metadata(
-                    "domain_shapes".to_string(),
-                    self.domain_shapes.len().to_string(),
-                ))
+        let result = if violations.is_empty() {
+            ValidationResult::success(constraints_checked)
         } else {
-            Ok(ValidationResult::failure(violations, constraints_checked)
-                .with_execution_time(execution_time)
-                .with_metadata(
-                    "core_shapes".to_string(),
-                    self.core_shapes.len().to_string(),
-                )
-                .with_metadata(
-                    "domain_shapes".to_string(),
-                    self.domain_shapes.len().to_string(),
-                ))
-        }
+            ValidationResult::failure(violations, constraints_checked)
+        };
+
+        Ok(self.attach_validation_metadata(result, execution_time, &reasoning_stats))
+    }
+
+    fn attach_validation_metadata(
+        &self,
+        result: ValidationResult,
+        execution_time: u64,
+        reasoning_stats: &ReasoningValidationStats,
+    ) -> ValidationResult {
+        result
+            .with_execution_time(execution_time)
+            .with_metadata(
+                "core_shapes".to_string(),
+                self.core_shapes.len().to_string(),
+            )
+            .with_metadata(
+                "domain_shapes".to_string(),
+                self.domain_shapes.len().to_string(),
+            )
+            .with_metadata(
+                "reasoner_enabled".to_string(),
+                self.reasoner.is_some().to_string(),
+            )
+            .with_metadata(
+                "class_constraints_checked".to_string(),
+                reasoning_stats.class_constraints_checked.to_string(),
+            )
+            .with_metadata(
+                "exact_class_matches".to_string(),
+                reasoning_stats.exact_class_matches.to_string(),
+            )
+            .with_metadata(
+                "subclass_matches".to_string(),
+                reasoning_stats.subclass_matches.to_string(),
+            )
+            .with_metadata(
+                "fallback_exact_class_checks".to_string(),
+                reasoning_stats.fallback_exact_class_checks.to_string(),
+            )
+            .with_metadata(
+                "reasoner_subclass_checks".to_string(),
+                reasoning_stats.reasoner_subclass_checks.to_string(),
+            )
     }
 
     /// Validate data against a specific SHACL shape
@@ -448,6 +489,7 @@ impl ShaclValidator {
         &self,
         data_store: &Store,
         shape: &ShaclShape,
+        reasoning_stats: &mut ReasoningValidationStats,
     ) -> Result<(), Vec<ShapeViolation>> {
         let mut violations = Vec::new();
 
@@ -482,9 +524,13 @@ impl ShaclValidator {
                 if let Some(instance_term) = solution.get("instance") {
                     // Validate this instance against all shape properties
                     for property in &shape.properties {
-                        if let Err(mut property_violations) =
-                            self.validate_property(data_store, &shape.id, instance_term, property)
-                        {
+                        if let Err(mut property_violations) = self.validate_property(
+                            data_store,
+                            &shape.id,
+                            instance_term,
+                            property,
+                            reasoning_stats,
+                        ) {
                             violations.append(&mut property_violations);
                         }
                     }
@@ -518,6 +564,7 @@ impl ShaclValidator {
         shape_id: &str,
         instance: &Term,
         property: &ShaclProperty,
+        reasoning_stats: &mut ReasoningValidationStats,
     ) -> Result<(), Vec<ShapeViolation>> {
         let mut violations = Vec::new();
 
@@ -625,74 +672,42 @@ impl ShaclValidator {
             }
         }
 
-        // Check class constraint using OWL2 Reasoner
+        // Check class constraint with exact-type fallback and optional OWL2 reasoning
         if let Some(expected_class) = &property.class {
-            if let Some(reasoner_lock) = &self.reasoner {
-                if let Ok(mut reasoner) = reasoner_lock.lock() {
-                    if let Ok(expected_class_iri) = IRI::new(expected_class) {
-                        for value in &values {
-                            // Only check if value is an IRI
-                            if value.starts_with("http") {
-                                if let Ok(_value_iri) = IRI::new(value) {
-                                    // Check if the value is an instance of the expected class
-                                    // or if the value's type is a subclass of the expected class
-                                    // Since we don't have instance types easily available here without querying the store again,
-                                    // we'll assume for now we are checking if the object is of the right type.
-                                    // BUT, `sh:class` on a property means the object of the triple must be an instance of the class.
-                                    // In our data generation, we have `core:batch1 a core:Batch`.
-                                    // And `prov:wasAttributedTo core:org1`. `core:org1 a core:Organization`.
-                                    // The property `prov:wasAttributedTo` has `sh:class core:Organization`.
-                                    // So we need to check if `core:org1` is an instance of `core:Organization`.
+            for value in &values {
+                reasoning_stats.class_constraints_checked += 1;
 
-                                    // To do this properly with the reasoner, we need to know the types of the value.
-                                    // We can query the data_store for the type of the value.
-                                    let type_query =
-                                        format!("SELECT ?type WHERE {{ <{}> a ?type }}", value);
-
-                                    let mut is_instance = false;
-                                    if let Ok(QueryResults::Solutions(type_solutions)) =
-                                        data_store.query(&type_query)
-                                    {
-                                        for type_sol in type_solutions.flatten() {
-                                            if let Some(type_term) = type_sol.get("type") {
-                                                let type_str = match type_term {
-                                                    Term::NamedNode(n) => n.as_str().to_string(),
-                                                    _ => type_term.to_string(),
-                                                };
-
-                                                if let Ok(type_iri) = IRI::new(&type_str) {
-                                                    // Check if type_iri is subclass of expected_class_iri (or same)
-                                                    if let Ok(is_sub) = reasoner.is_subclass_of(
-                                                        &type_iri,
-                                                        &expected_class_iri,
-                                                    ) {
-                                                        if is_sub {
-                                                            is_instance = true;
-                                                            break;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    if !is_instance {
-                                        violations.push(
-                                            ShapeViolation::new(
-                                                shape_id.to_string(),
-                                                ConstraintType::Class,
-                                                format!(
-                                                    "Property {} value '{}' is not an instance of class {}",
-                                                    property.path, value, expected_class
-                                                ),
-                                            )
-                                            .with_property_path(property.path.clone())
-                                            .with_value(value.clone()),
-                                        );
-                                    }
-                                }
-                            }
-                        }
+                match self.value_satisfies_class_constraint(
+                    data_store,
+                    value,
+                    expected_class,
+                    reasoning_stats,
+                ) {
+                    Ok(true) => {}
+                    Ok(false) => {
+                        violations.push(
+                            ShapeViolation::new(
+                                shape_id.to_string(),
+                                ConstraintType::Class,
+                                format!(
+                                    "Property {} value '{}' is not an instance of class {}",
+                                    property.path, value, expected_class
+                                ),
+                            )
+                            .with_property_path(property.path.clone())
+                            .with_value(value.clone()),
+                        );
+                    }
+                    Err(error_message) => {
+                        violations.push(
+                            ShapeViolation::new(
+                                shape_id.to_string(),
+                                ConstraintType::Custom("ClassCheckError".to_string()),
+                                error_message,
+                            )
+                            .with_property_path(property.path.clone())
+                            .with_value(value.clone()),
+                        );
                     }
                 }
             }
@@ -703,6 +718,97 @@ impl ShaclValidator {
         } else {
             Err(violations)
         }
+    }
+
+    fn value_satisfies_class_constraint(
+        &self,
+        data_store: &Store,
+        value: &str,
+        expected_class: &str,
+        reasoning_stats: &mut ReasoningValidationStats,
+    ) -> Result<bool, String> {
+        if !value.starts_with("http") {
+            return Ok(false);
+        }
+
+        let value_types = self
+            .query_instance_types(data_store, value)
+            .map_err(|error| error.message)?;
+
+        if value_types
+            .iter()
+            .any(|class_iri| class_iri == expected_class)
+        {
+            reasoning_stats.exact_class_matches += 1;
+            if self.reasoner.is_none() {
+                reasoning_stats.fallback_exact_class_checks += 1;
+            }
+            return Ok(true);
+        }
+
+        let Some(reasoner_lock) = &self.reasoner else {
+            reasoning_stats.fallback_exact_class_checks += 1;
+            return Ok(false);
+        };
+
+        let expected_class_iri =
+            IRI::new(expected_class).map_err(|e| format!("Invalid expected class IRI: {}", e))?;
+        let reasoner = reasoner_lock
+            .lock()
+            .map_err(|_| "Failed to acquire ontology reasoner lock".to_string())?;
+
+        for value_type in value_types {
+            let Ok(value_type_iri) = IRI::new(&value_type) else {
+                continue;
+            };
+
+            reasoning_stats.reasoner_subclass_checks += 1;
+            if reasoner
+                .is_subclass_of(&value_type_iri, &expected_class_iri)
+                .map_err(|e| format!("Reasoner subclass check failed: {}", e))?
+            {
+                reasoning_stats.subclass_matches += 1;
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
+    }
+
+    fn query_instance_types(
+        &self,
+        data_store: &Store,
+        value: &str,
+    ) -> Result<Vec<String>, ValidationError> {
+        let type_query = format!("SELECT ?type WHERE {{ <{}> a ?type }}", value);
+        let results = data_store.query(&type_query).map_err(|e| {
+            ValidationError::new(format!(
+                "Failed to query class types for '{}': {}",
+                value, e
+            ))
+        })?;
+
+        let mut types = Vec::new();
+        if let QueryResults::Solutions(type_solutions) = results {
+            for type_sol in type_solutions {
+                let type_sol = type_sol.map_err(|e| {
+                    ValidationError::new(format!(
+                        "Failed to process class type query result for '{}': {}",
+                        value, e
+                    ))
+                })?;
+
+                if let Some(type_term) = type_sol.get("type") {
+                    let type_str = match type_term {
+                        Term::NamedNode(node) => node.as_str().to_string(),
+                        _ => type_term.to_string(),
+                    };
+                    types.push(type_str);
+                }
+            }
+        }
+
+        Ok(types)
     }
 
     /// Validate a shape-level constraint

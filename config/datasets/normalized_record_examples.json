@@ -1,0 +1,125 @@
+[
+  {
+    "schema_version": "1.0",
+    "record_id": "food:fdc:example-1001",
+    "source_id": "fooddata_central",
+    "domain": "food",
+    "record_type": "entity",
+    "core": {
+      "entity_id": "food:fdc:example-1001",
+      "entity_type": "FoodProduct",
+      "agent_id": "agent:brand:example-dairy",
+      "agent_type": "Manufacturer",
+      "activity_id": null,
+      "activity_type": null,
+      "occurred_at": null,
+      "published_at": "2026-03-10T00:00:00Z"
+    },
+    "identifiers": {
+      "primary": "fdc:1001",
+      "secondary": ["gtin:00000000000000"]
+    },
+    "attributes": {
+      "name": "Example UHT Milk",
+      "status": "active",
+      "classification": "FoundationFood",
+      "lot_or_batch": null,
+      "catalog_code": "fdc:1001"
+    },
+    "relationships": [
+      {
+        "predicate": "manufactured_by",
+        "target_id": "agent:brand:example-dairy",
+        "target_type": "Agent"
+      }
+    ],
+    "source_record": {
+      "dataset_name": "FoodData Central",
+      "source_url": "https://fdc.nal.usda.gov/download-datasets/",
+      "retrieved_at": "2026-03-10T00:00:00Z",
+      "raw_snapshot_id": "fooddata_central_2026_03_10"
+    }
+  },
+  {
+    "schema_version": "1.0",
+    "record_id": "pharma:shortage:example-ndc-1",
+    "source_id": "openfda_drug_shortages",
+    "domain": "pharma",
+    "record_type": "incident",
+    "core": {
+      "entity_id": "drug:ndc:0000-0000",
+      "entity_type": "DrugProduct",
+      "agent_id": "agent:labeler:example-pharma",
+      "agent_type": "Manufacturer",
+      "activity_id": "incident:shortage:example-ndc-1",
+      "activity_type": "DrugShortage",
+      "occurred_at": "2026-03-10T00:00:00Z",
+      "published_at": "2026-03-10T00:00:00Z"
+    },
+    "identifiers": {
+      "primary": "ndc:0000-0000",
+      "secondary": ["incident:shortage:example-ndc-1"]
+    },
+    "attributes": {
+      "name": "Example Injectable Product",
+      "status": "current_shortage",
+      "classification": "DrugShortage",
+      "lot_or_batch": null,
+      "catalog_code": "0000-0000"
+    },
+    "relationships": [
+      {
+        "predicate": "affects_product",
+        "target_id": "drug:ndc:0000-0000",
+        "target_type": "Entity"
+      }
+    ],
+    "source_record": {
+      "dataset_name": "openFDA Drug Shortages",
+      "source_url": "https://open.fda.gov/apis/drug/drugshortages/",
+      "retrieved_at": "2026-03-10T00:00:00Z",
+      "raw_snapshot_id": "openfda_drug_shortages_2026_03_10"
+    }
+  },
+  {
+    "schema_version": "1.0",
+    "record_id": "device:recall:example-udi-1",
+    "source_id": "openfda_device_enforcement",
+    "domain": "device",
+    "record_type": "incident",
+    "core": {
+      "entity_id": "device:udi-di:example12345",
+      "entity_type": "MedicalDevice",
+      "agent_id": "agent:manufacturer:example-deviceco",
+      "agent_type": "Manufacturer",
+      "activity_id": "incident:device-recall:example-1",
+      "activity_type": "DeviceRecall",
+      "occurred_at": "2026-03-10T00:00:00Z",
+      "published_at": "2026-03-10T00:00:00Z"
+    },
+    "identifiers": {
+      "primary": "udi-di:example12345",
+      "secondary": ["incident:device-recall:example-1"]
+    },
+    "attributes": {
+      "name": "Example Device",
+      "status": "recalled",
+      "classification": "MedicalDevice",
+      "lot_or_batch": "lot-001",
+      "catalog_code": "example12345"
+    },
+    "relationships": [
+      {
+        "predicate": "recalls_product",
+        "target_id": "device:udi-di:example12345",
+        "target_type": "Entity"
+      }
+    ],
+    "source_record": {
+      "dataset_name": "openFDA Device Enforcement",
+      "source_url": "https://open.fda.gov/apis/device/enforcement/",
+      "retrieved_at": "2026-03-10T00:00:00Z",
+      "raw_snapshot_id": "openfda_device_enforcement_2026_03_10"
+    }
+  }
+]

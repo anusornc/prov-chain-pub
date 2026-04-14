@@ -68,7 +68,7 @@
 
 ---
 
-### 3. Semantic Layer (OWL2)
+### 3. Semantic Layer (Ontology Packages + SPACL)
 
 **Owner**: @anusorn (primary)
 **Backup**: ⚠️ None
@@ -76,16 +76,16 @@
 
 | Component | File | Complexity | Status |
 |-----------|------|------------|--------|
-| OWL2 Enhanced Reasoner | `src/semantic/owl2_enhanced_reasoner.rs` | Very High | Partially documented |
-| Base OWL Reasoner | `src/semantic/owl_reasoner.rs` | High | Partially documented |
-| SHACL Validation | `src/semantic/shacl_validator.rs` | Medium | Needs documentation |
-| SPARQL Integration | `src/semantic/sparql_query.rs` | High | Partially documented |
+| Ontology Manager | `src/ontology/domain_manager.rs` | Very High | Production path |
+| SHACL Validation | `src/ontology/shacl_validator.rs` | High | Production path |
+| SPACL Reasoner Integration | `Cargo.toml` + `src/ontology/*` | Very High | Production path |
+| Legacy Semantic Modules | `src/semantic/*` | High | Experimental / non-production |
 
 **Key Knowledge**:
-- hasKey constraint validation
-- Property chain inference
-- Qualified cardinality
-- SPARQL query patterns
+- shared ontology package model
+- ontology hash and network consistency
+- SPACL-backed semantic validation
+- SHACL query patterns and ontology-driven validation
 
 **Documentation**:
 - [CLAUDE.md - OWL2 Reasoner](../CLAUDE.md#enhanced-owl2-reasoner)

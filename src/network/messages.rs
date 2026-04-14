@@ -5,6 +5,7 @@
 //! and RDF graph exchange.
 
 use crate::core::blockchain::Block;
+use crate::network::profile::SemanticContractInfo;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -23,6 +24,7 @@ pub enum P2PMessage {
         node_id: Uuid,
         listen_port: u16,
         network_id: String,
+        semantic_contract: Option<SemanticContractInfo>,
         timestamp: DateTime<Utc>,
     },
 
@@ -105,6 +107,7 @@ pub struct PeerInfo {
     pub address: String,
     pub port: u16,
     pub network_id: String,
+    pub semantic_contract: Option<SemanticContractInfo>,
     pub last_seen: DateTime<Utc>,
     pub is_authority: bool,
 }
@@ -116,6 +119,8 @@ pub enum ErrorCode {
     BlockNotFound,
     GraphNotFound,
     NetworkMismatch,
+    SemanticMismatch,
+    DuplicateLogicalPeer,
     AuthenticationFailed,
     InternalError,
 }
@@ -123,10 +128,21 @@ pub enum ErrorCode {
 impl P2PMessage {
     /// Create a new peer discovery message
     pub fn new_peer_discovery(node_id: Uuid, listen_port: u16, network_id: String) -> Self {
+        Self::new_peer_discovery_with_contract(node_id, listen_port, network_id, None)
+    }
+
+    /// Create a new peer discovery message with semantic contract metadata.
+    pub fn new_peer_discovery_with_contract(
+        node_id: Uuid,
+        listen_port: u16,
+        network_id: String,
+        semantic_contract: Option<SemanticContractInfo>,
+    ) -> Self {
         Self::PeerDiscovery {
             node_id,
             listen_port,
             network_id,
+            semantic_contract,
             timestamp: Utc::now(),
         }
     }
@@ -260,9 +276,17 @@ impl P2PMessage {
     /// Validate message structure and content
     pub fn validate(&self) -> anyhow::Result<()> {
         match self {
-            Self::PeerDiscovery { network_id, .. } => {
+            Self::PeerDiscovery {
+                network_id,
+                semantic_contract,
+                ..
+            } => {
                 if network_id.is_empty() {
                     anyhow::bail!("Network ID cannot be empty");
+                }
+
+                if let Some(contract) = semantic_contract {
+                    contract.validate()?;
                 }
             }
             Self::BlockRequest { block_index, .. } => {
@@ -296,9 +320,16 @@ impl PeerInfo {
             address,
             port,
             network_id,
+            semantic_contract: None,
             last_seen: Utc::now(),
             is_authority,
         }
+    }
+
+    /// Attach semantic contract metadata to a peer description.
+    pub fn with_semantic_contract(mut self, semantic_contract: SemanticContractInfo) -> Self {
+        self.semantic_contract = Some(semantic_contract);
+        self
     }
 
     /// Update the last seen timestamp
@@ -319,7 +350,19 @@ mod tests {
     #[test]
     fn test_message_serialization() {
         let node_id = Uuid::new_v4();
-        let message = P2PMessage::new_peer_discovery(node_id, 8080, "test-network".to_string());
+        let message = P2PMessage::new_peer_discovery_with_contract(
+            node_id,
+            8080,
+            "test-network".to_string(),
+            Some(SemanticContractInfo {
+                network_profile_id: "profile".to_string(),
+                consensus_type: "poa".to_string(),
+                ontology_package_id: "pkg".to_string(),
+                ontology_package_version: "1.0.0".to_string(),
+                ontology_package_hash: "hash".to_string(),
+                validation_mode: "strict".to_string(),
+            }),
+        );
 
         // Test serialization
         let bytes = message.to_bytes().unwrap();
@@ -346,6 +389,7 @@ mod tests {
             node_id,
             listen_port: 8080,
             network_id: String::new(),
+            semantic_contract: None,
             timestamp: Utc::now(),
         };
         assert!(invalid_message.validate().is_err());
@@ -363,6 +407,7 @@ mod tests {
         );
 
         assert_eq!(peer.full_address(), "127.0.0.1:8080");
+        assert!(peer.semantic_contract.is_none());
 
         let original_time = peer.last_seen;
         std::thread::sleep(std::time::Duration::from_millis(1));

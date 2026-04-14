@@ -1,0 +1,38 @@
+manifest_version = "1.0"
+snapshot_id = "accessgudid_sample_2026_03_10"
+source_id = "accessgudid"
+retrieved_at = "2026-03-10T00:00:00Z"
+retrieval_tool = "scripts/data_acquisition/fetch_accessgudid_snapshot.py"
+output_root = "config/datasets/raw_examples"
+
+[source]
+provider = "AccessGUDID"
+documentation_url = "https://accessgudid.nlm.nih.gov/download"
+data_url = "https://accessgudid.nlm.nih.gov/download"
+license = "Public UDI reference data"
+
+[query]
+kind = "static_fixture"
+query_string = "accessgudid_sample.csv"
+page_size = 0
+record_limit = 2
+
+[release]
+release_label = "benchmark-sample"
+release_date = "2026-03-10"
+
+[artifacts]
+raw_file = "config/datasets/raw_examples/accessgudid_sample.csv"
+sha256 = "pending"
+content_type = "text/csv"
+record_count = 2
+
+[normalization]
+target_domain = "device"
+ontology_package_id = "provchain.healthcare_device"
+ontology_package_version = "0.1"
+normalizer_version = "2026-03-10"
+
+[notes]
+purpose = "benchmark"
+comments = "Used for single-record and batch healthcare device admission benchmarks."

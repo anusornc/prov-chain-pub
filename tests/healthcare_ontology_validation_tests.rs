@@ -79,10 +79,14 @@ fn test_blockchain_rejects_invalid_healthcare_device_block() {
     let initial_length = blockchain.chain.len();
     let result = blockchain.add_block(invalid_healthcare_device_transaction().to_string());
 
-    assert!(result.is_err(), "invalid healthcare transaction should fail");
+    assert!(
+        result.is_err(),
+        "invalid healthcare transaction should fail"
+    );
     assert_eq!(blockchain.chain.len(), initial_length);
 
     let error_message = result.unwrap_err().to_string();
     assert!(error_message.contains("Transaction validation failed"));
     assert!(error_message.contains("healthcare#deviceSerialNumber"));
+    assert!(error_message.contains("constraint_breakdown="));
 }

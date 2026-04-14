@@ -14,6 +14,7 @@ use uuid::Uuid;
 
 use super::messages::{P2PMessage, PeerInfo};
 use super::peer::PeerClient;
+use super::profile::SemanticContractInfo;
 
 /// Peer discovery manager
 pub struct PeerDiscovery {
@@ -93,6 +94,15 @@ impl PeerDiscovery {
             self.local_node_info.port,
             self.local_node_info.network_id.clone(),
         );
+        let discovery_message = match &self.local_node_info.semantic_contract {
+            Some(contract) => P2PMessage::new_peer_discovery_with_contract(
+                self.local_node_info.node_id,
+                self.local_node_info.port,
+                self.local_node_info.network_id.clone(),
+                Some(contract.clone()),
+            ),
+            None => discovery_message,
+        };
 
         // In a real implementation, we would send this through the connection
         debug!("Would send discovery message: {:?}", discovery_message);
@@ -209,25 +219,29 @@ impl PeerDiscovery {
                 node_id,
                 listen_port,
                 network_id,
+                semantic_contract,
                 ..
             } => {
-                // Validate network ID
-                if network_id != self.local_node_info.network_id {
-                    warn!("Peer {} has different network ID: {}", node_id, network_id);
-                    return Ok(Some(P2PMessage::new_error(
-                        super::messages::ErrorCode::NetworkMismatch,
-                        "Network ID mismatch".to_string(),
-                    )));
+                if let Err((error_code, reason)) = self.validate_peer_compatibility(
+                    &node_id,
+                    &network_id,
+                    semantic_contract.as_ref(),
+                ) {
+                    warn!("Peer {} rejected during discovery: {}", node_id, reason);
+                    return Ok(Some(P2PMessage::new_error(error_code, reason)));
                 }
 
                 // Add peer to known peers
-                let peer_info = PeerInfo::new(
+                let mut peer_info = PeerInfo::new(
                     node_id,
                     "unknown".to_string(), // Address would be extracted from connection
                     listen_port,
                     network_id,
                     false, // Authority status would be determined separately
                 );
+                if let Some(contract) = semantic_contract {
+                    peer_info = peer_info.with_semantic_contract(contract);
+                }
 
                 self.add_discovered_peer(peer_info).await?;
 
@@ -242,7 +256,17 @@ impl PeerDiscovery {
                 // Process received peer list
                 for peer_info in peers {
                     if peer_info.node_id != self.local_node_info.node_id {
-                        self.add_discovered_peer(peer_info).await?;
+                        match self.validate_peer_compatibility(
+                            &peer_info.node_id,
+                            &peer_info.network_id,
+                            peer_info.semantic_contract.as_ref(),
+                        ) {
+                            Ok(()) => self.add_discovered_peer(peer_info).await?,
+                            Err((_error_code, reason)) => warn!(
+                                "Skipping incompatible peer {} from peer list: {}",
+                                peer_info.node_id, reason
+                            ),
+                        }
                     }
                 }
                 Ok(None)
@@ -265,6 +289,60 @@ impl PeerDiscovery {
             regular_peers: peers.len() - authority_count,
             bootstrap_peers: self.bootstrap_peers.len(),
         }
+    }
+
+    fn validate_peer_compatibility(
+        &self,
+        peer_id: &Uuid,
+        network_id: &str,
+        semantic_contract: Option<&SemanticContractInfo>,
+    ) -> std::result::Result<(), (super::messages::ErrorCode, String)> {
+        if network_id != self.local_node_info.network_id {
+            return Err((
+                super::messages::ErrorCode::NetworkMismatch,
+                "Network ID mismatch".to_string(),
+            ));
+        }
+
+        match (&self.local_node_info.semantic_contract, semantic_contract) {
+            (Some(local), Some(remote)) => {
+                if local != remote {
+                    return Err((
+                        super::messages::ErrorCode::SemanticMismatch,
+                        format!(
+                            "Semantic contract mismatch: local profile '{}' package '{}' hash '{}' != peer profile '{}' package '{}' hash '{}'",
+                            local.network_profile_id,
+                            local.ontology_package_id,
+                            local.ontology_package_hash,
+                            remote.network_profile_id,
+                            remote.ontology_package_id,
+                            remote.ontology_package_hash
+                        ),
+                    ));
+                }
+            }
+            (Some(_), None) => {
+                return Err((
+                    super::messages::ErrorCode::SemanticMismatch,
+                    "Semantic contract mismatch: peer did not provide semantic contract metadata"
+                        .to_string(),
+                ));
+            }
+            (None, Some(remote)) => {
+                remote.validate().map_err(|e| {
+                    (
+                        super::messages::ErrorCode::SemanticMismatch,
+                        format!(
+                            "Peer {} provided invalid semantic contract metadata: {}",
+                            peer_id, e
+                        ),
+                    )
+                })?;
+            }
+            (None, None) => {}
+        }
+
+        Ok(())
     }
 }
 
@@ -359,5 +437,57 @@ mod tests {
         assert_eq!(stats.authority_peers, 1);
         assert_eq!(stats.regular_peers, 1);
         assert_eq!(stats.bootstrap_peers, 1);
+    }
+
+    #[tokio::test]
+    async fn test_semantic_mismatch_rejected() {
+        let local_contract = SemanticContractInfo {
+            network_profile_id: "profile-a".to_string(),
+            consensus_type: "poa".to_string(),
+            ontology_package_id: "pkg-a".to_string(),
+            ontology_package_version: "1.0.0".to_string(),
+            ontology_package_hash: "hash-a".to_string(),
+            validation_mode: "strict".to_string(),
+        };
+
+        let local_info = PeerInfo::new(
+            Uuid::new_v4(),
+            "127.0.0.1".to_string(),
+            8080,
+            "test-network".to_string(),
+            false,
+        )
+        .with_semantic_contract(local_contract);
+
+        let discovery = PeerDiscovery::new(local_info, vec![]);
+
+        let response = discovery
+            .handle_peer_discovery(P2PMessage::new_peer_discovery_with_contract(
+                Uuid::new_v4(),
+                8081,
+                "test-network".to_string(),
+                Some(SemanticContractInfo {
+                    network_profile_id: "profile-b".to_string(),
+                    consensus_type: "poa".to_string(),
+                    ontology_package_id: "pkg-b".to_string(),
+                    ontology_package_version: "1.0.0".to_string(),
+                    ontology_package_hash: "hash-b".to_string(),
+                    validation_mode: "strict".to_string(),
+                }),
+            ))
+            .await
+            .unwrap();
+
+        match response {
+            Some(P2PMessage::Error { error_code, .. }) => {
+                assert_eq!(
+                    error_code,
+                    crate::network::messages::ErrorCode::SemanticMismatch
+                );
+            }
+            _ => panic!("Expected semantic mismatch error"),
+        }
+
+        assert!(discovery.get_known_peers().await.is_empty());
     }
 }

@@ -1,0 +1,39 @@
+manifest_version = "1.0"
+snapshot_id = "replace-me"
+source_id = "replace-me"
+retrieved_at = "2026-03-10T00:00:00Z"
+retrieval_tool = "scripts/data_acquisition/<script>.py"
+output_root = "data/external"
+
+[source]
+provider = "replace-me"
+documentation_url = "https://example.invalid/docs"
+data_url = "https://example.invalid/data"
+license = "replace-me"
+
+[query]
+kind = "static_file_or_api"
+query_string = ""
+page_size = 0
+record_limit = 0
+
+[release]
+release_label = ""
+release_date = ""
+
+[artifacts]
+raw_file = "raw/example/source_snapshot.json"
+sha256 = "replace-me"
+content_type = "application/json"
+record_count = 0
+
+[normalization]
+target_domain = "food|pharma|device"
+ontology_package_id = "replace-me"
+ontology_package_version = "replace-me"
+normalizer_version = "pending"
+
+[notes]
+purpose = "benchmark|mapping|validation"
+comments = ""
+

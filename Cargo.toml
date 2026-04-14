@@ -222,6 +222,14 @@ harness = false
 name = "rdf_canonicalization_benchmarks"
 harness = false
 
+[[bench]]
+name = "ontology_admission_benchmarks"
+harness = false
+
+[[bench]]
+name = "domain_dataset_admission_benchmarks"
+harness = false
+
 [[test]]
 name = "enhanced_traceability_demo"
 path = "tests/enhanced_traceability_demo.rs"

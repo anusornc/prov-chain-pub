@@ -204,6 +204,20 @@ To use on Overleaf:
 3. Set compiler to pdfLaTeX
 4. bibliography tool to BibTeX
 
+### Using the prepared external figures
+
+The submission package now includes ready-to-use figure assets in:
+
+- `figures/architecture/`
+- `figures/benchmarking/`
+
+and LaTeX insertion snippets in:
+
+- `snippets/architecture_figures.tex`
+- `snippets/benchmark_figures.tex`
+
+Use the `PNG` files with `\includegraphics{...}` under `pdfLaTeX`. The parallel `SVG` files are included for editing and archival purposes, not for direct `pdfLaTeX` insertion.
+
 ## Performance Tips
 
 ### Fast Compilation (for drafting)

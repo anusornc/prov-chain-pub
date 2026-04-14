@@ -141,7 +141,7 @@ Architecture Overview
    - Persistent RDF storage
    - SPARQL query processing
 
-3. **OWL2 Reasoning Integration** (`src/semantic/` + `Cargo.toml`): Semantic reasoning engine via SPACL dependency
+3. **Ontology Package Integration** (`src/ontology/` + `Cargo.toml`): Production semantic contract and reasoning path via SPACL dependency
    - Tableaux algorithm implementation
    - OWL2 RL support
    - Query optimization

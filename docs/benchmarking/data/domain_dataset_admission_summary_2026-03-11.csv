@@ -1,0 +1,26 @@
+benchmark,category,package,workload,scale_factor,emitted_records,mean_us,ci_low_us,ci_high_us
+cross_package_round_robin_batch_add_block_only,cross_package,cross_package,round_robin_batch,x1,10 admissions,4220.616420,4205.430293,4246.233114
+cross_package_round_robin_single_record_add_block_only,cross_package,cross_package,round_robin_single_record,x1,4 admissions,2639.758643,2630.828665,2649.319422
+healthcare_device_batch_add_block_only,batch_admission,healthcare_device,batch,x1,2,661.179691,660.707684,661.667938
+healthcare_device_batch_x2_add_block_only,batch_scaling,healthcare_device,batch,x2,4,960.094072,959.822343,960.399459
+healthcare_device_batch_x4_add_block_only,batch_scaling,healthcare_device,batch,x4,8,1545.237496,1544.510172,1545.929166
+healthcare_device_event_add_block,end_to_end,healthcare_device,single_record,x1,1,715.268819,704.535401,726.982338
+healthcare_device_event_add_block_only,single_record_admission,healthcare_device,single_record,x1,1,509.932813,509.576370,510.271090
+healthcare_device_event_setup_only,setup_only,healthcare_device,single_record,x1,1,5060.733927,5058.759980,5062.854951
+pharma_storage_batch_add_block_only,batch_admission,pharma_storage,batch,x1,2,824.796679,824.120688,825.588009
+pharma_storage_batch_x2_add_block_only,batch_scaling,pharma_storage,batch,x2,4,1188.813124,1188.363013,1189.259272
+pharma_storage_batch_x4_add_block_only,batch_scaling,pharma_storage,batch,x4,8,1896.742297,1895.691778,1898.114718
+pharma_storage_event_add_block,end_to_end,pharma_storage,single_record,x1,1,860.803955,856.046274,866.310564
+pharma_storage_event_add_block_only,single_record_admission,pharma_storage,single_record,x1,1,639.719092,639.119907,640.407943
+pharma_storage_event_setup_only,setup_only,pharma_storage,single_record,x1,1,7783.459864,7781.792118,7785.156520
+uht_epcis_batch_add_block_only,batch_admission,uht_epcis,batch,x1,3,1447.360660,1444.016768,1453.283931
+uht_epcis_batch_x2_add_block_only,batch_scaling,uht_epcis,batch,x2,6,2400.527367,2400.073772,2400.941400
+uht_epcis_batch_x4_add_block_only,batch_scaling,uht_epcis,batch,x4,12,4304.869625,4303.035314,4306.662576
+uht_epcis_event_add_block,end_to_end,uht_epcis,single_record,x1,1,1008.124259,1001.432874,1015.671897
+uht_epcis_event_add_block_only,single_record_admission,uht_epcis,single_record,x1,1,786.345153,785.860535,786.907201
+uht_product_batch_add_block_only,batch_admission,uht,batch,x1,3,1246.717849,1246.192513,1247.244314
+uht_product_batch_x2_add_block_only,batch_scaling,uht,batch,x2,6,2029.855402,2029.459824,2030.228349
+uht_product_batch_x4_add_block_only,batch_scaling,uht,batch,x4,12,3597.800418,3594.671762,3603.545999
+uht_product_event_add_block,end_to_end,uht,single_record,x1,1,903.949982,896.809552,911.890801
+uht_product_event_add_block_only,single_record_admission,uht,single_record,x1,1,713.113773,711.685652,714.341784
+uht_product_event_setup_only,setup_only,uht,single_record,x1,1,7130.176241,7125.947095,7135.779828
