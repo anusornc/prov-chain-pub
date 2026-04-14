@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "results": {
+      "skip": 0,
+      "limit": 2,
+      "total": 2
+    }
+  },
+  "results": [
+    {
+      "product_ndc": "0002-1200",
+      "generic_name": "aspirin",
+      "brand_name": "BAYER ASPIRIN",
+      "labeler_name": "Bayer HealthCare LLC",
+      "dosage_form": "TABLET",
+      "route": [
+        "ORAL"
+      ],
+      "marketing_start_date": "20200101",
+      "listing_expiration_date": "20261231",
+      "openfda": {
+        "manufacturer_name": [
+          "Bayer HealthCare LLC"
+        ]
+      }
+    },
+    {
+      "product_ndc": "54868-6180",
+      "generic_name": "insulin glargine",
+      "brand_name": "SEMGLEE",
+      "labeler_name": "Biocon Biologics Inc.",
+      "dosage_form": "SOLUTION",
+      "route": [
+        "SUBCUTANEOUS"
+      ],
+      "marketing_start_date": "20210701",
+      "listing_expiration_date": "20271231",
+      "openfda": {
+        "manufacturer_name": [
+          "Biocon Biologics Inc."
+        ]
+      }
+    }
+  ]
+}

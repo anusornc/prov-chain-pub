@@ -1,24 +1,29 @@
 //! Ontology Management Module
 //!
-//! This module provides domain-specific ontology management and SHACL validation
-//! for the ProvChainOrg blockchain system. It enables CLI-based ontology selection
-//! at startup with strict validation that blocks invalid transactions.
+//! This module provides the production semantic path for ProvChainOrg.
+//! It manages shared ontology packages, SHACL validation, and SPACL-backed reasoning
+//! for permissioned traceability networks.
+//!
+//! Network participants that need interoperable validation are expected to use the
+//! same ontology package as the semantic contract for event ingestion and tracing.
 
 pub mod domain_manager;
 pub mod error;
+pub mod package;
 pub mod shacl_validator;
 
 pub use domain_manager::{DomainConfig, OntologyManager};
 pub use error::{ConsistencyError, OntologyError, ShapeViolation, ValidationError};
+pub use package::OntologyPackageManifest;
 pub use shacl_validator::{ShaclConstraint, ShaclProperty, ShaclShape, ShaclValidator};
 
 use crate::config::Config;
 use std::path::Path;
 
-/// Ontology configuration for domain-specific blockchain validation
+/// Ontology configuration for a shared ontology package used by a permissioned network
 #[derive(Debug, Clone)]
 pub struct OntologyConfig {
-    /// Path to the domain-specific ontology file (e.g., "src/semantic/ontologies/uht_manufacturing.owl")
+    /// Path to the domain ontology file in the shared ontology package
     pub domain_ontology_path: String,
     /// Path to the core ontology file (default: "src/semantic/ontologies/generic_core.owl")
     pub core_ontology_path: String,
@@ -28,7 +33,7 @@ pub struct OntologyConfig {
     pub core_shacl_path: String,
     /// Validation mode - currently only Strict is supported
     pub validation_mode: ValidationMode,
-    /// Hash of the ontology for network consistency checking
+    /// Hash of the ontology package used for network consistency checking
     pub ontology_hash: String,
 }
 

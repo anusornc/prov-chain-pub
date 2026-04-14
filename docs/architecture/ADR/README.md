@@ -63,6 +63,7 @@ ADRs provide traceability for architectural choices and help future maintainers 
 | ID | Title | Status | Date | Topic |
 |----|-------|--------|------|-------|
 | [0008](./0008-rdf-canonicalization.md) | Implement RDF Canonicalization for Deterministic Hashing | Proposed | 2026-01-28 | Hashing |
+| [0014](./0014-use-shared-ontology-packages-and-spacl-production-path.md) | Use Shared Ontology Packages and SPACL as the Production Semantic Path | Accepted | 2026-03-09 | Semantic architecture |
 
 ---
 

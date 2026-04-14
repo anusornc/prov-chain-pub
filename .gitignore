@@ -76,3 +76,17 @@ benchmark-toolkit/**/target/
 
 # Test data directories
 data/test_*/
+
+# Local temp and cache directories
+tmp/
+scripts/__pycache__/
+__pycache__/
+
+# Paper build artifacts and export bundles
+docs/paper_submission/build/
+docs/paper_submission/*.pdf
+docs/paper_submission/*.spl
+docs/paper_submission/overleaf_upload/*.pdf
+docs/paper_submission/overleaf_upload/*.spl
+docs/paper_submission/overleaf_upload.zip
+docs/paper_submission/missfont.log

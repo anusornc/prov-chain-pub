@@ -1,4 +1,8 @@
-//! Domain-specific ontology loading and management
+//! Production ontology-package loading and management.
+//!
+//! This module is the main semantic orchestration path for production-aligned
+//! ProvChain deployments. It loads the ontology package shared across a
+//! permissioned network and wires SPACL-backed reasoning with SHACL validation.
 
 use crate::ontology::error::{
     ConsistencyError, ConstraintType, OntologyError, ShapeViolation, ValidationError,
@@ -13,10 +17,10 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 
-/// Domain configuration for ontology management
+/// Domain configuration for a shared ontology package
 #[derive(Debug, Clone)]
 pub struct DomainConfig {
-    /// Domain name (e.g., "uht_manufacturing", "pharmaceutical")
+    /// Ontology package name used by participating organizations
     pub domain_name: String,
     /// Domain description
     pub description: String,
@@ -56,7 +60,7 @@ impl DomainConfig {
     }
 }
 
-/// Ontology manager for domain-specific operations
+/// Ontology manager for production semantic operations
 pub struct OntologyManager {
     /// Current ontology configuration
     pub config: OntologyConfig,

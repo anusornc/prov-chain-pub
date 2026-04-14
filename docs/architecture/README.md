@@ -20,7 +20,11 @@ This directory contains comprehensive architecture documentation for ProvChainOr
 | [Data Flow Architecture](./DATA_FLOW_ARCHITECTURE.md) | Supporting | Transaction and query flows | ✅ Complete |
 | [Security Architecture](./SECURITY_ARCHITECTURE.md) | Supporting | Security layers and threat model | ✅ Complete |
 | [Integration Architecture](./INTEGRATION_ARCHITECTURE.md) | Supporting | External system integrations | ✅ Complete |
-| [ADR/](./ADR/) | Decision Records | Historical architectural decisions | ✅ Expanded (7 ADRs) |
+| [Shared Ontology Network Use Cases](./SHARED_ONTOLOGY_NETWORK_USE_CASES.md) | Reference Model | Canonical actors, lifecycle, and end-to-end flows for the shared-ontology network | ✅ New |
+| [Shared Ontology Network Working Plan](./SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md) | Working Plan | Current architecture truth, guardrails, and phased plan | ✅ Active |
+| [Shared Ontology Network Architecture Figures](./SHARED_ONTOLOGY_NETWORK_ARCHITECTURE_FIGURES_2026-03-11.md) | Figure Package | Paper-ready PNG/SVG architecture figures for the shared-ontology network model | ✅ New |
+| [ADR/](./ADR/) | Decision Records | Historical architectural decisions | ✅ Expanded |
+| [ADR 0014](./ADR/0014-use-shared-ontology-packages-and-spacl-production-path.md) | Decision Record | Shared ontology packages + SPACL production path | ✅ New |
 
 ---
 
@@ -44,7 +48,7 @@ This directory contains comprehensive architecture documentation for ProvChainOr
 **Contents:**
 - Web API container (Axum + JWT)
 - Blockchain Core container (PoA/PBFT)
-- Semantic Layer container (OWL2 Reasoner)
+- Semantic Layer container (shared ontology packages + SPACL)
 - RDF Store container (Oxigraph)
 - Monitoring stack (Prometheus + Grafana)
 
@@ -54,7 +58,7 @@ This directory contains comprehensive architecture documentation for ProvChainOr
 
 **Contents:**
 - Blockchain Core components (State Manager, Consensus Engine, Block Creator)
-- Semantic Layer components (OWL2 Reasoner, SHACL Validator, Query Optimizer)
+- Semantic Layer components (ontology manager, SHACL validator, SPACL integration)
 - Web API components (Auth, Transaction Handler, Query Handler)
 
 ---
@@ -84,6 +88,7 @@ This directory contains comprehensive architecture documentation for ProvChainOr
 | [0013](./ADR/0013-monitoring-stack.md) | Use Prometheus + Grafana for Monitoring | Accepted | 2026-01-28 | Monitoring ✨ NEW |
 | **Semantic & Data** |||||
 | [0008](./ADR/0008-rdf-canonicalization.md) | Implement RDF Canonicalization for Deterministic Hashing | Proposed | 2026-01-28 | Hashing |
+| [0014](./ADR/0014-use-shared-ontology-packages-and-spacl-production-path.md) | Use Shared Ontology Packages and SPACL as the Production Semantic Path | Accepted | 2026-03-09 | Semantic architecture ✨ NEW |
 
 ---
 
@@ -95,7 +100,7 @@ This directory contains comprehensive architecture documentation for ProvChainOr
 |-------|-----------|---------|
 | Language | Rust 1.70+ | Implementation |
 | Runtime | Tokio | Async runtime |
-| Semantic | Oxigraph | RDF/SPARQL store |
+| Semantic | SPACL `owl2-reasoner` + Oxigraph | Shared-ontology reasoning, validation, query support |
 | Crypto | Ed25519 | Signatures |
 | Encryption | ChaCha20-Poly1305 | Private data |
 | Web | Axum | HTTP framework |

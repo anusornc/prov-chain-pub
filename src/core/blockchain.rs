@@ -163,11 +163,13 @@ impl Blockchain {
     /// Create a new persistent blockchain with WAL-based durability
     pub fn new_persistent<P: AsRef<Path>>(data_dir: P) -> Result<Self> {
         // Initialize persistent storage with WAL
-        let persistent_storage = PersistentStorage::open(data_dir)
-            .map_err(|e| ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(
-                format!("Failed to initialize persistent storage: {}", e)
-            )))?;
-        
+        let persistent_storage = PersistentStorage::open(data_dir).map_err(|e| {
+            ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(format!(
+                "Failed to initialize persistent storage: {}",
+                e
+            )))
+        })?;
+
         let rdf_store = RDFStore::new_persistent(persistent_storage.rdf_data_dir())?;
 
         // Generate signing key for this blockchain instance
@@ -190,7 +192,9 @@ impl Blockchain {
             validator_public_key,
             last_key_rotation: chrono::Utc::now(),
             key_rotation_interval_days: 90,
-            persistent_storage: Some(std::sync::Arc::new(std::sync::Mutex::new(persistent_storage))),
+            persistent_storage: Some(std::sync::Arc::new(std::sync::Mutex::new(
+                persistent_storage,
+            ))),
         };
 
         // Load the traceability ontology
@@ -198,7 +202,7 @@ impl Blockchain {
 
         // Try to load existing blocks from persistent storage
         bc.load_chain_from_persistent_storage()?;
-        
+
         // If no blocks were loaded, create genesis block
         if bc.chain.is_empty() {
             // Create genesis block for new blockchain
@@ -222,18 +226,20 @@ impl Blockchain {
             // Persist genesis block
             bc.persist_block(&genesis_block)?;
         }
-        
+
         Ok(bc)
     }
 
     /// Create a persistent blockchain with custom storage configuration
     pub fn new_persistent_with_config(config: StorageConfig) -> Result<Self> {
         // Initialize persistent storage with WAL
-        let persistent_storage = PersistentStorage::open(&config.data_dir)
-            .map_err(|e| ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(
-                format!("Failed to initialize persistent storage: {}", e)
-            )))?;
-        
+        let persistent_storage = PersistentStorage::open(&config.data_dir).map_err(|e| {
+            ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(format!(
+                "Failed to initialize persistent storage: {}",
+                e
+            )))
+        })?;
+
         let rdf_store = RDFStore::new_persistent_with_config(config)?;
 
         // Generate signing key for this blockchain instance
@@ -256,7 +262,9 @@ impl Blockchain {
             validator_public_key,
             last_key_rotation: chrono::Utc::now(),
             key_rotation_interval_days: 90,
-            persistent_storage: Some(std::sync::Arc::new(std::sync::Mutex::new(persistent_storage))),
+            persistent_storage: Some(std::sync::Arc::new(std::sync::Mutex::new(
+                persistent_storage,
+            ))),
         };
 
         // Load the traceability ontology
@@ -264,7 +272,7 @@ impl Blockchain {
 
         // Try to load existing blocks from persistent storage
         bc.load_chain_from_persistent_storage()?;
-        
+
         // If no blocks were loaded, create genesis block
         if bc.chain.is_empty() {
             let mut genesis_block = bc.create_genesis_block();
@@ -295,50 +303,67 @@ impl Blockchain {
             Some(storage) => storage,
             None => return Ok(()), // In-memory mode, nothing to load
         };
-        
-        let storage = storage.lock()
-            .map_err(|_| ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
-                "Failed to lock persistent storage".to_string()
-            )))?;
-        
+
+        let storage = storage.lock().map_err(|_| {
+            ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
+                "Failed to lock persistent storage".to_string(),
+            ))
+        })?;
+
         // Load all block metadata from chain index
-        let block_metadatas = storage.load_all_blocks()
-            .map_err(|e| ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
-                format!("Failed to load chain index: {}", e)
-            )))?;
-        
-        info!("Loading {} blocks from persistent storage", block_metadatas.len());
-        
+        let block_metadatas = storage.load_all_blocks().map_err(|e| {
+            ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(format!(
+                "Failed to load chain index: {}",
+                e
+            )))
+        })?;
+
+        info!(
+            "Loading {} blocks from persistent storage",
+            block_metadatas.len()
+        );
+
         for metadata in block_metadatas {
             // Load RDF data for this block
-            let rdf_data = storage.load_block_data(metadata.index)
-                .map_err(|e| ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
-                    format!("Failed to load block {} data: {}", metadata.index, e)
-                )))?;
-            
+            let rdf_data = storage.load_block_data(metadata.index).map_err(|e| {
+                ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(format!(
+                    "Failed to load block {} data: {}",
+                    metadata.index, e
+                )))
+            })?;
+
             // Reconstruct block
             let block = Block {
                 index: metadata.index,
                 timestamp: metadata.timestamp,
                 data: rdf_data,
-                encrypted_data: if metadata.has_encrypted_data { Some(String::new()) } else { None },
+                encrypted_data: if metadata.has_encrypted_data {
+                    Some(String::new())
+                } else {
+                    None
+                },
                 previous_hash: metadata.previous_hash,
                 hash: metadata.hash,
                 state_root: metadata.state_root,
                 validator: metadata.validator,
                 signature: metadata.signature,
             };
-            
+
             // Add to RDF store
-            if let Ok(graph_name) = NamedNode::new(format!("http://provchain.org/block/{}", block.index)) {
+            if let Ok(graph_name) =
+                NamedNode::new(format!("http://provchain.org/block/{}", block.index))
+            {
                 self.rdf_store.add_rdf_to_graph(&block.data, &graph_name);
                 self.rdf_store.add_block_metadata(&block);
             }
-            
+
             self.chain.push(block);
         }
-        
-        info!("Successfully loaded {} blocks from persistent storage", self.chain.len());
+
+        info!(
+            "Successfully loaded {} blocks from persistent storage",
+            self.chain.len()
+        );
         Ok(())
     }
 
@@ -475,11 +500,13 @@ impl Blockchain {
         ontology_config: OntologyConfig,
     ) -> Result<Self> {
         // Initialize persistent storage with WAL
-        let persistent_storage = PersistentStorage::open(&data_dir)
-            .map_err(|e| ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(
-                format!("Failed to initialize persistent storage: {}", e)
-            )))?;
-        
+        let persistent_storage = PersistentStorage::open(&data_dir).map_err(|e| {
+            ProvChainError::Blockchain(BlockchainError::GenesisCreationFailed(format!(
+                "Failed to initialize persistent storage: {}",
+                e
+            )))
+        })?;
+
         let rdf_store = RDFStore::new_persistent(persistent_storage.rdf_data_dir())?;
 
         // Generate signing key for this blockchain instance
@@ -502,7 +529,9 @@ impl Blockchain {
             validator_public_key,
             last_key_rotation: chrono::Utc::now(),
             key_rotation_interval_days: 90,
-            persistent_storage: Some(std::sync::Arc::new(std::sync::Mutex::new(persistent_storage))),
+            persistent_storage: Some(std::sync::Arc::new(std::sync::Mutex::new(
+                persistent_storage,
+            ))),
         };
 
         // Initialize ontology manager and SHACL validator
@@ -510,7 +539,7 @@ impl Blockchain {
 
         // Try to load existing blocks from persistent storage
         bc.load_chain_from_persistent_storage()?;
-        
+
         // If no blocks were loaded, create genesis block
         if bc.chain.is_empty() {
             let mut genesis_block = bc.create_genesis_block();
@@ -537,6 +566,16 @@ impl Blockchain {
         Ok(bc)
     }
 
+    /// Create a persistent blockchain with custom storage configuration and ontology configuration
+    pub fn new_persistent_with_config_and_ontology(
+        config: StorageConfig,
+        ontology_config: OntologyConfig,
+    ) -> Result<Self> {
+        let mut blockchain = Self::new_persistent_with_config(config)?;
+        blockchain.initialize_ontology_system(ontology_config)?;
+        Ok(blockchain)
+    }
+
     /// Initialize the ontology management system
     fn initialize_ontology_system(
         &mut self,
@@ -550,29 +589,45 @@ impl Blockchain {
             )))
         })?;
 
-        // Create SHACL validator
-        let shacl_validator = ShaclValidator::new(
-            &ontology_config.core_shacl_path,
-            &ontology_config.domain_shacl_path,
-            ontology_config.ontology_hash.clone(),
-            None,
-        )
-        .map_err(|e| {
-            ProvChainError::Blockchain(BlockchainError::OntologyInitializationFailed(format!(
-                "Failed to initialize SHACL validator: {}",
-                e
-            )))
-        })?;
-
+        let shacl_validator = ontology_manager.validator.clone();
         self.ontology_manager = Some(ontology_manager);
         self.shacl_validator = Some(shacl_validator);
 
-        println!(
+        info!(
             "Initialized ontology system for domain: {}",
             self.ontology_manager.as_ref().unwrap().get_domain_name()
         );
 
         Ok(())
+    }
+
+    fn validate_block_data_against_ontology(
+        &self,
+        data: &str,
+    ) -> Result<crate::ontology::error::ValidationResult> {
+        if let Some(ref ontology_manager) = self.ontology_manager {
+            return ontology_manager.validate_transaction(data).map_err(|e| {
+                ProvChainError::Blockchain(BlockchainError::ValidationFailed(format!(
+                    "Ontology validation failed: {}",
+                    e
+                )))
+            });
+        }
+
+        if let Some(ref shacl_validator) = self.shacl_validator {
+            return shacl_validator.validate_transaction(data).map_err(|e| {
+                ProvChainError::Blockchain(BlockchainError::ValidationFailed(format!(
+                    "SHACL validation failed: {}",
+                    e
+                )))
+            });
+        }
+
+        Err(ProvChainError::Blockchain(
+            BlockchainError::ValidationFailed(
+                "Ontology-aware validation requested but no validator is configured".to_string(),
+            ),
+        ))
     }
 
     /// Restore blockchain from backup
@@ -673,13 +728,14 @@ impl Blockchain {
         let index = previous_block.index + 1;
         let previous_hash = previous_block.hash.clone();
 
-        // STEP 8: SHACL VALIDATION - Validate transaction data before adding to blockchain
-        if let Some(ref shacl_validator) = self.shacl_validator {
-            match shacl_validator.validate_transaction(&data) {
+        // STEP 8: ONTOLOGY-AWARE VALIDATION - Validate transaction data before adding to blockchain
+        if self.ontology_manager.is_some() || self.shacl_validator.is_some() {
+            match self.validate_block_data_against_ontology(&data) {
                 Ok(validation_result) => {
                     if !validation_result.is_valid {
+                        let explanation_summary = validation_result.explanation_summary();
                         let error_msg = format!(
-                            "Transaction validation failed for block {}: {} violations found: {}",
+                            "Transaction validation failed for block {}: {} violations found: {} [{}]",
                             index,
                             validation_result.violations.len(),
                             validation_result
@@ -687,18 +743,23 @@ impl Blockchain {
                                 .iter()
                                 .map(|r| r.message.clone())
                                 .collect::<Vec<_>>()
-                                .join(", ")
+                                .join(", "),
+                            explanation_summary
                         );
                         eprintln!("❌ {}", error_msg);
                         return Err(ProvChainError::Blockchain(
                             BlockchainError::ValidationFailed(error_msg),
                         ));
                     }
-                    info!("✅ SHACL validation passed for block {}", index);
+                    info!(
+                        "✅ Ontology-aware validation passed for block {} [{}]",
+                        index,
+                        validation_result.explanation_summary()
+                    );
                 }
                 Err(validation_error) => {
                     let error_msg = format!(
-                        "SHACL Validation Process Error for block {}: {}",
+                        "Ontology Validation Process Error for block {}: {}",
                         index, validation_error
                     );
                     eprintln!("❌ {}", error_msg);
@@ -810,14 +871,14 @@ impl Blockchain {
 
         // Persist block to durable storage using WAL
         if let Err(e) = self.persist_block(&block) {
-            return Err(ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
-                format!("Failed to persist block: {}", e)
-            )));
+            return Err(ProvChainError::Blockchain(
+                BlockchainError::BlockAdditionFailed(format!("Failed to persist block: {}", e)),
+            ));
         }
 
         Ok(())
     }
-    
+
     /// Persist a block to durable storage (WAL + RDF store)
     fn persist_block(&mut self, block: &Block) -> Result<()> {
         // Only persist if we have persistent storage
@@ -825,12 +886,13 @@ impl Blockchain {
             Some(storage) => storage,
             None => return Ok(()), // In-memory mode, nothing to persist
         };
-        
-        let storage = storage.lock()
-            .map_err(|_| ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
-                "Failed to lock persistent storage".to_string()
-            )))?;
-        
+
+        let storage = storage.lock().map_err(|_| {
+            ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
+                "Failed to lock persistent storage".to_string(),
+            ))
+        })?;
+
         // Create block metadata
         let metadata = BlockMetadata {
             index: block.index,
@@ -844,18 +906,20 @@ impl Blockchain {
             has_encrypted_data: block.encrypted_data.is_some(),
             data_size: block.data.len() as u64,
         };
-        
+
         // Store block atomically via WAL
-        storage.store_block(&metadata, &block.data)
-            .map_err(|e| ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
-                format!("Storage error: {}", e)
-            )))?;
-        
+        storage.store_block(&metadata, &block.data).map_err(|e| {
+            ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(format!(
+                "Storage error: {}",
+                e
+            )))
+        })?;
+
         // Also save RDF store state
         if let Err(e) = self.rdf_store.save_to_disk() {
             eprintln!("Warning: Failed to save RDF store state: {}", e);
         }
-        
+
         Ok(())
     }
 

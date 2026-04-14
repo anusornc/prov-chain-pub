@@ -4,7 +4,7 @@ Complete journal paper submission package for **Computers and Electronics in Agr
 
 ## Paper Details
 
-**Title:** ProvChain: A GS1 EPCIS-Compliant Blockchain Framework for Ultra-High Temperature (UHT) Milk Supply Chain Traceability with Semantic Web Integration
+**Title:** ProvChain: A GS1/EPCIS-Oriented Blockchain Framework for Ultra-High Temperature (UHT) Milk Supply Chain Traceability with Semantic Web Integration
 
 **Target Journal:** Computers and Electronics in Agriculture (Elsevier)
 - Impact Factor: ~8.3
@@ -19,6 +19,7 @@ Complete journal paper submission package for **Computers and Electronics in Agr
 | `compile.sh` | Bash script for compiling (executable) |
 | `Makefile` | Make commands for compilation |
 | `COMPILATION_GUIDE.md` | Detailed compilation instructions |
+| `FIGURE_INSERTION_PACKAGE_2026-03-11.md` | Ready-to-use architecture/evaluation figure insertion guide |
 | `REVISION_SUMMARY.md` | Summary of changes from review |
 | `review_report.md` | Original reviewer report |
 | `README.md` | This file |
@@ -31,24 +32,24 @@ Complete journal paper submission package for **Computers and Electronics in Agr
 4. **Related Work** - Literature review, comparison table
 5. **System Architecture** - Technical design, ontologies, blockchain layer
 6. **Implementation** - Technology stack, code examples
-7. **Evaluation** - Performance metrics, standards compliance, fault tolerance
+7. **Evaluation** - Performance metrics, standards-facing interoperability, fault tolerance
 8. **Discussion** - Industry implications, limitations, future work
 9. **Conclusion** - Summary of contributions
 
 ## Key Contributions Highlighted
 
-1. Full GS1 EPCIS 2.0 integration with blockchain
+1. GS1/EPCIS-oriented event modeling with ontology-governed validation
 2. UHT-specific ontology with SHACL validation
-3. OWL2 reasoning support
+3. Ontology-backed reasoning support through the production semantic path
 4. Write-Ahead Logging (WAL) persistence
-5. Interactive demonstration (8 phases, 7 event types)
+5. Interactive demonstration and focused benchmark artifacts
 
 ## Performance Metrics
 
-- 65ms average event latency
-- 128 events/second throughput
-- 100% EPCIS 2.0 compliant
-- Zero data loss on crash recovery
+- 19.58 TPS in the current single-node development load test
+- 51.02 ms average response time with 100% request success in the load test
+- 0.51--1.01 ms focused ontology-backed single-record admission depending on package profile
+- Standards-facing interoperability profile rather than any claim of full official EPCIS conformance
 
 ## How to Compile
 
@@ -110,7 +111,7 @@ make submit
 
 ### Content (Optional additions)
 - [ ] Insert graphical abstract in `\begin{graphicalabstract}`
-- [ ] Create high-resolution figures (architecture diagram)
+- [x] High-resolution architecture and benchmark figures are available in `figures/` with ready-to-use snippets in `snippets/`
 - [ ] Verify all citations are correct
 - [ ] Check for any funding acknowledgments
 

@@ -56,6 +56,31 @@ fn minimal_owl_ontology() -> &'static str {
 </rdf:RDF>"#
 }
 
+/// Test helper to create OWL ontology content with a subclass relation for reasoning checks
+fn subclass_owl_ontology() -> &'static str {
+    r#"<?xml version="1.0"?>
+<rdf:RDF xmlns="http://example.org/test#"
+         xml:base="http://example.org/test"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+    <owl:Ontology rdf:about="http://example.org/test">
+        <rdfs:comment>Test ontology with subclass relation</rdfs:comment>
+    </owl:Ontology>
+
+    <owl:Class rdf:about="http://example.org/test#Product" />
+    <owl:Class rdf:about="http://example.org/test#Location" />
+    <owl:Class rdf:about="http://example.org/test#ColdStorageLocation">
+        <rdfs:subClassOf rdf:resource="http://example.org/test#Location" />
+    </owl:Class>
+
+    <owl:ObjectProperty rdf:about="http://example.org/test#hasOrigin">
+        <rdfs:domain rdf:resource="http://example.org/test#Product"/>
+        <rdfs:range rdf:resource="http://example.org/test#Location"/>
+    </owl:ObjectProperty>
+</rdf:RDF>"#
+}
+
 /// Test helper to create SHACL shapes with actual validation constraints
 fn minimal_shacl_shapes() -> &'static str {
     r#"@prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -107,6 +132,30 @@ fn invalid_transaction_data() -> &'static str {
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
 ex:product1 rdf:type ex:Product .
+"#
+}
+
+/// Test helper to create invalid RDF transaction data with the wrong object class
+fn wrong_class_transaction_data() -> &'static str {
+    r#"@prefix ex: <http://example.org/test#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+ex:product1 rdf:type ex:Product ;
+           ex:hasOrigin ex:location1 .
+
+ex:location1 rdf:type ex:Product .
+"#
+}
+
+/// Test helper to create RDF transaction data that requires subclass reasoning
+fn subclass_transaction_data() -> &'static str {
+    r#"@prefix ex: <http://example.org/test#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+ex:product1 rdf:type ex:Product ;
+           ex:hasOrigin ex:coldStorage1 .
+
+ex:coldStorage1 rdf:type ex:ColdStorageLocation .
 "#
 }
 
@@ -241,6 +290,49 @@ mod shacl_validator_tests {
             assert!(error.message.contains("RDF") || error.message.contains("parse"));
         }
     }
+
+    #[test]
+    fn test_shacl_validation_enforces_exact_class_without_reasoner() {
+        let core_shapes_dir = create_test_shacl_shapes(minimal_shacl_shapes());
+        let domain_shapes_dir = create_test_shacl_shapes(minimal_shacl_shapes());
+
+        let core_path = core_shapes_dir.path().join("test_shapes.shacl.ttl");
+        let domain_path = domain_shapes_dir.path().join("test_shapes.shacl.ttl");
+
+        let validator = ShaclValidator::new(
+            &core_path.to_string_lossy(),
+            &domain_path.to_string_lossy(),
+            "test_hash".to_string(),
+            None,
+        )
+        .unwrap();
+
+        let valid_result = validator
+            .validate_transaction(valid_transaction_data())
+            .unwrap();
+        assert!(valid_result.is_valid);
+        assert_eq!(
+            valid_result.metadata.get("reasoner_enabled"),
+            Some(&"false".to_string())
+        );
+        assert_eq!(
+            valid_result.metadata.get("exact_class_matches"),
+            Some(&"2".to_string())
+        );
+        assert_eq!(
+            valid_result.metadata.get("fallback_exact_class_checks"),
+            Some(&"2".to_string())
+        );
+
+        let invalid_result = validator
+            .validate_transaction(wrong_class_transaction_data())
+            .unwrap();
+        assert!(!invalid_result.is_valid);
+        assert!(invalid_result
+            .violations
+            .iter()
+            .any(|violation| violation.constraint_type == ConstraintType::Class));
+    }
 }
 
 #[cfg(test)]
@@ -262,6 +354,31 @@ mod ontology_manager_tests {
                 .unwrap();
 
         // Override SHACL paths for testing
+        ontology_config.core_shacl_path = core_shapes_path.to_string_lossy().to_string();
+        ontology_config.domain_shacl_path = domain_shapes_path.to_string_lossy().to_string();
+
+        (
+            ontology_config,
+            ontology_dir,
+            core_shapes_dir,
+            domain_shapes_dir,
+        )
+    }
+
+    fn create_subclass_ontology_config() -> (OntologyConfig, TempDir, TempDir, TempDir) {
+        let ontology_dir = create_test_ontology(subclass_owl_ontology());
+        let core_shapes_dir = create_test_shacl_shapes(minimal_shacl_shapes());
+        let domain_shapes_dir = create_test_shacl_shapes(minimal_shacl_shapes());
+
+        let ontology_path = ontology_dir.path().join("test_ontology.owl");
+        let core_shapes_path = core_shapes_dir.path().join("test_shapes.shacl.ttl");
+        let domain_shapes_path = domain_shapes_dir.path().join("test_shapes.shacl.ttl");
+
+        let config = Config::default();
+        let mut ontology_config =
+            OntologyConfig::new(Some(ontology_path.to_string_lossy().to_string()), &config)
+                .unwrap();
+
         ontology_config.core_shacl_path = core_shapes_path.to_string_lossy().to_string();
         ontology_config.domain_shacl_path = domain_shapes_path.to_string_lossy().to_string();
 
@@ -342,6 +459,31 @@ mod ontology_manager_tests {
         assert!(supported_types.contains(&"Compliance".to_string()));
         assert!(supported_types.contains(&"Governance".to_string()));
     }
+
+    #[test]
+    fn test_ontology_manager_reports_reasoning_metadata_for_subclass_match() {
+        let (ontology_config, _ontology_dir, _core_dir, _domain_dir) =
+            create_subclass_ontology_config();
+
+        let manager = OntologyManager::new(ontology_config).unwrap();
+        let validation_result = manager
+            .validate_transaction(subclass_transaction_data())
+            .unwrap();
+
+        assert!(validation_result.is_valid);
+        assert_eq!(
+            validation_result.metadata.get("reasoner_enabled"),
+            Some(&"true".to_string())
+        );
+        assert_eq!(
+            validation_result.metadata.get("subclass_matches"),
+            Some(&"2".to_string())
+        );
+        assert_eq!(
+            validation_result.metadata.get("reasoner_subclass_checks"),
+            Some(&"2".to_string())
+        );
+    }
 }
 
 #[cfg(test)]
@@ -383,6 +525,18 @@ mod blockchain_integration_tests {
         // Should have ontology manager and SHACL validator
         assert!(blockchain.ontology_manager.is_some());
         assert!(blockchain.shacl_validator.is_some());
+        assert!(blockchain
+            .ontology_manager
+            .as_ref()
+            .unwrap()
+            .reasoner
+            .is_some());
+        assert!(blockchain
+            .shacl_validator
+            .as_ref()
+            .unwrap()
+            .reasoner
+            .is_some());
     }
 
     #[test]
@@ -518,6 +672,38 @@ mod validation_result_tests {
             result.metadata.get("domain_shapes_loaded"),
             Some(&"true".to_string())
         );
+    }
+
+    #[test]
+    fn test_validation_result_explanation_summary() {
+        let violation_a = ShapeViolation {
+            shape_id: "ex:ProductShape".to_string(),
+            property_path: Some("ex:hasOrigin".to_string()),
+            value: None,
+            constraint_type: ConstraintType::MinCount,
+            message: "Missing origin".to_string(),
+            severity: ViolationSeverity::Violation,
+        };
+        let violation_b = ShapeViolation {
+            shape_id: "ex:ProductShape".to_string(),
+            property_path: Some("ex:hasOrigin".to_string()),
+            value: Some("ex:badLocation".to_string()),
+            constraint_type: ConstraintType::Class,
+            message: "Wrong class".to_string(),
+            severity: ViolationSeverity::Violation,
+        };
+
+        let result = ValidationResult::failure(vec![violation_a, violation_b], 5)
+            .with_metadata("reasoner_enabled".to_string(), "true".to_string())
+            .with_metadata("class_constraints_checked".to_string(), "2".to_string())
+            .with_metadata("subclass_matches".to_string(), "1".to_string());
+
+        let summary = result.explanation_summary();
+        assert!(summary.contains("reasoner_enabled=true"));
+        assert!(summary.contains("class_constraints_checked=2"));
+        assert!(summary.contains("subclass_matches=1"));
+        assert!(summary.contains("constraint_breakdown=Class=1|MinCount=1"));
+        assert!(summary.contains("shape_breakdown=ex:ProductShape=2"));
     }
 }
 

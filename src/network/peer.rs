@@ -9,7 +9,7 @@ use futures_util::{stream::SplitSink, SinkExt, StreamExt};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, RwLock};
 use tokio::time::timeout;
 use tokio_tungstenite::{
     accept_async, connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream,
@@ -29,8 +29,12 @@ const WEBSOCKET_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// Represents a connection to a peer node
 pub struct PeerConnection {
+    /// Stable transport-scoped ID for this connection, independent of peer discovery.
+    pub transport_id: Uuid,
     /// Information about the peer
     pub info: PeerInfo,
+    /// Mutable logical peer identity updated after handshake or discovery
+    pub current_peer_id: Arc<RwLock<Uuid>>,
     /// Channel for sending messages to the peer (bounded for backpressure)
     pub sender: mpsc::Sender<P2PMessage>,
     /// Handle to the connection task
@@ -51,18 +55,23 @@ impl PeerConnection {
         message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
     ) -> Result<Self> {
         // Use bounded channel to apply backpressure and prevent unbounded memory growth
+        let transport_id = Uuid::new_v4();
+        let current_peer_id = Arc::new(RwLock::new(peer_info.node_id));
         let (sender, receiver) = mpsc::channel(MAX_PENDING_MESSAGES);
         let connection = WebSocketConnection::Client(ws_stream);
 
         let task_handle = tokio::spawn(Self::connection_task(
-            peer_info.node_id,
+            transport_id,
+            Arc::clone(&current_peer_id),
             connection,
             receiver,
             message_handler,
         ));
 
         Ok(Self {
+            transport_id,
             info: peer_info,
+            current_peer_id,
             sender,
             task_handle,
         })
@@ -75,18 +84,23 @@ impl PeerConnection {
         message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
     ) -> Result<Self> {
         // Use bounded channel to apply backpressure and prevent unbounded memory growth
+        let transport_id = Uuid::new_v4();
+        let current_peer_id = Arc::new(RwLock::new(peer_info.node_id));
         let (sender, receiver) = mpsc::channel(MAX_PENDING_MESSAGES);
         let connection = WebSocketConnection::Server(ws_stream);
 
         let task_handle = tokio::spawn(Self::connection_task(
-            peer_info.node_id,
+            transport_id,
+            Arc::clone(&current_peer_id),
             connection,
             receiver,
             message_handler,
         ));
 
         Ok(Self {
+            transport_id,
             info: peer_info,
+            current_peer_id,
             sender,
             task_handle,
         })
@@ -106,30 +120,59 @@ impl PeerConnection {
         Ok(())
     }
 
+    /// Update the logical peer identity once discovery resolves the remote node ID.
+    pub async fn update_logical_peer_id(&self, new_peer_id: Uuid) {
+        *self.current_peer_id.write().await = new_peer_id;
+    }
+
     /// Main connection task that handles message sending and receiving
     async fn connection_task(
-        peer_id: Uuid,
+        transport_id: Uuid,
+        current_peer_id: Arc<RwLock<Uuid>>,
         connection: WebSocketConnection,
         message_receiver: mpsc::Receiver<P2PMessage>,
         message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
     ) {
-        debug!("Starting connection task for peer {}", peer_id);
+        let peer_id = *current_peer_id.read().await;
+        debug!(
+            "Starting connection task for transport {} (logical peer {})",
+            transport_id, peer_id
+        );
 
         match connection {
             WebSocketConnection::Client(ws) => {
-                Self::handle_connection_loop(peer_id, ws, message_receiver, message_handler).await;
+                Self::handle_connection_loop(
+                    transport_id,
+                    Arc::clone(&current_peer_id),
+                    ws,
+                    message_receiver,
+                    message_handler,
+                )
+                .await;
             }
             WebSocketConnection::Server(ws) => {
-                Self::handle_connection_loop(peer_id, ws, message_receiver, message_handler).await;
+                Self::handle_connection_loop(
+                    transport_id,
+                    Arc::clone(&current_peer_id),
+                    ws,
+                    message_receiver,
+                    message_handler,
+                )
+                .await;
             }
         }
 
-        info!("Connection task ended for peer {}", peer_id);
+        let final_peer_id = *current_peer_id.read().await;
+        info!(
+            "Connection task ended for transport {} (logical peer {})",
+            transport_id, final_peer_id
+        );
     }
 
     /// Generic connection loop that works with any WebSocket stream type
     async fn handle_connection_loop<S>(
-        peer_id: Uuid,
+        transport_id: Uuid,
+        current_peer_id: Arc<RwLock<Uuid>>,
         ws: WebSocketStream<S>,
         mut message_receiver: mpsc::Receiver<P2PMessage>,
         message_handler: Arc<dyn Fn(Uuid, P2PMessage) + Send + Sync>,
@@ -147,16 +190,19 @@ impl PeerConnection {
                             match timeout(WEBSOCKET_TIMEOUT, Self::send_websocket_message_generic(&mut ws_sender, msg)).await {
                                 Ok(Ok(())) => {},
                                 Ok(Err(e)) => {
+                                    let peer_id = *current_peer_id.read().await;
                                     error!("Failed to send message to peer {}: {}", peer_id, e);
                                     break;
                                 }
                                 Err(_) => {
+                                    let peer_id = *current_peer_id.read().await;
                                     warn!("Timeout sending message to peer {}", peer_id);
                                     break;
                                 }
                             }
                         }
                         None => {
+                            let peer_id = *current_peer_id.read().await;
                             debug!("Message channel closed for peer {}", peer_id);
                             break;
                         }
@@ -169,10 +215,17 @@ impl PeerConnection {
                         Ok(Some(Ok(Message::Text(text)))) => {
                             match P2PMessage::from_bytes(text.as_bytes()) {
                                 Ok(message) => {
-                                    debug!("Received {} from peer {}", message.message_type(), peer_id);
-                                    message_handler(peer_id, message);
+                                    let peer_id = *current_peer_id.read().await;
+                                    debug!(
+                                        "Received {} from transport {} (logical peer {})",
+                                        message.message_type(),
+                                        transport_id,
+                                        peer_id
+                                    );
+                                    message_handler(transport_id, message);
                                 }
                                 Err(e) => {
+                                    let peer_id = *current_peer_id.read().await;
                                     warn!("Failed to parse message from peer {}: {}", peer_id, e);
                                 }
                             }
@@ -180,15 +233,23 @@ impl PeerConnection {
                         Ok(Some(Ok(Message::Binary(data)))) => {
                             match P2PMessage::from_bytes(&data) {
                                 Ok(message) => {
-                                    debug!("Received {} from peer {}", message.message_type(), peer_id);
-                                    message_handler(peer_id, message);
+                                    let peer_id = *current_peer_id.read().await;
+                                    debug!(
+                                        "Received {} from transport {} (logical peer {})",
+                                        message.message_type(),
+                                        transport_id,
+                                        peer_id
+                                    );
+                                    message_handler(transport_id, message);
                                 }
                                 Err(e) => {
+                                    let peer_id = *current_peer_id.read().await;
                                     warn!("Failed to parse binary message from peer {}: {}", peer_id, e);
                                 }
                             }
                         }
                         Ok(Some(Ok(Message::Close(_)))) => {
+                            let peer_id = *current_peer_id.read().await;
                             info!("Peer {} closed connection", peer_id);
                             break;
                         }
@@ -196,10 +257,12 @@ impl PeerConnection {
                             match timeout(WEBSOCKET_TIMEOUT, ws_sender.send(Message::Pong(data))).await {
                                 Ok(Ok(())) => {},
                                 Ok(Err(e)) => {
+                                    let peer_id = *current_peer_id.read().await;
                                     error!("Failed to send pong to peer {}: {}", peer_id, e);
                                     break;
                                 }
                                 Err(_) => {
+                                    let peer_id = *current_peer_id.read().await;
                                     warn!("Timeout sending pong to peer {}", peer_id);
                                     break;
                                 }
@@ -210,17 +273,21 @@ impl PeerConnection {
                         }
                         Ok(Some(Ok(Message::Frame(_)))) => {
                             // Handle raw frames if needed
+                            let peer_id = *current_peer_id.read().await;
                             debug!("Received raw frame from peer {}", peer_id);
                         }
                         Ok(Some(Err(e))) => {
+                            let peer_id = *current_peer_id.read().await;
                             error!("WebSocket error with peer {}: {}", peer_id, e);
                             break;
                         }
                         Ok(None) => {
+                            let peer_id = *current_peer_id.read().await;
                             info!("WebSocket stream ended for peer {}", peer_id);
                             break;
                         }
                         Err(_) => {
+                            let peer_id = *current_peer_id.read().await;
                             warn!("WebSocket read timeout for peer {} (no activity for {}s)", peer_id, WEBSOCKET_TIMEOUT.as_secs());
                             break;
                         }

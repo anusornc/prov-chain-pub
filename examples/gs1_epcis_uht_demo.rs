@@ -27,16 +27,22 @@ fn main() -> anyhow::Result<()> {
     // Phase 1: Initialize Blockchain with GS1 EPCIS Ontology
     println!("📦 Phase 1: Initializing Blockchain with GS1 EPCIS Ontology");
     println!("   Loading large ontology files...");
-    
+
     let mut blockchain = initialize_blockchain_with_gs1_epcis()?;
-    println!("   ✓ Blockchain initialized with {} blocks", blockchain.chain.len());
+    println!(
+        "   ✓ Blockchain initialized with {} blocks",
+        blockchain.chain.len()
+    );
     println!("   ✓ GS1 EPCIS ontology loaded");
     println!();
 
     // Phase 2: Create UHT Supply Chain Participants
     println!("🏭 Phase 2: Creating UHT Supply Chain Participants");
     let participants = create_uht_supply_chain_participants(&mut blockchain)?;
-    println!("   ✓ Created {} supply chain participants:", participants.len());
+    println!(
+        "   ✓ Created {} supply chain participants:",
+        participants.len()
+    );
     for (role, name) in &participants {
         println!("     • {}: {}", role, name);
     }
@@ -46,7 +52,11 @@ fn main() -> anyhow::Result<()> {
     println!("🥛 Phase 3: UHT Milk Production & Processing Events");
     let batch_id = "UHT-BATCH-2024-001";
     let events = generate_uht_production_events(&mut blockchain, batch_id, &participants)?;
-    println!("   ✓ Created {} supply chain events for batch {}", events.len(), batch_id);
+    println!(
+        "   ✓ Created {} supply chain events for batch {}",
+        events.len(),
+        batch_id
+    );
     for (i, event) in events.iter().enumerate() {
         println!("     {}. {}", i + 1, event);
     }
@@ -83,10 +93,15 @@ fn main() -> anyhow::Result<()> {
     println!("║                        DEMO COMPLETE                             ║");
     println!("╠══════════════════════════════════════════════════════════════════╣");
     println!("║  Total Blocks:        {:<42} ║", blockchain.chain.len());
-    println!("║  Total RDF Triples:   {:<42} ║", 
-        blockchain.rdf_store.store.len().unwrap_or(0));
+    println!(
+        "║  Total RDF Triples:   {:<42} ║",
+        blockchain.rdf_store.store.len().unwrap_or(0)
+    );
     println!("║  Execution Time:      {:<42} ║", format!("{:?}", elapsed));
-    println!("║  Status:              {:<42} ║", "✓ All validations passed");
+    println!(
+        "║  Status:              {:<42} ║",
+        "✓ All validations passed"
+    );
     println!("╚══════════════════════════════════════════════════════════════════╝");
     println!();
     println!("Demo data persisted to: data/gs1_epcis_uht_demo/");
@@ -98,7 +113,7 @@ fn main() -> anyhow::Result<()> {
 /// Initialize blockchain with GS1 EPCIS ontology
 fn initialize_blockchain_with_gs1_epcis() -> anyhow::Result<Blockchain> {
     use provchain_org::semantic::owl_reasoner::{OwlReasoner, OwlReasonerConfig};
-    
+
     // Create storage config for demo
     let config = StorageConfig {
         data_dir: std::path::PathBuf::from("data/gs1_epcis_uht_demo"),
@@ -117,7 +132,7 @@ fn initialize_blockchain_with_gs1_epcis() -> anyhow::Result<Blockchain> {
 
     // Load GS1 EPCIS ontology
     let epcis_ontology = include_str!("../src/semantic/ontologies/generic_core.owl");
-    
+
     // Add ontology as a special block
     let ontology_block = format!(
         r#"
@@ -132,9 +147,9 @@ fn initialize_blockchain_with_gs1_epcis() -> anyhow::Result<Blockchain> {
         chrono::Utc::now().timestamp(),
         epcis_ontology.replace("\"", "\\\"")
     );
-    
+
     blockchain.add_block(ontology_block)?;
-    
+
     Ok(blockchain)
 }
 
@@ -143,7 +158,7 @@ fn create_uht_supply_chain_participants(
     blockchain: &mut Blockchain,
 ) -> anyhow::Result<HashMap<String, String>> {
     let mut participants = HashMap::new();
-    
+
     let participants_data = r#"
         @prefix provchain: <http://provchain.org/core#> .
         @prefix schema: <http://schema.org/> .
@@ -202,16 +217,28 @@ fn create_uht_supply_chain_participants(
             provchain:role "QualityAssurance" ;
             provchain:hasCertification "ISO/IEC 17025" .
     "#;
-    
+
     blockchain.add_block(participants_data.to_string())?;
-    
-    participants.insert("Farm".to_string(), "Wisconsin Organic Dairy Farm".to_string());
-    participants.insert("Processor".to_string(), "National Dairy Foods UHT Plant".to_string());
-    participants.insert("Packaging".to_string(), "EcoPackaging Solutions".to_string());
-    participants.insert("Distributor".to_string(), "Global Cold Chain Logistics".to_string());
+
+    participants.insert(
+        "Farm".to_string(),
+        "Wisconsin Organic Dairy Farm".to_string(),
+    );
+    participants.insert(
+        "Processor".to_string(),
+        "National Dairy Foods UHT Plant".to_string(),
+    );
+    participants.insert(
+        "Packaging".to_string(),
+        "EcoPackaging Solutions".to_string(),
+    );
+    participants.insert(
+        "Distributor".to_string(),
+        "Global Cold Chain Logistics".to_string(),
+    );
     participants.insert("Retailer".to_string(), "Metro Supermarkets".to_string());
     participants.insert("Lab".to_string(), "Food Safety Analytics Lab".to_string());
-    
+
     Ok(participants)
 }
 
@@ -222,7 +249,7 @@ fn generate_uht_production_events(
     _participants: &HashMap<String, String>,
 ) -> anyhow::Result<Vec<String>> {
     let mut events = Vec::new();
-    
+
     // Event 1: Milk Collection at Farm
     let collection_event = format!(
         r#"
@@ -271,7 +298,7 @@ fn generate_uht_production_events(
     );
     blockchain.add_block(collection_event)?;
     events.push(format!("Milk Collection - Farm ({})", batch_id));
-    
+
     // Event 2: Transport to Processing Plant
     let transport_event = format!(
         r#"
@@ -306,7 +333,7 @@ fn generate_uht_production_events(
     );
     blockchain.add_block(transport_event)?;
     events.push("Cold Chain Transport - Farm to Plant".to_string());
-    
+
     // Event 3: Quality Check at Plant
     let quality_event = format!(
         r#"
@@ -346,7 +373,7 @@ fn generate_uht_production_events(
     );
     blockchain.add_block(quality_event)?;
     events.push("Quality Control - Reception & Pre-Processing".to_string());
-    
+
     // Event 4: UHT Processing
     let processing_event = format!(
         r#"
@@ -383,7 +410,7 @@ fn generate_uht_production_events(
     );
     blockchain.add_block(processing_event)?;
     events.push("UHT Processing - 137°C/4 seconds".to_string());
-    
+
     // Event 5: Aseptic Packaging
     let packaging_event = format!(
         r#"
@@ -425,7 +452,7 @@ fn generate_uht_production_events(
     );
     blockchain.add_block(packaging_event)?;
     events.push("Aseptic Packaging - Tetra Pak Cartons".to_string());
-    
+
     // Event 6: Cold Storage
     let storage_event = format!(
         r#"
@@ -450,7 +477,7 @@ fn generate_uht_production_events(
     );
     blockchain.add_block(storage_event)?;
     events.push("Cold Storage - 4°C Hold".to_string());
-    
+
     // Event 7: Distribution
     let distribution_event = format!(
         r#"
@@ -487,7 +514,7 @@ fn generate_uht_production_events(
     );
     blockchain.add_block(distribution_event)?;
     events.push("Distribution - Plant to DC".to_string());
-    
+
     // Event 8: Retail Delivery
     let retail_event = format!(
         r#"
@@ -525,7 +552,7 @@ fn generate_uht_production_events(
     );
     blockchain.add_block(retail_event)?;
     events.push("Retail Delivery & Stocking".to_string());
-    
+
     Ok(events)
 }
 
@@ -535,7 +562,7 @@ fn demonstrate_property_chain_inference(
     batch_id: &str,
 ) -> anyhow::Result<()> {
     println!("   Querying inferred supplier relationships...");
-    
+
     // Property chain: rawMaterial.suppliedBy → batch.supplier
     let query = format!(
         r#"
@@ -550,20 +577,23 @@ fn demonstrate_property_chain_inference(
         "#,
         batch_id
     );
-    
+
     let results = blockchain.rdf_store.query(&query);
     match results {
         oxigraph::sparql::QueryResults::Solutions(solutions) => {
             let count = solutions.count();
             if count > 0 {
-                println!("   ✓ Property chain inference working: Found {} supplier(s)", count);
+                println!(
+                    "   ✓ Property chain inference working: Found {} supplier(s)",
+                    count
+                );
             } else {
                 println!("   ℹ No supplier relationships found in current data");
             }
         }
         _ => println!("   ℹ Query returned non-solution results"),
     }
-    
+
     // Check temperature chain
     let temp_query = format!(
         r#"
@@ -576,9 +606,9 @@ fn demonstrate_property_chain_inference(
         "#,
         batch_id, batch_id
     );
-    
+
     println!("   ✓ Temperature monitoring chain validated");
-    
+
     Ok(())
 }
 
@@ -588,7 +618,7 @@ fn demonstrate_haskey_validation(
     batch_id: &str,
 ) -> anyhow::Result<()> {
     println!("   Validating batch ID uniqueness with owl:hasKey...");
-    
+
     // Try to create a duplicate batch (should be caught by validation)
     let duplicate_attempt = format!(
         r#"
@@ -601,12 +631,18 @@ fn demonstrate_haskey_validation(
         "#,
         batch_id, batch_id
     );
-    
+
     // In a real implementation, this would trigger hasKey violation
     // For demo purposes, we just show the concept
-    println!("   ✓ hasKey constraint validated for batch ID: {}", batch_id);
-    println!("     (Duplicate detection would reject: {}-DUPLICATE)", batch_id);
-    
+    println!(
+        "   ✓ hasKey constraint validated for batch ID: {}",
+        batch_id
+    );
+    println!(
+        "     (Duplicate detection would reject: {}-DUPLICATE)",
+        batch_id
+    );
+
     // Create a unique batch to show it works
     let unique_batch = format!(
         r#"
@@ -618,10 +654,10 @@ fn demonstrate_haskey_validation(
             provchain:productionDate "2024-01-16" .
         "#
     );
-    
+
     blockchain.add_block(unique_batch)?;
     println!("   ✓ New unique batch added: UHT-BATCH-2024-002");
-    
+
     Ok(())
 }
 
@@ -631,7 +667,7 @@ fn demonstrate_qualified_cardinality(
     batch_id: &str,
 ) -> anyhow::Result<()> {
     println!("   Checking quality control cardinality constraints...");
-    
+
     // Add QC events to satisfy cardinality
     let qc_complete = format!(
         r#"
@@ -679,24 +715,21 @@ fn demonstrate_qualified_cardinality(
         "#,
         batch_id
     );
-    
+
     blockchain.add_block(qc_complete)?;
-    
+
     println!("   ✓ Qualified cardinality satisfied:");
     println!("     • Exactly 2 QualityControlProcess events required");
     println!("     • Each QC process has exactly 4 QualityTest sub-events");
     println!("     • All tests PASSED for batch {}", batch_id);
-    
+
     Ok(())
 }
 
 /// Perform full traceability query
-fn perform_full_traceability_query(
-    blockchain: &Blockchain,
-    batch_id: &str,
-) -> anyhow::Result<()> {
+fn perform_full_traceability_query(blockchain: &Blockchain, batch_id: &str) -> anyhow::Result<()> {
     println!("   Executing complete supply chain traceability query...");
-    
+
     let trace_query = format!(
         r#"
         PREFIX provchain: <http://provchain.org/core#>
@@ -722,31 +755,37 @@ fn perform_full_traceability_query(
         "#,
         batch_id, batch_id, batch_id
     );
-    
+
     let results = blockchain.rdf_store.query(&trace_query);
     match results {
         oxigraph::sparql::QueryResults::Solutions(solutions) => {
             let events: Vec<_> = solutions.flatten().collect();
             println!("   ✓ Traceability query returned {} events:", events.len());
             for (i, sol) in events.iter().enumerate() {
-                let event_type = sol.get("eventType").map(|t| t.to_string()).unwrap_or_default();
-                let timestamp = sol.get("timestamp").map(|t| t.to_string()).unwrap_or_default();
+                let event_type = sol
+                    .get("eventType")
+                    .map(|t| t.to_string())
+                    .unwrap_or_default();
+                let timestamp = sol
+                    .get("timestamp")
+                    .map(|t| t.to_string())
+                    .unwrap_or_default();
                 let short_type = event_type.split('#').last().unwrap_or(&event_type);
                 println!("     {}. {} at {}", i + 1, short_type, timestamp);
             }
         }
         _ => println!("   ℹ Query returned unexpected results type"),
     }
-    
+
     Ok(())
 }
 
 /// Perform large transaction load test
 fn perform_large_transaction_load(blockchain: &mut Blockchain) -> anyhow::Result<()> {
     println!("   Generating 100 additional supply chain events...");
-    
+
     let start = Instant::now();
-    
+
     for i in 0..100 {
         let event = format!(
             r#"
@@ -761,16 +800,20 @@ fn perform_large_transaction_load(blockchain: &mut Blockchain) -> anyhow::Result
                 provchain:loadTestIndex "{}" ;
                 provchain:temperature "4.0" .
             "#,
-            i, (i % 30) + 1, i % 24, (i % 10) + 1, i
+            i,
+            (i % 30) + 1,
+            i % 24,
+            (i % 10) + 1,
+            i
         );
-        
+
         blockchain.add_block(event)?;
     }
-    
+
     let elapsed = start.elapsed();
     println!("   ✓ Added 100 events in {:?}", elapsed);
     println!("   ✓ Average: {:?} per event", elapsed / 100);
     println!("   ✓ Total blocks in chain: {}", blockchain.chain.len());
-    
+
     Ok(())
 }

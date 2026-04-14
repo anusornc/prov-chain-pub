@@ -1,5 +1,6 @@
 //! Error types for ontology management and SHACL validation
 
+use std::collections::BTreeMap;
 use std::fmt;
 
 /// Errors that can occur during ontology operations
@@ -365,6 +366,85 @@ impl ValidationResult {
     /// Check if there are any violations of a specific severity
     pub fn has_violations_of_severity(&self, severity: ViolationSeverity) -> bool {
         self.violations.iter().any(|v| v.severity == severity)
+    }
+
+    /// Count violations by constraint type in deterministic order.
+    pub fn violation_breakdown_by_constraint(&self) -> BTreeMap<String, usize> {
+        let mut counts = BTreeMap::new();
+        for violation in &self.violations {
+            *counts
+                .entry(violation.constraint_type.to_string())
+                .or_insert(0) += 1;
+        }
+        counts
+    }
+
+    /// Count violations by shape in deterministic order.
+    pub fn violation_breakdown_by_shape(&self) -> BTreeMap<String, usize> {
+        let mut counts = BTreeMap::new();
+        for violation in &self.violations {
+            *counts.entry(violation.shape_id.clone()).or_insert(0) += 1;
+        }
+        counts
+    }
+
+    /// Build a compact explanation string for logs and admission failures.
+    pub fn explanation_summary(&self) -> String {
+        let mut parts = Vec::new();
+
+        if let Some(reasoner_enabled) = self.metadata.get("reasoner_enabled") {
+            parts.push(format!("reasoner_enabled={}", reasoner_enabled));
+        }
+
+        if let Some(class_constraints_checked) = self.metadata.get("class_constraints_checked") {
+            parts.push(format!(
+                "class_constraints_checked={}",
+                class_constraints_checked
+            ));
+        }
+
+        if let Some(exact_class_matches) = self.metadata.get("exact_class_matches") {
+            parts.push(format!("exact_class_matches={}", exact_class_matches));
+        }
+
+        if let Some(subclass_matches) = self.metadata.get("subclass_matches") {
+            parts.push(format!("subclass_matches={}", subclass_matches));
+        }
+
+        if let Some(fallback_exact_checks) = self.metadata.get("fallback_exact_class_checks") {
+            parts.push(format!(
+                "fallback_exact_class_checks={}",
+                fallback_exact_checks
+            ));
+        }
+
+        if let Some(reasoner_subclass_checks) = self.metadata.get("reasoner_subclass_checks") {
+            parts.push(format!(
+                "reasoner_subclass_checks={}",
+                reasoner_subclass_checks
+            ));
+        }
+
+        if !self.violations.is_empty() {
+            let constraint_breakdown = self
+                .violation_breakdown_by_constraint()
+                .into_iter()
+                .map(|(constraint, count)| format!("{}={}", constraint, count))
+                .collect::<Vec<_>>()
+                .join("|");
+
+            let shape_breakdown = self
+                .violation_breakdown_by_shape()
+                .into_iter()
+                .map(|(shape, count)| format!("{}={}", shape, count))
+                .collect::<Vec<_>>()
+                .join("|");
+
+            parts.push(format!("constraint_breakdown={}", constraint_breakdown));
+            parts.push(format!("shape_breakdown={}", shape_breakdown));
+        }
+
+        parts.join(", ")
     }
 }
 

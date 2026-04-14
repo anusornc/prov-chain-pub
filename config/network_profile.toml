@@ -1,0 +1,17 @@
+# ProvChain network-wide profile
+# All nodes in the same permissioned network should match this profile before joining.
+
+profile_id = "provchain.default"
+network_id = "provchain-org-default"
+
+[consensus]
+consensus_type = "poa"
+authority_keys = []
+block_interval = 10
+max_block_size = 1048576
+
+[semantic]
+ontology_package_id = "provchain.shared-ontology.default"
+ontology_package_version = "0.1.0"
+ontology_package_hash = "720781c9daf1935b8cb2929d7448240767dc205b35236eeed1fc3819af4c28fc"
+validation_mode = "strict"

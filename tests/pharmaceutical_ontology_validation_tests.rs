@@ -92,4 +92,5 @@ fn test_blockchain_rejects_invalid_pharmaceutical_storage_block() {
     let error_message = result.unwrap_err().to_string();
     assert!(error_message.contains("Transaction validation failed"));
     assert!(error_message.contains("pharma#lightProtection"));
+    assert!(error_message.contains("constraint_breakdown="));
 }

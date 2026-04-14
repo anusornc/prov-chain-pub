@@ -11,7 +11,7 @@ use std::time::Instant;
 
 fn main() {
     print_banner();
-    
+
     loop {
         match show_main_menu() {
             MenuChoice::RunFullDemo => run_full_demo(),
@@ -63,10 +63,10 @@ fn show_main_menu() -> MenuChoice {
     println!();
     print!("Select option (1-6): ");
     io::stdout().flush().unwrap();
-    
+
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
-    
+
     match input.trim() {
         "1" => MenuChoice::RunFullDemo,
         "2" => MenuChoice::InteractiveMode,
@@ -86,9 +86,9 @@ fn run_full_demo() {
     println!("╔══════════════════════════════════════════════════════════════════════╗");
     println!("║                    🚀 RUNNING FULL DEMO 🚀                          ║");
     println!("╚══════════════════════════════════════════════════════════════════════╝");
-    
+
     let start = Instant::now();
-    
+
     // Phase indicators
     let phases = vec![
         ("📦", "Initializing GS1 EPCIS Ontology", 5),
@@ -100,17 +100,19 @@ fn run_full_demo() {
         ("🔍", "Supply Chain Traceability Query", 10),
         ("⚡", "Large Transaction Load Test", 15),
     ];
-    
+
     println!();
     for (i, (emoji, name, weight)) in phases.iter().enumerate() {
         print_phase_header(i + 1, emoji, name);
-        
+
         // Simulate work with progress
         simulate_progress(*weight);
-        
+
         match i {
             0 => println!("   ✓ GS1 EPCIS ontology loaded (137 triples)"),
-            1 => println!("   ✓ 6 participants created (Farm, Processor, DC, Retailer, Lab, Packaging)"),
+            1 => println!(
+                "   ✓ 6 participants created (Farm, Processor, DC, Retailer, Lab, Packaging)"
+            ),
             2 => println!("   ✓ 8 supply chain events recorded"),
             3 => println!("   ✓ Property chains validated"),
             4 => println!("   ✓ Batch uniqueness verified"),
@@ -120,22 +122,25 @@ fn run_full_demo() {
             _ => {}
         }
     }
-    
+
     let elapsed = start.elapsed();
-    
+
     println!();
     println!("╔══════════════════════════════════════════════════════════════════════╗");
     println!("║                      ✅ DEMO COMPLETE                                ║");
     println!("╠══════════════════════════════════════════════════════════════════════╣");
     println!("║  Total Blocks:        113                                            ║");
     println!("║  Total RDF Triples:   2,076                                          ║");
-    println!("║  Execution Time:      {:.2?}                                        ║", elapsed);
+    println!(
+        "║  Execution Time:      {:.2?}                                        ║",
+        elapsed
+    );
     println!("║  Status:              ✓ All validations passed                       ║");
     println!("╚══════════════════════════════════════════════════════════════════════╝");
-    
+
     println!("\n💾 Demo data saved to: data/gs1_epcis_uht_demo/");
     println!("🌐 Run 'cargo run -- web-server' to explore via web UI\n");
-    
+
     wait_for_enter();
 }
 
@@ -144,56 +149,84 @@ fn run_interactive_mode() {
     println!("╔══════════════════════════════════════════════════════════════════════╗");
     println!("║                  🎮 INTERACTIVE MODE 🎮                             ║");
     println!("╚══════════════════════════════════════════════════════════════════════╝");
-    
+
     // Get custom inputs
     println!("\n📋 Custom Configuration:\n");
-    
+
     print!("Enter Batch ID [UHT-BATCH-2024-001]: ");
     io::stdout().flush().unwrap();
     let mut batch_id = String::new();
     io::stdin().read_line(&mut batch_id).unwrap();
     let batch_id = batch_id.trim();
-    let batch_id = if batch_id.is_empty() { "UHT-BATCH-2024-001" } else { batch_id };
-    
+    let batch_id = if batch_id.is_empty() {
+        "UHT-BATCH-2024-001"
+    } else {
+        batch_id
+    };
+
     print!("Enter Product Name [Organic Whole Milk]: ");
     io::stdout().flush().unwrap();
     let mut product = String::new();
     io::stdin().read_line(&mut product).unwrap();
     let product = product.trim();
-    let product = if product.is_empty() { "Organic Whole Milk" } else { product };
-    
+    let product = if product.is_empty() {
+        "Organic Whole Milk"
+    } else {
+        product
+    };
+
     print!("Enter Farm Name [Wisconsin Organic Dairy]: ");
     io::stdout().flush().unwrap();
     let mut farm = String::new();
     io::stdin().read_line(&mut farm).unwrap();
     let farm = farm.trim();
-    let farm = if farm.is_empty() { "Wisconsin Organic Dairy" } else { farm };
-    
+    let farm = if farm.is_empty() {
+        "Wisconsin Organic Dairy"
+    } else {
+        farm
+    };
+
     println!();
     println!("Configuration Summary:");
     println!("  • Batch ID: {}", batch_id);
     println!("  • Product: {}", product);
     println!("  • Farm: {}", farm);
-    
+
     println!();
     print!("Press ENTER to start supply chain simulation...");
     io::stdout().flush().unwrap();
     let _ = io::stdin().read_line(&mut String::new());
-    
+
     // Interactive phase selection
     let phases = vec![
         ("🐄", "Milk Collection", "Raw milk collection at farm"),
-        ("🚛", "Cold Chain Transport", "Transport to processing plant (4°C)"),
-        ("🔬", "Quality Control", "Lab tests: pH, fat, protein, bacteria"),
-        ("🔥", "UHT Processing", "137°C for 4 seconds (sterilization)"),
-        ("📦", "Aseptic Packaging", "Tetra Pak cartons in sterile environment"),
+        (
+            "🚛",
+            "Cold Chain Transport",
+            "Transport to processing plant (4°C)",
+        ),
+        (
+            "🔬",
+            "Quality Control",
+            "Lab tests: pH, fat, protein, bacteria",
+        ),
+        (
+            "🔥",
+            "UHT Processing",
+            "137°C for 4 seconds (sterilization)",
+        ),
+        (
+            "📦",
+            "Aseptic Packaging",
+            "Tetra Pak cartons in sterile environment",
+        ),
         ("❄️", "Cold Storage", "4°C storage until distribution"),
         ("🚚", "Distribution", "To distribution center"),
         ("🏪", "Retail Delivery", "Stocking at supermarket"),
     ];
-    
+
     let mut completed_phases = 0;
-    
+
     for (i, (emoji, name, desc)) in phases.iter().enumerate() {
         println!();
         println!("╔══════════════════════════════════════════════════════════════════════╗");
@@ -201,14 +234,14 @@ fn run_interactive_mode() {
         println!("╠══════════════════════════════════════════════════════════════════════╣");
         println!("║  {}", desc);
         println!("╚══════════════════════════════════════════════════════════════════════╝");
-        
+
         print!("\nExecute this phase? [Y/n/s]: ");
         io::stdout().flush().unwrap();
-        
+
         let mut choice = String::new();
         io::stdin().read_line(&mut choice).unwrap();
         let choice = choice.trim().to_lowercase();
-        
+
         match choice.as_str() {
             "n" | "skip" => {
                 println!("  ⏭️  Skipped");
@@ -222,21 +255,27 @@ fn run_interactive_mode() {
                 simulate_progress(12);
                 println!("  ✅ {} completed", name);
                 completed_phases += 1;
-                
+
                 // Show specific data for this phase
                 show_phase_details(i, batch_id, product, farm);
             }
         }
     }
-    
+
     println!();
     println!("╔══════════════════════════════════════════════════════════════════════╗");
     println!("║              🎉 INTERACTIVE SIMULATION COMPLETE                     ║");
     println!("╠══════════════════════════════════════════════════════════════════════╣");
-    println!("║  Phases Completed: {}/8                                              ║", completed_phases);
-    println!("║  Batch Tracked: {}                              ║", batch_id);
+    println!(
+        "║  Phases Completed: {}/8                                              ║",
+        completed_phases
+    );
+    println!(
+        "║  Batch Tracked: {}                              ║",
+        batch_id
+    );
     println!("╚══════════════════════════════════════════════════════════════════════╝");
-    
+
     wait_for_enter();
 }
 
@@ -305,7 +344,7 @@ fn explore_existing_data() {
     println!("╔══════════════════════════════════════════════════════════════════════╗");
     println!("║                  🔍 DATA EXPLORATION MODE 🔍                        ║");
     println!("╚══════════════════════════════════════════════════════════════════════╝");
-    
+
     // Check if demo data exists
     let data_path = std::path::Path::new("data/gs1_epcis_uht_demo");
     if !data_path.exists() {
@@ -314,7 +353,7 @@ fn explore_existing_data() {
         println!();
         print!("Run full demo now? [Y/n]: ");
         io::stdout().flush().unwrap();
-        
+
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
         if input.trim().to_lowercase() != "n" {
@@ -322,9 +361,9 @@ fn explore_existing_data() {
         }
         return;
     }
-    
+
     println!("\n✅ Demo data found at: data/gs1_epcis_uht_demo/\n");
-    
+
     loop {
         println!("📋 EXPLORATION MENU");
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -338,10 +377,10 @@ fn explore_existing_data() {
         println!();
         print!("Select option (1-6): ");
         io::stdout().flush().unwrap();
-        
+
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
-        
+
         match input.trim() {
             "1" => show_blockchain_summary(),
             "2" => query_supply_chain_events(),
@@ -381,7 +420,7 @@ fn show_blockchain_summary() {
     println!("    • UHT-BATCH-2024-001 (10,000 units)");
     println!("    • UHT-BATCH-2024-002 (validation test)");
     println!();
-    
+
     wait_for_enter();
 }
 
@@ -391,23 +430,73 @@ fn query_supply_chain_events() {
     println!("║                 🔍 SUPPLY CHAIN EVENTS                               ║");
     println!("╚══════════════════════════════════════════════════════════════════════╝");
     println!();
-    
+
     let events = vec![
-        ("🐄", "Milk Collection", "2024-01-15 06:00", "Farm", "10,000L raw milk"),
-        ("🚛", "Cold Chain Transport", "2024-01-15 08:30", "Transport", "4.0°C maintained"),
-        ("🔬", "Quality Control", "2024-01-15 11:00", "Lab", "All tests PASS"),
-        ("🔥", "UHT Processing", "2024-01-15 13:00", "Processing", "137°C/4sec"),
-        ("📦", "Aseptic Packaging", "2024-01-15 14:00", "Packaging", "10,000 cartons"),
-        ("❄️", "Cold Storage", "2024-01-15 15:00", "Storage", "4°C hold"),
-        ("🚚", "Distribution", "2024-01-17 08:00", "Logistics", "To DC"),
-        ("🏪", "Retail Delivery", "2024-01-18 06:00", "Retail", "Stocked"),
+        (
+            "🐄",
+            "Milk Collection",
+            "2024-01-15 06:00",
+            "Farm",
+            "10,000L raw milk",
+        ),
+        (
+            "🚛",
+            "Cold Chain Transport",
+            "2024-01-15 08:30",
+            "Transport",
+            "4.0°C maintained",
+        ),
+        (
+            "🔬",
+            "Quality Control",
+            "2024-01-15 11:00",
+            "Lab",
+            "All tests PASS",
+        ),
+        (
+            "🔥",
+            "UHT Processing",
+            "2024-01-15 13:00",
+            "Processing",
+            "137°C/4sec",
+        ),
+        (
+            "📦",
+            "Aseptic Packaging",
+            "2024-01-15 14:00",
+            "Packaging",
+            "10,000 cartons",
+        ),
+        (
+            "❄️",
+            "Cold Storage",
+            "2024-01-15 15:00",
+            "Storage",
+            "4°C hold",
+        ),
+        (
+            "🚚",
+            "Distribution",
+            "2024-01-17 08:00",
+            "Logistics",
+            "To DC",
+        ),
+        (
+            "🏪",
+            "Retail Delivery",
+            "2024-01-18 06:00",
+            "Retail",
+            "Stocked",
+        ),
     ];
-    
+
     for (emoji, name, time, location, detail) in events {
-        println!("  {} {:<20} │ {:<16} │ {:<12} │ {}", 
-            emoji, name, time, location, detail);
+        println!(
+            "  {} {:<20} │ {:<16} │ {:<12} │ {}",
+            emoji, name, time, location, detail
+        );
     }
-    
+
     println!();
     wait_for_enter();
 }
@@ -418,19 +507,23 @@ fn trace_product_batch() {
     println!("║              🔍 PRODUCT BATCH TRACEABILITY                           ║");
     println!("╚══════════════════════════════════════════════════════════════════════╝");
     println!();
-    
+
     print!("Enter Batch ID to trace [UHT-BATCH-2024-001]: ");
     io::stdout().flush().unwrap();
-    
+
     let mut batch = String::new();
     io::stdin().read_line(&mut batch).unwrap();
     let batch = batch.trim();
-    let batch = if batch.is_empty() { "UHT-BATCH-2024-001" } else { batch };
-    
+    let batch = if batch.is_empty() {
+        "UHT-BATCH-2024-001"
+    } else {
+        batch
+    };
+
     println!();
     println!("Tracing batch: {}...", batch);
     simulate_progress(20);
-    
+
     println!();
     println!("✅ Traceability Results for {}", batch);
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -442,7 +535,9 @@ fn trace_product_batch() {
     println!("  Status:        ✅ In Stock at Retailer");
     println!();
     println!("  Supply Chain Journey:");
-    println!("    🐄 Farm → 🚛 Transport → 🏭 Processing → 📦 Packaging → ❄️ Storage → 🚚 DC → 🏪 Store");
+    println!(
+        "    🐄 Farm → 🚛 Transport → 🏭 Processing → 📦 Packaging → ❄️ Storage → 🚚 DC → 🏪 Store"
+    );
     println!("    [✓]       [✓]           [✓]            [✓]          [✓]        [✓]     [✓]");
     println!();
     println!("  Quality Certifications:");
@@ -450,7 +545,7 @@ fn trace_product_batch() {
     println!("    • ISO 22000 ✓");
     println!("    • FSSC 22000 ✓");
     println!();
-    
+
     wait_for_enter();
 }
 
@@ -460,7 +555,7 @@ fn view_quality_records() {
     println!("║              📋 QUALITY CONTROL RECORDS                              ║");
     println!("╚══════════════════════════════════════════════════════════════════════╝");
     println!();
-    
+
     println!("  Batch: UHT-BATCH-2024-001");
     println!("  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!();
@@ -484,7 +579,7 @@ fn view_quality_records() {
     println!();
     println!("  Overall Status: ✅ ALL TESTS PASSED");
     println!();
-    
+
     wait_for_enter();
 }
 
@@ -494,11 +589,11 @@ fn check_temperature_chain() {
     println!("║              🌡️  TEMPERATURE MONITORING CHAIN                        ║");
     println!("╚══════════════════════════════════════════════════════════════════════╝");
     println!();
-    
+
     println!("  Cold Chain Integrity: ✅ MAINTAINED");
     println!("  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!();
-    
+
     let temps = vec![
         ("Farm Collection", "4.0°C", "✅"),
         ("Transport", "3.8°C - 4.2°C", "✅"),
@@ -511,19 +606,19 @@ fn check_temperature_chain() {
         ("Distribution", "4.0°C", "✅"),
         ("Retail Storage", "4.0°C", "✅"),
     ];
-    
+
     println!("  {:<25} │ {:<15} │ Status", "Location", "Temperature");
     println!("  {}", "━".repeat(65));
-    
+
     for (loc, temp, status) in temps {
         println!("  {:<25} │ {:<15} │ {}", loc, temp, status);
     }
-    
+
     println!();
     println!("  Note: Temperature spike to 137°C is part of UHT sterilization process");
     println!("        (Ultra-High Temperature processing kills bacteria)");
     println!();
-    
+
     wait_for_enter();
 }
 
@@ -533,44 +628,58 @@ fn run_performance_test() {
     println!("║              ⚡ PERFORMANCE BENCHMARK ⚡                              ║");
     println!("╚══════════════════════════════════════════════════════════════════════╝");
     println!();
-    
+
     print!("Enter number of events to generate [100]: ");
     io::stdout().flush().unwrap();
-    
+
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
     let count: usize = input.trim().parse().unwrap_or(100);
-    
+
     println!();
     println!("Running performance test with {} events...", count);
     println!();
-    
+
     let start = Instant::now();
-    
+
     for i in 0..count {
         if i % 10 == 0 {
-            print!("\r  Progress: {}/{} events ({:.0}%)", i, count, (i as f64 / count as f64) * 100.0);
+            print!(
+                "\r  Progress: {}/{} events ({:.0}%)",
+                i,
+                count,
+                (i as f64 / count as f64) * 100.0
+            );
             io::stdout().flush().unwrap();
         }
         // Simulate work
         std::thread::sleep(std::time::Duration::from_millis(1));
     }
-    
+
     let elapsed = start.elapsed();
     let avg_ms = elapsed.as_millis() as f64 / count as f64;
-    
+
     println!("\r  Progress: {}/{} events (100%)", count, count);
     println!();
     println!("╔══════════════════════════════════════════════════════════════════════╗");
     println!("║                    📊 BENCHMARK RESULTS                              ║");
     println!("╠══════════════════════════════════════════════════════════════════════╣");
     println!("║  Events Processed:      {:<45} ║", count);
-    println!("║  Total Time:            {:.2?}                                      ║", elapsed);
-    println!("║  Average per Event:     {:.2} ms                                     ║", avg_ms);
-    println!("║  Throughput:            {:.0} events/second                        ║", 1000.0 / avg_ms);
+    println!(
+        "║  Total Time:            {:.2?}                                      ║",
+        elapsed
+    );
+    println!(
+        "║  Average per Event:     {:.2} ms                                     ║",
+        avg_ms
+    );
+    println!(
+        "║  Throughput:            {:.0} events/second                        ║",
+        1000.0 / avg_ms
+    );
     println!("╚══════════════════════════════════════════════════════════════════════╝");
     println!();
-    
+
     if avg_ms < 100.0 {
         println!("  ✅ EXCELLENT: Fast transaction processing");
     } else if avg_ms < 200.0 {
@@ -578,7 +687,7 @@ fn run_performance_test() {
     } else {
         println!("  ⚠️  SLOW: Consider optimization");
     }
-    
+
     println!();
     wait_for_enter();
 }
@@ -619,7 +728,7 @@ fn show_help() {
     println!("  • Explore Data       - Query and visualize stored data");
     println!("  • Performance Test   - Benchmark transaction throughput");
     println!();
-    
+
     wait_for_enter();
 }
 
@@ -628,14 +737,15 @@ fn simulate_progress(steps: usize) {
         let progress = (i as f64 / steps as f64) * 100.0;
         let filled = (progress / 5.0) as usize;
         let empty = 20 - filled;
-        
-        print!("\r   [{}{}] {:.0}%", 
-            "█".repeat(filled), 
-            "░".repeat(empty), 
+
+        print!(
+            "\r   [{}{}] {:.0}%",
+            "█".repeat(filled),
+            "░".repeat(empty),
             progress
         );
         io::stdout().flush().unwrap();
-        
+
         std::thread::sleep(std::time::Duration::from_millis(50));
     }
     println!();
@@ -671,7 +781,7 @@ fn initialize_blockchain_with_gs1_epcis() -> anyhow::Result<Blockchain> {
     };
 
     let mut blockchain = Blockchain::new_persistent_with_config(config)?;
-    
+
     let ontology_data = include_str!("../src/semantic/ontologies/generic_core.owl");
     let ontology_block = format!(
         r#"@prefix provchain: <http://provchain.org/core#> .
@@ -679,7 +789,7 @@ fn initialize_blockchain_with_gs1_epcis() -> anyhow::Result<Blockchain> {
             provchain:containsOntology "GS1_EPCIS" ."#,
         chrono::Utc::now().timestamp()
     );
-    
+
     blockchain.add_block(ontology_block)?;
     Ok(blockchain)
 }
@@ -688,7 +798,7 @@ fn create_uht_supply_chain_participants(
     blockchain: &mut Blockchain,
 ) -> anyhow::Result<HashMap<String, String>> {
     let mut participants = HashMap::new();
-    
+
     let participants_data = r#"
         @prefix provchain: <http://provchain.org/core#> .
         @prefix schema: <http://schema.org/> .
@@ -708,13 +818,22 @@ fn create_uht_supply_chain_participants(
         <http://example.org/retailer/metro-supermarkets> a provchain:Retailer ;
             schema:name "Metro Supermarkets" .
     "#;
-    
+
     blockchain.add_block(participants_data.to_string())?;
-    
-    participants.insert("Farm".to_string(), "Wisconsin Organic Dairy Farm".to_string());
-    participants.insert("Processor".to_string(), "National Dairy Foods UHT Plant".to_string());
-    participants.insert("Distributor".to_string(), "Global Cold Chain Logistics".to_string());
+
+    participants.insert(
+        "Farm".to_string(),
+        "Wisconsin Organic Dairy Farm".to_string(),
+    );
+    participants.insert(
+        "Processor".to_string(),
+        "National Dairy Foods UHT Plant".to_string(),
+    );
+    participants.insert(
+        "Distributor".to_string(),
+        "Global Cold Chain Logistics".to_string(),
+    );
     participants.insert("Retailer".to_string(), "Metro Supermarkets".to_string());
-    
+
     Ok(participants)
 }

@@ -1,10 +1,14 @@
 //! Configuration management for ProvChainOrg
 
+pub use crate::utils::config::{
+    load_config, ConsensusConfig, LoggingConfig, NetworkConfig, NodeConfig, StorageConfig,
+};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Config {
     pub network: NetworkConfig,
     pub consensus: ConsensusConfig,
@@ -15,41 +19,7 @@ pub struct Config {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NetworkConfig {
-    pub network_id: String,
-    pub listen_port: u16,
-    pub bind_address: String,
-    pub known_peers: Vec<String>,
-    pub max_peers: u32,
-    pub connection_timeout: u64,
-    pub ping_interval: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConsensusConfig {
-    pub is_authority: bool,
-    pub authority_key_file: Option<String>,
-    pub authority_keys: Vec<String>,
-    pub block_interval: u64,
-    pub max_block_size: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StorageConfig {
-    pub data_dir: String,
-    pub persistent: bool,
-    pub store_type: String,
-    pub cache_size_mb: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LoggingConfig {
-    pub level: String,
-    pub format: String,
-    pub file: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct WebConfig {
     pub host: String,
     pub port: u16,
@@ -58,6 +28,7 @@ pub struct WebConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct CorsConfig {
     pub enabled: bool,
     pub allowed_origins: Vec<String>,
@@ -69,6 +40,7 @@ pub struct CorsConfig {
 
 /// Ontology configuration for TOML file
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct OntologyConfigFile {
     /// Path to the domain-specific ontology file
     pub domain_ontology_path: String,
@@ -96,16 +68,37 @@ impl Default for OntologyConfigFile {
 
 impl Default for Config {
     fn default() -> Self {
-        // Get CORS origins from environment variable or use minimal defaults
-        let default_origins = if cfg!(debug_assertions) {
-            // Development mode - allow common dev ports
+        Self {
+            network: NetworkConfig::default(),
+            consensus: ConsensusConfig::default(),
+            storage: StorageConfig::default(),
+            logging: LoggingConfig::default(),
+            web: WebConfig::default(),
+            ontology_config: None,
+        }
+    }
+}
+
+impl Default for WebConfig {
+    fn default() -> Self {
+        Self {
+            host: "0.0.0.0".to_string(),
+            port: 8080,
+            jwt_secret: "".to_string(),
+            cors: CorsConfig::default(),
+        }
+    }
+}
+
+impl Default for CorsConfig {
+    fn default() -> Self {
+        let allowed_origins = if cfg!(debug_assertions) {
             vec![
                 "http://localhost:5173".to_string(),
                 "http://localhost:5174".to_string(),
                 "http://localhost:5175".to_string(),
             ]
         } else {
-            // Production mode - use environment variable or restrictive default
             std::env::var("ALLOWED_ORIGINS")
                 .unwrap_or_else(|_| "https://yourdomain.com".to_string())
                 .split(',')
@@ -114,55 +107,16 @@ impl Default for Config {
         };
 
         Self {
-            network: NetworkConfig {
-                network_id: "provchain-org-default".to_string(),
-                listen_port: 8080,
-                bind_address: "0.0.0.0".to_string(),
-                known_peers: vec![],
-                max_peers: 50,
-                connection_timeout: 30,
-                ping_interval: 30,
-            },
-            consensus: ConsensusConfig {
-                is_authority: false,
-                authority_key_file: None,
-                authority_keys: vec![],
-                block_interval: 10,
-                max_block_size: 1048576,
-            },
-            storage: StorageConfig {
-                data_dir: "./data".to_string(),
-                persistent: true,
-                store_type: "oxigraph".to_string(),
-                cache_size_mb: 100,
-            },
-            logging: LoggingConfig {
-                level: "info".to_string(),
-                format: "pretty".to_string(),
-                file: None,
-            },
-            web: WebConfig {
-                host: "0.0.0.0".to_string(),
-                port: 8080,
-                jwt_secret: "".to_string(), // Must be set via JWT_SECRET environment variable
-                cors: CorsConfig {
-                    enabled: true,
-                    allowed_origins: default_origins,
-                    allowed_methods: vec![
-                        "GET".to_string(),
-                        "POST".to_string(),
-                        "OPTIONS".to_string(),
-                    ],
-                    allowed_headers: vec![
-                        "Authorization".to_string(),
-                        "Content-Type".to_string(),
-                        "Accept".to_string(),
-                    ],
-                    allow_credentials: true,
-                    max_age: Some(3600),
-                },
-            },
-            ontology_config: None,
+            enabled: true,
+            allowed_origins,
+            allowed_methods: vec!["GET".to_string(), "POST".to_string(), "OPTIONS".to_string()],
+            allowed_headers: vec![
+                "Authorization".to_string(),
+                "Content-Type".to_string(),
+                "Accept".to_string(),
+            ],
+            allow_credentials: true,
+            max_age: Some(3600),
         }
     }
 }
@@ -294,5 +248,30 @@ mod tests {
             "src/semantic/ontologies/generic_core.owl"
         );
         assert_eq!(ontology_config.validation_enabled, Some(true));
+    }
+
+    #[test]
+    fn test_partial_config_uses_defaults_for_missing_fields() {
+        let partial_toml = r#"
+[network]
+network_id = "partial-config-network"
+
+[web]
+port = 9090
+"#;
+
+        let config: Config = toml::from_str(partial_toml).unwrap();
+
+        assert_eq!(config.network.network_id, "partial-config-network");
+        assert_eq!(
+            config.network.listen_port,
+            NetworkConfig::default().listen_port
+        );
+        assert_eq!(
+            config.consensus.consensus_type,
+            ConsensusConfig::default().consensus_type
+        );
+        assert_eq!(config.web.port, 9090);
+        assert_eq!(config.web.host, WebConfig::default().host);
     }
 }

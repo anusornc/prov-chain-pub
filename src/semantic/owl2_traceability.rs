@@ -1,7 +1,8 @@
-//! Enhanced traceability using owl2-reasoner for OWL2 reasoning and optimization
+//! Legacy traceability experiment using owl2-reasoner
 //!
-//! This module enhances the existing traceability system by leveraging
-//! owl2-reasoner for more sophisticated ontology-based reasoning and optimization.
+//! This module is retained for experimentation and migration support.
+//! It is not part of the production semantic path. Production-aligned
+//! traceability should flow through shared ontology packages in `crate::ontology`.
 
 use crate::core::blockchain::Blockchain;
 use crate::core::entity::{EntityType, PropertyValue, TraceableEntity};

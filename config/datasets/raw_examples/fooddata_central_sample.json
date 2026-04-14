@@ -1,0 +1,34 @@
+{
+  "FoundationFoods": [
+    {
+      "fdcId": 1001,
+      "description": "UHT whole milk",
+      "dataType": "Foundation",
+      "publicationDate": "2025-12-01",
+      "foodClass": "Dairy product",
+      "foodCategory": {
+        "description": "Milk and milk products"
+      }
+    },
+    {
+      "fdcId": 1002,
+      "description": "UHT skim milk",
+      "dataType": "Foundation",
+      "publicationDate": "2025-12-01",
+      "foodClass": "Dairy product",
+      "foodCategory": {
+        "description": "Milk and milk products"
+      }
+    }
+  ],
+  "BrandedFoods": [
+    {
+      "fdcId": 2001,
+      "description": "Example Organic UHT Milk 1L",
+      "gtinUpc": "01234567890123",
+      "brandOwner": "Example Dairy Co",
+      "publicationDate": "2025-12-15",
+      "dataType": "Branded"
+    }
+  ]
+}

@@ -27,7 +27,7 @@ In this context, a **container** is:
 |-----------|-----------|---------|-------|
 | **Web API** | Axum + Tokio | REST API, WebSocket, JWT auth | Horizontal (multiple instances) |
 | **Blockchain Core** | Rust + Tokio | Block management, consensus engine | Single instance per node |
-| **Semantic Layer** | SPACL `owl2-reasoner` + Oxigraph | OWL2 reasoning, SHACL validation | Single instance per node |
+| **Semantic Layer** | SPACL `owl2-reasoner` + Oxigraph | Shared-ontology reasoning and validation | Single instance per node |
 | **RDF Store** | Oxigraph | Triple/quad storage, SPARQL queries | Single instance per node |
 | **P2P Network** | WebSocket | Peer communication, block sync | Embedded in Blockchain Core |
 | **Monitoring** | Prometheus + Grafana | Metrics, dashboards, tracing | Per cluster |
@@ -46,7 +46,7 @@ C4Container
     Container_Boundary(provchain, "ProvChainOrg Node") {
         Container(web_api, "Web API", "Axum + JWT", "REST API and WebSocket endpoints")
         Container(blockchain, "Blockchain Core", "Rust + Tokio", "Block management and consensus")
-        Container(semantic, "Semantic Layer", "OWL2 Reasoner", "Reasoning and validation")
+        Container(semantic, "Semantic Layer", "SPACL + ontology packages", "Shared-ontology reasoning and validation")
         ContainerDb(rdf_store, "RDF Store", "Oxigraph", "Triple storage and SPARQL")
     }
 
@@ -174,11 +174,11 @@ pub struct Blockchain {
 - Query: SPARQL 1.1
 
 **Responsibilities:**
-- OWL2 consistency checking
+- ontology-package loading and compatibility checks
 - SHACL constraint validation
-- Property chain inference
-- Qualified cardinality reasoning
-- Ontology management
+- SPACL-backed reasoning
+- network-wide semantic consistency via ontology hashes
+- ontology management for permissioned traceability workflows
 
 **Key Capabilities:**
 | Feature | Description | Performance |
@@ -189,14 +189,16 @@ pub struct Blockchain {
 | **SHACL Validation** | Shape-based constraint checking | < 5ms |
 
 **Integration Points:**
-- Called by Blockchain Core during block validation
-- Called by Web API for query enhancement
-- Accesses RDF Store for ontology data
+- called by Blockchain Core during block validation
+- called by Web API for query enhancement
+- accesses RDF Store for ontology data
+- enforces the shared semantic contract used by participating organizations
 
 **Ontology Support:**
 - Turtle, RDF/XML, N-Triples, OWL/Functional
-- Domain-specific ontologies (UHT manufacturing, automotive, pharmaceutical, healthcare)
-- Custom ontology loading via `--ontology` parameter
+- shared ontology packages for general traceability networks
+- reference ontology-package demos for UHT, automotive, pharmaceutical, and healthcare
+- custom ontology loading via `--ontology` parameter
 
 ---
 

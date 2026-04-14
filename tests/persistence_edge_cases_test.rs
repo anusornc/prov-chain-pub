@@ -16,7 +16,7 @@ fn test_partial_write_recovery() {
     // Create blockchain and add some blocks
     {
         let mut blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-        
+
         for i in 1..=3 {
             let test_data = format!(
                 r#"@prefix ex: <http://example.org/> . ex:item{} ex:value {} ."#,
@@ -24,7 +24,7 @@ fn test_partial_write_recovery() {
             );
             blockchain.add_block(test_data).unwrap();
         }
-        
+
         // Verify blocks are in memory
         assert_eq!(blockchain.chain.len(), 4); // genesis + 3
     }
@@ -32,16 +32,19 @@ fn test_partial_write_recovery() {
     // Simulate crash by reopening (should recover from WAL)
     {
         let blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-        
+
         // All blocks should be recovered
         assert_eq!(
-            blockchain.chain.len(), 
-            4, 
+            blockchain.chain.len(),
+            4,
             "Should recover all 4 blocks after simulated crash"
         );
-        
+
         // Verify chain integrity
-        assert!(blockchain.is_valid(), "Chain should be valid after recovery");
+        assert!(
+            blockchain.is_valid(),
+            "Chain should be valid after recovery"
+        );
     }
 }
 
@@ -54,7 +57,7 @@ fn test_chain_index_rebuild() {
     let block_hashes: Vec<String> = {
         let mut blockchain = Blockchain::new_persistent(&data_dir).unwrap();
         let mut hashes = Vec::new();
-        
+
         for i in 1..=5 {
             let test_data = format!(
                 r#"@prefix ex: <http://example.org/> . ex:block{} ex:seq {} ."#,
@@ -74,19 +77,18 @@ fn test_chain_index_rebuild() {
     // Reopen - should rebuild index from WAL
     {
         let blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-        
+
         assert_eq!(
             blockchain.chain.len(),
             6, // genesis + 5
             "Should rebuild chain index from WAL"
         );
-        
+
         // Verify all hashes match
         for (i, expected_hash) in block_hashes.iter().enumerate() {
             let block_idx = i + 1;
             assert_eq!(
-                blockchain.chain[block_idx].hash,
-                *expected_hash,
+                blockchain.chain[block_idx].hash, *expected_hash,
                 "Block {} hash should match after index rebuild",
                 block_idx
             );
@@ -105,16 +107,19 @@ fn test_empty_wal_new_blockchain() {
 
     // Create new blockchain
     let blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-    
+
     // Should have just genesis block
     assert_eq!(
         blockchain.chain.len(),
         1,
         "New blockchain should have only genesis block"
     );
-    
+
     // Verify genesis block has index 0
-    assert_eq!(blockchain.chain[0].index, 0, "Genesis block should have index 0");
+    assert_eq!(
+        blockchain.chain[0].index, 0,
+        "Genesis block should have index 0"
+    );
 }
 
 /// Test data integrity after multiple reopen cycles
@@ -127,46 +132,48 @@ fn test_multiple_reopen_cycles() {
     // Multiple cycles of open-add-close
     for cycle in 0..3 {
         let mut blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-        
+
         // On first cycle, capture genesis hash
         if cycle == 0 {
             expected_hashes.push(blockchain.chain[0].hash.clone());
         }
-        
+
         // Add a block in each cycle
         let test_data = format!(
             r#"@prefix ex: <http://example.org/> . ex:cycle{} ex:round {} ."#,
             cycle, cycle
         );
         blockchain.add_block(test_data).unwrap();
-        
+
         // Track the new block's hash
         expected_hashes.push(blockchain.chain.last().unwrap().hash.clone());
-        
+
         // Blockchain drops here, simulating close
     }
 
     // Final reopen and verify
     let blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-    
+
     assert_eq!(
         blockchain.chain.len(),
         4, // genesis + 3 cycles
         "Should have all blocks after multiple reopen cycles"
     );
-    
+
     // Verify all hashes match expected
     for (i, expected_hash) in expected_hashes.iter().enumerate() {
         assert_eq!(
-            blockchain.chain[i].hash,
-            *expected_hash,
+            blockchain.chain[i].hash, *expected_hash,
             "Block {} hash should match after multiple reopen cycles",
             i
         );
     }
-    
+
     // Verify chain integrity
-    assert!(blockchain.is_valid(), "Chain should remain valid after multiple cycles");
+    assert!(
+        blockchain.is_valid(),
+        "Chain should remain valid after multiple cycles"
+    );
 }
 
 /// Test that RDF data is preserved correctly
@@ -188,7 +195,8 @@ fn test_rdf_data_preservation() {
                 schema:price "99.99" ;
                 schema:priceCurrency "USD"
             ] .
-    "#.to_string();
+    "#
+    .to_string();
 
     // Create and add block
     {
@@ -199,14 +207,13 @@ fn test_rdf_data_preservation() {
     // Reopen and verify RDF data
     {
         let blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-        
+
         // Block 1 should have our test data
         assert_eq!(
-            blockchain.chain[1].data,
-            test_data,
+            blockchain.chain[1].data, test_data,
             "RDF data should be preserved exactly"
         );
-        
+
         // Note: SPARQL query verification removed - the block data is preserved
         // but reloading into the RDF store for querying is handled separately
         // The key assertion above (data equality) confirms persistence works
@@ -220,7 +227,7 @@ fn test_rapid_block_additions() {
     let data_dir = temp_dir.path().join("rapid_additions_test");
 
     let mut blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-    
+
     // Add 10 blocks rapidly
     for i in 1..=10 {
         let test_data = format!(
@@ -229,24 +236,27 @@ fn test_rapid_block_additions() {
         );
         blockchain.add_block(test_data).unwrap();
     }
-    
+
     // Verify all blocks in memory
     assert_eq!(blockchain.chain.len(), 11);
-    
+
     // Drop and reopen
     drop(blockchain);
-    
+
     let blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-    
+
     // Verify all blocks persisted
     assert_eq!(
         blockchain.chain.len(),
         11,
         "All 11 blocks should persist after rapid additions"
     );
-    
+
     // Verify chain validity
-    assert!(blockchain.is_valid(), "Chain should be valid after rapid additions");
+    assert!(
+        blockchain.is_valid(),
+        "Chain should be valid after rapid additions"
+    );
 }
 
 /// Test that corrupted WAL entries are handled gracefully
@@ -258,7 +268,7 @@ fn test_corrupted_wal_recovery() {
     // Create blockchain and add blocks
     {
         let mut blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-        
+
         for i in 1..=3 {
             let test_data = format!(
                 r#"@prefix ex: <http://example.org/> . ex:item{} ex:id {} ."#,
@@ -270,11 +280,8 @@ fn test_corrupted_wal_recovery() {
 
     // Corrupt the WAL by appending garbage
     let wal_path = data_dir.join("wal.dat");
-    let mut wal_file = fs::OpenOptions::new()
-        .append(true)
-        .open(&wal_path)
-        .unwrap();
-    
+    let mut wal_file = fs::OpenOptions::new().append(true).open(&wal_path).unwrap();
+
     // Append some invalid data
     wal_file.write_all(b"CORRUPTED_GARBAGE_DATA").unwrap();
     drop(wal_file);
@@ -282,7 +289,7 @@ fn test_corrupted_wal_recovery() {
     // Reopen - should handle corruption gracefully
     // Note: The implementation should skip corrupted entries
     let blockchain = Blockchain::new_persistent(&data_dir).unwrap();
-    
+
     // Should still have the valid blocks
     assert!(
         blockchain.chain.len() >= 1,

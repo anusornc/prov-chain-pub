@@ -5,8 +5,8 @@ use provchain_org::{
     core::blockchain::Blockchain,
     demo,
     demo_runner::run_demo_with_args,
-    network::{consensus::ConsensusManager, NetworkManager},
-    ontology::OntologyConfig,
+    network::{consensus::ConsensusManager, profile::NetworkProfile, NetworkManager},
+    ontology::{OntologyConfig, OntologyPackageManifest},
     security::keys::generate_signing_key,
     semantic::enhanced_owl2_demo::run_enhanced_owl2_demo,
     semantic::owl2_traceability::Owl2EnhancedTraceability,
@@ -65,7 +65,7 @@ enum Commands {
         command: ExampleCommands,
     },
 
-    /// Run enhanced traceability using OWL2 reasoning
+    /// Run legacy enhanced traceability demo using experimental OWL2 code
     EnhancedTrace {
         /// Batch ID to trace
         batch_id: String,
@@ -79,7 +79,7 @@ enum Commands {
         ontology: Option<String>,
     },
 
-    /// Run advanced OWL2 reasoning using the owl2-reasoner library
+    /// Run experimental OWL2 reasoning demo using the owl2-reasoner library
     AdvancedOwl2 {
         /// Ontology file to process
         #[arg(
@@ -336,6 +336,93 @@ fn create_blockchain_with_ontology(
     }
 }
 
+/// Create blockchain for node runtime using node-local storage config and optional ontology config
+fn create_blockchain_for_node(
+    node_config: &provchain_org::utils::config::NodeConfig,
+) -> Result<Blockchain, Box<dyn std::error::Error>> {
+    let storage_config = StorageConfig {
+        data_dir: std::path::PathBuf::from(node_config.storage.data_dir.clone()),
+        enable_backup: true,
+        backup_interval_hours: 24,
+        max_backup_files: 7,
+        enable_compression: true,
+        enable_encryption: false,
+        cache_size: 1000,
+        warm_cache_on_startup: false,
+        flush_interval: 1,
+    };
+
+    if let Some(ontology) = &node_config.ontology {
+        if ontology.auto_load || ontology.validate_data {
+            let ontology_config = if let Some(manifest_path) = &ontology.package_manifest_path {
+                let manifest = OntologyPackageManifest::load_from_file(manifest_path)
+                    .map_err(|e| format!("Failed to load ontology package manifest: {e}"))?;
+                manifest
+                    .to_ontology_config()
+                    .map_err(|e| format!("Failed to create ontology configuration: {e}"))?
+            } else {
+                let app_config = Config::load_or_default("config/config.toml");
+                OntologyConfig::new(Some(ontology.path.clone()), &app_config)
+                    .map_err(|e| format!("Failed to create ontology configuration: {e}"))?
+            };
+
+            info!(
+                "Initializing node blockchain with shared ontology package: {} (hash: {})",
+                ontology_config
+                    .domain_name()
+                    .unwrap_or_else(|_| "unknown".to_string()),
+                ontology_config.ontology_hash
+            );
+
+            return Blockchain::new_persistent_with_config_and_ontology(
+                storage_config,
+                ontology_config,
+            )
+            .map_err(|e| format!("Failed to initialize ontology-aware blockchain: {e}").into());
+        }
+    }
+
+    Blockchain::new_persistent_with_config(storage_config)
+        .map_err(|e| format!("Failed to initialize blockchain: {e}").into())
+}
+
+fn validate_node_startup_contract(
+    node_config: &provchain_org::utils::config::NodeConfig,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(profile_path) = &node_config.network_profile_path {
+        let profile = NetworkProfile::load_from_file(profile_path)
+            .map_err(|e| format!("Failed to load network profile: {e}"))?;
+        profile
+            .validate_node_config(node_config)
+            .map_err(|e| format!("Node config does not match network profile: {e}"))?;
+
+        if let Some(ontology) = &node_config.ontology {
+            if let Some(manifest_path) = &ontology.package_manifest_path {
+                let manifest = OntologyPackageManifest::load_from_file(manifest_path)
+                    .map_err(|e| format!("Failed to load ontology package manifest: {e}"))?;
+                profile.validate_manifest(&manifest).map_err(|e| {
+                    format!("Ontology package manifest does not match network profile: {e}")
+                })?;
+
+                if ontology.path != manifest.domain_ontology_path {
+                    return Err(format!(
+                        "Node ontology path '{}' does not match ontology package manifest '{}'",
+                        ontology.path, manifest.domain_ontology_path
+                    )
+                    .into());
+                }
+            }
+        }
+
+        info!(
+            "Validated network profile '{}' for network '{}'",
+            profile.profile_id, profile.network_id
+        );
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing
@@ -395,34 +482,77 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Examples { command } => {
             match command {
                 ExampleCommands::List => {
-                    println!("\n╔══════════════════════════════════════════════════════════════════╗");
-                    println!("║              AVAILABLE EXAMPLES AND DEMOS                        ║");
-                    println!("╠══════════════════════════════════════════════════════════════════╣");
-                    println!("║                                                                  ║");
-                    println!("║  Built-in Examples:                                              ║");
-                    println!("║    examples basic-supply-chain    Simple supply chain demo       ║");
-                    println!("║    examples transaction-workflow  Signing & multi-party          ║");
-                    println!("║    examples owl2-reasoning        OWL2 features demo             ║");
-                    println!("║    examples gs1-epcis-uht         GS1 EPCIS UHT supply chain     ║");
-                    println!("║    examples web-server            Web UI with demo data          ║");
-                    println!("║                                                                  ║");
+                    println!(
+                        "\n╔══════════════════════════════════════════════════════════════════╗"
+                    );
+                    println!(
+                        "║              AVAILABLE EXAMPLES AND DEMOS                        ║"
+                    );
+                    println!(
+                        "╠══════════════════════════════════════════════════════════════════╣"
+                    );
+                    println!(
+                        "║                                                                  ║"
+                    );
+                    println!(
+                        "║  Built-in Examples:                                              ║"
+                    );
+                    println!(
+                        "║    examples basic-supply-chain    Simple supply chain demo       ║"
+                    );
+                    println!(
+                        "║    examples transaction-workflow  Signing & multi-party          ║"
+                    );
+                    println!(
+                        "║    examples owl2-reasoning        OWL2 features demo             ║"
+                    );
+                    println!(
+                        "║    examples gs1-epcis-uht         GS1 EPCIS UHT supply chain     ║"
+                    );
+                    println!(
+                        "║    examples web-server            Web UI with demo data          ║"
+                    );
+                    println!(
+                        "║                                                                  ║"
+                    );
                     println!("║  Standalone Examples (cargo run --example <name>):              ║");
-                    println!("║    gs1_epcis_uht_demo             Full UHT demo (776 lines)      ║");
-                    println!("║    demo_ui                        Web UI starter                 ║");
-                    println!("║    persistence_demo               Persistence layer demo         ║");
-                    println!("║                                                                  ║");
-                    println!("║  Legacy Commands (still available):                              ║");
-                    println!("║    transaction-demo               (use: examples list)           ║");
-                    println!("║    demo                           (use: examples list)           ║");
-                    println!("║                                                                  ║");
-                    println!("╚══════════════════════════════════════════════════════════════════╝\n");
+                    println!(
+                        "║    gs1_epcis_uht_demo             Full UHT demo (776 lines)      ║"
+                    );
+                    println!(
+                        "║    demo_ui                        Web UI starter                 ║"
+                    );
+                    println!(
+                        "║    persistence_demo               Persistence layer demo         ║"
+                    );
+                    println!(
+                        "║                                                                  ║"
+                    );
+                    println!(
+                        "║  Legacy Commands (still available):                              ║"
+                    );
+                    println!(
+                        "║    transaction-demo               (use: examples list)           ║"
+                    );
+                    println!(
+                        "║    demo                           (use: examples list)           ║"
+                    );
+                    println!(
+                        "║                                                                  ║"
+                    );
+                    println!(
+                        "╚══════════════════════════════════════════════════════════════════╝\n"
+                    );
                 }
                 ExampleCommands::BasicSupplyChain { ontology } => {
                     let _blockchain = create_blockchain_with_ontology(ontology)?;
                     info!("Running basic supply chain demo...\n");
                     demo::run_demo();
                 }
-                ExampleCommands::TransactionWorkflow { workflow_type, ontology } => {
+                ExampleCommands::TransactionWorkflow {
+                    workflow_type,
+                    ontology,
+                } => {
                     let _blockchain = create_blockchain_with_ontology(ontology)?;
                     info!("Running transaction workflow demo: {}\n", workflow_type);
                     let args = vec!["provchain".to_string(), workflow_type];
@@ -434,7 +564,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ExampleCommands::Owl2Reasoning { ontology } => {
                     let _blockchain = create_blockchain_with_ontology(ontology)?;
                     info!("Running OWL2 reasoning demo...\n");
-                    
+
                     println!("\n--- Phase 1: Simple Integration Test ---\n");
                     if let Err(e) = simple_owl2_integration_test() {
                         eprintln!("OWL2 integration test failed: {}\n", e);
@@ -459,16 +589,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     // Load ontology data first
                     info!("Loading core ontology...\n");
-                    let ontology_data = fs::read_to_string("src/semantic/ontologies/generic_core.owl")
-                        .map_err(|e| format!("Cannot read ontology file: {e}\n"))?;
+                    let ontology_data =
+                        fs::read_to_string("src/semantic/ontologies/generic_core.owl")
+                            .map_err(|e| format!("Cannot read ontology file: {e}\n"))?;
                     blockchain
                         .add_block(ontology_data)
                         .map_err(|e| format!("Failed to add ontology block: {e}\n"))?;
 
                     // Generate ontology-aware demo data
-                    let ontology_config =
-                        OntologyConfig::new(ontology, &Config::load_or_default("config/config.toml"))
-                            .map_err(|e| format!("Failed to create ontology config: {e}\n"))?;
+                    let ontology_config = OntologyConfig::new(
+                        ontology,
+                        &Config::load_or_default("config/config.toml"),
+                    )
+                    .map_err(|e| format!("Failed to create ontology config: {e}\n"))?;
                     let demo_data = generate_demo_data(&ontology_config);
 
                     let demo_data_count = demo_data.len();
@@ -638,29 +771,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Load configuration
             let node_config = load_config(config.as_deref())
                 .map_err(|e| format!("Failed to load config: {e}\n"))?;
+            validate_node_startup_contract(&node_config)
+                .map_err(|e| format!("Startup contract validation failed: {e}\n"))?;
 
             info!("Starting node {}...\n", node_config.node_id);
             info!("Network ID: {}\n", node_config.network.network_id);
             info!("Listen Address: {}\n", node_config.listen_address());
 
             // Initialize components
-            // Convert utils::config::StorageConfig to storage::rdf_store::StorageConfig
-            let storage_config = StorageConfig {
-                data_dir: std::path::PathBuf::from(node_config.storage.data_dir.clone()),
-                enable_backup: true,
-                backup_interval_hours: 24,
-                max_backup_files: 7,
-                enable_compression: true,
-                enable_encryption: false,
-                cache_size: 1000, // Default
-                warm_cache_on_startup: false,
-                flush_interval: 1, // Default: flush after every block (conservative for production)
-            };
-
-            let blockchain = Arc::new(RwLock::new(
-                Blockchain::new_persistent_with_config(storage_config)
-                    .map_err(|e| format!("Failed to initialize blockchain: {e}\n"))?,
-            ));
+            let blockchain = Arc::new(RwLock::new(create_blockchain_for_node(&node_config)?));
 
             let network = NetworkManager::new(node_config.clone());
             let network_arc = Arc::new(network);

@@ -1,7 +1,8 @@
-//! OWL Reasoner for the ProvChainOrg platform
+//! Legacy OWL Reasoner for the ProvChainOrg platform
 //!
-//! This module provides OWL reasoning capabilities using oxigraph
-//! for ontology processing and inference, with enhanced OWL2 feature support.
+//! This module is retained for experimentation and migration support.
+//! It is not part of the production semantic path. Production reasoning and
+//! validation should use `crate::ontology` with the SPACL dependency instead.
 //!
 //! ## Key Features Implemented
 //! - Performance optimization: Reduced blockchain performance test from 81s+ to 1.20s

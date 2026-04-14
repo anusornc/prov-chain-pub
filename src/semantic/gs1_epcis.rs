@@ -115,16 +115,30 @@ impl EpcisEventBuilder {
 
         for (key, value) in &self.properties {
             // Determine if property is from EPCIS or UHT namespace
-            let is_uht_prop = matches!(key.as_str(), "batchNumber" | "milkVolume" | "collectionTemperature" 
-                | "fatContent" | "proteinContent" | "pasteurizationTemperature" | "holdingTime");
+            let is_uht_prop = matches!(
+                key.as_str(),
+                "batchNumber"
+                    | "milkVolume"
+                    | "collectionTemperature"
+                    | "fatContent"
+                    | "proteinContent"
+                    | "pasteurizationTemperature"
+                    | "holdingTime"
+            );
 
             let prefix = if is_uht_prop { "uht" } else { "epcis" };
 
             // Check if value looks like a URI
-            if value.starts_with("http://") || value.starts_with("https://") || value.starts_with("urn:") {
+            if value.starts_with("http://")
+                || value.starts_with("https://")
+                || value.starts_with("urn:")
+            {
                 turtle.push_str(&format!("    {}:{} <{}> ;\n", prefix, key, value));
             } else if value.parse::<f64>().is_ok() {
-                turtle.push_str(&format!("    {}:{} \"{}\"^^xsd:decimal ;\n", prefix, key, value));
+                turtle.push_str(&format!(
+                    "    {}:{} \"{}\"^^xsd:decimal ;\n",
+                    prefix, key, value
+                ));
             } else {
                 turtle.push_str(&format!("    {}:{} \"{}\" ;\n", prefix, key, value));
             }
@@ -181,7 +195,8 @@ impl EpcisEventBuilder {
 /// Predefined business steps from CBV
 pub mod biz_steps {
     pub const COMMISSIONING: &str = "https://ref.gs1.org/cbv/BizStep-commissioning";
-    pub const CREATING_CLASS_INSTANCE: &str = "https://ref.gs1.org/cbv/BizStep-creating_class_instance";
+    pub const CREATING_CLASS_INSTANCE: &str =
+        "https://ref.gs1.org/cbv/BizStep-creating_class_instance";
     pub const TRANSPORTING: &str = "https://ref.gs1.org/cbv/BizStep-transporting";
     pub const RECEIVING: &str = "https://ref.gs1.org/cbv/BizStep-receiving";
     pub const STORING: &str = "https://ref.gs1.org/cbv/BizStep-storing";
@@ -238,8 +253,10 @@ pub fn generate_uht_supply_chain_events(batch_id: &str) -> Vec<serde_json::Value
             .read_point("urn:epc:id:sgln:1234567.12345.1")
             .biz_location("urn:epc:id:sgln:1234567.12345.0")
             .batch_number(batch_id)
-            .build_jsonld(&format!("https://provchain.org/uht/{}/collection", batch_id)),
-
+            .build_jsonld(&format!(
+                "https://provchain.org/uht/{}/collection",
+                batch_id
+            )),
         // UHT Processing
         EpcisEventBuilder::new(EpcisEventType::TransformationEvent)
             .event_time(&now.to_rfc3339())
@@ -248,8 +265,10 @@ pub fn generate_uht_supply_chain_events(batch_id: &str) -> Vec<serde_json::Value
             .read_point("urn:epc:id:sgln:1234567.12347.1")
             .biz_location("urn:epc:id:sgln:1234567.12347.0")
             .batch_number(batch_id)
-            .build_jsonld(&format!("https://provchain.org/uht/{}/processing", batch_id)),
-
+            .build_jsonld(&format!(
+                "https://provchain.org/uht/{}/processing",
+                batch_id
+            )),
         // Cold Chain Transport
         EpcisEventBuilder::new(EpcisEventType::ObjectEvent)
             .event_time(&now.to_rfc3339())
@@ -260,7 +279,6 @@ pub fn generate_uht_supply_chain_events(batch_id: &str) -> Vec<serde_json::Value
             .biz_location("urn:epc:id:sgln:1234567.12347.0")
             .batch_number(batch_id)
             .build_jsonld(&format!("https://provchain.org/uht/{}/shipping", batch_id)),
-
         // Retail Receiving
         EpcisEventBuilder::new(EpcisEventType::ObjectEvent)
             .event_time(&now.to_rfc3339())
@@ -303,11 +321,9 @@ mod tests {
 
     #[test]
     fn test_create_epcis_document() {
-        let events = vec![
-            EpcisEventBuilder::new(EpcisEventType::ObjectEvent)
-                .action("ADD")
-                .build_jsonld("event1"),
-        ];
+        let events = vec![EpcisEventBuilder::new(EpcisEventType::ObjectEvent)
+            .action("ADD")
+            .build_jsonld("event1")];
 
         let doc = create_epcis_document(events);
         assert_eq!(doc["@type"], "EPCISDocument");

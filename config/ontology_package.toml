@@ -1,0 +1,11 @@
+# Shared ontology package manifest for the default ProvChain network
+
+package_id = "provchain.shared-ontology.default"
+package_version = "0.1.0"
+core_ontology_path = "src/semantic/ontologies/generic_core.owl"
+domain_ontology_path = "src/semantic/ontologies/generic_core.owl"
+core_shacl_path = "src/semantic/shapes/core.shacl.ttl"
+domain_shacl_path = "src/semantic/shapes/core.shacl.ttl"
+mappings = []
+validation_mode = "strict"
+package_hash = "720781c9daf1935b8cb2929d7448240767dc205b35236eeed1fc3819af4c28fc"

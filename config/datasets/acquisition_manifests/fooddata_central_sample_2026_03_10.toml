@@ -1,0 +1,38 @@
+manifest_version = "1.0"
+snapshot_id = "fooddata_central_sample_2026_03_10"
+source_id = "fooddata_central"
+retrieved_at = "2026-03-10T00:00:00Z"
+retrieval_tool = "scripts/data_acquisition/fetch_gs1_examples.py"
+output_root = "config/datasets/raw_examples"
+
+[source]
+provider = "USDA FoodData Central"
+documentation_url = "https://fdc.nal.usda.gov/download-datasets/"
+data_url = "https://fdc.nal.usda.gov/download-datasets/"
+license = "U.S. Government work / public-domain-style distribution"
+
+[query]
+kind = "static_fixture"
+query_string = "fooddata_central_sample.json"
+page_size = 0
+record_limit = 3
+
+[release]
+release_label = "benchmark-sample"
+release_date = "2026-03-10"
+
+[artifacts]
+raw_file = "config/datasets/raw_examples/fooddata_central_sample.json"
+sha256 = "pending"
+content_type = "application/json"
+record_count = 3
+
+[normalization]
+target_domain = "food"
+ontology_package_id = "provchain.uht"
+ontology_package_version = "0.1"
+normalizer_version = "2026-03-10"
+
+[notes]
+purpose = "benchmark"
+comments = "Used for single-record and batch UHT plus hybrid GS1/EPCIS-UHT admission benchmarks."

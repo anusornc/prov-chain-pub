@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "results": {
+      "skip": 0,
+      "limit": 2,
+      "total": 2
+    }
+  },
+  "results": [
+    {
+      "package_ndc": "54868-6180-0",
+      "generic_name": "insulin glargine",
+      "proprietary_name": "SEMGLEE",
+      "company_name": "Biocon Biologics Inc.",
+      "status": "Currently in Shortage",
+      "availability": "Available",
+      "shortage_reason": "Demand increase for the drug.",
+      "dosage_form": "SOLUTION",
+      "update_date": "20260215",
+      "initial_posting_date": "20260201"
+    },
+    {
+      "package_ndc": "0002-1200-1",
+      "generic_name": "aspirin",
+      "proprietary_name": "BAYER ASPIRIN",
+      "company_name": "Bayer HealthCare LLC",
+      "status": "Resolved",
+      "availability": "Available",
+      "shortage_reason": "Manufacturing delay resolved.",
+      "dosage_form": "TABLET",
+      "update_date": "20260112",
+      "initial_posting_date": "20251220"
+    }
+  ]
+}

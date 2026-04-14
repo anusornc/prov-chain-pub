@@ -1,0 +1,38 @@
+manifest_version = "1.0"
+snapshot_id = "openfda_drug_shortages_sample_2026_03_10"
+source_id = "openfda_drug_shortages"
+retrieved_at = "2026-03-10T00:00:00Z"
+retrieval_tool = "scripts/data_acquisition/fetch_openfda_snapshot.py"
+output_root = "config/datasets/raw_examples"
+
+[source]
+provider = "openFDA Drug Shortages"
+documentation_url = "https://open.fda.gov/apis/drug/drugshortages/"
+data_url = "https://open.fda.gov/apis/drug/drugshortages/"
+license = "U.S. Government open data"
+
+[query]
+kind = "static_fixture"
+query_string = "openfda_drug_shortages_sample.json"
+page_size = 0
+record_limit = 2
+
+[release]
+release_label = "benchmark-sample"
+release_date = "2026-03-10"
+
+[artifacts]
+raw_file = "config/datasets/raw_examples/openfda_drug_shortages_sample.json"
+sha256 = "pending"
+content_type = "application/json"
+record_count = 2
+
+[normalization]
+target_domain = "pharma"
+ontology_package_id = "provchain.pharma_storage"
+ontology_package_version = "0.1"
+normalizer_version = "2026-03-10"
+
+[notes]
+purpose = "benchmark"
+comments = "Used for single-record and batch pharmaceutical storage admission benchmarks."

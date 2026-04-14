@@ -4,6 +4,9 @@
 # Unique identifier for this node (auto-generated)
 node_id = "00000000-0000-0000-0000-000000000000"
 
+# Optional network-wide contract profile for startup compatibility checks
+network_profile_path = "config/network_profile.toml"
+
 [network]
 # Network identifier - must match across all nodes in the same network
 network_id = "provchain-org-default"
@@ -28,6 +31,9 @@ connection_timeout = 30
 ping_interval = 30
 
 [consensus]
+# Consensus protocol used by this network ("poa" or "pbft")
+consensus_type = "poa"
+
 # Whether this node is an authority (can create blocks)
 is_authority = false
 
@@ -42,6 +48,22 @@ block_interval = 10
 
 # Maximum block size in bytes (1MB default)
 max_block_size = 1048576
+
+[ontology]
+# Shared ontology package used by this network
+path = "src/semantic/ontologies/generic_core.owl"
+
+# Optional ontology package manifest used for startup compatibility checks
+package_manifest_path = "config/ontology_package.toml"
+
+# Graph name used when loading the ontology
+graph_name = "http://provchain.org/ontology"
+
+# Automatically load ontology package on node startup
+auto_load = true
+
+# Validate RDF data against the shared ontology package
+validate_data = true
 
 [storage]
 # Data directory for persistent storage
