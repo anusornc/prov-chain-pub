@@ -5,7 +5,6 @@ This document defines the current paper-ready architecture figure package for th
 Source references:
 
 - `docs/architecture/SHARED_ONTOLOGY_NETWORK_USE_CASES.md`
-- `docs/architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md`
 - `docs/architecture/ADR/0014-use-shared-ontology-packages-and-spacl-production-path.md`
 - `scripts/generate_shared_ontology_architecture_figures.py`
 

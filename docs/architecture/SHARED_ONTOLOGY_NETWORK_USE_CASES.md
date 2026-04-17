@@ -11,7 +11,7 @@ This document records the agreed operational view of ProvChain so future code, e
 It complements:
 
 - `ADR 0014`, which records the production semantic-path decision,
-- `SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md`, which records the current codebase truth and phased implementation plan.
+- `docs/architecture/README.md`, which indexes the public architecture references included in this repository.
 
 This document answers four practical questions:
 
@@ -388,9 +388,4 @@ The agreed model does not imply:
 
 This document describes the intended operating model.
 
-The structural gaps between this intended model and the current implementation are tracked separately in:
-
-- `SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md`
-- `docs/reviews/STRUCTURAL_AUDIT_NODE_CONFIG_ONTOLOGY_2026-03-09.md`
-
-Use this document as the conceptual reference and those documents as the implementation-gap reference.
+Use this document as the conceptual reference for the shared-ontology network model.

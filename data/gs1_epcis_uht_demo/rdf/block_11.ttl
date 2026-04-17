@@ -1,8 +1,0 @@
-
-        @prefix provchain: <http://provchain.org/core#> .
-        
-        <http://example.org/batch/UHT-BATCH-2024-002> a provchain:UHTMilkBatch ;
-            provchain:batchId "UHT-BATCH-2024-002" ;
-            provchain:productType "UHT_Skim_Milk_1L" ;
-            provchain:productionDate "2024-01-16" .
-        

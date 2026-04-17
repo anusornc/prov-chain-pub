@@ -63,8 +63,8 @@ To get started quickly with ProvChainOrg:
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
    # Clone and run
-   git clone https://github.com/anusornc/provchain-org.git
-   cd provchain-org
+   git clone https://github.com/anusornc/prov-chain-pub.git
+   cd prov-chain-pub
    cargo run demo
 
    # Try a SPARQL query
