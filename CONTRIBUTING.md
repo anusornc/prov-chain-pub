@@ -47,8 +47,8 @@ ProvChainOrg is a distributed blockchain system in Rust that enhances blockchain
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/provchain-org.git
-cd provchain-org
+git clone https://github.com/anusornc/prov-chain-pub.git
+cd prov-chain-pub
 
 # Install dependencies
 cargo fetch
@@ -120,7 +120,7 @@ provchain-org/
 ├── benches/                  # Criterion benchmarks
 ├── docs/                     # Documentation
 ├── deploy/                   # Docker & deployment configs
-└── CLAUDE.md                 # Project instructions
+└── README.md                 # Public project overview
 ```
 
 ### Key Components
@@ -559,7 +559,7 @@ gh issue list --label "priority:high"
 ### Resources
 
 **Documentation**:
-- [CLAUDE.md](./CLAUDE.md) - Project instructions
+- [README.md](./README.md) - Project overview and quick start
 - [USER_MANUAL.md](./docs/USER_MANUAL.md) - User guide
 - [BENCHMARKING.md](./BENCHMARKING.md) - Performance testing
 

@@ -76,6 +76,8 @@ benchmark-toolkit/**/target/
 
 # Test data directories
 data/test_*/
+data/gs1_epcis_uht_demo/
+test_reports/
 
 # Local temp and cache directories
 tmp/

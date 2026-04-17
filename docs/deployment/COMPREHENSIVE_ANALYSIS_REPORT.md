@@ -1744,7 +1744,7 @@ Use this checklist to ensure complete deployment:
 
 **Codebase:**
 - [ ] Clone ProvChain repository to each VM
-  - `git clone https://github.com/anusornc/prov-chain.git`
+  - `git clone https://github.com/anusornc/prov-chain-pub.git`
 - [ ] Verify git branch/tag (e.g., `main`, `v1.0.0`)
 - [ ] Run initial tests locally
   - [ ] `cargo test --lib` (unit tests)
