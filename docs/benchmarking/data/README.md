@@ -31,6 +31,7 @@ Reference and superseded exports:
 - `reference/PROVCHAIN_SEMANTIC_ADMISSION_PROFILE_20260429.md`
 - `reference/scale_trace_supply_chain_5000_provchain_neo4j_fluree_n3_20260429/`
 - `reference/TRACE_SCALE_UP_CONFIDENCE_20260430.md`
+- `reference/20260430_import_supply1000_provchain-bulk-r002_final_n30/`
 
 Scale-up confidence inputs are tracked separately from publication exports:
 
@@ -166,6 +167,18 @@ The `coldsteady` export separates cold dataset load from post-load append under
 conservative WAL/index sync settings; it is phase-separation evidence, not a
 cross-system ledger/write comparison.
 
+Final R002 bulk dataset-admission reference export:
+
+- `reference/20260430_import_supply1000_provchain-bulk-r002_final_n30/campaign_results.csv`
+- `reference/20260430_import_supply1000_provchain-bulk-r002_final_n30/campaign_results.json`
+- `reference/20260430_import_supply1000_provchain-bulk-r002_final_n30/campaign_aggregate_summary.md`
+- `reference/20260430_import_supply1000_provchain-bulk-r002_final_n30/manifest_index.csv`
+
+This export supports the R002 import-row claim boundary only: ProvChain bulk
+Turtle dataset admission, not per-transaction ledger/write throughput or
+finality. It supersedes older ProvChain import rows for the import-algorithm
+discussion, while the older rows remain useful as legacy baseline context.
+
 Reference semantic admission profiling export:
 
 - `reference/profiling_semantic_supply1000_provchain_fluree_n3_20260429/campaign_results.csv`
@@ -207,6 +220,7 @@ Scope note:
 - the Geth ledger-write export supports only `ProvChain vs Geth` public-chain-baseline evidence for `B017`
 - the reference policy export supports only historical `Fabric` governance/policy evidence for `B014`
 - the reference ProvChain profiling export supports only R002 write-path bottleneck analysis
+- the final R002 bulk dataset-admission export supports only the import-row algorithm remediation claim, not per-transaction ledger/write or finality claims
 - the policy workload pack export supports only historical Fabric governance/policy scenario-pack evidence for `B019`
 - the comparative governance-policy export supports `ProvChain vs Fabric` policy scenarios only with the `cross-model-with-caveat` fairness label for ProvChain rows; the current primary export includes both server-reported decision latency and client-observed policy API round-trip rows
 - the scale-up reference export supports only trace-query ranking stability on `supply_chain_5000`; it remains reference/confidence evidence unless explicitly promoted by a later publication decision

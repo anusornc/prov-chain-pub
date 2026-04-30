@@ -1,10 +1,24 @@
 # Publication Benchmark Report Bundle
 
 - Generated at: `2026-04-29T09:57:54Z`
+- Manual addendum updated at: `2026-04-30T05:18:06Z`
 - Scope: family-specific benchmark evidence only
 - Rule: no single global winner table is generated
 
 This report separates primary benchmark metrics from load, import, and reference metrics. Load/import rows describe setup or data-ingestion paths and must not be used as primary ledger-write evidence.
+
+## 2026-04-30 R002 Bulk Import Addendum
+
+R002 adds a final reference campaign for ProvChain bulk Turtle dataset admission:
+
+- Evidence directory: `docs/benchmarking/data/reference/20260430_import_supply1000_provchain-bulk-r002_final_n30/`
+- Campaign: `20260430_import_supply1000_provchain-bulk-r002_final_n30`
+- Status: `passed`, `30/30`
+- Import mode: `bulk-turtle-single-block`
+- ProvChain `Turtle RDF Import`: mean `24.333 ms`, p95 `35.150 ms`, p99 `41.000 ms`
+- Fluree `JSON-LD Import`: mean `478.467 ms`, p95 `560.650 ms`, p99 `575.970 ms`
+- Neo4j `Turtle to Cypher Import`: mean `11431.367 ms`, p95 `11855.800 ms`, p99 `11935.670 ms`
+- Claim boundary: this is bulk dataset-admission/load-reference evidence. It corrects the old per-triple import algorithm and must not be used as per-transaction ledger/write throughput or finality evidence.
 
 ## Evidence Sources
 
@@ -16,6 +30,7 @@ This report separates primary benchmark metrics from load, import, and reference
 | `docs/benchmarking/data/semantic_supply1000_provchain_fluree_n30_20260428` | `20260428_semantic_supply1000_provchain-fluree_n30` | `passed` | `semantic` | `supply_chain_1000` | `` | `provchain, fluree` |
 | `docs/benchmarking/data/policy_supply1000_provchain_fabric_e2e_n30_20260429` | `20260429_policy_supply1000_provchain-fabric_e2e_n30` | `passed` | `governance_policy` | `supply_chain_1000` | `policy` | `provchain, fabric` |
 | `docs/benchmarking/data/ledger_supply1000_provchain_geth_n30_20260428` | `20260428_ledger_supply1000_provchain-geth_n30_fix1` | `passed` | `ledger_write` | `supply_chain_1000` | `write` | `provchain, geth` |
+| `docs/benchmarking/data/reference/20260430_import_supply1000_provchain-bulk-r002_final_n30` | `20260430_import_supply1000_provchain-bulk-r002_final_n30` | `passed` | `ledger_write`, `trace_query` | `supply_chain_1000` | `bulk_import`, `trace_query` | `provchain, neo4j, fluree` |
 
 ## governance-policy
 
@@ -72,6 +87,9 @@ These rows are retained as evidence context, but they are not primary within-fam
 | `20260428_trace_supply1000_provchain-neo4j-fluree_n30` | `supply_chain_1000` | `JSON-LD Import` | `Fluree` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 469.767 | 570.300 | 580.810 | load/import setup metric; not primary ledger-write evidence |
 | `20260428_trace_supply1000_provchain-neo4j-fluree_n30` | `supply_chain_1000` | `Turtle RDF Import` | `ProvChain-Org` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 12122.067 | 12339.900 | 12405.990 | load/import setup metric; not primary ledger-write evidence |
 | `20260428_trace_supply1000_provchain-neo4j-fluree_n30` | `supply_chain_1000` | `Turtle to Cypher Import` | `Neo4j` | `secondary-transactional-baseline` | `secondary-baseline` | `load-latency-ms` | `ms` | 30 | 100.00% | 30715.400 | 32151.950 | 32751.500 | load/import setup metric; not primary ledger-write evidence; secondary reference path |
+| `20260430_import_supply1000_provchain-bulk-r002_final_n30` | `supply_chain_1000` | `JSON-LD Import` | `Fluree` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 478.467 | 560.650 | 575.970 | R002 bulk-import reference; load/import setup metric; not primary ledger-write evidence |
+| `20260430_import_supply1000_provchain-bulk-r002_final_n30` | `supply_chain_1000` | `Turtle RDF Import` | `ProvChain-Org` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 24.333 | 35.150 | 41.000 | R002 bulk dataset-admission path; not per-transaction ledger/write throughput or finality evidence |
+| `20260430_import_supply1000_provchain-bulk-r002_final_n30` | `supply_chain_1000` | `Turtle to Cypher Import` | `Neo4j` | `secondary-transactional-baseline` | `secondary-baseline` | `load-latency-ms` | `ms` | 30 | 100.00% | 11431.367 | 11855.800 | 11935.670 | R002 bulk-import reference; load/import setup metric; not primary ledger-write evidence; secondary reference path |
 
 
 ## semantic
@@ -125,6 +143,7 @@ Semantic capability fields:
 
 - Interpret every result only within its benchmark family, workload, dataset slice, and capability path.
 - Treat load/import rows as data-ingestion or setup-path evidence, not as primary ledger-write results.
+- Treat the R002 bulk Turtle import row as dataset-admission evidence only; it fixes the benchmark import algorithm and does not replace per-transaction write/finality measurements.
 - Do not compare native RDF trace-query latency directly with ledger finality, public-chain gas, or policy checks.
 - `legacy-not-recorded` rows come from older exports that did not capture explicit capability and fairness metadata.
 - `externalized-semantic-pipeline` rows include a different semantic capability path from native ProvChain validation.

@@ -15,6 +15,12 @@ This export supports only the benchmark family, workload, products, and dataset
 slice listed above. Do not use it as evidence for other benchmark families,
 products, or runtime paths without a separate campaign and validity gate.
 
+The `Turtle RDF Import` row for `ProvChain-Org` is R002 bulk dataset-admission
+evidence using `bulk-turtle-single-block`. It supersedes the older per-triple
+benchmark import algorithm for import-row discussion, but it must not be used as
+per-transaction ledger/write throughput, consensus finality, or durability
+evidence.
+
 ## Files
 
 - `campaign_manifest.json` - campaign configuration and validity gate

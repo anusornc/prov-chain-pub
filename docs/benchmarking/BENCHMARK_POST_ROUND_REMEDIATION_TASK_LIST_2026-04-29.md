@@ -36,10 +36,11 @@ Primary evidence:
 
 ### Weak Or Risky Evidence
 
-- ProvChain write/admission path ช้ากว่า comparator ชัดเจนใน workloads ที่วัด
+- ProvChain legacy per-transaction write/admission path ช้ากว่า comparator ชัดเจนใน workloads ที่วัด
   - ProvChain single-threaded write workload: mean `29352.300`-`29361.670 ms` ต่อ `100 tx`
   - Fabric batch commit `100 records`: mean `2165.363 ms`
   - Geth local confirmation: mean `256.571 ms` ต่อ single record, แต่เป็น public-chain dev baseline ไม่ใช่ permissioned enterprise baseline
+  - R002 bulk Turtle import แก้เฉพาะ dataset-admission/import-row path แล้ว ไม่ใช่ proof ว่า per-transaction ledger/write throughput ชนะ comparator
 - Semantic admission ของ ProvChain ช้ากว่า Fluree externalized pipeline ใน current measurement
   - ProvChain native RDF+SHACL admission: mean `12121.933 ms`
   - Fluree externalized JSON-LD admission: mean `514.667 ms`
@@ -90,9 +91,9 @@ Primary evidence:
   - [x] rerun R002 Docker smoke campaign หลัง auth-exclusion fix
   - [x] rerun R002 Docker profile campaign หลัง auth-exclusion fix และ export curated reference evidence
   - [x] แก้ R002 wrapper default export dir ให้ผูกกับ campaign id เพื่อไม่ชนกับ export เดิม
-  - [ ] run legacy A/B campaign เฉพาะถ้าต้องยืนยันขนาด improvement เทียบ old path ใน environment เดียวกัน
-  - [ ] rerun full conservative cold/steady campaign หลังเลือก runtime budget
-  - [ ] rerun comparative campaign เฉพาะเมื่อ durability/batching modes ถูก fix ชัดเจน
+  - [x] document legacy A/B decision: not required for the current paper because same-slice legacy baseline and R002 final campaign already define the import-row claim boundary; rerun only if reviewers require same-day A/B evidence
+  - [x] document conservative cold/steady decision: existing conservative profile remains reference evidence; no additional full campaign is required for the R002 bulk-import claim
+  - [x] document comparative decision: R002 final comparative campaign passed for bulk dataset admission; relaxed-durability/batching diagnostics remain excluded from primary ledger/write claims
   - [x] merge R002 branch กลับ `main` หลัง smoke/profile ผ่านและ claim boundary ถูกอัปเดตแล้ว
   - [x] run R002 full campaign บน `main`
 - Done when:
@@ -312,7 +313,7 @@ Post-R004 measurement hardening:
 ### R005 - Add scale-up confidence campaigns
 
 - Priority: `P2`
-- Status: `Done for trace-query scale-up confidence - larger-slice profile passed and curated reference evidence exported; ledger/write scale-up remains gated by R002 mode selection`
+- Status: `Done for trace-query scale-up confidence - larger-slice profile passed and curated reference evidence exported; larger-slice bulk-import scale-up is optional future evidence, not required for current paper claims`
 - Goal: ตรวจว่า ranking และ bottleneck ไม่เปลี่ยนเมื่อ dataset ใหญ่ขึ้น
 - Tasks:
   - [x] เพิ่ม deterministic larger dataset slices สำหรับ `supply_chain_5000` และ `supply_chain_10000`
@@ -322,7 +323,7 @@ Post-R004 measurement hardening:
   - [x] เพิ่ม validity gate ให้ fail ถ้า `benchmark_results.json` มี result row ที่ `success=false`
   - [x] เพิ่ม Neo4j scale runtime tuning (`heap_max`, `pagecache`, `load_batch_size`) เพื่อแก้ scale smoke OOM
   - [x] rerun trace-query ที่ dataset มากกว่า `supply_chain_1000`
-  - [ ] rerun write/admission หลัง R002 final mode selection
+  - [x] document write/admission scale-up decision after R002 final mode selection: not required for current paper because R002 final is scoped to `supply_chain_1000` import-row remediation; run larger-slice bulk-import only if a later scaling claim is added
   - [x] report scaling trend แยกตาม family ที่มี validity gate ผ่าน
 - Done when:
   - มีอย่างน้อยหนึ่ง larger-slice campaign ที่ผ่าน validity gate
@@ -372,10 +373,10 @@ Current implementation evidence:
 ## Required Next Order
 
 1. `R001` ก่อน เพราะเป็น paper/report correctness - `Done`
-2. `R002` ต่อทันที เพราะเป็นจุดอ่อนหลักของ ProvChain จากผล benchmark - `Current`
+2. `R002` ต่อทันที เพราะเป็นจุดอ่อนหลักของ ProvChain จากผล benchmark - `Done for bulk dataset-admission/import-row claim; per-transaction ledger/write remains caveated`
 3. `R003` เพื่อทำ semantic claim ให้ defensible
 4. `R004` เพื่อปิด policy parity gap - `Done`
-5. `R005` trace-query scale-up confidence - `Done`; write/admission scale-up remains gated by R002 final mode selection
+5. `R005` trace-query scale-up confidence - `Done`; larger-slice bulk-import scale-up remains optional future evidence
 
 ## Current Claim Boundary
 
@@ -383,5 +384,7 @@ Current implementation evidence:
 - claim ได้ว่า trace-query ranking ยัง stable ใน reference scale-up profile `supply_chain_5000`
 - claim ได้ว่า benchmark harness หลาย product พร้อมระดับ artifact-backed
 - claim ได้ว่า ProvChain/Fabric policy scenarios ผ่านครบใน comparative governance-policy campaign โดยต้องระบุ `cross-model-with-caveat`
+- claim ได้ว่า R002 bulk Turtle dataset admission แก้ปัญหา import-row เดิมอย่างมีหลักฐาน: final campaign `20260430_import_supply1000_provchain-bulk-r002_final_n30` ผ่าน `30/30`, ProvChain import mean `24.333 ms` เทียบ legacy same-slice baseline `12124.033 ms` (`~498.26x` faster, `99.80%` lower)
 - ยังไม่ควร claim ว่า ProvChain ชนะด้าน ledger/write throughput หรือ semantic admission latency
+- ยังไม่ควรใช้ R002 bulk import เป็นหลักฐานแทน per-transaction ledger/write throughput หรือ finality
 - ยังไม่ควร claim ว่า ProvChain policy path เป็น native-comparable กับ Fabric ledger-state policy path แบบไม่มี caveat
