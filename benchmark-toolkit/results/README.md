@@ -62,6 +62,21 @@ Current paper-facing campaign IDs:
 Use curated exports under `docs/benchmarking/data/` for paper tables and
 figures. Treat raw campaign directories as audit backing, not manuscript inputs.
 
+## Cleanup Rule
+
+Raw campaign directories and compatibility result directories are local
+generated artifacts. After a campaign has passed, its evidence has been exported
+to `docs/benchmarking/data/`, and no further forensic review is needed, remove
+raw artifacts with:
+
+```bash
+./benchmark-toolkit/scripts/cleanup-benchmark-artifacts.sh --apply
+```
+
+The cleanup script preserves tracked result index files and curated evidence. It
+removes raw Docker logs, per-epoch run copies, managed ProvChain runtime data,
+translated runtime datasets, and local paper build output.
+
 ## Non-Paper Archive Rule
 
 - failed, partial, and incomplete campaign directories are engineering debug artifacts

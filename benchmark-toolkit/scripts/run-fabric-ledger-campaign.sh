@@ -28,6 +28,7 @@ PROVCHAIN_BENCHMARK_STAGE_TIMINGS="${PROVCHAIN_BENCHMARK_STAGE_TIMINGS:-true}"
 PROVCHAIN_RDF_FLUSH_INTERVAL="${PROVCHAIN_RDF_FLUSH_INTERVAL:-100}"
 PROVCHAIN_WAL_SYNC_INTERVAL="${PROVCHAIN_WAL_SYNC_INTERVAL:-100}"
 PROVCHAIN_CHAIN_INDEX_SYNC_INTERVAL="${PROVCHAIN_CHAIN_INDEX_SYNC_INTERVAL:-${PROVCHAIN_WAL_SYNC_INTERVAL}}"
+KEEP_PROVCHAIN_DATA="${KEEP_PROVCHAIN_DATA:-false}"
 export JWT_SECRET PROVCHAIN_BOOTSTRAP_TOKEN PROVCHAIN_BENCHMARK_STAGE_TIMINGS PROVCHAIN_RDF_FLUSH_INTERVAL PROVCHAIN_WAL_SYNC_INTERVAL PROVCHAIN_CHAIN_INDEX_SYNC_INTERVAL
 DATASET_SLICE="${DATASET_SLICE:-supply_chain_1000}"
 if [ "${WORKLOAD}" = "policy" ]; then
@@ -129,6 +130,7 @@ write_campaign_manifest() {
   "provchain_rdf_flush_interval": "${PROVCHAIN_RDF_FLUSH_INTERVAL}",
   "provchain_wal_sync_interval": "${PROVCHAIN_WAL_SYNC_INTERVAL}",
   "provchain_chain_index_sync_interval": "${PROVCHAIN_CHAIN_INDEX_SYNC_INTERVAL}",
+  "keep_managed_provchain_data": ${KEEP_PROVCHAIN_DATA},
   "provchain_persistence_durability_mode": "${durability_mode}",
   "cold_load_phase_enabled": ${cold_load_phase_enabled},
   "provchain_append_phase": "${provchain_append_phase}",
@@ -140,6 +142,7 @@ write_campaign_manifest() {
     "local dataset file must exist",
     "ProvChain health check must pass unless skip_provchain is true",
     "managed ProvChain mode must use a fresh data directory per epoch",
+    "managed ProvChain data is pruned after each epoch unless keep_managed_provchain_data is true",
     "if cold_load_phase_enabled is true, the Turtle RDF Import row measures cold-load cost and subsequent ProvChain write rows measure steady-state append after load",
     "run artifacts must include benchmark_results.json, benchmark_results.csv, summary.json, and summary.md",
     "comparative claims require successful rows for every claimed product"
@@ -215,6 +218,7 @@ append_campaign_summary_header() {
 | Managed ProvChain runtime dir | \`${PROVCHAIN_RUNTIME_DIR}\` |
 | Managed ProvChain WAL sync interval | \`${PROVCHAIN_WAL_SYNC_INTERVAL}\` |
 | Managed ProvChain chain-index sync interval | \`${PROVCHAIN_CHAIN_INDEX_SYNC_INTERVAL}\` |
+| Keep managed ProvChain data | \`${KEEP_PROVCHAIN_DATA}\` |
 | Managed ProvChain durability mode | \`${durability_mode}\` |
 | Cold-load phase enabled | \`${cold_load_phase_enabled}\` |
 | ProvChain append phase | \`${provchain_append_phase}\` |
@@ -325,6 +329,15 @@ stop_managed_provchain() {
   wait "${pid}" >/dev/null 2>&1 || true
 }
 
+prune_managed_provchain_data() {
+  local epoch_dir="$1"
+  if [ "${KEEP_PROVCHAIN_DATA}" = "true" ]; then
+    return
+  fi
+  rm -rf "${epoch_dir}/provchain-data"
+  rm -f "${epoch_dir}/provchain-server.pid"
+}
+
 run_epoch() {
   local run_id="$1"
   local results_path="${FABRIC_RESULTS_DIR}/${run_id}"
@@ -417,6 +430,7 @@ main() {
         completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         write_epoch_manifest "${epoch_dir}" "${epoch_id}" "${run_id}" "${started_at}" "${completed_at}" "${status}" "${reason}"
         append_epoch_summary "${epoch_id}" "${run_id}" "${status}" "${reason}"
+        prune_managed_provchain_data "${epoch_dir}"
         PROVCHAIN_URL="${original_provchain_url}"
         continue
       fi
@@ -435,6 +449,7 @@ main() {
 
     if [ "${epoch_provchain_started}" = "true" ]; then
       stop_managed_provchain "${epoch_dir}"
+      prune_managed_provchain_data "${epoch_dir}"
       PROVCHAIN_URL="${original_provchain_url}"
     fi
 

@@ -26,6 +26,7 @@ PROVCHAIN_MANAGED_PORT="${PROVCHAIN_MANAGED_PORT:-18180}"
 JWT_SECRET="${JWT_SECRET:-benchmark-jwt-secret-minimum-32-characters}"
 PROVCHAIN_BOOTSTRAP_TOKEN="${PROVCHAIN_BOOTSTRAP_TOKEN:-benchmark-bootstrap-token-20260424}"
 PROVCHAIN_BENCHMARK_STAGE_TIMINGS="${PROVCHAIN_BENCHMARK_STAGE_TIMINGS:-true}"
+KEEP_PROVCHAIN_DATA="${KEEP_PROVCHAIN_DATA:-false}"
 export JWT_SECRET PROVCHAIN_BOOTSTRAP_TOKEN PROVCHAIN_BENCHMARK_STAGE_TIMINGS
 
 DATASET_SLICE="${DATASET_SLICE:-supply_chain_1000}"
@@ -98,6 +99,7 @@ write_campaign_manifest() {
   "provchain_managed_port": ${PROVCHAIN_MANAGED_PORT},
   "provchain_runtime_dir": "${PROVCHAIN_RUNTIME_DIR}",
   "provchain_benchmark_stage_timings": "${PROVCHAIN_BENCHMARK_STAGE_TIMINGS}",
+  "keep_managed_provchain_data": ${KEEP_PROVCHAIN_DATA},
   "preflight_required": true,
   "preflight_skipped": ${SKIP_PREFLIGHT},
   "fairness_label": "public-chain-baseline",
@@ -109,6 +111,7 @@ write_campaign_manifest() {
     "runner must separate submit latency and receipt confirmation latency",
     "gas metadata must be recorded for confirmed Geth transactions",
     "managed ProvChain mode must use a fresh data directory per epoch",
+    "managed ProvChain data is pruned after each epoch unless keep_managed_provchain_data is true",
     "comparative claims must identify Geth as a public-chain baseline"
   ],
   "workload": "write",
@@ -158,6 +161,7 @@ append_campaign_summary_header() {
 | Manage ProvChain | \`${MANAGE_PROVCHAIN}\` |
 | Managed ProvChain port | \`${PROVCHAIN_MANAGED_PORT}\` |
 | Managed ProvChain runtime dir | \`${PROVCHAIN_RUNTIME_DIR}\` |
+| Keep managed ProvChain data | \`${KEEP_PROVCHAIN_DATA}\` |
 | Geth RPC URL | \`${GETH_RPC_URL}\` |
 | Geth contract address | \`${GETH_CONTRACT_ADDRESS:-runner-deployed-per-run}\` |
 | Geth mining mode | \`${GETH_MINING_MODE}\` |
@@ -263,6 +267,15 @@ stop_managed_provchain() {
   pid="$(cat "${pid_file}")"
   kill "${pid}" >/dev/null 2>&1 || true
   wait "${pid}" >/dev/null 2>&1 || true
+}
+
+prune_managed_provchain_data() {
+  local epoch_dir="$1"
+  if [ "${KEEP_PROVCHAIN_DATA}" = "true" ]; then
+    return
+  fi
+  rm -rf "${epoch_dir}/provchain-data"
+  rm -f "${epoch_dir}/provchain-server.pid"
 }
 
 run_epoch() {
@@ -376,6 +389,7 @@ main() {
         completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         write_epoch_manifest "${epoch_dir}" "${epoch_id}" "${run_id}" "${started_at}" "${completed_at}" "${status}" "${reason}"
         append_epoch_summary "${epoch_id}" "${run_id}" "${status}" "${reason}"
+        prune_managed_provchain_data "${epoch_dir}"
         PROVCHAIN_URL="${original_provchain_url}"
         continue
       fi
@@ -394,6 +408,7 @@ main() {
 
     if [ "${epoch_provchain_started}" = "true" ]; then
       stop_managed_provchain "${epoch_dir}"
+      prune_managed_provchain_data "${epoch_dir}"
       PROVCHAIN_URL="${original_provchain_url}"
     fi
 

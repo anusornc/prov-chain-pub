@@ -173,3 +173,5 @@ They remain in the source campaign directory if deeper forensic review is needed
 EOF_README
 
 printf '[export] wrote evidence bundle: %s\n' "${OUTPUT_DIR}"
+printf '[export] raw campaign artifacts can be removed after audit with:\n'
+printf '  %s --apply\n' "${REPO_ROOT}/benchmark-toolkit/scripts/cleanup-benchmark-artifacts.sh"
