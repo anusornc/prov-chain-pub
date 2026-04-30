@@ -170,7 +170,7 @@ Primary evidence:
     - `bash -n benchmark-toolkit/scripts/provchain-bulk-import-r002-campaign.sh` passed
     - `docker compose -f benchmark-toolkit/docker-compose.trace.yml config` passed
     - `git diff --check` passed
-  - required next command:
+  - completed smoke command used during R002 validation:
     - `./benchmark-toolkit/scripts/provchain-bulk-import-r002-campaign.sh smoke --id smoke_import_supply1000_provchain-bulk-r002_authfix_n1_20260430`
   - interpretation rule: even if the import row improves materially, this evidence is a bulk dataset-admission result and must not replace the per-transaction `Single-threaded Write (100 tx)` ledger/write metric
 - First R002 Docker profile result:
