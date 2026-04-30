@@ -1,0 +1,71 @@
+[
+  {
+    "family": "GovernancePolicy",
+    "scenario": "Policy Enforcement",
+    "test_name": "auditor-read",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 5.3133,
+        "p50_ms": 5.37,
+        "p95_ms": 5.737,
+        "p99_ms": 5.737,
+        "ops_per_sec": 188.72056558902975,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "GovernancePolicy",
+    "scenario": "Policy Enforcement",
+    "test_name": "authorized-read",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 5.2046,
+        "p50_ms": 5.448,
+        "p95_ms": 6.466,
+        "p99_ms": 6.466,
+        "ops_per_sec": 195.65688036286173,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "GovernancePolicy",
+    "scenario": "Policy Enforcement",
+    "test_name": "unauthorized-read",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 5.2927,
+        "p50_ms": 5.173,
+        "p95_ms": 6.308,
+        "p99_ms": 6.308,
+        "ops_per_sec": 190.58699628153846,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  }
+]

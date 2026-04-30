@@ -195,6 +195,8 @@ pub struct RDFStore {
     pub memory_cache: Option<RDFMemoryCache>,
     /// Counter to track blocks added since last disk flush
     blocks_since_flush: std::sync::atomic::AtomicU64,
+    /// Sorted per-quad hashes used to avoid full RDF store scans for each state root.
+    state_root_hash_cache: std::sync::RwLock<Option<Vec<String>>>,
 }
 
 impl std::fmt::Debug for RDFStore {
@@ -227,6 +229,7 @@ impl Clone for RDFStore {
                     is_persistent: false,
                     memory_cache: None,
                     blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
+                    state_root_hash_cache: std::sync::RwLock::new(None),
                 };
             }
         };
@@ -248,6 +251,7 @@ impl Clone for RDFStore {
                 None
             },
             blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
+            state_root_hash_cache: std::sync::RwLock::new(None),
         }
     }
 }
@@ -272,6 +276,7 @@ impl RDFStore {
                 None
             },
             blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
+            state_root_hash_cache: std::sync::RwLock::new(None),
         }
     }
 
@@ -302,6 +307,7 @@ impl RDFStore {
                 None
             },
             blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
+            state_root_hash_cache: std::sync::RwLock::new(None),
         };
 
         // Try to load existing data
@@ -340,6 +346,7 @@ impl RDFStore {
                 None
             },
             blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
+            state_root_hash_cache: std::sync::RwLock::new(None),
         };
 
         // Try to load existing data
@@ -389,6 +396,7 @@ impl RDFStore {
         self.store
             .load_from_reader(RdfFormat::NQuads, reader)
             .with_context(|| "Failed to parse RDF data from string")?;
+        self.invalidate_state_root_cache();
 
         Ok(())
     }
@@ -809,6 +817,7 @@ impl RDFStore {
                 None
             },
             blocks_since_flush: std::sync::atomic::AtomicU64::new(0),
+            state_root_hash_cache: std::sync::RwLock::new(None),
         };
 
         // Load the restored data
@@ -970,6 +979,22 @@ pub struct StorageStats {
     pub data_dir: Option<PathBuf>,
 }
 
+/// Per-stage timings for admitting RDF data into a named graph.
+#[derive(Debug, Clone, Default, serde::Serialize)]
+pub struct RdfGraphAdmissionTimings {
+    pub temp_store_create_ms: f64,
+    pub turtle_parse_load_ms: f64,
+    pub quad_remap_collect_ms: f64,
+    pub oxigraph_insert_ms: f64,
+    pub state_root_cache_update_ms: f64,
+    pub memory_cache_update_ms: f64,
+    pub fallback_insert_ms: f64,
+    pub total_ms: f64,
+    pub parsed_quad_count: usize,
+    pub inserted_quad_count: usize,
+    pub fallback_inserted: bool,
+}
+
 /// Database integrity report
 #[derive(Debug, Clone)]
 pub struct IntegrityReport {
@@ -983,23 +1008,103 @@ pub struct IntegrityReport {
 }
 
 impl RDFStore {
+    fn quad_state_hash(quad: &Quad) -> String {
+        let quad_str = format!(
+            "{}\n{}\n{}\n{}",
+            quad.graph_name, quad.subject, quad.predicate, quad.object
+        );
+        format!("{:x}", Sha256::digest(quad_str.as_bytes()))
+    }
+
+    fn merkle_root_from_sorted_hashes(sorted_hashes: &[String]) -> String {
+        if sorted_hashes.is_empty() {
+            return format!("{:064x}", 0u64);
+        }
+
+        let mut level = sorted_hashes.to_vec();
+        while level.len() > 1 {
+            let mut next_level = Vec::with_capacity((level.len() + 1) / 2);
+            for chunk in level.chunks(2) {
+                if chunk.len() == 2 {
+                    let mut hasher = Sha256::new();
+                    hasher.update(chunk[0].as_bytes());
+                    hasher.update(chunk[1].as_bytes());
+                    next_level.push(format!("{:x}", hasher.finalize()));
+                } else {
+                    next_level.push(chunk[0].clone());
+                }
+            }
+            level = next_level;
+        }
+
+        level[0].clone()
+    }
+
+    fn build_sorted_state_hashes(&self) -> Vec<String> {
+        let mut hashes: Vec<String> = self
+            .store
+            .iter()
+            .flatten()
+            .map(|quad| Self::quad_state_hash(&quad))
+            .collect();
+        hashes.sort();
+        hashes
+    }
+
+    fn invalidate_state_root_cache(&self) {
+        if let Ok(mut cache) = self.state_root_hash_cache.write() {
+            *cache = None;
+        }
+    }
+
+    fn cache_inserted_quad_for_state_root(&self, quad: &Quad) {
+        if let Ok(mut cache) = self.state_root_hash_cache.write() {
+            if let Some(hashes) = cache.as_mut() {
+                let hash = Self::quad_state_hash(quad);
+                let index = hashes.binary_search(&hash).unwrap_or_else(|index| index);
+                hashes.insert(index, hash);
+            }
+        }
+    }
+
     pub fn add_rdf_to_graph(&mut self, rdf_data: &str, graph_name: &NamedNode) {
+        let _ = self.add_rdf_to_graph_with_timings(rdf_data, graph_name);
+    }
+
+    pub fn add_rdf_to_graph_with_timings(
+        &mut self,
+        rdf_data: &str,
+        graph_name: &NamedNode,
+    ) -> RdfGraphAdmissionTimings {
+        let total_start = Instant::now();
+        let mut timings = RdfGraphAdmissionTimings::default();
+
         // Create a temporary store for parsing this RDF data
         // Note: Reusing a temp_store would require efficient clearing, which is complex
         // The overhead of Store::new() is acceptable for typical block sizes
+        let temp_store_start = Instant::now();
         let temp_store = match Store::new() {
-            Ok(store) => store,
+            Ok(store) => {
+                timings.temp_store_create_ms = temp_store_start.elapsed().as_secs_f64() * 1000.0;
+                store
+            }
             Err(e) => {
                 eprintln!("Warning: Failed to create temporary store: {}", e);
-                return;
+                timings.temp_store_create_ms = temp_store_start.elapsed().as_secs_f64() * 1000.0;
+                timings.total_ms = total_start.elapsed().as_secs_f64() * 1000.0;
+                return timings;
             }
         };
 
         let reader = Cursor::new(rdf_data.as_bytes());
 
+        let parse_start = Instant::now();
         match temp_store.load_from_reader(RdfFormat::Turtle, reader) {
             Ok(_) => {
+                timings.turtle_parse_load_ms = parse_start.elapsed().as_secs_f64() * 1000.0;
+
                 // Successfully parsed as RDF, now copy all triples to the target graph
+                let collect_start = Instant::now();
                 let mut quads_to_insert = Vec::new();
                 for original_quad in temp_store.iter().flatten() {
                     // Create a new quad with the specified graph name
@@ -1011,15 +1116,27 @@ impl RDFStore {
                     );
                     quads_to_insert.push(new_quad);
                 }
+                timings.parsed_quad_count = quads_to_insert.len();
+                timings.quad_remap_collect_ms = collect_start.elapsed().as_secs_f64() * 1000.0;
 
                 // Insert all quads into the main store
+                let insert_start = Instant::now();
+                let mut cache_update_ms = 0.0;
                 for quad in &quads_to_insert {
                     if let Err(e) = self.store.insert(quad) {
                         eprintln!("Warning: Failed to insert quad: {}", e);
+                    } else {
+                        timings.inserted_quad_count += 1;
+                        let cache_start = Instant::now();
+                        self.cache_inserted_quad_for_state_root(quad);
+                        cache_update_ms += cache_start.elapsed().as_secs_f64() * 1000.0;
                     }
                 }
+                timings.oxigraph_insert_ms = insert_start.elapsed().as_secs_f64() * 1000.0;
+                timings.state_root_cache_update_ms = cache_update_ms;
 
                 // Update cache if it exists
+                let memory_cache_start = Instant::now();
                 if let Some(ref mut cache) = self.memory_cache {
                     let mut cached_quads = quads_to_insert.clone();
                     // Add existing quads from cache if any
@@ -1030,8 +1147,12 @@ impl RDFStore {
                     }
                     cache.insert(graph_name.as_str().to_string(), cached_quads);
                 }
+                timings.memory_cache_update_ms =
+                    memory_cache_start.elapsed().as_secs_f64() * 1000.0;
             }
             Err(_) => {
+                timings.turtle_parse_load_ms = parse_start.elapsed().as_secs_f64() * 1000.0;
+                let fallback_start = Instant::now();
                 // If parsing fails, create a simple triple with the data as a literal
                 let subject = match NamedNode::new(format!(
                     "http://provchain.org/data/{}",
@@ -1042,23 +1163,37 @@ impl RDFStore {
                     Ok(node) => node,
                     Err(e) => {
                         eprintln!("Warning: Failed to create subject node: {}", e);
-                        return;
+                        timings.fallback_insert_ms =
+                            fallback_start.elapsed().as_secs_f64() * 1000.0;
+                        timings.total_ms = total_start.elapsed().as_secs_f64() * 1000.0;
+                        return timings;
                     }
                 };
                 let predicate = match NamedNode::new("http://provchain.org/hasData") {
                     Ok(node) => node,
                     Err(e) => {
                         eprintln!("Warning: Failed to create predicate node: {}", e);
-                        return;
+                        timings.fallback_insert_ms =
+                            fallback_start.elapsed().as_secs_f64() * 1000.0;
+                        timings.total_ms = total_start.elapsed().as_secs_f64() * 1000.0;
+                        return timings;
                     }
                 };
                 let object = Literal::new_simple_literal(rdf_data);
                 let quad = Quad::new(subject, predicate, object, graph_name.clone());
                 if let Err(e) = self.store.insert(&quad) {
                     eprintln!("Warning: Failed to insert fallback quad: {}", e);
+                } else {
+                    timings.inserted_quad_count = 1;
+                    let cache_start = Instant::now();
+                    self.cache_inserted_quad_for_state_root(&quad);
+                    timings.state_root_cache_update_ms =
+                        cache_start.elapsed().as_secs_f64() * 1000.0;
                 }
+                timings.fallback_inserted = true;
 
                 // Update cache if it exists
+                let memory_cache_start = Instant::now();
                 if let Some(ref mut cache) = self.memory_cache {
                     let mut cached_quads = vec![quad.clone()];
                     // Add existing quads from cache if any
@@ -1069,8 +1204,13 @@ impl RDFStore {
                     }
                     cache.insert(graph_name.as_str().to_string(), cached_quads);
                 }
+                timings.memory_cache_update_ms =
+                    memory_cache_start.elapsed().as_secs_f64() * 1000.0;
+                timings.fallback_insert_ms = fallback_start.elapsed().as_secs_f64() * 1000.0;
             }
         }
+        timings.total_ms = total_start.elapsed().as_secs_f64() * 1000.0;
+        timings
     }
 
     pub fn load_ontology(&mut self, ontology_data: &str, _graph_name: &NamedNode) {
@@ -1078,6 +1218,7 @@ impl RDFStore {
         self.store
             .load_from_reader(RdfFormat::Turtle, reader)
             .unwrap();
+        self.invalidate_state_root_cache();
     }
 
     pub fn add_block_metadata(&mut self, block: &Block) {
@@ -1179,6 +1320,7 @@ impl RDFStore {
 
         for quad in &quads {
             self.store.insert(quad).unwrap();
+            self.cache_inserted_quad_for_state_root(quad);
         }
     }
 
@@ -1214,6 +1356,7 @@ impl RDFStore {
                 .insert(&new_quad)
                 .with_context(|| "Failed to insert quad into store")?;
         }
+        self.invalidate_state_root_cache();
 
         Ok(())
     }
@@ -1453,58 +1596,18 @@ impl RDFStore {
     /// Calculate the state root hash representing the current state of the knowledge graph
     /// Uses a Merkle tree approach over all RDF triples for efficient verification
     pub fn calculate_state_root(&self) -> String {
-        use sha2::{Digest, Sha256};
-
-        // Collect all triples in a deterministic order
-        let mut triple_hashes: Vec<String> = Vec::new();
-
-        // Iterate over all quads in the store
-        for quad in self.store.iter().flatten() {
-            // Create a deterministic string representation of the quad
-            let quad_str = format!(
-                "{}\n{}\n{}\n{}",
-                quad.graph_name, quad.subject, quad.predicate, quad.object
-            );
-
-            // Hash this quad
-            let mut hasher = Sha256::new();
-            hasher.update(quad_str.as_bytes());
-            let hash = format!("{:x}", hasher.finalize());
-            triple_hashes.push(hash);
-        }
-
-        // Sort for deterministic ordering
-        triple_hashes.sort();
-
-        // If no triples, return zero hash
-        if triple_hashes.is_empty() {
-            return format!("{:064x}", 0u64);
-        }
-
-        // Build Merkle tree
-        while triple_hashes.len() > 1 {
-            let mut new_level = Vec::new();
-
-            // Pair up hashes and combine them
-            for chunk in triple_hashes.chunks(2) {
-                if chunk.len() == 2 {
-                    // Combine two hashes
-                    let mut hasher = Sha256::new();
-                    hasher.update(chunk[0].as_bytes());
-                    hasher.update(chunk[1].as_bytes());
-                    let combined = format!("{:x}", hasher.finalize());
-                    new_level.push(combined);
-                } else {
-                    // Odd number of hashes, duplicate the last one
-                    new_level.push(chunk[0].clone());
-                }
+        if let Ok(cache) = self.state_root_hash_cache.read() {
+            if let Some(hashes) = cache.as_ref() {
+                return Self::merkle_root_from_sorted_hashes(hashes);
             }
-
-            triple_hashes = new_level;
         }
 
-        // Return the root hash
-        triple_hashes[0].clone()
+        let hashes = self.build_sorted_state_hashes();
+        let root = Self::merkle_root_from_sorted_hashes(&hashes);
+        if let Ok(mut cache) = self.state_root_hash_cache.write() {
+            *cache = Some(hashes);
+        }
+        root
     }
 
     /// Get ontology class hierarchy information
@@ -2011,5 +2114,43 @@ impl RDFStore {
         }
 
         (custom_metrics, rdfc10_metrics)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn state_root_cache_matches_full_scan_after_append_operations() {
+        let mut store = RDFStore::new();
+        let graph_name = NamedNode::new("http://provchain.org/block/1").unwrap();
+
+        store.add_rdf_to_graph(
+            "@prefix ex: <http://example.org/> . ex:s ex:p \"one\" .",
+            &graph_name,
+        );
+        let cached_root = store.calculate_state_root();
+        let full_scan_root =
+            RDFStore::merkle_root_from_sorted_hashes(&store.build_sorted_state_hashes());
+        assert_eq!(cached_root, full_scan_root);
+
+        let block = Block {
+            index: 1,
+            timestamp: "2026-04-29T00:00:00Z".to_string(),
+            data: "@prefix ex: <http://example.org/> . ex:s ex:p \"one\" .".to_string(),
+            encrypted_data: None,
+            previous_hash: "previous".to_string(),
+            hash: "hash".to_string(),
+            state_root: cached_root,
+            validator: "validator".to_string(),
+            signature: "signature".to_string(),
+        };
+        store.add_block_metadata(&block);
+
+        let cached_root = store.calculate_state_root();
+        let full_scan_root =
+            RDFStore::merkle_root_from_sorted_hashes(&store.build_sorted_state_hashes());
+        assert_eq!(cached_root, full_scan_root);
     }
 }

@@ -34,8 +34,8 @@ Clone and Build ProvChainOrg
 .. code-block:: bash
 
    # Clone the repository
-   git clone https://github.com/anusornc/prov-chain-pub.git
-   cd prov-chain-pub
+   git clone https://github.com/anusornc/provchain-org.git
+   cd provchain-org
 
    # Build the project
    cargo build --release

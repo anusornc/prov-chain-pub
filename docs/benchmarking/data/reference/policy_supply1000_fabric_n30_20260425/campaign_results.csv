@@ -1,0 +1,4 @@
+family,scenario,test_name,system,epochs_observed,runs_observed,samples,success_count,failed_count,success_rate,mean_ms,median_ms,p95_ms,p99_ms,stddev_ms,mean_ops_per_sec
+governance-policy,Policy Enforcement,auditor-read,Hyperledger Fabric,30,30,300,300,0,100.0,5.290803333333334,5.337,6.125500000000001,6.603659999999994,0.6064148233584737,191.94981072652706
+governance-policy,Policy Enforcement,authorized-read,Hyperledger Fabric,30,30,300,300,0,100.0,5.52262,5.596,6.4938,7.152699999999998,0.7286157805043753,184.68959530588714
+governance-policy,Policy Enforcement,unauthorized-read,Hyperledger Fabric,30,30,300,300,0,100.0,5.30133,5.269,6.0826,6.943979999999997,0.5574148734111783,190.82249186688918

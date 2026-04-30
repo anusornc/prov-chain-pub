@@ -1,0 +1,38 @@
+{
+  "campaign_id": "20260430_import_supply1000_provchain-bulk-r002_authfix_n3",
+  "created_at_utc": "2026-04-30T04:09:38Z",
+  "benchmark_family": "trace_query",
+  "dataset_slice": "supply_chain_1000",
+  "dataset_file": "supply_chain_1000.ttl",
+  "fluree_dataset_file": "translated/fluree/supply_chain_1000.jsonld",
+  "dataset_sha256": "ff6b3699e67923849522f5d48d2c121dd23428070c3d490fa796d5c2792f001e",
+  "dataset_bytes": 28153,
+  "test_batch_ids": "BATCH001,BATCH010,BATCH017,BATCH025,BATCH050",
+  "evidence_role": "r002_bulk_turtle_import_experiment_not_primary_paper_evidence",
+  "products": ["provchain", "neo4j", "fluree"],
+  "provchain_import_mode": "bulk-turtle-single-block",
+  "epoch_count_target": 3,
+  "iterations_per_epoch": 3,
+  "clean_volumes_per_epoch": true,
+  "host_ports": {
+    "provchain_http": 18380,
+    "provchain_metrics": 19390,
+    "neo4j_http": 18674,
+    "neo4j_bolt": 18887,
+    "fluree_http": 18390
+  },
+  "neo4j_runtime": {
+    "heap_initial": "1G",
+    "heap_max": "2G",
+    "pagecache": "1G",
+    "load_batch_size": 25
+  },
+  "preflight_required": true,
+  "preflight_skipped": false,
+  "validity_gate": [
+    "local preflight must pass unless explicitly skipped",
+    "each compared system must have success_rate greater than zero",
+    "run artifacts must include benchmark_results.json, benchmark_results.csv, summary.json, and summary.md"
+  ],
+  "notes": "Campaign runner args: --query. Skip flags: Neo4j=false, Fluree=false, Fabric=true, Geth=true."
+}

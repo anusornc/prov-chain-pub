@@ -344,8 +344,8 @@ To reproduce these results:
 
 ```bash
 # Clone repository
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub
+git clone https://github.com/your-org/provchain-org.git
+cd provchain-org
 
 # Run all benchmarks
 cargo bench --all

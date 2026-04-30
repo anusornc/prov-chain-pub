@@ -1,0 +1,176 @@
+{
+  "append_samples": 9,
+  "append_test_names_observed": [
+    "Steady-state Append After Cold Load (100 tx)"
+  ],
+  "campaign_id": "20260429_profile_ledger_supply1000_provchain-only_coldsteady_conservative_n3",
+  "cold_load_ms": {
+    "auth": {
+      "max": 2516.318294,
+      "mean": 2515.806973,
+      "min": 2515.375759,
+      "p95": 2516.2591512,
+      "p99": 2516.30646544,
+      "samples": 3
+    },
+    "client_submit_loop": {
+      "max": 48545.852527,
+      "mean": 48162.7293,
+      "min": 47970.625365,
+      "p95": 48488.43827510001,
+      "p99": 48534.36967662,
+      "samples": 3
+    },
+    "dataset_normalize": {
+      "max": 51.431191,
+      "mean": 51.397539,
+      "min": 51.338566,
+      "p95": 51.4303579,
+      "p99": 51.43102438,
+      "samples": 3
+    },
+    "dataset_parse": {
+      "max": 6.5923609999999995,
+      "mean": 6.535890333333334,
+      "min": 6.487408,
+      "p95": 6.585915099999999,
+      "p99": 6.59107182,
+      "samples": 3
+    },
+    "dataset_read": {
+      "max": 0.03926,
+      "mean": 0.037505333333333335,
+      "min": 0.036175,
+      "p95": 0.0390421,
+      "p99": 0.03921642,
+      "samples": 3
+    },
+    "total": {
+      "max": 51119.0,
+      "mean": 50736.0,
+      "min": 50544.0,
+      "p95": 51061.600000000006,
+      "p99": 51107.520000000004,
+      "samples": 3
+    }
+  },
+  "cold_load_samples": 3,
+  "cold_load_server_stage_avg_ms": {
+    "block_admission": {
+      "max": 69.81028021835442,
+      "mean": 69.34157619462027,
+      "min": 69.10549393037977,
+      "p95": 69.74014764003164,
+      "p99": 69.79625370268987,
+      "samples": 3
+    },
+    "blockchain_lock_wait": {
+      "max": 0.004555691455696207,
+      "mean": 0.00426227742616034,
+      "min": 0.004075329113924052,
+      "p95": 0.004515703481012662,
+      "p99": 0.004547693860759498,
+      "samples": 3
+    },
+    "handler_total": {
+      "max": 74.63670117088606,
+      "mean": 74.08012994831226,
+      "min": 73.77512494145576,
+      "p95": 74.55588742705694,
+      "p99": 74.62053842212023,
+      "samples": 3
+    },
+    "request_validation": {
+      "max": 4.790684299050638,
+      "mean": 4.703031600210973,
+      "min": 4.633602683544305,
+      "p95": 4.780096650949372,
+      "p99": 4.788566769430385,
+      "samples": 3
+    },
+    "turtle_materialization": {
+      "max": 0.0024067436708860735,
+      "mean": 0.002386506856540084,
+      "min": 0.002364564873417722,
+      "p95": 0.002404890506329112,
+      "p99": 0.0024063730379746814,
+      "samples": 3
+    }
+  },
+  "dominant_server_stage": {
+    "percent_of_handler_total": 97.75407960600371,
+    "stage": "block_admission"
+  },
+  "evidence_role": "profiling_reference_not_primary_paper_comparison",
+  "generated_at_utc": "2026-04-29T10:27:07Z",
+  "metrics_ms": {
+    "auth": {
+      "max": 1289.002294,
+      "mean": 1259.9583138888888,
+      "min": 1231.168033,
+      "p95": 1286.1908352,
+      "p99": 1288.4400022399998,
+      "samples": 9
+    },
+    "batch_total": {
+      "max": 20207.0,
+      "mean": 17972.444444444445,
+      "min": 15690.0,
+      "p95": 20141.8,
+      "p99": 20193.96,
+      "samples": 9
+    },
+    "client_submit_loop": {
+      "max": 18928.484506,
+      "mean": 16713.07013722222,
+      "min": 14459.161128,
+      "p95": 18873.837583200002,
+      "p99": 18917.555121440004,
+      "samples": 9
+    }
+  },
+  "server_stage_avg_ms": {
+    "block_admission": {
+      "max": 183.25036695,
+      "mean": 161.19545816555555,
+      "min": 138.73993874000004,
+      "p95": 182.76502109,
+      "p99": 183.153297778,
+      "samples": 9
+    },
+    "blockchain_lock_wait": {
+      "max": 0.00508226,
+      "mean": 0.004591582222222223,
+      "min": 0.004141649999999999,
+      "p95": 0.005070432,
+      "p99": 0.0050798944,
+      "samples": 9
+    },
+    "handler_total": {
+      "max": 186.94870834000005,
+      "mean": 164.8989574811111,
+      "min": 142.39220694,
+      "p95": 186.45065270000003,
+      "p99": 186.84909721200003,
+      "samples": 9
+    },
+    "request_validation": {
+      "max": 3.7662461399999994,
+      "mean": 3.665836994444444,
+      "min": 3.61301273,
+      "p95": 3.7552651519999993,
+      "p99": 3.7640499423999993,
+      "samples": 9
+    },
+    "turtle_materialization": {
+      "max": 0.00237891,
+      "mean": 0.0022297988888888894,
+      "min": 0.002120790000000001,
+      "p95": 0.00235665,
+      "p99": 0.0023744580000000003,
+      "samples": 9
+    }
+  },
+  "source_campaign_dir": "/home/cit/provchain-org/benchmark-toolkit/results/campaigns/20260429_profile_ledger_supply1000_provchain-only_coldsteady_conservative_n3",
+  "transaction_count_per_sample": 100
+}

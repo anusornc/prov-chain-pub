@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-04-25T07:05:53.636535586+00:00",
+  "benchmark_targets": [
+    "ProvChain-Org",
+    "Hyperledger Fabric"
+  ],
+  "skipped_targets": [
+    "Neo4j",
+    "Fluree",
+    "Go Ethereum (Geth)"
+  ],
+  "dataset_path": "/home/cit/provchain-org/benchmark-toolkit/datasets",
+  "results_path": "/home/cit/provchain-org/benchmark-toolkit/results/fabric-ledger/20260425T070551Z",
+  "iterations": 10,
+  "warmup_iterations": 3,
+  "dataset_files": {
+    "neo4j": "supply_chain_1000.ttl",
+    "fluree": "supply_chain_1000.jsonld",
+    "fabric": "logical-records:100",
+    "provchain": "supply_chain_1000.ttl"
+  },
+  "environment": {
+    "os": "linux",
+    "arch": "x86_64",
+    "logical_cpu_cores": 48,
+    "memory_total_kib": 32512300,
+    "results_filesystem_available_bytes": 196232962048
+  },
+  "image_refs": {}
+}

@@ -1,0 +1,8 @@
+{
+  "campaign_id": "20260428_ledger_supply1000_provchain-geth_n30_fix1",
+  "completed_at_utc": "2026-04-28T19:10:15Z",
+  "epoch_count_target": 30,
+  "passed_epochs": 30,
+  "failed_epochs": 0,
+  "status": "passed"
+}

@@ -101,8 +101,8 @@ Yes, this is an open source research project.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub
+git clone https://github.com/your-org/provchain-org.git
+cd provchain-org
 
 # 2. Start 3-node cluster
 cd deploy
@@ -164,8 +164,8 @@ cargo build --release
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # 2. Clone and build
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub
+git clone https://github.com/your-org/provchain-org.git
+cd provchain-org
 cargo build --release
 
 # 3. Run

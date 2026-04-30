@@ -1,6 +1,6 @@
 # Multi-stage Docker build for ProvChainOrg production deployment
 # Stage 1: Build the Rust backend
-FROM rust:1.85-slim AS backend-builder
+FROM rust:1.91-slim AS backend-builder
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -14,25 +14,17 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy Cargo files for dependency caching
+# Copy source and build directly from real files.
+# The crate has multiple binaries and substantial feature wiring; avoiding the
+# dummy warmup build prevents stale package artifacts from masking source changes.
 COPY Cargo.toml Cargo.lock ./
 COPY benches/ ./benches/
 COPY tests/ ./tests/
-
-# Create dummy files to pre-build dependencies
-RUN mkdir -p src/bin && \
-    echo "pub fn dummy() {}" > src/lib.rs && \
-    echo "fn main() {}" > src/main.rs && \
-    echo "fn main() {}" > src/bin/owl2_integration_test.rs
-RUN cargo build --release
-RUN rm -rf src
-
-# Copy source code and build the application
 COPY src/ ./src/
-COPY ontologies/ ./ontologies/
+COPY src/semantic/ontologies/ ./ontologies/
 COPY config/ ./config/
-COPY queries/ ./queries/
-COPY shapes/ ./shapes/
+COPY src/semantic/queries/ ./queries/
+COPY src/semantic/shapes/ ./shapes/
 COPY deploy/docker-entrypoint.sh ./deploy/docker-entrypoint.sh
 
 # Build the final binary
@@ -52,11 +44,12 @@ COPY frontend/ ./
 RUN npx vite build --mode production
 
 # Stage 3: Production runtime
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     ca-certificates \
+    curl \
     libssl3 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -r -s /bin/false -m -d /app provchain
@@ -73,14 +66,23 @@ WORKDIR /app
 # Copy the built binary from backend builder
 COPY --from=backend-builder /app/target/release/provchain-org /usr/local/bin/provchain-org
 
-# Copy configuration files
+# Copy configuration files and semantic assets.
+# The current application still resolves several ontology/query/shape paths from
+# both legacy runtime locations (`./ontologies`, `./queries`, `./shapes`) and
+# source-relative paths (`src/semantic/...`), so the image provides both until
+# those call sites are unified.
 COPY --from=backend-builder /app/config/ ./config/
 COPY --from=backend-builder /app/ontologies/ ./ontologies/
 COPY --from=backend-builder /app/queries/ ./queries/
 COPY --from=backend-builder /app/shapes/ ./shapes/
+RUN mkdir -p /app/src/semantic/ontologies /app/src/semantic/queries /app/src/semantic/shapes /app/src/web
+COPY --from=backend-builder /app/ontologies/ ./src/semantic/ontologies/
+COPY --from=backend-builder /app/queries/ ./src/semantic/queries/
+COPY --from=backend-builder /app/shapes/ ./src/semantic/shapes/
 
 # Copy built frontend
 COPY --from=frontend-builder /app/frontend/dist/ ./static/
+COPY --from=frontend-builder /app/frontend/dist/ ./src/web/static/
 
 # Create necessary directories
 RUN mkdir -p /app/data /app/backups /app/logs \
@@ -101,4 +103,4 @@ ENV RUST_LOG=info
 # JWT_SECRET should be passed at runtime via -e JWT_SECRET=your-secret
 
 # Run the application
-CMD ["provchain-org", "web-server", "--port", "8080"]
+CMD ["provchain-org", "examples", "web-server", "--port", "8080"]

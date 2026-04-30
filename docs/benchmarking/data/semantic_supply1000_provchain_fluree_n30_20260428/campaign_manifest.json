@@ -1,0 +1,19 @@
+{
+  "campaign_id": "20260428_semantic_supply1000_provchain-fluree_n30",
+  "created_at_utc": "2026-04-28T17:14:11Z",
+  "benchmark_family": "semantic",
+  "dataset_slice": "supply_chain_1000",
+  "dataset_file": "supply_chain_1000.ttl",
+  "products": ["provchain", "fluree"],
+  "epoch_count_target": 30,
+  "iterations_per_epoch": 1,
+  "clean_volumes_per_epoch": true,
+  "preflight_required": true,
+  "preflight_skipped": false,
+  "validity_gate": [
+    "local preflight must pass unless explicitly skipped",
+    "each compared system must have success_rate greater than zero",
+    "run artifacts must include benchmark_results.json, benchmark_results.csv, summary.json, and summary.md"
+  ],
+  "notes": "Campaign runner args: --semantic --skip-load. Skip flags: Neo4j=true, Fluree=false, Fabric=true, Geth=true."
+}

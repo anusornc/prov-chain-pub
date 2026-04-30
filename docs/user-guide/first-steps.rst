@@ -55,8 +55,8 @@ Open your terminal and run these commands:
 .. code-block:: bash
 
    # Clone the repository
-   git clone https://github.com/anusornc/prov-chain-pub.git
-   cd prov-chain-pub
+   git clone https://github.com/anusornc/provchain-org.git
+   cd provchain-org
 
    # Build the project (this may take several minutes)
    cargo build --release

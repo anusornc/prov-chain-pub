@@ -1,0 +1,11 @@
+{
+  "epoch_id": "epoch-027",
+  "run_id": "20260428T174224Z",
+  "started_at_utc": "2026-04-28T17:42:24Z",
+  "completed_at_utc": "2026-04-28T17:43:26Z",
+  "status": "passed",
+  "exclusion_reason": "",
+  "benchmark_family": "semantic",
+  "dataset_slice": "supply_chain_1000",
+  "iterations": 1
+}

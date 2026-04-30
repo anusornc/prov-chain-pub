@@ -1,0 +1,255 @@
+[
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission Diagnostic",
+    "test_name": "Native Semantic Turtle Normalize",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "not-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 9.377596,
+        "p50_ms": 9.377596,
+        "p95_ms": 9.377596,
+        "p99_ms": 9.377596,
+        "ops_per_sec": 106.6371381322036,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission Diagnostic",
+    "test_name": "Externalized JSON-LD Parse",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Fluree",
+        "fairness_label": "not-comparable",
+        "capability_path": "external-semantic-pipeline",
+        "avg_ms": 0.9055270000000001,
+        "p50_ms": 0.9055270000000001,
+        "p95_ms": 0.9055270000000001,
+        "p99_ms": 0.9055270000000001,
+        "ops_per_sec": 1104.3293021632705,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission",
+    "test_name": "Externalized TTL+JSON-LD Admission",
+    "fairness_label": "externalized-semantic-pipeline",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Fluree",
+        "fairness_label": "externalized-semantic-pipeline",
+        "capability_path": "external-semantic-pipeline",
+        "avg_ms": 833.872841,
+        "p50_ms": 833.872841,
+        "p95_ms": 833.872841,
+        "p99_ms": 833.872841,
+        "ops_per_sec": 1.1992236116009922,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission Diagnostic",
+    "test_name": "Native Semantic Dataset Read",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "not-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 0.112337,
+        "p50_ms": 0.112337,
+        "p95_ms": 0.112337,
+        "p99_ms": 0.112337,
+        "ops_per_sec": 8901.786588568326,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission",
+    "test_name": "Native RDF+SHACL Admission",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "native-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 7101.0,
+        "p50_ms": 7101.0,
+        "p95_ms": 7101.0,
+        "p99_ms": 7101.0,
+        "ops_per_sec": 0.1408252358822701,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission Diagnostic",
+    "test_name": "Native Semantic Authentication",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "not-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 645.725275,
+        "p50_ms": 645.725275,
+        "p95_ms": 645.725275,
+        "p99_ms": 645.725275,
+        "ops_per_sec": 1.5486462102633352,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission Diagnostic",
+    "test_name": "Native Semantic HTTP Submit Loop",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "not-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 6443.165024,
+        "p50_ms": 6443.165024,
+        "p95_ms": 6443.165024,
+        "p99_ms": 6443.165024,
+        "ops_per_sec": 98.08843908946574,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission Diagnostic",
+    "test_name": "Native Semantic Turtle Parse",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "not-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 3.0492700000000004,
+        "p50_ms": 3.0492700000000004,
+        "p95_ms": 3.0492700000000004,
+        "p99_ms": 3.0492700000000004,
+        "ops_per_sec": 327.94734477432297,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission Diagnostic",
+    "test_name": "Externalized JSON-LD Dataset Read",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Fluree",
+        "fairness_label": "not-comparable",
+        "capability_path": "external-semantic-pipeline",
+        "avg_ms": 0.108385,
+        "p50_ms": 0.108385,
+        "p95_ms": 0.108385,
+        "p99_ms": 0.108385,
+        "ops_per_sec": 9226.368962494811,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission Diagnostic",
+    "test_name": "Externalized JSON-LD Ledger Insert",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Fluree",
+        "fairness_label": "not-comparable",
+        "capability_path": "external-semantic-pipeline",
+        "avg_ms": 496.08026900000004,
+        "p50_ms": 496.08026900000004,
+        "p95_ms": 496.08026900000004,
+        "p99_ms": 496.08026900000004,
+        "ops_per_sec": 2.0158028095247627,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "Semantic",
+    "scenario": "Semantic Admission Diagnostic",
+    "test_name": "Externalized TTL-to-JSON-LD Translation",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Fluree",
+        "fairness_label": "not-comparable",
+        "capability_path": "external-semantic-pipeline",
+        "avg_ms": 181.0,
+        "p50_ms": 181.0,
+        "p95_ms": 181.0,
+        "p99_ms": 181.0,
+        "ops_per_sec": 5.524861878453039,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  }
+]

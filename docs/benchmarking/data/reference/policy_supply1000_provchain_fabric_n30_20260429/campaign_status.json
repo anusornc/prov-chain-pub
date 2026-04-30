@@ -1,0 +1,8 @@
+{
+  "campaign_id": "20260429_policy_supply1000_provchain-fabric_n30",
+  "completed_at_utc": "2026-04-29T09:15:54Z",
+  "epoch_count_target": 30,
+  "passed_epochs": 30,
+  "failed_epochs": 0,
+  "status": "passed"
+}

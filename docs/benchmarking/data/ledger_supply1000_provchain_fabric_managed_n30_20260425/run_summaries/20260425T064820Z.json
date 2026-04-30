@@ -1,0 +1,117 @@
+[
+  {
+    "family": "LedgerWrite",
+    "scenario": "Ledger Write",
+    "test_name": "Single Record Submit",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 12.8863,
+        "p50_ms": 12.919,
+        "p95_ms": 15.077,
+        "p99_ms": 15.077,
+        "ops_per_sec": 78.03159025414575,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Ledger Write",
+    "test_name": "Single Record Commit",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 2023.1312999999998,
+        "p50_ms": 2023.081,
+        "p95_ms": 2025.857,
+        "p99_ms": 2025.857,
+        "ops_per_sec": 0.4942835018268578,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Ledger Write",
+    "test_name": "Batch Submit (100 records)",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 131.8732,
+        "p50_ms": 133.38,
+        "p95_ms": 142.638,
+        "p99_ms": 142.638,
+        "ops_per_sec": 761.5897169377795,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Ledger Write",
+    "test_name": "Batch Commit (100 records)",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 2156.0089,
+        "p50_ms": 2157.188,
+        "p95_ms": 2170.806,
+        "p99_ms": 2170.806,
+        "ops_per_sec": 46.38328330845255,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Write Performance",
+    "test_name": "Single-threaded Write (100 tx)",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "native-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 28791.3,
+        "p50_ms": 31661.0,
+        "p95_ms": 52764.0,
+        "p99_ms": 52764.0,
+        "ops_per_sec": 5.824825924321563,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  }
+]

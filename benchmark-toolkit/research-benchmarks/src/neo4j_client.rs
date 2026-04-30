@@ -7,6 +7,7 @@
 //! - Query execution with timing
 //! - Health checks
 
+use crate::dataset::normalize_turtle;
 use anyhow::{Context, Result};
 use neo4rs::{query as neo_query, ConfigBuilder, Graph};
 use rio_api::parser::TriplesParser;
@@ -133,7 +134,7 @@ impl Neo4jClient {
         // Test connection
         let query = neo_query("RETURN 1 as test");
         let mut result = graph.execute(query).await?;
-        
+
         if result.next().await?.is_some() {
             info!("✓ Neo4j connection successful");
         } else {
@@ -152,9 +153,10 @@ impl Neo4jClient {
     /// Perform health check on Neo4j connection
     pub async fn health_check(&self) -> Result<bool> {
         if let Some(graph) = &self.graph {
-            let query = neo_query("CALL dbms.components() YIELD name, edition RETURN name, edition");
+            let query =
+                neo_query("CALL dbms.components() YIELD name, edition RETURN name, edition");
             let mut result = graph.execute(query).await?;
-            
+
             if let Some(row) = result.next().await? {
                 let name: String = row.get("name").unwrap_or_default();
                 let edition: String = row.get("edition").unwrap_or_default();
@@ -185,14 +187,15 @@ impl Neo4jClient {
     /// Load RDF/Turtle data into Neo4j by converting to Cypher
     pub async fn load_turtle_data(&self, ttl_path: &Path) -> Result<Duration> {
         info!("Loading Turtle data from {:?}...", ttl_path);
-        
+
         let start = Instant::now();
-        
+
         // Read the Turtle file
         let mut file = std::fs::File::open(ttl_path)
             .with_context(|| format!("Failed to open Turtle file: {:?}", ttl_path))?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
+        let content = normalize_turtle(&content);
 
         // Parse RDF triples
         let triples = self.parse_turtle(&content)?;
@@ -203,32 +206,34 @@ impl Neo4jClient {
 
         let duration = start.elapsed();
         info!("✓ Loaded Turtle data in {:?}", duration);
-        
+
         Ok(duration)
     }
 
     /// Parse Turtle content into RDF triples
     fn parse_turtle(&self, content: &str) -> Result<Vec<RdfTriple>> {
         let mut triples = Vec::new();
-        
+
         let mut parser = TurtleParser::new(content.as_bytes(), None);
-        
-        parser.parse_all(&mut |t| {
-            let subject = Self::format_subject(&t.subject);
-            let predicate = t.predicate.iri.to_string();
-            let (object, is_literal, obj_type) = Self::format_object(&t.object);
-            
-            triples.push(RdfTriple {
-                subject,
-                predicate,
-                object,
-                object_is_literal: is_literal,
-                object_type: obj_type,
-            });
-            
-            Ok(()) as Result<(), rio_turtle::TurtleError>
-        }).map_err(|e| anyhow::anyhow!("RDF parsing error: {:?}", e))?;
-        
+
+        parser
+            .parse_all(&mut |t| {
+                let subject = Self::format_subject(&t.subject);
+                let predicate = t.predicate.iri.to_string();
+                let (object, is_literal, obj_type) = Self::format_object(&t.object);
+
+                triples.push(RdfTriple {
+                    subject,
+                    predicate,
+                    object,
+                    object_is_literal: is_literal,
+                    object_type: obj_type,
+                });
+
+                Ok(()) as Result<(), rio_turtle::TurtleError>
+            })
+            .map_err(|e| anyhow::anyhow!("RDF parsing error: {:?}", e))?;
+
         Ok(triples)
     }
 
@@ -249,16 +254,13 @@ impl Neo4jClient {
             rio_api::model::Term::Literal(l) => {
                 // Handle different literal types in rio_api
                 let (value, dtype) = match l {
-                    rio_api::model::Literal::Simple { value } => {
-                        (value.to_string(), None)
-                    }
+                    rio_api::model::Literal::Simple { value } => (value.to_string(), None),
                     rio_api::model::Literal::LanguageTaggedString { value, language: _ } => {
                         (value.to_string(), None)
                     }
                     rio_api::model::Literal::Typed { value, datatype } => {
                         (value.to_string(), Some(datatype.iri.to_string()))
                     }
-
                 };
                 (value, true, dtype)
             }
@@ -271,7 +273,7 @@ impl Neo4jClient {
         if let Some(graph) = &self.graph {
             // Group triples by subject for efficient loading
             let mut subject_groups: HashMap<String, Vec<RdfTriple>> = HashMap::new();
-            
+
             for triple in triples {
                 subject_groups
                     .entry(triple.subject.clone())
@@ -279,13 +281,20 @@ impl Neo4jClient {
                     .push(triple);
             }
 
-            // Process in batches
-            let batch_size = 100;
+            // Process in batches. Larger scale slices can exceed the default
+            // Neo4j heap when too many subject MERGEs are concatenated into one
+            // Cypher request, so keep this tunable from the campaign wrapper.
+            let batch_size = std::env::var("NEO4J_LOAD_BATCH_SIZE")
+                .ok()
+                .and_then(|value| value.parse::<usize>().ok())
+                .filter(|value| *value > 0)
+                .unwrap_or(100);
+            info!("Loading Neo4j triples with subject batch size {}", batch_size);
             let subjects: Vec<_> = subject_groups.keys().cloned().collect();
-            
+
             for chunk in subjects.chunks(batch_size) {
                 let mut query_builder = String::new();
-                
+
                 for (i, subject) in chunk.iter().enumerate() {
                     if let Some(triples) = subject_groups.get(subject) {
                         // Build Cypher for this subject
@@ -302,7 +311,7 @@ impl Neo4jClient {
 
             // Create indexes for common query patterns
             self.create_indexes().await?;
-            
+
             Ok(())
         } else {
             Err(anyhow::anyhow!("Not connected to Neo4j"))
@@ -313,21 +322,22 @@ impl Neo4jClient {
     fn build_merge_cypher(&self, subject: &str, triples: &[RdfTriple], idx: usize) -> String {
         let node_var = format!("n{}", idx);
         let mut cypher = String::new();
-        
+
         // Extract type and properties
         let mut types = Vec::new();
         let mut properties = Vec::new();
         let mut relationships = Vec::new();
-        
+
         for triple in triples {
             let pred_short = Self::shorten_iri(&triple.predicate);
-            
+
             if pred_short == "rdf:type" || pred_short == "a" {
                 types.push(Self::shorten_iri(&triple.object));
             } else if triple.object_is_literal {
                 // Property
                 let value = Self::escape_cypher_string(&triple.object);
-                properties.push(format!("{}: '{}'", pred_short, value));
+                let property_key = Self::property_key(&pred_short);
+                properties.push(format!("`{}`: '{}'", property_key, value));
             } else {
                 // Relationship
                 relationships.push((pred_short, triple.object.clone()));
@@ -396,22 +406,30 @@ impl Neo4jClient {
         iri.to_string()
     }
 
+    fn property_key(pred_short: &str) -> String {
+        pred_short
+            .rsplit_once(':')
+            .map(|(_, local)| local)
+            .unwrap_or(pred_short)
+            .to_string()
+    }
+
     /// Escape string for Cypher
     fn escape_cypher_string(s: &str) -> String {
         s.replace('\\', "\\\\")
-         .replace('\'', "\\'")
-         .replace('\n', "\\n")
-         .replace('\r', "\\r")
-         .replace('\t', "\\t")
+            .replace('\'', "\\'")
+            .replace('\n', "\\n")
+            .replace('\r', "\\r")
+            .replace('\t', "\\t")
     }
 
     /// Create indexes for common query patterns
     async fn create_indexes(&self) -> Result<()> {
         if let Some(graph) = &self.graph {
             let indexes = vec![
-                "CREATE INDEX batch_id_idx IF NOT EXISTS FOR (p:ex:Product) ON (p.batchId)",
+                "CREATE INDEX batch_id_idx IF NOT EXISTS FOR (p:`ex:Product`) ON (p.batchId)",
                 "CREATE INDEX uri_idx IF NOT EXISTS FOR (n:Resource) ON (n.uri)",
-                "CREATE INDEX producer_idx IF NOT EXISTS FOR (p:ex:Producer) ON (p.name)",
+                "CREATE INDEX producer_idx IF NOT EXISTS FOR (p:`ex:Producer`) ON (p.name)",
             ];
 
             for idx_cypher in indexes {
@@ -428,18 +446,18 @@ impl Neo4jClient {
     pub async fn execute_query(&self, cypher: &str) -> Result<Neo4jBenchmarkResult> {
         if let Some(graph) = &self.graph {
             let start = Instant::now();
-            
+
             match graph.execute(neo_query(cypher)).await {
                 Ok(mut result) => {
                     let mut record_count = 0;
-                    
+
                     // Count records
                     while result.next().await?.is_some() {
                         record_count += 1;
                     }
-                    
+
                     let duration = start.elapsed();
-                    
+
                     Ok(Neo4jBenchmarkResult {
                         duration_ms: duration.as_millis() as f64,
                         record_count,
@@ -470,9 +488,9 @@ impl Neo4jClient {
     ) -> Result<Neo4jBenchmarkResult> {
         if let Some(graph) = &self.graph {
             let start = Instant::now();
-            
+
             let mut query = neo_query(cypher);
-            
+
             // Add parameters
             for (key, value) in &params {
                 match value {
@@ -492,17 +510,17 @@ impl Neo4jClient {
                     _ => {}
                 }
             }
-            
+
             match graph.execute(query).await {
                 Ok(mut result) => {
                     let mut record_count = 0;
-                    
+
                     while result.next().await?.is_some() {
                         record_count += 1;
                     }
-                    
+
                     let duration = start.elapsed();
-                    
+
                     Ok(Neo4jBenchmarkResult {
                         duration_ms: duration.as_millis() as f64,
                         record_count,
@@ -511,7 +529,10 @@ impl Neo4jClient {
                         metadata: {
                             let mut m = HashMap::new();
                             m.insert("query".to_string(), cypher.to_string().into());
-                            m.insert("params".to_string(), serde_json::to_value(&params).unwrap_or_default());
+                            m.insert(
+                                "params".to_string(),
+                                serde_json::to_value(&params).unwrap_or_default(),
+                            );
                             m
                         },
                     })
@@ -615,32 +636,28 @@ mod tests {
 
     #[test]
     fn test_shorten_iri() {
-        let client = Neo4jClient::new(Neo4jClientConfig::default());
-        
         assert_eq!(
-            client.shorten_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+            Neo4jClient::shorten_iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
             "rdf:type"
         );
         assert_eq!(
-            client.shorten_iri("http://example.org/supplychain/Product"),
+            Neo4jClient::shorten_iri("http://example.org/supplychain/Product"),
             "ex:Product"
         );
         assert_eq!(
-            client.shorten_iri("http://example.org/traceability#hasTransaction"),
+            Neo4jClient::shorten_iri("http://example.org/traceability#hasTransaction"),
             "trace:hasTransaction"
         );
     }
 
     #[test]
     fn test_escape_cypher_string() {
-        let client = Neo4jClient::new(Neo4jClientConfig::default());
-        
         assert_eq!(
-            client.escape_cypher_string("It's a test"),
+            Neo4jClient::escape_cypher_string("It's a test"),
             "It\\'s a test"
         );
         assert_eq!(
-            client.escape_cypher_string("Line1\nLine2"),
+            Neo4jClient::escape_cypher_string("Line1\nLine2"),
             "Line1\\nLine2"
         );
     }
@@ -648,7 +665,7 @@ mod tests {
     #[test]
     fn test_build_merge_cypher() {
         let client = Neo4jClient::new(Neo4jClientConfig::default());
-        
+
         let triples = vec![
             RdfTriple {
                 subject: "http://example.org/product/1".to_string(),
@@ -667,7 +684,7 @@ mod tests {
         ];
 
         let cypher = client.build_merge_cypher("http://example.org/product/1", &triples, 0);
-        
+
         assert!(cypher.contains("MERGE"));
         assert!(cypher.contains("BATCH001"));
     }

@@ -44,6 +44,38 @@ pub struct AddTripleRequest {
     pub privacy_key_id: Option<String>, // Optional key ID for encryption
 }
 
+/// Request model for adding multiple triples into one block.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AddTripleBatchRequest {
+    pub triples: Vec<AddTripleRequest>,
+}
+
+/// Request model for importing a Turtle dataset as one blockchain block.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TurtleImportRequest {
+    pub turtle_data: String,
+}
+
+/// Request model for benchmark policy checks.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PolicyCheckRequest {
+    pub record_id: String,
+    pub actor_org: String,
+    pub action: String,
+    pub owner_org: String,
+    pub visibility: String,
+}
+
+/// Response model for benchmark policy checks.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PolicyCheckResponse {
+    pub authorized: bool,
+    pub policy_latency_ms: f64,
+    pub policy_engine: String,
+    pub evaluated_by: String,
+    pub user_role: String,
+}
+
 /// Request model for SPARQL queries
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SparqlQueryRequest {

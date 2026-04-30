@@ -5,18 +5,21 @@
 
 use anyhow::Result;
 use provchain_org::core::blockchain::Blockchain;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use serde_json::json;
 use std::time::Duration;
 use tokio::time::sleep;
 
+const TEST_JWT_SECRET: &str = "test-secret-for-integration-tests-must-be-32-chars-long";
+const TEST_BOOTSTRAP_TOKEN: &str = "test-bootstrap-token-for-security-tests";
+const ADMIN_USERNAME: &str = "adminroot";
+const ADMIN_PASSWORD: &str = "AdminRootPassword123!";
+
 /// Test helper for setting up a test server with authentication
 async fn setup_test_server_with_auth() -> Result<(u16, tokio::task::JoinHandle<()>)> {
     // Set JWT_SECRET for tests (required for authentication to work)
-    std::env::set_var(
-        "JWT_SECRET",
-        "test-secret-for-integration-tests-must-be-32-chars-long",
-    );
+    std::env::set_var("JWT_SECRET", TEST_JWT_SECRET);
+    std::env::set_var("PROVCHAIN_BOOTSTRAP_TOKEN", TEST_BOOTSTRAP_TOKEN);
 
     let blockchain = Blockchain::new();
 
@@ -37,6 +40,67 @@ async fn setup_test_server_with_auth() -> Result<(u16, tokio::task::JoinHandle<(
     Ok((actual_port, handle))
 }
 
+async fn bootstrap_and_login(client: &Client, base_url: &str) -> Result<String> {
+    let login_response = client
+        .post(format!("{}/auth/login", base_url))
+        .json(&json!({
+            "username": ADMIN_USERNAME,
+            "password": ADMIN_PASSWORD
+        }))
+        .send()
+        .await?;
+
+    if login_response.status() == StatusCode::OK {
+        let auth_result: serde_json::Value = login_response.json().await?;
+        return Ok(auth_result["token"].as_str().unwrap_or("").to_string());
+    }
+
+    if login_response.status() == StatusCode::UNAUTHORIZED {
+        let bootstrap_response = client
+            .post(format!("{}/auth/bootstrap", base_url))
+            .json(&json!({
+                "username": ADMIN_USERNAME,
+                "password": ADMIN_PASSWORD,
+                "bootstrap_token": TEST_BOOTSTRAP_TOKEN
+            }))
+            .send()
+            .await?;
+
+        assert!(
+            bootstrap_response.status() == StatusCode::OK
+                || bootstrap_response.status() == StatusCode::CONFLICT,
+            "bootstrap should succeed or report conflict, got {}",
+            bootstrap_response.status()
+        );
+
+        let retry_response = client
+            .post(format!("{}/auth/login", base_url))
+            .json(&json!({
+                "username": ADMIN_USERNAME,
+                "password": ADMIN_PASSWORD
+            }))
+            .send()
+            .await?;
+
+        assert_eq!(
+            retry_response.status(),
+            StatusCode::OK,
+            "login after bootstrap should succeed"
+        );
+
+        let auth_result: serde_json::Value = retry_response.json().await?;
+        return Ok(auth_result["token"].as_str().unwrap_or("").to_string());
+    }
+
+    let status = login_response.status();
+    let body = login_response.text().await.unwrap_or_default();
+    Err(anyhow::anyhow!(
+        "unexpected login status {} with body {}",
+        status,
+        body
+    ))
+}
+
 /// Find an available port for testing
 async fn find_available_port() -> Result<u16> {
     use std::net::TcpListener;
@@ -55,27 +119,13 @@ async fn find_available_port() -> Result<u16> {
 
 /// Test authentication with valid credentials
 #[tokio::test]
-#[ignore]
 async fn test_valid_authentication() -> Result<()> {
     let (port, _server_handle) = setup_test_server_with_auth().await?;
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
 
-    // Test login with valid credentials
-    let login_response = client
-        .post(format!("{}/auth/login", base_url))
-        .json(&json!({
-            "username": "admin",
-            "password": "admin123"
-        }))
-        .send()
-        .await?;
-
-    assert!(login_response.status().is_success());
-
-    let auth_result: serde_json::Value = login_response.json().await?;
-    assert!(auth_result["token"].is_string());
-    assert!(!auth_result["token"].as_str().unwrap().is_empty());
+    let token = bootstrap_and_login(&client, &base_url).await?;
+    assert!(!token.is_empty());
 
     Ok(())
 }
@@ -91,7 +141,7 @@ async fn test_invalid_authentication() -> Result<()> {
     let login_response = client
         .post(format!("{}/auth/login", base_url))
         .json(&json!({
-            "username": "admin",
+            "username": ADMIN_USERNAME,
             "password": "wrongpassword"
         }))
         .send()
@@ -130,7 +180,7 @@ async fn test_malformed_authentication_requests() -> Result<()> {
     let login_response = client
         .post(format!("{}/auth/login", base_url))
         .json(&json!({
-            "password": "admin123"
+            "password": ADMIN_PASSWORD
         }))
         .send()
         .await?;
@@ -141,7 +191,7 @@ async fn test_malformed_authentication_requests() -> Result<()> {
     let login_response = client
         .post(format!("{}/auth/login", base_url))
         .json(&json!({
-            "username": "admin"
+            "username": ADMIN_USERNAME
         }))
         .send()
         .await?;
@@ -172,24 +222,12 @@ async fn test_malformed_authentication_requests() -> Result<()> {
 
 /// Test JWT token validation
 #[tokio::test]
-#[ignore]
 async fn test_jwt_token_validation() -> Result<()> {
     let (port, _server_handle) = setup_test_server_with_auth().await?;
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
 
-    // Get a valid token first
-    let login_response = client
-        .post(format!("{}/auth/login", base_url))
-        .json(&json!({
-            "username": "admin",
-            "password": "admin123"
-        }))
-        .send()
-        .await?;
-
-    let auth_result: serde_json::Value = login_response.json().await?;
-    let valid_token = auth_result["token"].as_str().unwrap();
+    let valid_token = bootstrap_and_login(&client, &base_url).await?;
 
     // Test protected endpoint with valid token
     let protected_response = client
@@ -231,24 +269,12 @@ async fn test_jwt_token_validation() -> Result<()> {
 
 /// Test SQL injection attempts in SPARQL queries
 #[tokio::test]
-#[ignore]
 async fn test_sparql_injection_protection() -> Result<()> {
     let (port, _server_handle) = setup_test_server_with_auth().await?;
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
 
-    // Get authentication token
-    let login_response = client
-        .post(format!("{}/auth/login", base_url))
-        .json(&json!({
-            "username": "admin",
-            "password": "admin123"
-        }))
-        .send()
-        .await?;
-
-    let auth_result: serde_json::Value = login_response.json().await?;
-    let token = auth_result["token"].as_str().unwrap();
+    let token = bootstrap_and_login(&client, &base_url).await?;
 
     // Test various injection attempts
     let injection_attempts = vec![
@@ -298,24 +324,12 @@ async fn test_sparql_injection_protection() -> Result<()> {
 
 /// Test input validation for blockchain operations
 #[tokio::test]
-#[ignore]
 async fn test_input_validation() -> Result<()> {
     let (port, _server_handle) = setup_test_server_with_auth().await?;
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
 
-    // Get authentication token
-    let login_response = client
-        .post(format!("{}/auth/login", base_url))
-        .json(&json!({
-            "username": "admin",
-            "password": "admin123"
-        }))
-        .send()
-        .await?;
-
-    let auth_result: serde_json::Value = login_response.json().await?;
-    let token = auth_result["token"].as_str().unwrap();
+    let token = bootstrap_and_login(&client, &base_url).await?;
 
     // Test extremely large input
     let large_data = "A".repeat(10_000_000); // 10MB of data
@@ -406,18 +420,7 @@ async fn test_rate_limiting() -> Result<()> {
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
 
-    // Get authentication token
-    let login_response = client
-        .post(format!("{}/auth/login", base_url))
-        .json(&json!({
-            "username": "admin",
-            "password": "admin123"
-        }))
-        .send()
-        .await?;
-
-    let auth_result: serde_json::Value = login_response.json().await?;
-    let token = auth_result["token"].as_str().unwrap();
+    let token = bootstrap_and_login(&client, &base_url).await?;
 
     // Attempt rapid-fire requests
     let mut success_count = 0;
@@ -456,24 +459,12 @@ async fn test_rate_limiting() -> Result<()> {
 
 /// Test cross-site scripting (XSS) protection
 #[tokio::test]
-#[ignore]
 async fn test_xss_protection() -> Result<()> {
     let (port, _server_handle) = setup_test_server_with_auth().await?;
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
 
-    // Get authentication token
-    let login_response = client
-        .post(format!("{}/auth/login", base_url))
-        .json(&json!({
-            "username": "admin",
-            "password": "admin123"
-        }))
-        .send()
-        .await?;
-
-    let auth_result: serde_json::Value = login_response.json().await?;
-    let token = auth_result["token"].as_str().unwrap();
+    let token = bootstrap_and_login(&client, &base_url).await?;
 
     // Test XSS attempts in RDF data
     let xss_attempts = vec![
@@ -598,7 +589,6 @@ async fn test_authorization_bypass_attempts() -> Result<()> {
 
 /// Test session management security
 #[tokio::test]
-#[ignore]
 async fn test_session_security() -> Result<()> {
     let (port, _server_handle) = setup_test_server_with_auth().await?;
     let base_url = format!("http://localhost:{}", port);
@@ -608,18 +598,7 @@ async fn test_session_security() -> Result<()> {
     let mut tokens = Vec::new();
 
     for _ in 0..3 {
-        let login_response = client
-            .post(format!("{}/auth/login", base_url))
-            .json(&json!({
-                "username": "admin",
-                "password": "admin123"
-            }))
-            .send()
-            .await?;
-
-        assert!(login_response.status().is_success());
-        let auth_result: serde_json::Value = login_response.json().await?;
-        tokens.push(auth_result["token"].as_str().unwrap().to_string());
+        tokens.push(bootstrap_and_login(&client, &base_url).await?);
     }
 
     // Verify all tokens work
@@ -684,30 +663,12 @@ async fn test_password_security() -> Result<()> {
 
 /// Test data integrity and tampering protection
 #[tokio::test]
-#[ignore]
 async fn test_data_integrity_protection() -> Result<()> {
     let (port, _server_handle) = setup_test_server_with_auth().await?;
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
 
-    // Get authentication token
-    let login_response = client
-        .post(format!("{}/auth/login", base_url))
-        .json(&json!({
-            "username": "admin",
-            "password": "admin123"
-        }))
-        .send()
-        .await?;
-
-    let login_status = login_response.status();
-    println!("Login response status: {}", login_status);
-    if login_status.is_success() {
-        let login_text = login_response.text().await?;
-        println!("Login response text: {}", login_text);
-        // Parse the JSON to get the token
-        let auth_result: serde_json::Value = serde_json::from_str(&login_text)?;
-        let token = auth_result["token"].as_str().unwrap();
+    let token = bootstrap_and_login(&client, &base_url).await?;
 
         // Add legitimate data
         let response = client
@@ -747,7 +708,7 @@ async fn test_data_integrity_protection() -> Result<()> {
             let stats: serde_json::Value = stats_response.json().await?;
 
             // Verify blockchain is valid (should be at least 1, but could be more due to demo data)
-            assert!(stats["height"].as_u64().unwrap() >= 1);
+            assert!(stats["total_blocks"].as_u64().unwrap() >= 1);
         }
 
         // Test attempts to modify existing blocks (should be impossible)
@@ -765,11 +726,5 @@ async fn test_data_integrity_protection() -> Result<()> {
             tamper_response.status().is_client_error()
                 || tamper_response.status() == reqwest::StatusCode::NOT_FOUND
         );
-    } else {
-        let login_text = login_response.text().await?;
-        println!("Login error response text: {}", login_text);
-        assert!(login_status.is_success());
-    }
-
     Ok(())
 }

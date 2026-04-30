@@ -1,0 +1,31 @@
+{
+  "campaign_id": "20260425_ledger_supply1000_provchain-fabric_managed_n30_fix3",
+  "created_at_utc": "2026-04-25T05:42:26Z",
+  "benchmark_family": "ledger_write",
+  "dataset_slice": "supply_chain_1000",
+  "dataset_path": "/home/cit/provchain-org/benchmark-toolkit/datasets",
+  "dataset_file": "supply_chain_1000.ttl",
+  "products": ["provchain", "fabric"],
+  "epoch_count_target": 30,
+  "iterations_per_epoch": 10,
+  "fabric_batch_size": 100,
+  "fabric_gateway_url": "http://localhost:18800",
+  "provchain_url": "http://localhost:8080",
+  "skip_provchain": false,
+  "skip_load": true,
+  "manage_provchain": true,
+  "provchain_managed_port": 18080,
+  "provchain_runtime_dir": "/home/cit/provchain-org/benchmark-toolkit/results/provchain-runtime/20260425_ledger_supply1000_provchain-fabric_managed_n30_fix3",
+  "preflight_required": true,
+  "preflight_skipped": false,
+  "validity_gate": [
+    "Fabric gateway must be a real runtime gateway, not the local contract simulator",
+    "Fabric gateway probe must pass",
+    "local dataset file must exist",
+    "ProvChain health check must pass unless skip_provchain is true",
+    "managed ProvChain mode must use a fresh data directory per epoch",
+    "run artifacts must include benchmark_results.json, benchmark_results.csv, summary.json, and summary.md",
+    "comparative claims require both ProvChain and Fabric successful result rows"
+  ],
+  "notes": "B013 ledger campaign runner for real ProvChain vs Fabric execution. This script does not start the local simulator."
+}

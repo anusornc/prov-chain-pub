@@ -1,0 +1,18 @@
+{
+  "dataset_file": "supply_chain_10000.ttl",
+  "dataset_slice": "supply_chain_10000",
+  "generated_at_utc": "2026-04-29T07:37:37Z",
+  "generator": "benchmark-toolkit/scripts/generate-scale-dataset.py",
+  "target_triples": 10000,
+  "logical_batch_count": 322,
+  "sha256": "f2a392fea84049d6dc3d225f63984f5374ec3d29f51c487eb4a3f2970df353ec",
+  "bytes": 432465,
+  "evidence_role": "scale_up_confidence_not_primary_paper_evidence",
+  "test_batch_ids": [
+    "BATCH001",
+    "BATCH010",
+    "BATCH017",
+    "BATCH025",
+    "BATCH050"
+  ]
+}

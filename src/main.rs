@@ -17,7 +17,7 @@ use provchain_org::{
 };
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use tokio::sync::RwLock;
@@ -161,6 +161,12 @@ enum ExampleCommands {
         /// Domain ontology to use for validation
         #[arg(long)]
         ontology: Option<String>,
+        /// Ontology package manifest to use for validation
+        #[arg(long)]
+        ontology_package: Option<String>,
+        /// Skip built-in demo data preload
+        #[arg(long)]
+        skip_demo_data: bool,
     },
 }
 
@@ -297,60 +303,110 @@ fn generate_generic_demo_data(timestamp: &str) -> Vec<String> {
 fn create_blockchain_with_ontology(
     ontology_path: Option<String>,
 ) -> Result<Blockchain, Box<dyn std::error::Error>> {
-    let data_dir = "data";
+    create_blockchain_with_semantic_config(ontology_path, None).map(|(blockchain, _)| blockchain)
+}
+
+fn create_blockchain_with_semantic_config(
+    ontology_path: Option<String>,
+    ontology_package_path: Option<String>,
+) -> Result<(Blockchain, Option<OntologyConfig>), Box<dyn std::error::Error>> {
+    let config = Config::load_or_default("config/config.toml");
+    let data_dir =
+        std::env::var("PROVCHAIN_DATA_DIR").unwrap_or_else(|_| config.storage.data_dir.clone());
+    let storage_config = create_runtime_storage_config(&data_dir);
     // Ensure data directory exists
-    if !Path::new(data_dir).exists() {
-        fs::create_dir_all(data_dir)
+    if !Path::new(&data_dir).exists() {
+        fs::create_dir_all(&data_dir)
             .map_err(|e| format!("Failed to create data directory: {e}"))?;
     }
 
-    if let Some(ontology_path) = ontology_path {
+    let ontology_config = if let Some(package_path) = ontology_package_path {
+        info!(
+            "Initializing persistent blockchain with ontology package manifest: {}\n",
+            package_path
+        );
+        let manifest = OntologyPackageManifest::load_from_file(&package_path)
+            .map_err(|e| format!("Failed to load ontology package manifest: {e}"))?;
+        Some(
+            manifest
+                .to_ontology_config()
+                .map_err(|e| format!("Failed to create ontology configuration: {e}"))?,
+        )
+    } else if let Some(ontology_path) = ontology_path {
         info!(
             "Initializing persistent blockchain with domain ontology: {}\n",
             ontology_path
         );
+        Some(
+            OntologyConfig::new(Some(ontology_path.clone()), &config)
+                .map_err(|e| format!("Failed to create ontology configuration: {e}"))?,
+        )
+    } else {
+        None
+    };
 
-        // Create ontology configuration
-        let config = Config::load_or_default("config/config.toml");
-        let ontology_config = OntologyConfig::new(Some(ontology_path.clone()), &config)
-            .map_err(|e| format!("Failed to create ontology configuration: {e}"))?;
-
+    if let Some(ontology_config) = ontology_config {
         // Create persistent blockchain with ontology
-        let blockchain = Blockchain::new_persistent_with_ontology(data_dir, ontology_config)
-            .map_err(|e| {
-                format!(
-                    "Failed to initialize persistent blockchain with ontology: {}\n",
-                    e
-                )
-            })?;
+        let blockchain = Blockchain::new_persistent_with_config_and_ontology(
+            storage_config,
+            ontology_config.clone(),
+        )
+        .map_err(|e| {
+            format!(
+                "Failed to initialize persistent blockchain with ontology: {}\n",
+                e
+            )
+        })?;
 
         info!(
-            "✅ Persistent Blockchain initialized with domain ontology: {}\n",
-            ontology_path
+            "✅ Persistent Blockchain initialized with semantic package domain: {}\n",
+            ontology_config
+                .domain_name()
+                .unwrap_or_else(|_| "unknown".to_string())
         );
-        Ok(blockchain)
+        Ok((blockchain, Some(ontology_config)))
     } else {
         info!("Initializing persistent blockchain without domain ontology\n");
-        Ok(Blockchain::new_persistent(data_dir)
-            .map_err(|e| format!("Failed to initialize persistent blockchain: {e}\n"))?)
+        Ok((
+            Blockchain::new_persistent_with_config(storage_config)
+                .map_err(|e| format!("Failed to initialize persistent blockchain: {e}\n"))?,
+            None,
+        ))
     }
+}
+
+fn create_runtime_storage_config(data_dir: &str) -> StorageConfig {
+    let mut storage_config = StorageConfig {
+        data_dir: PathBuf::from(data_dir),
+        ..StorageConfig::default()
+    };
+
+    if let Ok(value) = std::env::var("PROVCHAIN_RDF_FLUSH_INTERVAL") {
+        match value.parse::<u64>() {
+            Ok(interval) if interval > 0 => {
+                storage_config.flush_interval = interval;
+                info!(
+                    "Using RDF snapshot flush interval from PROVCHAIN_RDF_FLUSH_INTERVAL={}",
+                    interval
+                );
+            }
+            _ => {
+                error!(
+                    "Ignoring invalid PROVCHAIN_RDF_FLUSH_INTERVAL='{}'; using default {}",
+                    value, storage_config.flush_interval
+                );
+            }
+        }
+    }
+
+    storage_config
 }
 
 /// Create blockchain for node runtime using node-local storage config and optional ontology config
 fn create_blockchain_for_node(
     node_config: &provchain_org::utils::config::NodeConfig,
 ) -> Result<Blockchain, Box<dyn std::error::Error>> {
-    let storage_config = StorageConfig {
-        data_dir: std::path::PathBuf::from(node_config.storage.data_dir.clone()),
-        enable_backup: true,
-        backup_interval_hours: 24,
-        max_backup_files: 7,
-        enable_compression: true,
-        enable_encryption: false,
-        cache_size: 1000,
-        warm_cache_on_startup: false,
-        flush_interval: 1,
-    };
+    let storage_config = create_runtime_storage_config(&node_config.storage.data_dir);
 
     if let Some(ontology) = &node_config.ontology {
         if ontology.auto_load || ontology.validate_data {
@@ -581,9 +637,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("   cargo run --example gs1_epcis_uht_demo\n");
                     println!("   This provides the complete 8-phase demonstration\n");
                 }
-                ExampleCommands::WebServer { port, ontology } => {
+                ExampleCommands::WebServer {
+                    port,
+                    ontology,
+                    ontology_package,
+                    skip_demo_data,
+                } => {
                     // Initialize blockchain with ontology configuration
-                    let mut blockchain = create_blockchain_with_ontology(ontology.clone())?;
+                    let (mut blockchain, runtime_ontology_config) =
+                        create_blockchain_with_semantic_config(
+                            ontology.clone(),
+                            ontology_package.clone(),
+                        )?;
 
                     info!("Starting web server with demo data on port {}\n", port);
 
@@ -596,22 +661,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .add_block(ontology_data)
                         .map_err(|e| format!("Failed to add ontology block: {e}\n"))?;
 
-                    // Generate ontology-aware demo data
-                    let ontology_config = OntologyConfig::new(
-                        ontology,
-                        &Config::load_or_default("config/config.toml"),
-                    )
-                    .map_err(|e| format!("Failed to create ontology config: {e}\n"))?;
-                    let demo_data = generate_demo_data(&ontology_config);
+                    let demo_data_count = if skip_demo_data {
+                        info!("Skipping built-in demo data preload\n");
+                        0
+                    } else {
+                        // Generate ontology-aware demo data
+                        let ontology_config = if let Some(config) = runtime_ontology_config {
+                            config
+                        } else {
+                            OntologyConfig::new(
+                                ontology,
+                                &Config::load_or_default("config/config.toml"),
+                            )
+                            .map_err(|e| format!("Failed to create ontology config: {e}\n"))?
+                        };
+                        let demo_data = generate_demo_data(&ontology_config);
+                        let demo_data_count = demo_data.len();
 
-                    let demo_data_count = demo_data.len();
-
-                    // Add each piece of demo data as a separate block
-                    for data in demo_data {
-                        blockchain
-                            .add_block(data)
-                            .map_err(|e| format!("Failed to add block: {e}\n"))?;
-                    }
+                        // Add each piece of demo data as a separate block
+                        for data in demo_data {
+                            blockchain
+                                .add_block(data)
+                                .map_err(|e| format!("Failed to add block: {e}\n"))?;
+                        }
+                        demo_data_count
+                    };
 
                     info!(
                         "Loaded {} blocks (1 ontology + {} demo data)\n",

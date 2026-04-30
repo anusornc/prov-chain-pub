@@ -1,0 +1,8 @@
+{
+  "campaign_id": "20260430_import_supply1000_provchain-bulk-r002_authfix_n3",
+  "completed_at_utc": "2026-04-30T04:13:57Z",
+  "epoch_count_target": 3,
+  "passed_epochs": 3,
+  "failed_epochs": 0,
+  "status": "passed"
+}

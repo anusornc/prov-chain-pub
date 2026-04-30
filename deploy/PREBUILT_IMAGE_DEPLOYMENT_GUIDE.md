@@ -375,7 +375,7 @@ If you want to build from source:
 
 ```bash
 # Clone repository
-git clone https://github.com/anusornc/prov-chain-pub.git
+git clone https://github.com/anusornc/prov-chain.git
 cd provchain-org2/deploy
 
 # Build image locally using the provided Dockerfile

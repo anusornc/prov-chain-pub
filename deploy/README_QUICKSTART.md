@@ -35,8 +35,8 @@ newgrp docker
 ### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub/deploy
+git clone https://github.com/anusornc/prov-chain.git
+cd provchain-org/deploy
 ```
 
 ### Step 2: Configure Environment

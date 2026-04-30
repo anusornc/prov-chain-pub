@@ -2,7 +2,7 @@
 # Purpose: Automated benchmark orchestrator comparing ProvChain-Org vs Neo4j
 # Language: Rust for performance and type safety
 
-FROM rust:1.75-slim as builder
+FROM rust:1.85-slim AS builder
 
 WORKDIR /build
 
@@ -13,18 +13,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Cargo.toml first for better caching
-COPY Cargo.toml ./
-
-# Create dummy main.rs to build dependencies
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release && rm -rf src
-
-# Copy actual source code
+# Copy actual source code and build directly.
+# The benchmark-runner crate is both a library and binary crate; avoiding the
+# dummy warmup build prevents stale package artifacts from masking source changes.
+COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 
 # Build the actual binary
-RUN touch src/main.rs && cargo build --release
+RUN cargo build --release --locked
 
 # Runtime stage
 FROM debian:bookworm-slim
@@ -37,13 +33,16 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     python3 \
     python3-pip \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python for visualization scripts
-RUN pip3 install pandas matplotlib seaborn requests
+# Install Python dependencies in an isolated virtualenv
+RUN python3 -m venv /opt/benchmark-venv
+ENV PATH="/opt/benchmark-venv/bin:${PATH}"
+RUN pip install --upgrade pip && pip install pandas matplotlib seaborn requests rdflib
 
 # Copy the binary from builder
-COPY --from=builder /build/release/benchmark-runner /benchmark/
+COPY --from=builder /build/target/release/benchmark-runner /benchmark/
 
 # Copy datasets and scripts
 COPY datasets /benchmark/datasets

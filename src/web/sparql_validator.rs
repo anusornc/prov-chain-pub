@@ -70,7 +70,7 @@ impl SparqlValidator {
 
     /// Validate query type
     fn validate_query_type(&self, query: &str) -> Result<()> {
-        let query_upper = query.trim().to_uppercase();
+        let query_upper = Self::strip_prologue(query).to_uppercase();
 
         // Check for allowed query types
         let has_select = query_upper.starts_with("SELECT");
@@ -1011,6 +1011,33 @@ impl SparqlValidator {
 
         Ok(())
     }
+
+    fn strip_prologue(query: &str) -> String {
+        let mut remaining = query.trim_start();
+
+        loop {
+            let trimmed = remaining.trim_start();
+            let upper = trimmed.to_uppercase();
+
+            if upper.starts_with("PREFIX ") {
+                if let Some(iri_end) = trimmed.find('>') {
+                    remaining = &trimmed[iri_end + 1..];
+                    continue;
+                }
+                return String::new();
+            }
+
+            if upper.starts_with("BASE ") {
+                if let Some(iri_end) = trimmed.find('>') {
+                    remaining = &trimmed[iri_end + 1..];
+                    continue;
+                }
+                return String::new();
+            }
+
+            return trimmed.to_string();
+        }
+    }
 }
 
 /// Helper function for backward compatibility
@@ -1027,6 +1054,37 @@ mod tests {
     fn test_valid_select_query() {
         let validator = SparqlValidator::with_default_config();
         let query = "SELECT ?s WHERE { ?s a <http://example.org/Test> }";
+        assert!(validator.validate(query).is_ok());
+    }
+
+    #[test]
+    fn test_valid_select_query_with_prefix_prologue() {
+        let validator = SparqlValidator::with_default_config();
+        let query = r#"
+            PREFIX ex: <http://example.org/supplychain/>
+            PREFIX trace: <http://example.org/traceability#>
+            SELECT ?product WHERE {
+                ?product a ex:Product .
+                ?product trace:batchId "BATCH001" .
+            }
+        "#;
+        assert!(validator.validate(query).is_ok());
+    }
+
+    #[test]
+    fn test_valid_ask_query_with_base_prologue() {
+        let validator = SparqlValidator::with_default_config();
+        let query = r#"
+            BASE <http://example.org/>
+            ASK { <product/1> a <Test> }
+        "#;
+        assert!(validator.validate(query).is_ok());
+    }
+
+    #[test]
+    fn test_valid_select_query_with_inline_prefix_prologue() {
+        let validator = SparqlValidator::with_default_config();
+        let query = "PREFIX ex: <http://example.org/supplychain/> PREFIX trace: <http://example.org/traceability#> SELECT ?product WHERE { GRAPH ?g { ?product a ex:Product . } }";
         assert!(validator.validate(query).is_ok());
     }
 

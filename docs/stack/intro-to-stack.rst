@@ -352,8 +352,8 @@ Local Development
 .. code-block:: bash
 
    # Development workflow
-   git clone https://github.com/anusornc/prov-chain-pub.git
-   cd prov-chain-pub
+   git clone https://github.com/anusornc/provchain-org.git
+   cd provchain-org
    
    # Setup development environment
    cargo build

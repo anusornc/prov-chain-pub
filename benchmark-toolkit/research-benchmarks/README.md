@@ -43,6 +43,38 @@ This benchmark suite is designed to validate the thesis research objectives:
 - 8GB RAM minimum
 - 10GB disk space
 
+### Required preflight before Docker benchmark
+
+Run the local trace-benchmark gate first:
+
+```bash
+cd ..
+./scripts/preflight-trace-benchmark.sh
+```
+
+This must pass before `docker compose` reruns. It keeps benchmark regressions in local tests instead of discovering them only after container rebuilds.
+
+The preflight also includes the local `Fabric` gateway contract tests. These are mock-gateway tests and do not imply that a real `Fabric` runtime is already available.
+
+## Fluree Re-Enable Workflow
+
+`Fluree` ถูกปิดไว้โดยค่าเริ่มต้นใน trace stack ปัจจุบัน
+
+เมื่อจะเปิดใช้งาน:
+
+```bash
+export FLUREE_IMAGE=fluree/ledger:<explicit-tag>
+export FLUREE_GROUP_PRIVATE_KEY=<64-hex-secp256k1-private-key>
+export BENCHMARK_SKIP_FLUREE=false
+
+cargo test --manifest-path benchmark-toolkit/research-benchmarks/Cargo.toml fluree -- --nocapture
+./benchmark-toolkit/scripts/probe-fluree-ledger.sh
+
+docker compose -f benchmark-toolkit/docker-compose.trace.yml --profile fluree up --build
+```
+
+ห้ามใช้ `latest` เป็นหลักฐาน benchmark
+
 ### Phase 1: Quick Comparison (30 minutes)
 
 Compare ProvChain-Org vs Neo4j:

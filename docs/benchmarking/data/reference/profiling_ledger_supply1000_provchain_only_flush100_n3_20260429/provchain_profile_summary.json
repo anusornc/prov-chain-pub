@@ -1,0 +1,80 @@
+{
+  "campaign_id": "20260429_profile_ledger_supply1000_provchain-only_flush100_n3",
+  "dominant_server_stage": {
+    "percent_of_handler_total": 95.76921918846489,
+    "stage": "block_admission"
+  },
+  "evidence_role": "profiling_reference_not_primary_paper_comparison",
+  "generated_at_utc": "2026-04-29T02:33:15Z",
+  "metrics_ms": {
+    "auth": {
+      "max": 2507.350453,
+      "mean": 1651.9741321111112,
+      "min": 1218.831835,
+      "p95": 2506.9547834,
+      "p99": 2507.27131908,
+      "samples": 9
+    },
+    "batch_total": {
+      "max": 14995.0,
+      "mean": 10695.444444444445,
+      "min": 6860.0,
+      "p95": 14902.2,
+      "p99": 14976.44,
+      "samples": 9
+    },
+    "client_submit_loop": {
+      "max": 13768.050832,
+      "mean": 9044.055189222223,
+      "min": 4359.056187,
+      "p95": 13678.8481852,
+      "p99": 13750.21030264,
+      "samples": 9
+    }
+  },
+  "samples": 9,
+  "server_stage_avg_ms": {
+    "block_admission": {
+      "max": 132.26233895999997,
+      "mean": 85.20706429666666,
+      "min": 38.43037159000001,
+      "p95": 131.59689427599997,
+      "p99": 132.12925002319997,
+      "samples": 9
+    },
+    "blockchain_lock_wait": {
+      "max": 0.004630129999999999,
+      "mean": 0.004232843333333332,
+      "min": 0.003993019999999998,
+      "p95": 0.004537965999999999,
+      "p99": 0.004611697199999999,
+      "samples": 9
+    },
+    "handler_total": {
+      "max": 136.12127498,
+      "mean": 88.97124255444446,
+      "min": 42.14760005,
+      "p95": 135.33744099999998,
+      "p99": 135.964508184,
+      "samples": 9
+    },
+    "request_validation": {
+      "max": 4.14980514,
+      "mean": 3.729860693333334,
+      "min": 3.529772510000001,
+      "p95": 4.048712699999999,
+      "p99": 4.129586652,
+      "samples": 9
+    },
+    "turtle_materialization": {
+      "max": 0.00252608,
+      "mean": 0.002364062222222222,
+      "min": 0.00217027,
+      "p95": 0.0025155559999999995,
+      "p99": 0.0025239751999999996,
+      "samples": 9
+    }
+  },
+  "source_campaign_dir": "/home/cit/provchain-org/benchmark-toolkit/results/campaigns/20260429_profile_ledger_supply1000_provchain-only_flush100_n3",
+  "transaction_count_per_sample": 100
+}

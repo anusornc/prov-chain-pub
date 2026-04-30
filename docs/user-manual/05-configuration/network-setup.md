@@ -226,7 +226,7 @@ On Machine 1 (192.168.1.10):
 
 ```bash
 # Clone repository
-git clone https://github.com/anusornc/prov-chain-pub.git
+git clone https://github.com/anusornc/prov-chain.git
 cd provchain-org2/deploy
 
 # Create .env
@@ -252,7 +252,7 @@ On Machine 2 (192.168.1.11):
 
 ```bash
 # Clone repository
-git clone https://github.com/anusornc/prov-chain-pub.git
+git clone https://github.com/anusornc/prov-chain.git
 cd provchain-org2/deploy
 
 # Create .env (connect to Node 1)
@@ -273,7 +273,7 @@ On Machine 3 (192.168.1.12):
 
 ```bash
 # Clone repository
-git clone https://github.com/anusornc/prov-chain-pub.git
+git clone https://github.com/anusornc/prov-chain.git
 cd provchain-org2/deploy
 
 # Create .env (connect to both Node 1 and Node 2)

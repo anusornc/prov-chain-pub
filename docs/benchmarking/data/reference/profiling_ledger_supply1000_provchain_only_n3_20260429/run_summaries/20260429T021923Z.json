@@ -1,0 +1,71 @@
+[
+  {
+    "family": "LedgerWrite",
+    "scenario": "Write Performance Diagnostic",
+    "test_name": "Write Batch Authentication",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "not-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 1667.9695903333334,
+        "p50_ms": 1247.049064,
+        "p95_ms": 2524.712875,
+        "p99_ms": 2524.712875,
+        "ops_per_sec": 0.6698564322361295,
+        "success_rate": 100.0,
+        "total_runs": 3,
+        "successful_runs": 3
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Write Performance Diagnostic",
+    "test_name": "Write Batch HTTP Submit Loop",
+    "fairness_label": "not-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "not-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 10135.396342333333,
+        "p50_ms": 10088.065534,
+        "p95_ms": 15422.971533,
+        "p99_ms": 15422.971533,
+        "ops_per_sec": 12.27497103171919,
+        "success_rate": 100.0,
+        "total_runs": 3,
+        "successful_runs": 3
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Write Performance",
+    "test_name": "Single-threaded Write (100 tx)",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "native-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 11803.0,
+        "p50_ms": 11335.0,
+        "p95_ms": 16655.0,
+        "p99_ms": 16655.0,
+        "ops_per_sec": 9.434545695833553,
+        "success_rate": 100.0,
+        "total_runs": 3,
+        "successful_runs": 3
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  }
+]

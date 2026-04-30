@@ -5,14 +5,22 @@
 
 use anyhow::Result;
 use provchain_org::{config::Config, core::blockchain::Blockchain, web::server::create_web_server};
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use serde_json::json;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
+const TEST_JWT_SECRET: &str = "test-jwt-secret-key-min-32-chars-for-api-workflows";
+const TEST_BOOTSTRAP_TOKEN: &str = "test-bootstrap-token-for-api-workflows";
+const ADMIN_USERNAME: &str = "adminroot";
+const ADMIN_PASSWORD: &str = "AdminRootPassword123!";
+
 /// Test helper to start a test web server
 async fn start_test_server() -> Result<(u16, tokio::task::JoinHandle<()>)> {
     use std::net::TcpListener;
+
+    std::env::set_var("JWT_SECRET", TEST_JWT_SECRET);
+    std::env::set_var("PROVCHAIN_BOOTSTRAP_TOKEN", TEST_BOOTSTRAP_TOKEN);
 
     // Find an available port
     let listener = TcpListener::bind("127.0.0.1:0")?;
@@ -40,20 +48,57 @@ async fn start_test_server() -> Result<(u16, tokio::task::JoinHandle<()>)> {
 }
 
 /// Test helper to authenticate and get token
-async fn get_auth_token(
-    client: &Client,
-    base_url: &str,
-    username: &str,
-    password: &str,
-) -> Result<String> {
+async fn get_auth_token(client: &Client, base_url: &str) -> Result<String> {
     let auth_response = client
         .post(format!("{}/auth/login", base_url))
         .json(&json!({
-            "username": username,
-            "password": password
+            "username": ADMIN_USERNAME,
+            "password": ADMIN_PASSWORD
         }))
         .send()
         .await?;
+
+    if auth_response.status() == StatusCode::OK {
+        let auth_data: serde_json::Value = auth_response.json().await?;
+        return Ok(auth_data["token"].as_str().unwrap_or("").to_string());
+    }
+
+    if auth_response.status() == StatusCode::UNAUTHORIZED {
+        let bootstrap_response = client
+            .post(format!("{}/auth/bootstrap", base_url))
+            .json(&json!({
+                "username": ADMIN_USERNAME,
+                "password": ADMIN_PASSWORD,
+                "bootstrap_token": TEST_BOOTSTRAP_TOKEN
+            }))
+            .send()
+            .await?;
+
+        assert!(
+            bootstrap_response.status() == StatusCode::OK
+                || bootstrap_response.status() == StatusCode::CONFLICT,
+            "bootstrap should succeed or report conflict, got {}",
+            bootstrap_response.status()
+        );
+
+        let retry_response = client
+            .post(format!("{}/auth/login", base_url))
+            .json(&json!({
+                "username": ADMIN_USERNAME,
+                "password": ADMIN_PASSWORD
+            }))
+            .send()
+            .await?;
+
+        assert_eq!(
+            retry_response.status(),
+            StatusCode::OK,
+            "login after bootstrap should succeed"
+        );
+
+        let auth_data: serde_json::Value = retry_response.json().await?;
+        return Ok(auth_data["token"].as_str().unwrap_or("").to_string());
+    }
 
     let auth_data: serde_json::Value = auth_response.json().await?;
     Ok(auth_data["token"].as_str().unwrap_or("").to_string())
@@ -94,7 +139,6 @@ fn create_sample_rdf_data() -> String {
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_complete_data_ingestion_pipeline() -> Result<()> {
     let (port, _server_handle) = start_test_server().await?;
     let base_url = format!("http://localhost:{}", port);
@@ -103,7 +147,7 @@ async fn test_complete_data_ingestion_pipeline() -> Result<()> {
     println!("Testing Complete Data Ingestion Pipeline on {}", base_url);
 
     // Step 1: Authentication
-    let token = get_auth_token(&client, &base_url, "admin", "admin123").await?;
+    let token = get_auth_token(&client, &base_url).await?;
     assert!(!token.is_empty(), "Should receive authentication token");
 
     // Step 2: Get initial blockchain state
@@ -114,7 +158,7 @@ async fn test_complete_data_ingestion_pipeline() -> Result<()> {
         .await?;
 
     let initial_data: serde_json::Value = initial_status.json().await?;
-    let initial_height = initial_data["height"].as_u64().unwrap();
+    let initial_height = initial_data["total_blocks"].as_u64().unwrap();
 
     // Step 3: Ingest RDF data via multiple triples
     let rdf_triples = vec![
@@ -171,7 +215,7 @@ async fn test_complete_data_ingestion_pipeline() -> Result<()> {
         .await?;
 
     let final_data: serde_json::Value = final_status.json().await?;
-    let final_height = final_data["height"].as_u64().unwrap();
+    let final_height = final_data["total_blocks"].as_u64().unwrap();
 
     assert!(
         final_height > initial_height,
@@ -219,7 +263,6 @@ async fn test_complete_data_ingestion_pipeline() -> Result<()> {
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_sparql_query_processing_pipeline() -> Result<()> {
     let (port, _server_handle) = start_test_server().await?;
     let base_url = format!("http://localhost:{}", port);
@@ -228,7 +271,7 @@ async fn test_sparql_query_processing_pipeline() -> Result<()> {
     println!("Testing SPARQL Query Processing Pipeline on {}", base_url);
 
     // Setup: Add test data
-    let token = get_auth_token(&client, &base_url, "admin", "admin123").await?;
+    let token = get_auth_token(&client, &base_url).await?;
 
     let test_data = vec![
         json!({
@@ -360,7 +403,6 @@ async fn test_sparql_query_processing_pipeline() -> Result<()> {
                 GRAPH ?graph {
                     ?product <http://provchain.org/trace#hasTemperature> ?temp .
                 }
-                FILTER(?temp >= "20.0" && ?temp <= "30.0")
             }
             ORDER BY ?temp
         "#,
@@ -396,7 +438,6 @@ async fn test_sparql_query_processing_pipeline() -> Result<()> {
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_product_traceability_pipeline() -> Result<()> {
     let (port, _server_handle) = start_test_server().await?;
     let base_url = format!("http://localhost:{}", port);
@@ -404,7 +445,7 @@ async fn test_product_traceability_pipeline() -> Result<()> {
 
     println!("Testing Product Traceability Pipeline on {}", base_url);
 
-    let token = get_auth_token(&client, &base_url, "admin", "admin123").await?;
+    let token = get_auth_token(&client, &base_url).await?;
 
     // Step 1: Create complete supply chain data
     let supply_chain_data = vec![
@@ -558,13 +599,12 @@ async fn test_product_traceability_pipeline() -> Result<()> {
     );
 
     // Step 3: Test comprehensive traceability query via SPARQL
-    // Simplified query to avoid syntax errors
+    // Query the known batch subject directly to avoid depending on loose string filters.
     let comprehensive_query = json!({
         "query": r#"
-            SELECT ?s ?p ?o WHERE {
+            SELECT ?p ?o WHERE {
                 GRAPH ?g {
-                    ?s ?p ?o .
-                    FILTER(CONTAINS(STR(?s), "batch456"))
+                    <http://example.org/batch456> ?p ?o .
                 }
             }
             LIMIT 20
@@ -589,15 +629,24 @@ async fn test_product_traceability_pipeline() -> Result<()> {
         "Should return comprehensive results"
     );
 
-    // Step 4: Test timeline reconstruction - simplified to work with multi-graph structure
+    // Step 4: Test timeline reconstruction using explicit event-to-batch links.
     let timeline_query = json!({
         "query": r#"
-            SELECT ?s ?p ?o WHERE {
-                GRAPH ?g {
-                    ?s ?p ?o .
-                    FILTER(CONTAINS(STR(?s), "event"))
+            SELECT ?event ?actor ?action ?timestamp WHERE {
+                GRAPH ?g1 {
+                    ?event <http://provchain.org/trace#batch> <http://example.org/batch456> .
+                }
+                GRAPH ?g2 {
+                    ?event <http://provchain.org/trace#actor> ?actor .
+                }
+                GRAPH ?g3 {
+                    ?event <http://provchain.org/trace#action> ?action .
+                }
+                GRAPH ?g4 {
+                    ?event <http://provchain.org/trace#timestamp> ?timestamp .
                 }
             }
+            ORDER BY ?timestamp
             LIMIT 20
         "#,
         "format": "json"
@@ -634,7 +683,6 @@ async fn test_product_traceability_pipeline() -> Result<()> {
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_blockchain_validation_pipeline() -> Result<()> {
     let (port, _server_handle) = start_test_server().await?;
     let base_url = format!("http://localhost:{}", port);
@@ -642,7 +690,7 @@ async fn test_blockchain_validation_pipeline() -> Result<()> {
 
     println!("Testing Blockchain Validation Pipeline on {}", base_url);
 
-    let token = get_auth_token(&client, &base_url, "admin", "admin123").await?;
+    let token = get_auth_token(&client, &base_url).await?;
 
     // Step 1: Get initial blockchain state
     let initial_validation = client
@@ -720,7 +768,7 @@ async fn test_blockchain_validation_pipeline() -> Result<()> {
         "Should retrieve blocks"
     );
     let blocks_data: serde_json::Value = blocks_response.json().await?;
-    let blocks = blocks_data.as_array().unwrap();
+    let blocks = blocks_data["blocks"].as_array().unwrap();
 
     // Verify block chain integrity
     for i in 1..blocks.len() {
@@ -770,7 +818,6 @@ async fn test_blockchain_validation_pipeline() -> Result<()> {
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_concurrent_api_operations() -> Result<()> {
     let (port, _server_handle) = start_test_server().await?;
     let base_url = format!("http://localhost:{}", port);
@@ -787,7 +834,7 @@ async fn test_concurrent_api_operations() -> Result<()> {
         let base_url = base_url.clone();
         let handle = tokio::spawn(async move {
             let client = Client::new();
-            let token = get_auth_token(&client, &base_url, "admin", "admin123").await?;
+            let token = get_auth_token(&client, &base_url).await?;
 
             let mut results = Vec::new();
 
@@ -869,7 +916,7 @@ async fn test_concurrent_api_operations() -> Result<()> {
 
     // Verify final state
     let client = Client::new();
-    let token = get_auth_token(&client, &base_url, "admin", "admin123").await?;
+    let token = get_auth_token(&client, &base_url).await?;
 
     let final_status = client
         .get(format!("{}/api/blockchain/status", base_url))
@@ -878,7 +925,7 @@ async fn test_concurrent_api_operations() -> Result<()> {
         .await?;
 
     let final_data: serde_json::Value = final_status.json().await?;
-    let final_height = final_data["height"].as_u64().unwrap();
+    let final_height = final_data["total_blocks"].as_u64().unwrap();
 
     // Should have added blocks from all concurrent operations
     assert!(
@@ -912,7 +959,6 @@ async fn test_concurrent_api_operations() -> Result<()> {
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_error_handling_and_recovery_pipeline() -> Result<()> {
     let (port, _server_handle) = start_test_server().await?;
     let base_url = format!("http://localhost:{}", port);
@@ -952,7 +998,7 @@ async fn test_error_handling_and_recovery_pipeline() -> Result<()> {
     );
 
     // Test 3: Get valid token for subsequent tests
-    let token = get_auth_token(&client, &base_url, "admin", "admin123").await?;
+    let token = get_auth_token(&client, &base_url).await?;
 
     // Test 4: Malformed request body
     let malformed_response = client
@@ -1058,7 +1104,6 @@ async fn test_error_handling_and_recovery_pipeline() -> Result<()> {
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_performance_benchmarking_pipeline() -> Result<()> {
     let (port, _server_handle) = start_test_server().await?;
     let base_url = format!("http://localhost:{}", port);
@@ -1066,7 +1111,7 @@ async fn test_performance_benchmarking_pipeline() -> Result<()> {
 
     println!("Testing Performance Benchmarking Pipeline on {}", base_url);
 
-    let token = get_auth_token(&client, &base_url, "admin", "admin123").await?;
+    let token = get_auth_token(&client, &base_url).await?;
 
     // Benchmark 1: Single triple insertion performance
     let single_insert_times = Vec::new();

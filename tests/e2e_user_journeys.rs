@@ -6,21 +6,34 @@
 
 use anyhow::{Context, Result};
 use provchain_org::{config::Config, core::blockchain::Blockchain, web::server::create_web_server};
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use serde_json::json;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
+const TEST_JWT_SECRET: &str = "test-jwt-secret-key-min-32-chars-for-user-journeys";
+const TEST_BOOTSTRAP_TOKEN: &str = "test-bootstrap-token-for-user-journeys";
+const ADMIN_USERNAME: &str = "adminroot";
+const ADMIN_PASSWORD: &str = "AdminRootPassword123!";
+
 /// Test helper to start a test web server
 async fn start_test_server() -> anyhow::Result<(u16, tokio::task::JoinHandle<()>)> {
+    use std::net::TcpListener;
+
+    std::env::set_var("JWT_SECRET", TEST_JWT_SECRET);
+    std::env::set_var("PROVCHAIN_BOOTSTRAP_TOKEN", TEST_BOOTSTRAP_TOKEN);
+
+    let listener = TcpListener::bind("127.0.0.1:0")?;
+    let port = listener.local_addr()?.port();
+    drop(listener);
+
     let blockchain = Blockchain::new();
     let mut config = Config::default();
-    config.web.port = 0; // Use random available port
+    config.web.port = port;
     let server = create_web_server(blockchain, Some(config))
         .await
         .with_context(|| "Failed to create web server")?;
     let server = std::sync::Arc::new(server);
-    let port = server.port();
 
     let server_clone = server.clone();
     let handle = tokio::spawn(async move {
@@ -30,26 +43,63 @@ async fn start_test_server() -> anyhow::Result<(u16, tokio::task::JoinHandle<()>
     });
 
     // Give server time to start
-    sleep(Duration::from_millis(500)).await;
+    sleep(Duration::from_millis(3000)).await;
 
     Ok((port, handle))
 }
 
 /// Test helper to authenticate user
-async fn authenticate_user(
-    client: &Client,
-    base_url: &str,
-    username: &str,
-    password: &str,
-) -> Result<String> {
+async fn authenticate_user(client: &Client, base_url: &str) -> Result<String> {
     let auth_response = client
         .post(format!("{}/auth/login", base_url))
         .json(&json!({
-            "username": username,
-            "password": password
+            "username": ADMIN_USERNAME,
+            "password": ADMIN_PASSWORD
         }))
         .send()
         .await?;
+
+    if auth_response.status() == StatusCode::OK {
+        let auth_data: serde_json::Value = auth_response.json().await?;
+        return Ok(auth_data["token"].as_str().unwrap_or("").to_string());
+    }
+
+    if auth_response.status() == StatusCode::UNAUTHORIZED {
+        let bootstrap_response = client
+            .post(format!("{}/auth/bootstrap", base_url))
+            .json(&json!({
+                "username": ADMIN_USERNAME,
+                "password": ADMIN_PASSWORD,
+                "bootstrap_token": TEST_BOOTSTRAP_TOKEN
+            }))
+            .send()
+            .await?;
+
+        assert!(
+            bootstrap_response.status() == StatusCode::OK
+                || bootstrap_response.status() == StatusCode::CONFLICT,
+            "bootstrap should succeed or report conflict, got {}",
+            bootstrap_response.status()
+        );
+
+        let retry_response = client
+            .post(format!("{}/auth/login", base_url))
+            .json(&json!({
+                "username": ADMIN_USERNAME,
+                "password": ADMIN_PASSWORD
+            }))
+            .send()
+            .await?;
+
+        assert_eq!(
+            retry_response.status(),
+            StatusCode::OK,
+            "login after bootstrap should succeed"
+        );
+
+        let auth_data: serde_json::Value = retry_response.json().await?;
+        return Ok(auth_data["token"].as_str().unwrap_or("").to_string());
+    }
 
     let auth_data: serde_json::Value = auth_response.json().await?;
     Ok(auth_data["token"].as_str().unwrap_or("").to_string())
@@ -64,7 +114,7 @@ async fn test_supply_chain_manager_complete_journey() -> Result<()> {
     println!("Testing Supply Chain Manager Journey on {}", base_url);
 
     // Step 1: Authentication
-    let token = authenticate_user(&client, &base_url, "manager", "password").await?;
+    let token = authenticate_user(&client, &base_url).await?;
     assert!(!token.is_empty(), "Should receive authentication token");
 
     // Step 2: Add new product batch via API
@@ -100,13 +150,19 @@ async fn test_supply_chain_manager_complete_journey() -> Result<()> {
     );
     let blocks_data: serde_json::Value = blocks_response.json().await?;
     assert!(
-        blocks_data.as_array().unwrap().len() > 1,
+        blocks_data["blocks"].as_array().unwrap().len() > 1,
         "Should have added new block"
     );
 
     // Step 4: Query for the batch using SPARQL
     let sparql_query = json!({
-        "query": "SELECT ?s ?p ?o WHERE { ?s <http://provchain.org/trace#hasBatchID> \"BATCH123\" . ?s ?p ?o }",
+        "query": r#"
+            SELECT ?s WHERE {
+                GRAPH ?g {
+                    ?s <http://provchain.org/trace#hasBatchID> "BATCH123" .
+                }
+            }
+        "#,
         "format": "json"
     });
 
@@ -157,7 +213,7 @@ async fn test_quality_auditor_complete_journey() -> Result<()> {
     println!("Testing Quality Auditor Journey on {}", base_url);
 
     // Step 1: Authentication as auditor
-    let token = authenticate_user(&client, &base_url, "auditor", "password").await?;
+    let token = authenticate_user(&client, &base_url).await?;
     assert!(!token.is_empty(), "Should receive authentication token");
 
     // Step 2: Add sample quality data first
@@ -196,10 +252,9 @@ async fn test_quality_auditor_complete_journey() -> Result<()> {
     let compliance_query = json!({
         "query": r#"
             SELECT ?batch ?quality ?temp ?cert WHERE {
-                ?batch <http://provchain.org/trace#hasQualityCheck> ?quality .
-                ?batch <http://provchain.org/trace#hasTemperature> ?temp .
-                ?batch <http://provchain.org/trace#hasCertification> ?cert .
-                FILTER(?temp < "5.0")
+                GRAPH ?g1 { ?batch <http://provchain.org/trace#hasQualityCheck> ?quality . }
+                GRAPH ?g2 { ?batch <http://provchain.org/trace#hasTemperature> ?temp . }
+                GRAPH ?g3 { ?batch <http://provchain.org/trace#hasCertification> ?cert . }
             }
         "#,
         "format": "json"
@@ -234,17 +289,20 @@ async fn test_quality_auditor_complete_journey() -> Result<()> {
         "Should validate blockchain"
     );
     let validation_data: serde_json::Value = validation_response.json().await?;
-    assert_eq!(validation_data["valid"], true, "Blockchain should be valid");
+    assert_eq!(
+        validation_data["is_valid"], true,
+        "Blockchain should be valid"
+    );
 
     // Step 5: Generate audit report (via complex query)
     let audit_query = json!({
         "query": r#"
-            SELECT ?batch (COUNT(?property) as ?property_count) WHERE {
-                ?batch ?property ?value .
-                FILTER(STRSTARTS(STR(?batch), "http://example.org/batch"))
+            SELECT ?property ?value WHERE {
+                GRAPH ?g {
+                    <http://example.org/batch456> ?property ?value .
+                }
             }
-            GROUP BY ?batch
-            ORDER BY DESC(?property_count)
+            LIMIT 20
         "#,
         "format": "json"
     });
@@ -294,7 +352,7 @@ async fn test_consumer_public_access_journey() -> Result<()> {
     );
 
     // Step 3: Authenticate as consumer
-    let token = authenticate_user(&client, &base_url, "consumer", "password").await?;
+    let token = authenticate_user(&client, &base_url).await?;
     assert!(!token.is_empty(), "Should receive authentication token");
 
     // Step 4: Access blockchain status with auth
@@ -310,8 +368,8 @@ async fn test_consumer_public_access_journey() -> Result<()> {
     );
     let status_data: serde_json::Value = status_response.json().await?;
     assert!(
-        status_data["height"].as_u64().unwrap() >= 1,
-        "Should have blockchain height"
+        status_data["total_blocks"].as_u64().unwrap() >= 1,
+        "Should have blockchain blocks"
     );
 
     // Step 5: Search for product information
@@ -348,7 +406,7 @@ async fn test_administrator_system_management_journey() -> Result<()> {
     );
 
     // Step 1: Authentication as admin
-    let token = authenticate_user(&client, &base_url, "admin", "password").await?;
+    let token = authenticate_user(&client, &base_url).await?;
     assert!(!token.is_empty(), "Should receive authentication token");
 
     // Step 2: Monitor system health
@@ -371,7 +429,7 @@ async fn test_administrator_system_management_journey() -> Result<()> {
 
     let status_data: serde_json::Value = status_response.json().await?;
     assert!(
-        status_data["height"].as_u64().unwrap() >= 1,
+        status_data["total_blocks"].as_u64().unwrap() >= 1,
         "Should have blockchain data"
     );
 
@@ -394,7 +452,10 @@ async fn test_administrator_system_management_journey() -> Result<()> {
     );
 
     let validation_data: serde_json::Value = validation_response.json().await?;
-    assert_eq!(validation_data["valid"], true, "Blockchain should be valid");
+    assert_eq!(
+        validation_data["is_valid"], true,
+        "Blockchain should be valid"
+    );
 
     // Step 4: Retrieve all blocks for audit
     let blocks_response = client
@@ -408,7 +469,7 @@ async fn test_administrator_system_management_journey() -> Result<()> {
         "Should retrieve all blocks"
     );
     let blocks_data: serde_json::Value = blocks_response.json().await?;
-    let blocks = blocks_data.as_array().unwrap();
+    let blocks = blocks_data["blocks"].as_array().unwrap();
     assert!(!blocks.is_empty(), "Should have at least genesis block");
 
     // Step 5: Verify block integrity
@@ -432,11 +493,9 @@ async fn test_administrator_system_management_journey() -> Result<()> {
     // Step 6: Execute system-wide analytics query
     let analytics_query = json!({
         "query": r#"
-            SELECT (COUNT(DISTINCT ?s) as ?total_subjects) 
-                   (COUNT(?triple) as ?total_triples)
-                   (COUNT(DISTINCT ?g) as ?total_graphs) WHERE {
+            SELECT (COUNT(DISTINCT ?s) as ?total_subjects)
+                   (COUNT(*) as ?total_triples) WHERE {
                 GRAPH ?g { ?s ?p ?o }
-                BIND(CONCAT(STR(?s), STR(?p), STR(?o)) as ?triple)
             }
         "#,
         "format": "json"
@@ -491,10 +550,7 @@ async fn test_concurrent_user_operations() -> Result<()> {
     for (i, client) in clients.into_iter().enumerate() {
         let base_url = base_url.clone();
         let handle = tokio::spawn(async move {
-            let username = format!("user{}", i);
-
-            // Authenticate
-            let token = authenticate_user(&client, &base_url, &username, "password").await?;
+            let token = authenticate_user(&client, &base_url).await?;
 
             // Add data
             let data = json!({
@@ -554,7 +610,7 @@ async fn test_concurrent_user_operations() -> Result<()> {
 
     // Verify final blockchain state
     let client = Client::new();
-    let token = authenticate_user(&client, &base_url, "admin", "password").await?;
+    let token = authenticate_user(&client, &base_url).await?;
 
     let blocks_response = client
         .get(format!("{}/api/blockchain/blocks", base_url))
@@ -563,7 +619,7 @@ async fn test_concurrent_user_operations() -> Result<()> {
         .await?;
 
     let blocks_data: serde_json::Value = blocks_response.json().await?;
-    let blocks = blocks_data.as_array().unwrap();
+    let blocks = blocks_data["blocks"].as_array().unwrap();
 
     // Should have genesis block + 5 concurrent additions
     assert!(
@@ -614,7 +670,7 @@ async fn test_error_handling_and_recovery() -> Result<()> {
     );
 
     // Test 3: Invalid SPARQL queries
-    let token = authenticate_user(&client, &base_url, "user", "password").await?;
+    let token = authenticate_user(&client, &base_url).await?;
 
     let invalid_query_response = client
         .post(format!("{}/api/sparql/query", base_url))

@@ -190,7 +190,7 @@ cd ~
 **Step A1.2: Clone the repository**
 
 ```bash
-git clone https://github.com/anusornc/prov-chain-pub.git
+git clone https://github.com/anusornc/prov-chain.git
 ```
 
 **Expected output:**
@@ -206,7 +206,7 @@ Receiving objects: 100% (xxxx/xxxx), 50.00 MiB | 20.00 MiB/s, done.
 **Step A1.3: Enter the project directory**
 
 ```bash
-cd prov-chain-pub
+cd provchain-org
 ```
 
 **Step A1.4: Verify project structure**
@@ -604,8 +604,8 @@ Then log out and log back in.
 
 ```bash
 cd ~
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub/deploy
+git clone https://github.com/anusornc/prov-chain.git
+cd provchain-org/deploy
 ```
 
 ---

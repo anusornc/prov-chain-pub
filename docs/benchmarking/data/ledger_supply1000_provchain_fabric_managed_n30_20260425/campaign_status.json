@@ -1,0 +1,8 @@
+{
+  "campaign_id": "20260425_ledger_supply1000_provchain-fabric_managed_n30_fix3",
+  "completed_at_utc": "2026-04-25T08:40:45Z",
+  "epoch_count_target": 30,
+  "passed_epochs": 30,
+  "failed_epochs": 0,
+  "status": "passed"
+}

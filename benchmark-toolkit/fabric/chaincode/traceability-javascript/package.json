@@ -1,0 +1,17 @@
+{
+  "name": "provchain-traceability-chaincode",
+  "version": "1.0.0",
+  "description": "ProvChain benchmark traceability chaincode for Fabric",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "fabric-chaincode-node start"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "fabric-contract-api": "~2.5",
+    "fabric-shim": "~2.5"
+  }
+}

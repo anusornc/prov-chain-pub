@@ -1,0 +1,19 @@
+{
+  "campaign_id": "20260428_trace_supply1000_provchain-neo4j-fluree_n30",
+  "created_at_utc": "2026-04-28T15:54:49Z",
+  "benchmark_family": "trace_query",
+  "dataset_slice": "supply_chain_1000",
+  "dataset_file": "supply_chain_1000.ttl",
+  "products": ["provchain", "neo4j", "fluree"],
+  "epoch_count_target": 30,
+  "iterations_per_epoch": 10,
+  "clean_volumes_per_epoch": true,
+  "preflight_required": true,
+  "preflight_skipped": false,
+  "validity_gate": [
+    "local preflight must pass unless explicitly skipped",
+    "each compared system must have success_rate greater than zero",
+    "run artifacts must include benchmark_results.json, benchmark_results.csv, summary.json, and summary.md"
+  ],
+  "notes": "Trace-query campaign. Skip flags: Fluree=false, Fabric=true, Geth=true."
+}

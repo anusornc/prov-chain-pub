@@ -1,0 +1,94 @@
+[
+  {
+    "family": "LedgerWrite",
+    "scenario": "Ledger Write",
+    "test_name": "Single Record Submit",
+    "fairness_label": "public-chain-baseline",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Go Ethereum (Geth)",
+        "fairness_label": "public-chain-baseline",
+        "capability_path": "public-chain-smart-contract",
+        "avg_ms": 2.2309666999999997,
+        "p50_ms": 2.256233,
+        "p95_ms": 2.333264,
+        "p99_ms": 2.333264,
+        "ops_per_sec": 448.7029128269467,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Write Performance",
+    "test_name": "Single-threaded Write (100 tx)",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "native-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 28915.4,
+        "p50_ms": 31215.0,
+        "p95_ms": 53253.0,
+        "p99_ms": 53253.0,
+        "ops_per_sec": 5.785848350492349,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Ledger Write",
+    "test_name": "Single Record Gas Used",
+    "fairness_label": "public-chain-baseline",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Go Ethereum (Geth)",
+        "fairness_label": "public-chain-baseline",
+        "capability_path": "public-chain-smart-contract",
+        "avg_ms": 46248.6,
+        "p50_ms": 46251.0,
+        "p95_ms": 46251.0,
+        "p99_ms": 46251.0,
+        "ops_per_sec": 0.0,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Ledger Write",
+    "test_name": "Single Record Confirmation",
+    "fairness_label": "public-chain-baseline",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Go Ethereum (Geth)",
+        "fairness_label": "public-chain-baseline",
+        "capability_path": "public-chain-smart-contract",
+        "avg_ms": 256.59870659999996,
+        "p50_ms": 256.401918,
+        "p95_ms": 257.481746,
+        "p99_ms": 257.481746,
+        "ops_per_sec": 3.897155817814427,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  }
+]

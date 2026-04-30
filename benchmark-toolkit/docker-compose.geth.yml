@@ -1,0 +1,27 @@
+services:
+  geth:
+    image: ${GETH_IMAGE:-ethereum/client-go:v1.14.13}
+    container_name: provchain-geth-dev
+    command:
+      - --dev
+      - --dev.period=0
+      - --http
+      - --http.addr=0.0.0.0
+      - --http.port=8545
+      - --http.api=eth,net,web3,txpool,miner
+      - --http.vhosts=*
+      - --http.corsdomain=*
+      - --verbosity=3
+    ports:
+      - "${GETH_RPC_PORT:-18545}:8545"
+    volumes:
+      - geth-dev-data:/root/.ethereum
+    healthcheck:
+      test: ["CMD-SHELL", "geth attach --exec 'eth.blockNumber' http://127.0.0.1:8545 >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 10s
+
+volumes:
+  geth-dev-data:

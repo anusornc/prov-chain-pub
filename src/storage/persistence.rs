@@ -21,6 +21,7 @@ const PERSISTENCE_VERSION: u32 = 1;
 
 /// Magic bytes for WAL file validation
 const WAL_MAGIC: &[u8] = b"PROVCHAIN_WAL\x01";
+const DEFAULT_SYNC_INTERVAL: u64 = 1;
 
 /// Entry types for WAL
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -149,12 +150,39 @@ pub struct PersistentStorage {
     sync_interval: u64,
     /// Entries since last sync
     entries_since_sync: AtomicU64,
+    /// Chain index fsync interval. Defaults to the WAL sync interval.
+    chain_index_sync_interval: u64,
+    /// Chain index entries since last fsync.
+    chain_index_entries_since_sync: AtomicU64,
 }
 
 impl PersistentStorage {
     /// Open or create persistent storage at the given directory
     pub fn open<P: AsRef<Path>>(data_dir: P) -> Result<Self> {
+        let (wal_sync_interval, chain_index_sync_interval) = Self::configured_sync_intervals();
+        Self::open_with_sync_intervals(data_dir, wal_sync_interval, chain_index_sync_interval)
+    }
+
+    /// Open storage with an explicit fsync interval.
+    ///
+    /// The default public `open` path keeps the conservative one-block fsync
+    /// behavior unless `PROVCHAIN_WAL_SYNC_INTERVAL` is set to a positive value.
+    pub fn open_with_sync_interval<P: AsRef<Path>>(
+        data_dir: P,
+        sync_interval: u64,
+    ) -> Result<Self> {
+        Self::open_with_sync_intervals(data_dir, sync_interval, sync_interval)
+    }
+
+    /// Open storage with explicit WAL and chain-index fsync intervals.
+    pub fn open_with_sync_intervals<P: AsRef<Path>>(
+        data_dir: P,
+        wal_sync_interval: u64,
+        chain_index_sync_interval: u64,
+    ) -> Result<Self> {
         let data_dir = data_dir.as_ref().to_path_buf();
+        let wal_sync_interval = wal_sync_interval.max(1);
+        let chain_index_sync_interval = chain_index_sync_interval.max(1);
 
         // Create directories
         fs::create_dir_all(&data_dir)
@@ -183,14 +211,48 @@ impl PersistentStorage {
             rdf_data_dir,
             sequence: AtomicU64::new(0),
             wal_file: Mutex::new(wal_file),
-            sync_interval: 10, // fsync every 10 entries by default
+            sync_interval: wal_sync_interval,
             entries_since_sync: AtomicU64::new(0),
+            chain_index_sync_interval,
+            chain_index_entries_since_sync: AtomicU64::new(0),
         };
 
         // Initialize or recover
         storage.initialize_or_recover()?;
+        info!(
+            "Persistent storage fsync intervals configured: wal={}, chain_index={}",
+            wal_sync_interval, chain_index_sync_interval
+        );
 
         Ok(storage)
+    }
+
+    fn configured_sync_intervals() -> (u64, u64) {
+        let wal_sync_interval = Self::configured_positive_interval(
+            "PROVCHAIN_WAL_SYNC_INTERVAL",
+            DEFAULT_SYNC_INTERVAL,
+        );
+        let chain_index_sync_interval = Self::configured_positive_interval(
+            "PROVCHAIN_CHAIN_INDEX_SYNC_INTERVAL",
+            wal_sync_interval,
+        );
+        (wal_sync_interval, chain_index_sync_interval)
+    }
+
+    fn configured_positive_interval(name: &str, default: u64) -> u64 {
+        match std::env::var(name) {
+            Ok(value) => match value.parse::<u64>() {
+                Ok(interval) if interval > 0 => interval,
+                _ => {
+                    warn!(
+                        "Ignoring invalid {}='{}'; using default {}",
+                        name, value, default
+                    );
+                    default
+                }
+            },
+            Err(_) => default,
+        }
     }
 
     /// Initialize new storage or recover existing
@@ -419,7 +481,13 @@ impl PersistentStorage {
 
     /// Force sync WAL to disk
     pub fn sync(&self) -> Result<()> {
-        let mut file = self
+        self.sync_wal()?;
+        self.sync_chain_index()?;
+        Ok(())
+    }
+
+    fn sync_wal(&self) -> Result<()> {
+        let file = self
             .wal_file
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to lock WAL file"))?;
@@ -427,6 +495,30 @@ impl PersistentStorage {
         file.sync_all().context("Failed to sync WAL")?;
 
         self.entries_since_sync.store(0, Ordering::SeqCst);
+
+        Ok(())
+    }
+
+    fn sync_chain_index(&self) -> Result<()> {
+        if !self.chain_index_path.exists() {
+            self.chain_index_entries_since_sync
+                .store(0, Ordering::SeqCst);
+            return Ok(());
+        }
+
+        let file = OpenOptions::new()
+            .read(true)
+            .open(&self.chain_index_path)
+            .with_context(|| {
+                format!(
+                    "Failed to open chain index for sync: {}",
+                    self.chain_index_path.display()
+                )
+            })?;
+
+        file.sync_all().context("Failed to sync chain index")?;
+        self.chain_index_entries_since_sync
+            .store(0, Ordering::SeqCst);
 
         Ok(())
     }
@@ -448,13 +540,12 @@ impl PersistentStorage {
 
         let entry = WalEntry::new(WalEntryType::Block, sequence, metadata_bytes);
 
-        // 3. Write to WAL (this is the atomic commit point)
+        // 3. Write to WAL (this is the atomic commit point). `write_entry`
+        // handles fsync according to the configured interval.
         self.write_entry(&entry)?;
 
-        // 4. Sync WAL to ensure durability
-        self.sync()?;
-
-        // 5. Update chain index
+        // 4. Update chain index. Crash recovery can rebuild this from WAL if
+        // the index is behind the latest entries.
         self.append_to_chain_index(metadata)?;
 
         info!(
@@ -541,7 +632,17 @@ impl PersistentStorage {
             .open(&self.chain_index_path)?;
 
         writeln!(file, "{}", encoded)?;
-        file.sync_all()?;
+
+        let entries = self
+            .chain_index_entries_since_sync
+            .fetch_add(1, Ordering::SeqCst)
+            + 1;
+        if entries >= self.chain_index_sync_interval {
+            file.sync_all().context("Failed to sync chain index")?;
+            self.chain_index_entries_since_sync
+                .store(0, Ordering::SeqCst);
+            debug!("Chain index synced after {} entries", entries);
+        }
 
         Ok(())
     }
@@ -627,6 +728,14 @@ impl PersistentStorage {
     }
 }
 
+impl Drop for PersistentStorage {
+    fn drop(&mut self) {
+        if let Err(error) = self.sync() {
+            warn!("Failed to sync persistent storage during drop: {}", error);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -679,6 +788,104 @@ mod tests {
         // Load RDF data
         let rdf_data = storage.load_block_data(0).unwrap();
         assert!(rdf_data.contains("ex:test"));
+    }
+
+    #[test]
+    fn test_persistent_storage_batched_sync_interval_keeps_index_readable() {
+        let temp_dir = tempdir().unwrap();
+        let storage =
+            PersistentStorage::open_with_sync_intervals(temp_dir.path(), 100, 50).unwrap();
+
+        assert_eq!(storage.sync_interval, 100);
+        assert_eq!(storage.chain_index_sync_interval, 50);
+
+        for index in 0..3 {
+            let metadata = BlockMetadata {
+                index,
+                hash: format!("hash{}", index),
+                previous_hash: format!("hash{}", index.saturating_sub(1)),
+                timestamp: "2024-01-01T00:00:00Z".to_string(),
+                validator: "validator1".to_string(),
+                signature: format!("sig{}", index),
+                state_root: format!("state{}", index),
+                data_graph_uri: format!("http://example.org/block/{}", index),
+                has_encrypted_data: false,
+                data_size: 100,
+            };
+
+            storage
+                .store_block(
+                    &metadata,
+                    &format!(
+                        "@prefix ex: <http://example.org/> .\nex:block{} ex:index {} .",
+                        index, index
+                    ),
+                )
+                .unwrap();
+        }
+
+        assert_eq!(storage.entries_since_sync.load(Ordering::SeqCst), 3);
+        assert_eq!(
+            storage
+                .chain_index_entries_since_sync
+                .load(Ordering::SeqCst),
+            3
+        );
+
+        let blocks = storage.load_all_blocks().unwrap();
+        assert_eq!(blocks.len(), 3);
+        assert_eq!(blocks[2].index, 2);
+
+        storage.sync().unwrap();
+        assert_eq!(storage.entries_since_sync.load(Ordering::SeqCst), 0);
+        assert_eq!(
+            storage
+                .chain_index_entries_since_sync
+                .load(Ordering::SeqCst),
+            0
+        );
+    }
+
+    #[test]
+    fn test_recovery_rebuilds_missing_chain_index_from_wal() {
+        let temp_dir = tempdir().unwrap();
+        let data_dir = temp_dir.path().join("rebuild_index_test");
+
+        {
+            let storage = PersistentStorage::open_with_sync_interval(&data_dir, 1).unwrap();
+
+            for index in 0..3 {
+                let metadata = BlockMetadata {
+                    index,
+                    hash: format!("hash{}", index),
+                    previous_hash: format!("hash{}", index.saturating_sub(1)),
+                    timestamp: "2024-01-01T00:00:00Z".to_string(),
+                    validator: "validator1".to_string(),
+                    signature: format!("sig{}", index),
+                    state_root: format!("state{}", index),
+                    data_graph_uri: format!("http://example.org/block/{}", index),
+                    has_encrypted_data: false,
+                    data_size: 100,
+                };
+
+                storage
+                    .store_block(
+                        &metadata,
+                        &format!(
+                            "@prefix ex: <http://example.org/> .\nex:block{} ex:index {} .",
+                            index, index
+                        ),
+                    )
+                    .unwrap();
+            }
+        }
+
+        std::fs::remove_file(data_dir.join("chain.index")).unwrap();
+
+        let storage = PersistentStorage::open_with_sync_interval(&data_dir, 1).unwrap();
+        let blocks = storage.load_all_blocks().unwrap();
+        assert_eq!(blocks.len(), 3);
+        assert_eq!(blocks[2].index, 2);
     }
 
     #[test]

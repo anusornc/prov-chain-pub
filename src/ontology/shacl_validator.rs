@@ -397,21 +397,26 @@ impl ShaclValidator {
         }
 
         // Create a temporary store for the transaction data
+        let store_start = std::time::Instant::now();
         let data_store = Store::new().map_err(|e| {
             ValidationError::new(format!("Failed to create validation store: {}", e))
         })?;
+        let data_store_create_ms = store_start.elapsed().as_secs_f64() * 1000.0;
 
         // Load the transaction RDF data
         use std::io::Cursor;
         let reader = Cursor::new(rdf_data.as_bytes());
+        let parse_start = std::time::Instant::now();
         data_store
             .load_from_reader(oxigraph::io::RdfFormat::Turtle, reader)
             .map_err(|e| ValidationError::new(format!("Failed to parse transaction RDF: {}", e)))?;
+        let rdf_parse_load_ms = parse_start.elapsed().as_secs_f64() * 1000.0;
 
         let mut violations = Vec::new();
         let mut constraints_checked = 0u32;
 
         // Validate against core shapes
+        let core_shape_start = std::time::Instant::now();
         for shape in &self.core_shapes {
             constraints_checked += shape.properties.len() as u32 + shape.constraints.len() as u32;
             if let Err(mut shape_violations) =
@@ -420,8 +425,10 @@ impl ShaclValidator {
                 violations.append(&mut shape_violations);
             }
         }
+        let core_shape_validation_ms = core_shape_start.elapsed().as_secs_f64() * 1000.0;
 
         // Validate against domain shapes
+        let domain_shape_start = std::time::Instant::now();
         for shape in &self.domain_shapes {
             constraints_checked += shape.properties.len() as u32 + shape.constraints.len() as u32;
             if let Err(mut shape_violations) =
@@ -430,6 +437,7 @@ impl ShaclValidator {
                 violations.append(&mut shape_violations);
             }
         }
+        let domain_shape_validation_ms = domain_shape_start.elapsed().as_secs_f64() * 1000.0;
 
         let execution_time = start_time.elapsed().as_millis() as u64;
 
@@ -439,7 +447,15 @@ impl ShaclValidator {
             ValidationResult::failure(violations, constraints_checked)
         };
 
-        Ok(self.attach_validation_metadata(result, execution_time, &reasoning_stats))
+        Ok(self.attach_validation_metadata(
+            result,
+            execution_time,
+            &reasoning_stats,
+            data_store_create_ms,
+            rdf_parse_load_ms,
+            core_shape_validation_ms,
+            domain_shape_validation_ms,
+        ))
     }
 
     fn attach_validation_metadata(
@@ -447,9 +463,36 @@ impl ShaclValidator {
         result: ValidationResult,
         execution_time: u64,
         reasoning_stats: &ReasoningValidationStats,
+        data_store_create_ms: f64,
+        rdf_parse_load_ms: f64,
+        core_shape_validation_ms: f64,
+        domain_shape_validation_ms: f64,
     ) -> ValidationResult {
         result
             .with_execution_time(execution_time)
+            .with_metadata(
+                "data_store_create_ms".to_string(),
+                format!("{:.6}", data_store_create_ms),
+            )
+            .with_metadata(
+                "rdf_parse_load_ms".to_string(),
+                format!("{:.6}", rdf_parse_load_ms),
+            )
+            .with_metadata(
+                "core_shape_validation_ms".to_string(),
+                format!("{:.6}", core_shape_validation_ms),
+            )
+            .with_metadata(
+                "domain_shape_validation_ms".to_string(),
+                format!("{:.6}", domain_shape_validation_ms),
+            )
+            .with_metadata(
+                "shape_validation_ms".to_string(),
+                format!(
+                    "{:.6}",
+                    core_shape_validation_ms + domain_shape_validation_ms
+                ),
+            )
             .with_metadata(
                 "core_shapes".to_string(),
                 self.core_shapes.len().to_string(),

@@ -122,8 +122,8 @@ Quick Installation
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
    # Clone and build
-   git clone https://github.com/anusornc/prov-chain-pub.git
-   cd prov-chain-pub
+   git clone https://github.com/anusornc/provchain-org.git
+   cd provchain-org
    cargo build --release
 
 First Steps

@@ -9,6 +9,8 @@ use crate::web::{
     },
     handlers::{
         add_triple,
+        add_triples_batch,
+        check_policy,
         create_participant,
         create_transaction,
         delete_sparql_query,
@@ -35,6 +37,7 @@ use crate::web::{
         // SPARQL helper endpoints
         get_sparql_config,
         health_check,
+        import_turtle_dataset,
         register_wallet,
         save_sparql_query,
         sign_transaction,
@@ -224,6 +227,9 @@ impl WebServer {
                 get(get_enhanced_product_trace),
             )
             .route("/api/blockchain/add-triple", post(add_triple))
+            .route("/api/blockchain/add-triples", post(add_triples_batch))
+            .route("/api/datasets/import-turtle", post(import_turtle_dataset))
+            .route("/api/policy/check", post(check_policy))
             .route("/api/wallet/register", post(register_wallet))
             .route("/api/transactions/create", post(create_transaction))
             .route("/api/transactions/sign", post(sign_transaction))

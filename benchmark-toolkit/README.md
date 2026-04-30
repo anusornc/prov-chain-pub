@@ -13,7 +13,7 @@ Automated performance comparison between ProvChain-Org (blockchain with embedded
 - ✅ **Generates** comparison reports
 - ✅ **Visualizes** results in Grafana dashboards
 
-## ⚡ Quick Start (3 Steps)
+## ⚡ Quick Start (4 Steps)
 
 ### 1. Extract the Toolkit
 
@@ -22,7 +22,14 @@ tar -xzf provchain-benchmark-toolkit.tar.gz
 cd provchain-benchmark-toolkit
 ```
 
-### 2. Run the Benchmark
+### 2. Run the Local Preflight Gate
+
+```bash
+chmod +x scripts/preflight-trace-benchmark.sh
+./scripts/preflight-trace-benchmark.sh
+```
+
+### 3. Run the Benchmark
 
 ```bash
 chmod +x run.sh
@@ -36,7 +43,7 @@ That's it! The script will:
 - Run benchmarks
 - Display results
 
-### 3. View Results
+### 4. View Results
 
 **Grafana Dashboard**: http://localhost:3000 (admin/admin)
 
@@ -231,6 +238,7 @@ Open http://localhost:3000 and view:
 
 - **JSON**: `results/benchmark_results.json` - All detailed metrics
 - **CSV**: `results/benchmark_results.csv` - Spreadsheet compatible
+- **Environment Manifest**: `results/.../environment_manifest.json` - Execution environment for the run
 - **Logs**: `logs/` - Service logs for debugging
 
 ## 🔍 Troubleshooting

@@ -10,7 +10,7 @@ Comprehensive guides, API references, and technical resources for building appli
    - **[Contributing Guide](../../CONTRIBUTING.md)** - Development setup and contribution guidelines
    - **[Architecture Documentation](../architecture/README.md)** - C4 model architecture and design decisions
    - **[Deployment Guide](../deployment/HANDS_ON_DEPLOYMENT_GUIDE.md)** - Deployment instructions
-   - **[Project README](../../README.md)** - Public project overview and quick start
+   - **[Project CLAUDE.md](../../CLAUDE.md)** - Project patterns and coding standards
 
 Getting Started
 ---------------
@@ -35,9 +35,9 @@ Before you begin development with ProvChainOrg, ensure you have:
    rustup component add clippy rustfmt
    cargo install cargo-watch cargo-audit
 
-   # Clone and build ProvChain
-   git clone https://github.com/anusornc/prov-chain-pub.git
-   cd prov-chain-pub
+   # Clone and build ProvChainOrg
+   git clone https://github.com/anusornc/provchain-org.git
+   cd provchain-org
    cargo build
 
 **Key Developer Resources**
@@ -53,10 +53,10 @@ Before you begin development with ProvChainOrg, ensure you have:
    - Architectural Decision Records (ADRs)
    - Technology stack details
 
-3. **[../../README.md](../../README.md)**: Project overview
-   - Semantic architecture overview
-   - Benchmarking and documentation entry points
-   - Public quick-start workflow
+3. **[../../CLAUDE.md](../../CLAUDE.md)**: Project patterns
+   - Error handling patterns
+   - Async runtime usage
+   - Security best practices
 
 Development Environment
 -----------------------
@@ -242,8 +242,8 @@ Security Guidelines
 
 .. code-block:: bash
    # Fork and clone the repository
-   git clone https://github.com/anusornc/prov-chain-pub.git
-   cd prov-chain-pub
+   git clone https://github.com/your-username/provchain-org.git
+   cd provchain-org
 
    # Create feature branch
    git checkout -b feature/new-feature

@@ -1,0 +1,178 @@
+services:
+  provchain:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.production
+    container_name: provchain-trace
+    restart: unless-stopped
+    ports:
+      - "${PROVCHAIN_TRACE_HTTP_PORT:-18080}:8080"
+      - "${PROVCHAIN_TRACE_METRICS_PORT:-19090}:9090"
+    environment:
+      RUST_LOG: info
+      JWT_SECRET: benchmark-test-secret-key-min-32-chars-for-security-validation
+      PROVCHAIN_BOOTSTRAP_TOKEN: benchmark-bootstrap-token-min-32-characters-123456
+      PROVCHAIN_BENCHMARK_STAGE_TIMINGS: ${PROVCHAIN_BENCHMARK_STAGE_TIMINGS:-true}
+      PROVCHAIN_ONTOLOGY_PACKAGE: ${PROVCHAIN_ONTOLOGY_PACKAGE:-}
+      PROVCHAIN_SKIP_DEMO_DATA: ${PROVCHAIN_SKIP_DEMO_DATA:-false}
+      PROVCHAIN_PORT: 8080
+      PROVCHAIN_DATA_DIR: /app/data
+    volumes:
+      - provchain_trace_data:/app/data
+      - ../config:/app/config:ro
+      - ./datasets:/benchmark/datasets:ro
+      - ./results:/benchmark/results
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+    networks:
+      - trace_benchmark_net
+    command:
+      - /bin/bash
+      - -lc
+      - >
+        ARGS=(provchain-org examples web-server --port 8080) &&
+        if [ -n "$${PROVCHAIN_ONTOLOGY_PACKAGE:-}" ]; then
+          ARGS+=(--ontology-package "$${PROVCHAIN_ONTOLOGY_PACKAGE}");
+        fi &&
+        if [ "$${PROVCHAIN_SKIP_DEMO_DATA:-false}" = "true" ]; then
+          ARGS+=(--skip-demo-data);
+        fi &&
+        exec "$${ARGS[@]}"
+
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: neo4j-trace
+    restart: unless-stopped
+    ports:
+      - "${NEO4J_TRACE_HTTP_PORT:-17474}:7474"
+      - "${NEO4J_TRACE_BOLT_PORT:-17687}:7687"
+    environment:
+      NEO4J_AUTH: neo4j/benchmark
+      NEO4J_dbms_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL:-512m}
+      NEO4J_dbms_memory_heap_max__size: ${NEO4J_HEAP_MAX:-1G}
+      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE:-512m}
+    volumes:
+      - neo4j_trace_data:/data
+      - neo4j_trace_logs:/logs
+      - ./datasets:/benchmark/datasets:ro
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "benchmark", "RETURN 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - trace_benchmark_net
+
+  fluree:
+    image: ${FLUREE_IMAGE:-fluree/server@sha256:e241fe44cabcfbfef4010fdc0d54301e5c91e3cbea8d6420e52ed795bdf0f15e}
+    container_name: fluree-trace
+    restart: unless-stopped
+    profiles:
+      - fluree
+    ports:
+      - "${FLUREE_TRACE_HTTP_PORT:-18090}:58090"
+    environment:
+      FDB_GROUP_PRIVATE_KEY: ${FLUREE_GROUP_PRIVATE_KEY:-4f8c0d5ab1e2c3d47698a0bcdeffedcba1234567890fedcba09876543210abcd}
+      FDB_STORAGE_FILE_DIRECTORY: /var/lib/fluree
+      FDB_CONSENSUS_TYPE: raft
+    volumes:
+      - fluree_trace_data:/var/lib/fluree
+      - ./datasets:/benchmark/datasets:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:58090/index.html"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - trace_benchmark_net
+
+  benchmark-runner:
+    build:
+      context: ./research-benchmarks
+      dockerfile: Dockerfile
+    container_name: benchmark-runner-trace
+    restart: "no"
+    environment:
+      PROVCHAIN_URL: http://provchain:8080
+      PROVCHAIN_BOOTSTRAP_TOKEN: benchmark-bootstrap-token-min-32-characters-123456
+      BENCHMARK_PROVCHAIN_IMAGE: local-build:provchain-trace
+      BENCHMARK_NEO4J_IMAGE: neo4j:5.15-community
+      BENCHMARK_FLUREE_IMAGE: ${FLUREE_IMAGE:-fluree/server@sha256:e241fe44cabcfbfef4010fdc0d54301e5c91e3cbea8d6420e52ed795bdf0f15e}
+      BENCHMARK_RUNNER_IMAGE: local-build:benchmark-runner-trace
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: benchmark
+      NEO4J_LOAD_BATCH_SIZE: ${NEO4J_LOAD_BATCH_SIZE:-100}
+      BENCHMARK_SKIP_NEO4J: ${BENCHMARK_SKIP_NEO4J:-false}
+      FLUREE_URL: http://fluree:58090
+      FLUREE_LEDGER: provchain/benchmark
+      FABRIC_GATEWAY_URL: http://fabric-gateway:8800
+      FABRIC_CHANNEL: provchain
+      FABRIC_CHAINCODE: traceability
+      BENCHMARK_SKIP_FLUREE: ${BENCHMARK_SKIP_FLUREE:-true}
+      BENCHMARK_SKIP_FABRIC: ${BENCHMARK_SKIP_FABRIC:-true}
+      BENCHMARK_SKIP_GETH: ${BENCHMARK_SKIP_GETH:-true}
+      PROVCHAIN_IMPORT_MODE: ${PROVCHAIN_IMPORT_MODE:-bulk-turtle-single-block}
+      RUNNER_MODE_ARGS: ${RUNNER_MODE_ARGS:---query}
+      BENCHMARK_RUN_ID: ${BENCHMARK_RUN_ID:-}
+      DATASET_PATH: /benchmark/datasets
+      RESULTS_ROOT: /benchmark/results/trace
+      PROVCHAIN_DATASET_FILE: ${PROVCHAIN_DATASET_FILE:-supply_chain_1000.ttl}
+      NEO4J_DATASET_FILE: ${NEO4J_DATASET_FILE:-supply_chain_1000.ttl}
+      FLUREE_DATASET_FILE: ${FLUREE_DATASET_FILE:-translated/fluree/supply_chain_1000.jsonld}
+      TEST_BATCH_IDS: ${TEST_BATCH_IDS:-BATCH001,BATCH010,BATCH017,BATCH025,BATCH050}
+      ITERATIONS: ${ITERATIONS:-10}
+      WARMUP_ITERATIONS: ${WARMUP_ITERATIONS:-3}
+      RUST_LOG: info
+    volumes:
+      - ./datasets:/benchmark/datasets
+      - ./results:/benchmark/results
+      - ./logs:/benchmark/logs
+    depends_on:
+      provchain:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    command:
+      - /bin/bash
+      - -lc
+      - >
+        RUN_ID=$${BENCHMARK_RUN_ID:-$$(date -u +%Y%m%dT%H%M%SZ)} &&
+        export RESULTS_PATH="$${RESULTS_ROOT}/$${RUN_ID}" &&
+        RUNNER_MODE_ARGS="$${RUNNER_MODE_ARGS:---query}" &&
+        EXTRA_ARGS="" &&
+        if [ "$${BENCHMARK_SKIP_NEO4J}" = "true" ]; then EXTRA_ARGS="$${EXTRA_ARGS} --skip-neo4j"; fi &&
+        if [ "$${BENCHMARK_SKIP_FLUREE}" = "true" ]; then EXTRA_ARGS="$${EXTRA_ARGS} --skip-fluree"; fi &&
+        if [ "$${BENCHMARK_SKIP_FABRIC}" = "true" ]; then EXTRA_ARGS="$${EXTRA_ARGS} --skip-fabric"; fi &&
+        if [ "$${BENCHMARK_SKIP_GETH}" = "true" ]; then EXTRA_ARGS="$${EXTRA_ARGS} --skip-geth"; fi &&
+        mkdir -p "$${RESULTS_PATH}" &&
+        ln -sfn "$${RESULTS_PATH}" "$${RESULTS_ROOT}/latest" &&
+        TRANSLATION_START_NS=$$(date +%s%N) &&
+        /opt/benchmark-venv/bin/python /benchmark/scripts/translate_trace_dataset_to_jsonld.py
+        --input /benchmark/datasets/$${PROVCHAIN_DATASET_FILE:-supply_chain_1000.ttl}
+        --output /benchmark/datasets/$${FLUREE_DATASET_FILE:-translated/fluree/supply_chain_1000.jsonld}
+        && TRANSLATION_END_NS=$$(date +%s%N)
+        && export FLUREE_TRANSLATION_LATENCY_MS=$$(( (TRANSLATION_END_NS - TRANSLATION_START_NS) / 1000000 ))
+        && /benchmark/benchmark-runner $${RUNNER_MODE_ARGS} --iterations "$${ITERATIONS}" --warmup-iterations "$${WARMUP_ITERATIONS}" --test-batch-ids "$${TEST_BATCH_IDS}" $${EXTRA_ARGS}
+    networks:
+      - trace_benchmark_net
+
+volumes:
+  provchain_trace_data:
+    driver: local
+  neo4j_trace_data:
+    driver: local
+  neo4j_trace_logs:
+    driver: local
+  fluree_trace_data:
+    driver: local
+
+networks:
+  trace_benchmark_net:
+    driver: bridge

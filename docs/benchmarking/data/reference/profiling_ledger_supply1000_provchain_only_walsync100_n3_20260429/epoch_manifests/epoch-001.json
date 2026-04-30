@@ -1,0 +1,12 @@
+{
+  "epoch_id": "epoch-001",
+  "run_id": "20260429T064232Z",
+  "started_at_utc": "2026-04-29T06:42:32Z",
+  "completed_at_utc": "2026-04-29T06:42:56Z",
+  "status": "passed",
+  "exclusion_reason": "",
+  "benchmark_family": "ledger_write",
+  "dataset_slice": "supply_chain_1000",
+  "iterations": 3,
+  "fabric_batch_size": 100
+}

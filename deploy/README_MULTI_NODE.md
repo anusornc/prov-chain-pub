@@ -115,8 +115,8 @@ docker --version
 docker compose version
 
 # Clone repository
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub/deploy
+git clone https://github.com/anusornc/prov-chain.git
+cd provchain-org/deploy
 ```
 
 ---
@@ -167,7 +167,7 @@ Build the Docker image locally from source code:
 **On Machine 1:**
 
 ```bash
-cd prov-chain-pub/deploy
+cd provchain-org/deploy
 
 # Create .env file
 cat > .env <<EOF
@@ -195,7 +195,7 @@ echo "Node 1 IP: $IP_ADDRESS"
 **On Machine 2:**
 
 ```bash
-cd prov-chain-pub/deploy
+cd provchain-org/deploy
 
 # Replace NODE1_IP with actual IP from Step 2
 cat > .env <<EOF
@@ -221,7 +221,7 @@ echo "Node 2 IP: $IP_ADDRESS"
 **On Machine 3:**
 
 ```bash
-cd prov-chain-pub/deploy
+cd provchain-org/deploy
 
 # Replace NODE1_IP and NODE2_IP with actual IPs
 cat > .env <<EOF
@@ -247,7 +247,7 @@ echo "Node 3 IP: $IP_ADDRESS"
 **On Machine 1 (or separate monitoring machine):**
 
 ```bash
-cd prov-chain-pub/deploy
+cd provchain-org/deploy
 
 # Update Prometheus configuration with node IPs
 cat > monitoring/prometheus_multi_node.yml <<EOF

@@ -96,8 +96,8 @@ This method is recommended if you plan to contribute to the project or need the 
 .. code-block:: bash
 
    # Clone the repository
-   git clone https://github.com/anusornc/prov-chain-pub.git
-   cd prov-chain-pub
+   git clone https://github.com/anusornc/provchain-org.git
+   cd provchain-org
    
    # Build the project
    cargo build --release
@@ -115,7 +115,7 @@ If you just want to use ProvChainOrg without modifying the source code:
    cargo install provchain-org
    
    # Or install from the local repository
-   cd prov-chain-pub
+   cd provchain-org
    cargo install --path .
 
 ### Method 3: Docker Installation
@@ -281,7 +281,7 @@ To update ProvChainOrg to the latest version:
 .. code-block:: bash
 
    # If installed from source
-   cd prov-chain-pub
+   cd provchain-org
    git pull
    cargo build --release
    

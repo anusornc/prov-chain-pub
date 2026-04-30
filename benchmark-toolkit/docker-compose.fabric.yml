@@ -1,0 +1,25 @@
+services:
+  fabric-gateway:
+    build:
+      context: ./fabric/gateway
+    container_name: provchain-fabric-gateway
+    user: "0:0"
+    environment:
+      GATEWAY_LISTEN_ADDRESS: ":8800"
+      FABRIC_CHANNEL: "${FABRIC_CHANNEL:-provchain}"
+      FABRIC_CHAINCODE: "${FABRIC_CHAINCODE:-traceability}"
+      FABRIC_MSP_ID: "${FABRIC_MSP_ID:-Org1MSP}"
+      FABRIC_CRYPTO_PATH: "/fabric/organizations/peerOrganizations/org1.example.com"
+      FABRIC_PEER_ENDPOINT: "${FABRIC_PEER_ENDPOINT:-peer0.org1.example.com:7051}"
+      FABRIC_GATEWAY_PEER: "${FABRIC_GATEWAY_PEER:-peer0.org1.example.com}"
+    ports:
+      - "${FABRIC_GATEWAY_HOST_PORT:-18800}:8800"
+    volumes:
+      - "${FABRIC_TEST_NETWORK_DIR:?set FABRIC_TEST_NETWORK_DIR to fabric-samples/test-network}:/fabric:ro"
+    networks:
+      - fabric_test
+
+networks:
+  fabric_test:
+    external: true
+    name: "${FABRIC_DOCKER_NETWORK:-fabric_test}"

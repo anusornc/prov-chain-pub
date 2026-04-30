@@ -122,8 +122,8 @@ sudo apt-get update && sudo apt-get install -y \
 
 ```bash
 # On VM-1 (Authority Node)
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub
+git clone https://github.com/anusornc/prov-chain.git
+cd provchain-org
 
 # Generate authority keypair
 docker run --rm -v $(pwd):/app -w /app provchain-org:latest \
@@ -166,8 +166,8 @@ curl http://localhost:8080/health
 # Expected: {"status":"healthy"}
 
 # On VM-2 (Regular Node)
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub
+git clone https://github.com/anusornc/prov-chain.git
+cd provchain-org
 
 # Copy authority public key from VM-1
 scp user@10.0.1.10:~/provchain-org/authority.pub .
@@ -222,8 +222,8 @@ sudo su - provchain
 cd /opt/provchain
 
 # Clone repository
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub
+git clone https://github.com/anusornc/prov-chain.git
+cd provchain-org
 
 # Verify files
 ls -la

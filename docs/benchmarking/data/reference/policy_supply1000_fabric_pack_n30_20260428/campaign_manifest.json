@@ -1,0 +1,32 @@
+{
+  "campaign_id": "20260428_policy_supply1000_fabric_pack_n30",
+  "created_at_utc": "2026-04-28T19:18:06Z",
+  "benchmark_family": "governance_policy",
+  "dataset_slice": "supply_chain_1000",
+  "dataset_path": "/home/cit/provchain-org/benchmark-toolkit/datasets",
+  "dataset_file": "supply_chain_1000.ttl",
+  "products": ["fabric"],
+  "epoch_count_target": 30,
+  "iterations_per_epoch": 10,
+  "fabric_batch_size": 100,
+  "fabric_gateway_url": "http://localhost:18800",
+  "provchain_url": "http://localhost:8080",
+  "skip_provchain": true,
+  "skip_load": true,
+  "manage_provchain": false,
+  "provchain_managed_port": 18080,
+  "provchain_runtime_dir": "/home/cit/provchain-org/benchmark-toolkit/results/provchain-runtime/20260428_policy_supply1000_fabric_pack_n30",
+  "preflight_required": true,
+  "preflight_skipped": false,
+  "validity_gate": [
+    "Fabric gateway must be a real runtime gateway, not the local contract simulator",
+    "Fabric gateway probe must pass",
+    "local dataset file must exist",
+    "ProvChain health check must pass unless skip_provchain is true",
+    "managed ProvChain mode must use a fresh data directory per epoch",
+    "run artifacts must include benchmark_results.json, benchmark_results.csv, summary.json, and summary.md",
+    "comparative claims require successful rows for every claimed product"
+  ],
+  "workload": "policy",
+  "notes": "B014 policy campaign runner for real Fabric policy execution. This script does not start the local simulator."
+}

@@ -29,6 +29,14 @@ cd provchain-benchmark-toolkit-*
 ## Common Commands
 
 ```bash
+# One-command ProvChain vs Neo4j campaign workflow
+./scripts/provchain-neo4j-campaign.sh smoke
+./scripts/provchain-neo4j-campaign.sh full
+./scripts/provchain-neo4j-campaign.sh status 20260424_trace_supply1000_provchain-neo4j_n30
+
+# Run local benchmark gate before Docker
+./scripts/preflight-trace-benchmark.sh
+
 # Stop services
 docker-compose down
 
@@ -60,6 +68,7 @@ docker-compose build benchmark-runner
 - **Summary**: `results/summary.md`
 - **JSON Data**: `results/benchmark_results.json`
 - **CSV**: `results/benchmark_results.csv`
+- **Environment Manifest**: `results/.../environment_manifest.json`
 - **Logs**: `logs/`
 
 ## Package for Distribution

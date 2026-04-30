@@ -6,23 +6,35 @@
 use anyhow::Result;
 use fantoccini::{ClientBuilder, Locator};
 use provchain_org::{config::Config, core::blockchain::Blockchain, web::server::create_web_server};
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use serde_json::json;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
+const TEST_JWT_SECRET: &str = "test-jwt-secret-key-min-32-chars-for-web-interface";
+const TEST_BOOTSTRAP_TOKEN: &str = "test-bootstrap-token-for-web-interface";
+const ADMIN_USERNAME: &str = "adminroot";
+const ADMIN_PASSWORD: &str = "AdminRootPassword123!";
+
 /// Test helper to start a test web server with sample data
 async fn start_test_server_with_data() -> Result<(u16, tokio::task::JoinHandle<()>)> {
+    use std::net::TcpListener;
+
+    std::env::set_var("JWT_SECRET", TEST_JWT_SECRET);
+    std::env::set_var("PROVCHAIN_BOOTSTRAP_TOKEN", TEST_BOOTSTRAP_TOKEN);
+
     let mut blockchain = Blockchain::new();
 
     // Add sample data for testing
     add_sample_test_data(&mut blockchain);
 
-    // Use port 0 to get an available port
+    let listener = TcpListener::bind("127.0.0.1:0")?;
+    let port = listener.local_addr()?.port();
+    drop(listener);
+
     let mut config = Config::default();
-    config.web.port = 0;
+    config.web.port = port;
     let server = create_web_server(blockchain, Some(config)).await?;
-    let port = server.port();
 
     let handle = tokio::spawn(async move {
         if let Err(e) = server.start().await {
@@ -67,6 +79,27 @@ fn add_sample_test_data(blockchain: &mut Blockchain) {
     for data in sample_data {
         let _ = blockchain.add_block(data.to_string());
     }
+}
+
+async fn bootstrap_admin(client: &Client, base_url: &str) -> Result<()> {
+    let bootstrap_response = client
+        .post(format!("{}/auth/bootstrap", base_url))
+        .json(&json!({
+            "username": ADMIN_USERNAME,
+            "password": ADMIN_PASSWORD,
+            "bootstrap_token": TEST_BOOTSTRAP_TOKEN
+        }))
+        .send()
+        .await?;
+
+    assert!(
+        bootstrap_response.status() == StatusCode::OK
+            || bootstrap_response.status() == StatusCode::CONFLICT,
+        "bootstrap should succeed or report conflict, got {}",
+        bootstrap_response.status()
+    );
+
+    Ok(())
 }
 
 /// Test helper to create browser client
@@ -169,7 +202,9 @@ async fn test_dashboard_functionality() -> Result<()> {
     wait_for_element_with_timeout(&client, "#validationStatus", 2000).await?;
 
     // Login to see actual data
-    login_via_ui(&client, "admin", "password").await?;
+    let api_client = Client::new();
+    bootstrap_admin(&api_client, &base_url).await?;
+    login_via_ui(&client, ADMIN_USERNAME, ADMIN_PASSWORD).await?;
 
     // Wait for data to load
     sleep(Duration::from_millis(3000)).await;
@@ -196,7 +231,9 @@ async fn test_block_explorer_functionality() -> Result<()> {
     // Navigate and login
     client.goto(&base_url).await?;
     wait_for_element_with_timeout(&client, "nav.navbar", 2000).await?;
-    login_via_ui(&client, "admin", "password").await?;
+    let api_client = Client::new();
+    bootstrap_admin(&api_client, &base_url).await?;
+    login_via_ui(&client, ADMIN_USERNAME, ADMIN_PASSWORD).await?;
 
     // Navigate to blocks section
     client
@@ -250,7 +287,9 @@ async fn test_product_traceability_interface() -> Result<()> {
     // Navigate and login
     client.goto(&base_url).await?;
     wait_for_element_with_timeout(&client, "nav.navbar", 2000).await?;
-    login_via_ui(&client, "user", "password").await?;
+    let api_client = Client::new();
+    bootstrap_admin(&api_client, &base_url).await?;
+    login_via_ui(&client, ADMIN_USERNAME, ADMIN_PASSWORD).await?;
 
     // Navigate to traceability section
     client
@@ -330,7 +369,9 @@ async fn test_sparql_query_interface() -> Result<()> {
     // Navigate and login
     client.goto(&base_url).await?;
     wait_for_element_with_timeout(&client, "nav.navbar", 2000).await?;
-    login_via_ui(&client, "admin", "password").await?;
+    let api_client = Client::new();
+    bootstrap_admin(&api_client, &base_url).await?;
+    login_via_ui(&client, ADMIN_USERNAME, ADMIN_PASSWORD).await?;
 
     // Navigate to SPARQL section
     client
@@ -429,7 +470,9 @@ async fn test_transaction_management_interface() -> Result<()> {
     // Navigate and login
     client.goto(&base_url).await?;
     wait_for_element_with_timeout(&client, "nav.navbar", 2000).await?;
-    login_via_ui(&client, "manager", "password").await?;
+    let api_client = Client::new();
+    bootstrap_admin(&api_client, &base_url).await?;
+    login_via_ui(&client, ADMIN_USERNAME, ADMIN_PASSWORD).await?;
 
     // Navigate to transactions section
     client
@@ -590,12 +633,12 @@ async fn test_authentication_flow() -> Result<()> {
     client
         .find(Locator::Css("#loginUsername"))
         .await?
-        .send_keys("testuser")
+        .send_keys(ADMIN_USERNAME)
         .await?;
     client
         .find(Locator::Css("#loginPassword"))
         .await?
-        .send_keys("testpass")
+        .send_keys(ADMIN_PASSWORD)
         .await?;
     client
         .find(Locator::Css("#loginForm button[type='submit']"))
@@ -749,7 +792,9 @@ async fn test_error_handling_ui() -> Result<()> {
     // Navigate and login
     client.goto(&base_url).await?;
     wait_for_element_with_timeout(&client, "nav.navbar", 2000).await?;
-    login_via_ui(&client, "user", "password").await?;
+    let api_client = Client::new();
+    bootstrap_admin(&api_client, &base_url).await?;
+    login_via_ui(&client, ADMIN_USERNAME, ADMIN_PASSWORD).await?;
 
     // Test SPARQL error handling
     client
@@ -842,7 +887,9 @@ async fn test_real_time_updates() -> Result<()> {
     // Navigate and login
     client.goto(&base_url).await?;
     wait_for_element_with_timeout(&client, "nav.navbar", 2000).await?;
-    login_via_ui(&client, "admin", "password").await?;
+    let api_client = Client::new();
+    bootstrap_admin(&api_client, &base_url).await?;
+    login_via_ui(&client, ADMIN_USERNAME, ADMIN_PASSWORD).await?;
 
     // Go to dashboard to see stats
     client
@@ -864,8 +911,8 @@ async fn test_real_time_updates() -> Result<()> {
     let auth_response = api_client
         .post(format!("{}/auth/login", base_url))
         .json(&json!({
-            "username": "admin",
-            "password": "password"
+            "username": ADMIN_USERNAME,
+            "password": ADMIN_PASSWORD
         }))
         .send()
         .await?;

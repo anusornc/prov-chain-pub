@@ -239,8 +239,8 @@ If you prefer to build from source or need to make modifications:
 
 ```bash
 # Clone repository
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub/deploy
+git clone https://github.com/anusornc/prov-chain.git
+cd provchain-org/deploy
 
 # Use the default docker-compose files (they build from source)
 docker compose -f docker-compose.node.yml up -d --build

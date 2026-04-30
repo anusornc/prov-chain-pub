@@ -1,0 +1,6 @@
+family,scenario,test_name,system,epochs_observed,runs_observed,samples,success_count,failed_count,success_rate,mean_ms,median_ms,p95_ms,p99_ms,stddev_ms,mean_ops_per_sec
+ledger-write,Ledger Write,Batch Commit (100 records),Hyperledger Fabric,30,30,300,300,0,100.0,2165.3632766666665,2160.7245000000003,2208.1682,2248.42164,20.0454924361261,46.185508217183944
+ledger-write,Ledger Write,Batch Submit (100 records),Hyperledger Fabric,30,30,300,300,0,100.0,139.52590333333333,134.077,179.5064,223.46368,19.627909621607415,728.5207220369996
+ledger-write,Ledger Write,Single Record Commit,Hyperledger Fabric,30,30,300,300,0,100.0,2022.8077433333333,2022.825,2025.66615,2026.86305,1.5793016507691646,0.49436265647965716
+ledger-write,Ledger Write,Single Record Submit,Hyperledger Fabric,30,30,300,300,0,100.0,12.808910000000001,12.748000000000001,15.1937,16.43605,1.25083910312238,78.81219234918991
+ledger-write,Write Performance,Single-threaded Write (100 tx),ProvChain-Org,30,30,300,300,0,100.0,29352.3,29689.0,53346.5,55913.88,15656.487044779022,5.68721174032297

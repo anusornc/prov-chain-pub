@@ -5,10 +5,15 @@
 
 use anyhow::Result;
 use provchain_org::core::blockchain::Blockchain;
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 use serde_json::json;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
+
+const TEST_JWT_SECRET: &str = "test-jwt-secret-key-min-32-chars-for-comprehensive-journeys";
+const TEST_BOOTSTRAP_TOKEN: &str = "test-bootstrap-token-for-comprehensive-journeys";
+const ADMIN_USERNAME: &str = "adminroot";
+const ADMIN_PASSWORD: &str = "AdminRootPassword123!";
 
 /// Comprehensive test data for complex scenarios
 const COMPLEX_SUPPLY_CHAIN_DATA: &str = r#"
@@ -63,6 +68,9 @@ async fn find_available_port() -> Result<u16> {
 
 /// Test helper for complex scenarios
 async fn setup_test_environment() -> Result<(u16, tokio::task::JoinHandle<()>)> {
+    std::env::set_var("JWT_SECRET", TEST_JWT_SECRET);
+    std::env::set_var("PROVCHAIN_BOOTSTRAP_TOKEN", TEST_BOOTSTRAP_TOKEN);
+
     let mut blockchain = Blockchain::new();
 
     // Add complex test data
@@ -85,33 +93,70 @@ async fn setup_test_environment() -> Result<(u16, tokio::task::JoinHandle<()>)> 
     Ok((actual_port, handle))
 }
 
+async fn get_auth_token(client: &Client, base_url: &str) -> Result<String> {
+    let login_response = client
+        .post(format!("{}/auth/login", base_url))
+        .json(&json!({
+            "username": ADMIN_USERNAME,
+            "password": ADMIN_PASSWORD
+        }))
+        .send()
+        .await?;
+
+    if login_response.status() == StatusCode::OK {
+        let auth_data: serde_json::Value = login_response.json().await?;
+        return Ok(auth_data["token"].as_str().unwrap_or("").to_string());
+    }
+
+    if login_response.status() == StatusCode::UNAUTHORIZED {
+        let bootstrap_response = client
+            .post(format!("{}/auth/bootstrap", base_url))
+            .json(&json!({
+                "username": ADMIN_USERNAME,
+                "password": ADMIN_PASSWORD,
+                "bootstrap_token": TEST_BOOTSTRAP_TOKEN
+            }))
+            .send()
+            .await?;
+
+        assert!(
+            bootstrap_response.status() == StatusCode::OK
+                || bootstrap_response.status() == StatusCode::CONFLICT,
+            "bootstrap should succeed or report conflict, got {}",
+            bootstrap_response.status()
+        );
+
+        let retry_response = client
+            .post(format!("{}/auth/login", base_url))
+            .json(&json!({
+                "username": ADMIN_USERNAME,
+                "password": ADMIN_PASSWORD
+            }))
+            .send()
+            .await?;
+
+        assert_eq!(
+            retry_response.status(),
+            StatusCode::OK,
+            "login after bootstrap should succeed"
+        );
+
+        let auth_data: serde_json::Value = retry_response.json().await?;
+        return Ok(auth_data["token"].as_str().unwrap_or("").to_string());
+    }
+
+    let auth_data: serde_json::Value = login_response.json().await?;
+    Ok(auth_data["token"].as_str().unwrap_or("").to_string())
+}
+
 /// Comprehensive E2E test for complex supply chain traceability
 #[tokio::test]
-#[ignore]
 async fn test_complex_supply_chain_traceability() -> Result<()> {
     let (port, _server_handle) = setup_test_environment().await?;
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
 
-    // First authenticate to get a token
-    let login_response = client
-        .post(format!("{}/auth/login", base_url))
-        .json(&json!({
-            "username": "admin",
-            "password": "admin123"
-        }))
-        .send()
-        .await?;
-
-    if !login_response.status().is_success() {
-        println!("Login failed with status: {}", login_response.status());
-        let error_text = login_response.text().await?;
-        println!("Login error: {}", error_text);
-        panic!("Authentication failed");
-    }
-
-    let auth_result: serde_json::Value = login_response.json().await?;
-    let token = auth_result["token"].as_str().unwrap();
+    let token = get_auth_token(&client, &base_url).await?;
 
     // Test complex traceability query with authentication
     let query = r#"
@@ -145,66 +190,34 @@ async fn test_complex_supply_chain_traceability() -> Result<()> {
 
     let results: serde_json::Value = response.json().await?;
     println!("Query results: {}", serde_json::to_string_pretty(&results)?);
-
-    // Check if we have results (may be empty if no matching data)
-    // The structure is results.results.bindings due to nested results
-    assert!(results["results"]["results"]["bindings"].is_array());
-
-    // Verify we got the expected data
-    let bindings = &results["results"]["results"]["bindings"];
-    if let Some(bindings_array) = bindings.as_array() {
-        if !bindings_array.is_empty() {
-            println!("Found {} results", bindings_array.len());
-            // Verify the first result has the expected fields
-            if let Some(first_result) = bindings_array.first() {
-                assert!(first_result["product"].is_string());
-                assert!(first_result["origin"].is_string());
-                assert!(first_result["status"].is_string());
-            }
-        }
-    }
+    assert!(
+        results["result_count"].as_u64().unwrap_or(0) > 0,
+        "should return at least one matching traceability result"
+    );
 
     Ok(())
 }
 
 /// Performance benchmark for complex SPARQL queries
 #[tokio::test]
-#[ignore]
 async fn test_performance_benchmark() -> Result<()> {
     let (port, _server_handle) = setup_test_environment().await?;
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
 
-    // First authenticate to get a token
-    let login_response = client
-        .post(format!("{}/auth/login", base_url))
-        .json(&json!({
-            "username": "admin",
-            "password": "admin123"
-        }))
-        .send()
-        .await?;
-
-    assert!(
-        login_response.status().is_success(),
-        "Authentication should succeed"
-    );
-    let auth_result: serde_json::Value = login_response.json().await?;
-    let token = auth_result["token"].as_str().unwrap();
+    let token = get_auth_token(&client, &base_url).await?;
 
     let start = Instant::now();
 
-    // Complex query with joins and filters (using GRAPH pattern)
+    // Use a deterministic query shape that still exercises multiple predicates
+    // without assuming all patterns live in the same named graph.
     let complex_query = r#"
+    PREFIX : <http://example.org/>
     PREFIX tc: <http://provchain.org/trace#>
     SELECT ?product ?origin ?status WHERE {
-        GRAPH ?g {
-            ?batch tc:product ?product ;
-                   tc:origin ?origin ;
-                   tc:status ?status .
-            ?batch tc:certification ?cert .
-            FILTER(?cert = "Organic" && ?status = "In Transit")
-        }
+        GRAPH ?g1 { :batch001 tc:product ?product . }
+        GRAPH ?g2 { :batch001 tc:origin ?origin . }
+        GRAPH ?g3 { :batch001 tc:status ?status . }
     }
     "#;
 
@@ -223,6 +236,11 @@ async fn test_performance_benchmark() -> Result<()> {
         response.status().is_success(),
         "SPARQL query should succeed"
     );
+    let results: serde_json::Value = response.json().await?;
+    assert!(
+        results["result_count"].as_u64().unwrap_or(0) > 0,
+        "query should return at least one result"
+    );
     assert!(
         duration < Duration::from_secs(5),
         "Query should complete within 5 seconds"
@@ -233,28 +251,12 @@ async fn test_performance_benchmark() -> Result<()> {
 
 /// Edge case testing for error handling
 #[tokio::test]
-#[ignore]
 async fn test_edge_cases() -> Result<()> {
     let (port, _server_handle) = setup_test_environment().await?;
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
 
-    // First authenticate to get a token
-    let login_response = client
-        .post(format!("{}/auth/login", base_url))
-        .json(&json!({
-            "username": "admin",
-            "password": "admin123"
-        }))
-        .send()
-        .await?;
-
-    assert!(
-        login_response.status().is_success(),
-        "Authentication should succeed"
-    );
-    let auth_result: serde_json::Value = login_response.json().await?;
-    let token = auth_result["token"].as_str().unwrap();
+    let token = get_auth_token(&client, &base_url).await?;
 
     // Test invalid SPARQL query with authentication
     let invalid_query = "INVALID SPARQL SYNTAX";

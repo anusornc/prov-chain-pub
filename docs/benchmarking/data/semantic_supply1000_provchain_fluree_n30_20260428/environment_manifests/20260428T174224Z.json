@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-04-28T17:42:57.134151600+00:00",
+  "benchmark_targets": [
+    "ProvChain-Org",
+    "Fluree"
+  ],
+  "skipped_targets": [
+    "Neo4j",
+    "Hyperledger Fabric",
+    "Go Ethereum (Geth)"
+  ],
+  "dataset_path": "/benchmark/datasets",
+  "results_path": "/benchmark/results/trace/20260428T174224Z",
+  "iterations": 1,
+  "warmup_iterations": 3,
+  "dataset_files": {
+    "provchain": "supply_chain_1000.ttl",
+    "fabric": "logical-records:100",
+    "geth": "logical-records:single-submit",
+    "fluree": "translated/fluree/supply_chain_1000.jsonld",
+    "neo4j": "supply_chain_1000.ttl"
+  },
+  "environment": {
+    "os": "linux",
+    "arch": "x86_64",
+    "logical_cpu_cores": 48,
+    "memory_total_kib": 32512300,
+    "results_filesystem_available_bytes": 171385421824
+  },
+  "image_refs": {
+    "provchain": "local-build:provchain-trace",
+    "benchmark-runner": "local-build:benchmark-runner-trace",
+    "fluree": "fluree/server@sha256:e241fe44cabcfbfef4010fdc0d54301e5c91e3cbea8d6420e52ed795bdf0f15e",
+    "neo4j": "neo4j:5.15-community"
+  }
+}

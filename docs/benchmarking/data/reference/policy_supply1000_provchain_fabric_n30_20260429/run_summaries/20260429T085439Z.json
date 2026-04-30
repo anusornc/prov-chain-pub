@@ -1,0 +1,182 @@
+[
+  {
+    "family": "GovernancePolicy",
+    "scenario": "Policy Enforcement",
+    "test_name": "unauthorized-read",
+    "fairness_label": "mixed",
+    "comparison_status": "valid-comparison",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "cross-model-with-caveat",
+        "capability_path": "native",
+        "avg_ms": 0.0007352999999999999,
+        "p50_ms": 0.0007490000000000001,
+        "p95_ms": 0.0009969999999999998,
+        "p99_ms": 0.0009969999999999998,
+        "ops_per_sec": 1394292.1199350462,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      },
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 5.813700000000001,
+        "p50_ms": 5.929,
+        "p95_ms": 6.478,
+        "p99_ms": 6.478,
+        "ops_per_sec": 173.19593776834415,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "ProvChain-Org"
+  },
+  {
+    "family": "GovernancePolicy",
+    "scenario": "Policy Enforcement",
+    "test_name": "auditor-read",
+    "fairness_label": "mixed",
+    "comparison_status": "valid-comparison",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "cross-model-with-caveat",
+        "capability_path": "native",
+        "avg_ms": 0.0007839,
+        "p50_ms": 0.000834,
+        "p95_ms": 0.001089,
+        "p99_ms": 0.001089,
+        "ops_per_sec": 1319406.668008038,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      },
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 6.147,
+        "p50_ms": 6.031,
+        "p95_ms": 7.191,
+        "p99_ms": 7.191,
+        "ops_per_sec": 164.32425772890264,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "ProvChain-Org"
+  },
+  {
+    "family": "GovernancePolicy",
+    "scenario": "Policy Enforcement",
+    "test_name": "rejected-write",
+    "fairness_label": "mixed",
+    "comparison_status": "valid-comparison",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "cross-model-with-caveat",
+        "capability_path": "native",
+        "avg_ms": 0.0007173,
+        "p50_ms": 0.0007199999999999999,
+        "p95_ms": 0.0009850000000000002,
+        "p99_ms": 0.0009850000000000002,
+        "ops_per_sec": 1438627.8201567368,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      },
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 6.0537,
+        "p50_ms": 6.016,
+        "p95_ms": 7.358,
+        "p99_ms": 7.358,
+        "ops_per_sec": 166.8245312101459,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "ProvChain-Org"
+  },
+  {
+    "family": "GovernancePolicy",
+    "scenario": "Policy Enforcement",
+    "test_name": "authorized-read",
+    "fairness_label": "mixed",
+    "comparison_status": "valid-comparison",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "cross-model-with-caveat",
+        "capability_path": "native",
+        "avg_ms": 0.0007823,
+        "p50_ms": 0.0007589999999999999,
+        "p95_ms": 0.00095,
+        "p99_ms": 0.00095,
+        "ops_per_sec": 1298251.715438392,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      },
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 5.9029,
+        "p50_ms": 6.193,
+        "p95_ms": 7.19,
+        "p99_ms": 7.19,
+        "ops_per_sec": 172.66888486372983,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "ProvChain-Org"
+  },
+  {
+    "family": "GovernancePolicy",
+    "scenario": "Policy Enforcement",
+    "test_name": "authorized-write",
+    "fairness_label": "mixed",
+    "comparison_status": "valid-comparison",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "cross-model-with-caveat",
+        "capability_path": "native",
+        "avg_ms": 0.0007065999999999999,
+        "p50_ms": 0.0006799999999999999,
+        "p95_ms": 0.000998,
+        "p99_ms": 0.000998,
+        "ops_per_sec": 1486275.3871947469,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      },
+      {
+        "system": "Hyperledger Fabric",
+        "fairness_label": "native-comparable",
+        "capability_path": "native",
+        "avg_ms": 6.162100000000001,
+        "p50_ms": 5.917,
+        "p95_ms": 7.935,
+        "p99_ms": 7.935,
+        "ops_per_sec": 166.04474622646103,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "ProvChain-Org"
+  }
+]

@@ -128,8 +128,8 @@ criterion = { version = "0.5", features = ["html_reports"] }
 
 ```bash
 # Clone the repository
-git clone https://github.com/anusornc/prov-chain-pub.git
-cd prov-chain-pub
+git clone https://github.com/anusornc/provchain-org.git
+cd provchain-org
 
 # Install dependencies
 cargo build

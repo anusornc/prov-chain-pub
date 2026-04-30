@@ -3,7 +3,7 @@ use crate::governance::Governance;
 use crate::ontology::{OntologyConfig, OntologyManager, ShaclValidator};
 use crate::security::keys::generate_signing_key;
 use crate::storage::persistence::{BlockMetadata, PersistentStorage};
-use crate::storage::rdf_store::{RDFStore, StorageConfig};
+use crate::storage::rdf_store::{RDFStore, RdfGraphAdmissionTimings, StorageConfig};
 use crate::trace_optimization::{EnhancedTraceResult, EnhancedTraceabilitySystem};
 use chrono::Utc;
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
@@ -12,6 +12,7 @@ use oxigraph::model::NamedNode;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::Path;
+use std::time::Instant;
 use tracing::{debug, info};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -25,6 +26,64 @@ pub struct Block {
     pub state_root: String, // State root hash for atomic consistency
     pub validator: String,  // Public key of the validator
     pub signature: String,  // Signature of the block hash
+}
+
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct BlockAdmissionTimings {
+    pub ensure_genesis_ms: f64,
+    pub genesis_rdf_store_add_ms: f64,
+    pub genesis_metadata_insert_ms: f64,
+    pub ontology_validation_ms: f64,
+    pub ontology_validation_reported_ms: f64,
+    pub shacl_data_store_create_ms: f64,
+    pub shacl_rdf_parse_load_ms: f64,
+    pub shacl_core_shape_validation_ms: f64,
+    pub shacl_domain_shape_validation_ms: f64,
+    pub shacl_shape_validation_ms: f64,
+    pub ontology_explanation_summary_ms: f64,
+    pub state_root_ms: f64,
+    pub block_construct_hash_ms: f64,
+    pub signature_create_ms: f64,
+    pub create_block_proposal_total_ms: f64,
+    pub signature_verify_ms: f64,
+    pub rdf_store_add_ms: f64,
+    pub rdf_temp_store_create_ms: f64,
+    pub rdf_turtle_parse_load_ms: f64,
+    pub rdf_quad_remap_collect_ms: f64,
+    pub rdf_oxigraph_insert_ms: f64,
+    pub rdf_state_root_cache_update_ms: f64,
+    pub rdf_memory_cache_update_ms: f64,
+    pub rdf_fallback_insert_ms: f64,
+    pub metadata_insert_ms: f64,
+    pub chain_push_ms: f64,
+    pub persistence_ms: f64,
+    pub submit_signed_block_total_ms: f64,
+    pub total_ms: f64,
+}
+
+fn validation_metadata_ms(
+    validation_result: &crate::ontology::error::ValidationResult,
+    key: &str,
+) -> f64 {
+    validation_result
+        .metadata
+        .get(key)
+        .and_then(|value| value.parse::<f64>().ok())
+        .unwrap_or_default()
+}
+
+fn copy_rdf_graph_timings(
+    admission_timings: &mut BlockAdmissionTimings,
+    rdf_timings: &RdfGraphAdmissionTimings,
+) {
+    admission_timings.rdf_store_add_ms = rdf_timings.total_ms;
+    admission_timings.rdf_temp_store_create_ms = rdf_timings.temp_store_create_ms;
+    admission_timings.rdf_turtle_parse_load_ms = rdf_timings.turtle_parse_load_ms;
+    admission_timings.rdf_quad_remap_collect_ms = rdf_timings.quad_remap_collect_ms;
+    admission_timings.rdf_oxigraph_insert_ms = rdf_timings.oxigraph_insert_ms;
+    admission_timings.rdf_state_root_cache_update_ms = rdf_timings.state_root_cache_update_ms;
+    admission_timings.rdf_memory_cache_update_ms = rdf_timings.memory_cache_update_ms;
+    admission_timings.rdf_fallback_insert_ms = rdf_timings.fallback_insert_ms;
 }
 
 impl Block {
@@ -666,6 +725,19 @@ impl Blockchain {
 
     /// Flush any pending writes to disk
     pub fn flush(&self) -> Result<()> {
+        if let Some(storage) = &self.persistent_storage {
+            let storage = storage.lock().map_err(|_| {
+                ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(
+                    "Failed to lock persistent storage".to_string(),
+                ))
+            })?;
+            storage.sync().map_err(|e| {
+                ProvChainError::Blockchain(BlockchainError::BlockAdditionFailed(format!(
+                    "Failed to sync persistent storage: {}",
+                    e
+                )))
+            })?;
+        }
         self.rdf_store.flush().map_err(|e| e.into())
     }
 
@@ -705,13 +777,36 @@ impl Blockchain {
         encrypted_data: Option<String>,
         validator: String,
     ) -> Result<Block> {
+        self.create_block_proposal_with_optional_timings(data, encrypted_data, validator, None)
+    }
+
+    fn create_block_proposal_with_optional_timings(
+        &mut self,
+        data: String,
+        encrypted_data: Option<String>,
+        validator: String,
+        mut timings: Option<&mut BlockAdmissionTimings>,
+    ) -> Result<Block> {
+        let proposal_start = Instant::now();
+
         // Ensure we have at least a genesis block
+        let genesis_start = Instant::now();
         if self.chain.is_empty() {
             let mut genesis_block = self.create_genesis_block();
             if let Ok(graph_name) = NamedNode::new("http://provchain.org/block/0") {
+                let genesis_rdf_start = Instant::now();
                 self.rdf_store
                     .add_rdf_to_graph(&genesis_block.data, &graph_name);
+                if let Some(timings) = timings.as_deref_mut() {
+                    timings.genesis_rdf_store_add_ms =
+                        genesis_rdf_start.elapsed().as_secs_f64() * 1000.0;
+                }
+                let genesis_metadata_start = Instant::now();
                 self.rdf_store.add_block_metadata(&genesis_block);
+                if let Some(timings) = timings.as_deref_mut() {
+                    timings.genesis_metadata_insert_ms =
+                        genesis_metadata_start.elapsed().as_secs_f64() * 1000.0;
+                }
             } else {
                 return Err(ProvChainError::Blockchain(
                     BlockchainError::GenesisCreationFailed(
@@ -723,6 +818,9 @@ impl Blockchain {
             genesis_block.hash = genesis_block.calculate_hash_with_store(Some(&self.rdf_store));
             self.chain.push(genesis_block);
         }
+        if let Some(timings) = timings.as_deref_mut() {
+            timings.ensure_genesis_ms = genesis_start.elapsed().as_secs_f64() * 1000.0;
+        }
 
         let previous_block = self.chain.last().unwrap();
         let index = previous_block.index + 1;
@@ -730,10 +828,36 @@ impl Blockchain {
 
         // STEP 8: ONTOLOGY-AWARE VALIDATION - Validate transaction data before adding to blockchain
         if self.ontology_manager.is_some() || self.shacl_validator.is_some() {
+            let validation_start = Instant::now();
             match self.validate_block_data_against_ontology(&data) {
                 Ok(validation_result) => {
+                    if let Some(timings) = timings.as_deref_mut() {
+                        timings.ontology_validation_ms =
+                            validation_start.elapsed().as_secs_f64() * 1000.0;
+                        timings.ontology_validation_reported_ms = validation_result
+                            .execution_time_ms
+                            .map(|value| value as f64)
+                            .unwrap_or_default();
+                        timings.shacl_data_store_create_ms =
+                            validation_metadata_ms(&validation_result, "data_store_create_ms");
+                        timings.shacl_rdf_parse_load_ms =
+                            validation_metadata_ms(&validation_result, "rdf_parse_load_ms");
+                        timings.shacl_core_shape_validation_ms =
+                            validation_metadata_ms(&validation_result, "core_shape_validation_ms");
+                        timings.shacl_domain_shape_validation_ms = validation_metadata_ms(
+                            &validation_result,
+                            "domain_shape_validation_ms",
+                        );
+                        timings.shacl_shape_validation_ms =
+                            validation_metadata_ms(&validation_result, "shape_validation_ms");
+                    }
                     if !validation_result.is_valid {
+                        let explanation_start = Instant::now();
                         let explanation_summary = validation_result.explanation_summary();
+                        if let Some(timings) = timings.as_deref_mut() {
+                            timings.ontology_explanation_summary_ms =
+                                explanation_start.elapsed().as_secs_f64() * 1000.0;
+                        }
                         let error_msg = format!(
                             "Transaction validation failed for block {}: {} violations found: {} [{}]",
                             index,
@@ -751,13 +875,22 @@ impl Blockchain {
                             BlockchainError::ValidationFailed(error_msg),
                         ));
                     }
+                    let explanation_start = Instant::now();
+                    let explanation_summary = validation_result.explanation_summary();
+                    if let Some(timings) = timings.as_deref_mut() {
+                        timings.ontology_explanation_summary_ms =
+                            explanation_start.elapsed().as_secs_f64() * 1000.0;
+                    }
                     info!(
                         "✅ Ontology-aware validation passed for block {} [{}]",
-                        index,
-                        validation_result.explanation_summary()
+                        index, explanation_summary
                     );
                 }
                 Err(validation_error) => {
+                    if let Some(timings) = timings.as_deref_mut() {
+                        timings.ontology_validation_ms =
+                            validation_start.elapsed().as_secs_f64() * 1000.0;
+                    }
                     let error_msg = format!(
                         "Ontology Validation Process Error for block {}: {}",
                         index, validation_error
@@ -773,21 +906,47 @@ impl Blockchain {
         }
 
         // Calculate state root
+        let state_root_start = Instant::now();
         let state_root = self.rdf_store.calculate_state_root();
+        if let Some(timings) = timings.as_deref_mut() {
+            timings.state_root_ms = state_root_start.elapsed().as_secs_f64() * 1000.0;
+        }
 
+        let block_construct_start = Instant::now();
         let mut block = Block::new(index, data, previous_hash, state_root, validator);
         block.encrypted_data = encrypted_data;
+        if let Some(timings) = timings.as_deref_mut() {
+            timings.block_construct_hash_ms =
+                block_construct_start.elapsed().as_secs_f64() * 1000.0;
+        }
 
         // Sign the block with the blockchain's signing key
+        let signature_start = Instant::now();
         let signature = self.signing_key.sign(block.hash.as_bytes());
         block.signature = hex::encode(signature.to_bytes());
+        if let Some(timings) = timings.as_deref_mut() {
+            timings.signature_create_ms = signature_start.elapsed().as_secs_f64() * 1000.0;
+            timings.create_block_proposal_total_ms =
+                proposal_start.elapsed().as_secs_f64() * 1000.0;
+        }
 
         Ok(block)
     }
 
     /// Submit a signed block to the blockchain
     pub fn submit_signed_block(&mut self, block: Block) -> Result<()> {
+        self.submit_signed_block_with_optional_timings(block, None)
+    }
+
+    fn submit_signed_block_with_optional_timings(
+        &mut self,
+        block: Block,
+        mut timings: Option<&mut BlockAdmissionTimings>,
+    ) -> Result<()> {
+        let submit_start = Instant::now();
+
         // Verify signature
+        let signature_verify_start = Instant::now();
         if !self.governance.validator_set.is_empty() {
             if !self.governance.validator_set.contains(&block.validator) {
                 return Err(ProvChainError::Blockchain(
@@ -849,13 +1008,25 @@ impl Blockchain {
                 block.validator
             );
         }
+        if let Some(timings) = timings.as_deref_mut() {
+            timings.signature_verify_ms = signature_verify_start.elapsed().as_secs_f64() * 1000.0;
+        }
 
         // Add block data to RDF store
         if let Ok(graph_name) =
             NamedNode::new(format!("http://provchain.org/block/{}", block.index))
         {
-            self.rdf_store.add_rdf_to_graph(&block.data, &graph_name);
+            let rdf_store_timings = self
+                .rdf_store
+                .add_rdf_to_graph_with_timings(&block.data, &graph_name);
+            if let Some(timings) = timings.as_deref_mut() {
+                copy_rdf_graph_timings(timings, &rdf_store_timings);
+            }
+            let metadata_start = Instant::now();
             self.rdf_store.add_block_metadata(&block);
+            if let Some(timings) = timings.as_deref_mut() {
+                timings.metadata_insert_ms = metadata_start.elapsed().as_secs_f64() * 1000.0;
+            }
         } else {
             return Err(ProvChainError::Blockchain(
                 BlockchainError::BlockAdditionFailed(
@@ -867,13 +1038,22 @@ impl Blockchain {
         // SECURITY FIX: Don't recalculate hash after signature verification
         // The hash was already signed by the validator. Recalculating it would
         // invalidate the signature. The signed hash must remain stable.
+        let chain_push_start = Instant::now();
         self.chain.push(block.clone());
+        if let Some(timings) = timings.as_deref_mut() {
+            timings.chain_push_ms = chain_push_start.elapsed().as_secs_f64() * 1000.0;
+        }
 
         // Persist block to durable storage using WAL
+        let persistence_start = Instant::now();
         if let Err(e) = self.persist_block(&block) {
             return Err(ProvChainError::Blockchain(
                 BlockchainError::BlockAdditionFailed(format!("Failed to persist block: {}", e)),
             ));
+        }
+        if let Some(timings) = timings.as_deref_mut() {
+            timings.persistence_ms = persistence_start.elapsed().as_secs_f64() * 1000.0;
+            timings.submit_signed_block_total_ms = submit_start.elapsed().as_secs_f64() * 1000.0;
         }
 
         Ok(())
@@ -927,6 +1107,20 @@ impl Blockchain {
     pub fn add_block(&mut self, data: String) -> Result<()> {
         let block = self.create_block_proposal(data, None, self.validator_public_key.clone())?;
         self.submit_signed_block(block)
+    }
+
+    pub fn add_block_with_timings(&mut self, data: String) -> Result<BlockAdmissionTimings> {
+        let total_start = Instant::now();
+        let mut timings = BlockAdmissionTimings::default();
+        let block = self.create_block_proposal_with_optional_timings(
+            data,
+            None,
+            self.validator_public_key.clone(),
+            Some(&mut timings),
+        )?;
+        self.submit_signed_block_with_optional_timings(block, Some(&mut timings))?;
+        timings.total_ms = total_start.elapsed().as_secs_f64() * 1000.0;
+        Ok(timings)
     }
 
     pub fn is_valid(&self) -> bool {
