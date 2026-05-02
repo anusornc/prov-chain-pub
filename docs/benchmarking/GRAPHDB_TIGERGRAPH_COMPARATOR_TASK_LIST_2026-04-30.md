@@ -497,22 +497,25 @@ Current implementation evidence:
 ### H001 - Evidence Hygiene And Public Release Safety
 
 - Priority: `P0`
-- Status: `In progress - TigerGraph n30 evidence exported; public release pending after paper update`
+- Status: `Done - local hygiene and curated public export prepared; push deferred`
 - Goal: กันผล benchmark ปนกับ public/sensitive files และ output จำนวนมาก
 - Tasks:
   - [x] keep raw runtime output out of git unless curated
   - [x] export only summary CSV/JSON/README/manifest/aggregate files
-  - [ ] archive failed campaigns outside publication reference path
+  - [x] archive failed campaigns outside publication reference path
   - [x] update `.gitignore` if new generated runtime directories appear
-  - [ ] run public release safety script only after all doc/paper updates are finalized
+  - [x] run public release safety script only after all doc/paper updates are finalized
 - Done when:
   - `git status --short` ไม่มี target/log/generated dump ที่ไม่ควร commit
 Current implementation evidence:
   - `benchmark-toolkit/results/` remains ignored
   - `benchmark-toolkit/datasets/translated/` remains ignored
   - new TigerGraph generated artifacts are ignored via `benchmark-toolkit/tigergraph/generated/`
-  - after the GraphDB manuscript integration commit, `git status --short --branch` showed no uncommitted tracked or untracked files
-  - public release export/push is intentionally deferred until TigerGraph is either passed or documented as deferred
+  - after TigerGraph paper integration, `git status --short --branch` showed no uncommitted tracked or untracked files
+  - `git ls-files benchmark-toolkit/results benchmark-toolkit/datasets/translated benchmark-toolkit/tigergraph/generated` showed only the tracked results README/index placeholders, not generated benchmark dumps
+  - `./scripts/prepare-public-release-export.sh --source /home/cit/provchain-org --target /tmp/prov-chain-pub-export --ref HEAD --commit --message "chore(public): update curated release artifacts"` completed after staging/committing the prepared public worktree
+  - public worktree commit: `147b638 chore(public): update curated release artifacts`
+  - public push remains intentionally deferred
 
 ## Execution Order
 
