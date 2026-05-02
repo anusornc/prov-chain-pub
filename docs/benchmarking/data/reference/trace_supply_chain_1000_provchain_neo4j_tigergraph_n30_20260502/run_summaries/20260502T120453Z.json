@@ -1,0 +1,195 @@
+[
+  {
+    "family": "TraceQuery",
+    "scenario": "Trace Query",
+    "test_name": "Multi-hop Traceability (10 hops)",
+    "fairness_label": "mixed",
+    "comparison_status": "valid-comparison",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "native-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 0.49128977999999995,
+        "p50_ms": 0.48269399999999996,
+        "p95_ms": 0.635714,
+        "p99_ms": 0.7749309999999999,
+        "ops_per_sec": 1000.0,
+        "success_rate": 100.0,
+        "total_runs": 50,
+        "successful_runs": 50
+      },
+      {
+        "system": "TigerGraph",
+        "fairness_label": "secondary-baseline",
+        "capability_path": "translated-property-graph-model",
+        "avg_ms": 4.159423139999999,
+        "p50_ms": 4.221336,
+        "p95_ms": 4.8657070000000004,
+        "p99_ms": 7.546134,
+        "ops_per_sec": 246.46074046032,
+        "success_rate": 100.0,
+        "total_runs": 50,
+        "successful_runs": 50
+      },
+      {
+        "system": "Neo4j",
+        "fairness_label": "native-comparable",
+        "capability_path": "translated-graph-model",
+        "avg_ms": 13.3,
+        "p50_ms": 5.0,
+        "p95_ms": 31.0,
+        "p99_ms": 267.0,
+        "ops_per_sec": 205.5137184510145,
+        "success_rate": 100.0,
+        "total_runs": 50,
+        "successful_runs": 50
+      }
+    ],
+    "winner": "ProvChain-Org"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Data Loading",
+    "test_name": "Turtle to Cypher Import",
+    "fairness_label": "secondary-baseline",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "Neo4j",
+        "fairness_label": "secondary-baseline",
+        "capability_path": "secondary-transactional-baseline",
+        "avg_ms": 32146.0,
+        "p50_ms": 32146.0,
+        "p95_ms": 32146.0,
+        "p99_ms": 32146.0,
+        "ops_per_sec": 31.10719761882236,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "TraceQuery",
+    "scenario": "Trace Query",
+    "test_name": "Aggregation by Producer",
+    "fairness_label": "mixed",
+    "comparison_status": "valid-comparison",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "native-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 0.5603548999999999,
+        "p50_ms": 0.48910800000000004,
+        "p95_ms": 1.1624,
+        "p99_ms": 1.1624,
+        "ops_per_sec": 986.0289057123193,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      },
+      {
+        "system": "TigerGraph",
+        "fairness_label": "secondary-baseline",
+        "capability_path": "translated-property-graph-model",
+        "avg_ms": 3.5504987999999997,
+        "p50_ms": 3.223457,
+        "p95_ms": 6.6534569999999995,
+        "p99_ms": 6.6534569999999995,
+        "ops_per_sec": 297.54780394503643,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      },
+      {
+        "system": "Neo4j",
+        "fairness_label": "native-comparable",
+        "capability_path": "translated-graph-model",
+        "avg_ms": 23.8,
+        "p50_ms": 5.0,
+        "p95_ms": 196.0,
+        "p99_ms": 196.0,
+        "ops_per_sec": 200.51020408163265,
+        "success_rate": 100.0,
+        "total_runs": 10,
+        "successful_runs": 10
+      }
+    ],
+    "winner": "ProvChain-Org"
+  },
+  {
+    "family": "LedgerWrite",
+    "scenario": "Data Loading",
+    "test_name": "Turtle RDF Import",
+    "fairness_label": "native-comparable",
+    "comparison_status": "single-system-contract",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "native-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 24.0,
+        "p50_ms": 24.0,
+        "p95_ms": 24.0,
+        "p99_ms": 24.0,
+        "ops_per_sec": 26058.40521488062,
+        "success_rate": 100.0,
+        "total_runs": 1,
+        "successful_runs": 1
+      }
+    ],
+    "winner": "N/A (single system contract)"
+  },
+  {
+    "family": "TraceQuery",
+    "scenario": "Trace Query",
+    "test_name": "Simple Product Lookup",
+    "fairness_label": "mixed",
+    "comparison_status": "valid-comparison",
+    "systems": [
+      {
+        "system": "ProvChain-Org",
+        "fairness_label": "native-comparable",
+        "capability_path": "native-rdf-path",
+        "avg_ms": 0.49646174000000015,
+        "p50_ms": 0.480999,
+        "p95_ms": 0.627274,
+        "p99_ms": 1.014189,
+        "ops_per_sec": 999.7201902209548,
+        "success_rate": 100.0,
+        "total_runs": 50,
+        "successful_runs": 50
+      },
+      {
+        "system": "TigerGraph",
+        "fairness_label": "secondary-baseline",
+        "capability_path": "translated-property-graph-model",
+        "avg_ms": 3.31852848,
+        "p50_ms": 3.209062,
+        "p95_ms": 3.785948,
+        "p99_ms": 7.194960999999999,
+        "ops_per_sec": 311.60076891914684,
+        "success_rate": 100.0,
+        "total_runs": 50,
+        "successful_runs": 50
+      },
+      {
+        "system": "Neo4j",
+        "fairness_label": "native-comparable",
+        "capability_path": "translated-graph-model",
+        "avg_ms": 10.72,
+        "p50_ms": 6.0,
+        "p95_ms": 37.0,
+        "p99_ms": 145.0,
+        "ops_per_sec": 170.74286551441725,
+        "success_rate": 100.0,
+        "total_runs": 50,
+        "successful_runs": 50
+      }
+    ],
+    "winner": "ProvChain-Org"
+  }
+]

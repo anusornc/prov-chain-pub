@@ -1,0 +1,27 @@
+CREATE VERTEX Product(PRIMARY_ID id STRING, batch_id STRING) WITH primary_id_as_attribute="true"
+CREATE VERTEX Producer(PRIMARY_ID id STRING, name STRING) WITH primary_id_as_attribute="true"
+CREATE DIRECTED EDGE ProducedBy(FROM Product, TO Producer)
+CREATE GRAPH ProvChainSmoke(Product, Producer, ProducedBy)
+
+USE GRAPH ProvChainSmoke
+
+CREATE LOADING JOB load_minimal_trace FOR GRAPH ProvChainSmoke {
+  DEFINE FILENAME products="/benchmark/tigergraph/minimal-products.csv";
+  DEFINE FILENAME producers="/benchmark/tigergraph/minimal-producers.csv";
+  DEFINE FILENAME produced_by="/benchmark/tigergraph/minimal-produced-by.csv";
+
+  LOAD products TO VERTEX Product VALUES($0, $1) USING header="true", separator=",";
+  LOAD producers TO VERTEX Producer VALUES($0, $1) USING header="true", separator=",";
+  LOAD produced_by TO EDGE ProducedBy VALUES($0, $1) USING header="true", separator=",";
+}
+
+RUN LOADING JOB load_minimal_trace
+
+CREATE QUERY product_lookup(STRING product_id) FOR GRAPH ProvChainSmoke {
+  start = {Product.*};
+  matched = SELECT p FROM start:p WHERE p.id == product_id;
+  PRINT matched;
+}
+
+INSTALL QUERY product_lookup
+RUN QUERY product_lookup("BATCH001")

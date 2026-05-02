@@ -5,8 +5,9 @@ use benchmark_runner::{
     parse_batch_ids, BenchmarkFamily, BenchmarkResult, BenchmarkSummary, CapabilityPath,
     FabricAdapter, FabricConfig, FabricPolicyCheckRequest, FabricRecord, FabricRecordPayload,
     FabricRecordPolicy, FairnessLabel, FlureeAdapter, FlureeConfig, GethAdapter, GethConfig,
-    GethTransactionRequest, MetricType, MetricUnit, Neo4jTraceAdapter, ProvChainAdapter,
-    ProvChainPolicyCheckRequest, SystemSummary, TraceQueryAdapter, TraceQueryKind,
+    GethTransactionRequest, GraphDbAdapter, GraphDbConfig, MetricType, MetricUnit,
+    Neo4jTraceAdapter, ProvChainAdapter, ProvChainPolicyCheckRequest, SystemSummary,
+    TigerGraphAdapter, TigerGraphConfig, TraceQueryAdapter, TraceQueryKind,
 };
 use chrono::Utc;
 use clap::Parser;
@@ -154,6 +155,46 @@ struct Args {
     #[arg(long, env = "FLUREE_LEDGER", default_value = "provchain/benchmark")]
     fluree_ledger: String,
 
+    /// GraphDB base URL
+    #[arg(long, env = "GRAPHDB_URL", default_value = "http://localhost:17200")]
+    graphdb_url: String,
+
+    /// GraphDB repository
+    #[arg(long, env = "GRAPHDB_REPOSITORY", default_value = "provchain_smoke")]
+    graphdb_repository: String,
+
+    /// GraphDB named graph IRI for benchmark Turtle loads
+    #[arg(
+        long,
+        env = "GRAPHDB_GRAPH_IRI",
+        default_value = "http://provchain.org/benchmark/graphdb/default-graph"
+    )]
+    graphdb_graph_iri: String,
+
+    /// GraphDB request timeout in seconds
+    #[arg(long, env = "GRAPHDB_TIMEOUT_SECONDS", default_value = "30")]
+    graphdb_timeout_seconds: u64,
+
+    /// Optional GraphDB username
+    #[arg(long, env = "GRAPHDB_USERNAME")]
+    graphdb_username: Option<String>,
+
+    /// Optional GraphDB password
+    #[arg(long, env = "GRAPHDB_PASSWORD")]
+    graphdb_password: Option<String>,
+
+    /// TigerGraph RESTPP base URL
+    #[arg(long, env = "TIGERGRAPH_URL", default_value = "http://localhost:19000")]
+    tigergraph_url: String,
+
+    /// TigerGraph graph name
+    #[arg(long, env = "TIGERGRAPH_GRAPH", default_value = "ProvChainTrace")]
+    tigergraph_graph: String,
+
+    /// TigerGraph request timeout in seconds
+    #[arg(long, env = "TIGERGRAPH_TIMEOUT_SECONDS", default_value = "30")]
+    tigergraph_timeout_seconds: u64,
+
     /// Fabric gateway URL
     #[arg(
         long,
@@ -226,6 +267,14 @@ struct Args {
     #[arg(long)]
     skip_fluree: bool,
 
+    /// Skip GraphDB benchmarks
+    #[arg(long, env = "BENCHMARK_SKIP_GRAPHDB", default_value = "true")]
+    skip_graphdb: bool,
+
+    /// Skip TigerGraph benchmarks
+    #[arg(long, env = "BENCHMARK_SKIP_TIGERGRAPH", default_value = "true")]
+    skip_tigergraph: bool,
+
     /// Skip Fabric health checks and future ledger benchmarks
     #[arg(long)]
     skip_fabric: bool,
@@ -262,6 +311,14 @@ struct Args {
     )]
     fluree_dataset_file: String,
 
+    /// GraphDB Turtle dataset file name
+    #[arg(
+        long,
+        env = "GRAPHDB_DATASET_FILE",
+        default_value = "supply_chain_1000.ttl"
+    )]
+    graphdb_dataset_file: String,
+
     /// Batch IDs for testing (comma-separated)
     #[arg(long, default_value = "BATCH001,BATCH010,BATCH017,BATCH025,BATCH050")]
     test_batch_ids: String,
@@ -277,6 +334,8 @@ struct SystemClients {
     neo4j_client: Option<Neo4jClient>,
     neo4j_config: Neo4jConfig,
     fluree_adapter: FlureeAdapter,
+    graphdb_adapter: GraphDbAdapter,
+    tigergraph_adapter: TigerGraphAdapter,
     fabric_adapter: FabricAdapter,
     geth_adapter: GethAdapter,
 }
@@ -299,6 +358,21 @@ impl SystemClients {
             ledger: args.fluree_ledger.clone(),
         };
 
+        let graphdb_config = GraphDbConfig {
+            base_url: args.graphdb_url.clone(),
+            repository: args.graphdb_repository.clone(),
+            timeout_secs: args.graphdb_timeout_seconds,
+            username: args.graphdb_username.clone(),
+            password: args.graphdb_password.clone(),
+            graph_iri: args.graphdb_graph_iri.clone(),
+        };
+
+        let tigergraph_config = TigerGraphConfig {
+            base_url: args.tigergraph_url.clone(),
+            graph_name: args.tigergraph_graph.clone(),
+            timeout_secs: args.tigergraph_timeout_seconds,
+        };
+
         let fabric_config = FabricConfig {
             gateway_url: args.fabric_gateway_url.clone(),
             channel: args.fabric_channel.clone(),
@@ -314,6 +388,8 @@ impl SystemClients {
             neo4j_client: None,
             neo4j_config,
             fluree_adapter: FlureeAdapter::new(fluree_config),
+            graphdb_adapter: GraphDbAdapter::new(graphdb_config),
+            tigergraph_adapter: TigerGraphAdapter::new(tigergraph_config),
             fabric_adapter: FabricAdapter::new(fabric_config),
             geth_adapter: GethAdapter::new(geth_config),
         }
@@ -376,6 +452,26 @@ impl SystemClients {
             info!("⊘ Fluree: SKIPPED");
         }
 
+        if !args.skip_graphdb {
+            match self.graphdb_adapter.health_check().await {
+                Ok(true) => info!("✓ GraphDB is healthy"),
+                Ok(false) => warn!("⚠ GraphDB health check returned unhealthy"),
+                Err(e) => warn!("⚠ GraphDB health check failed: {}", e),
+            }
+        } else {
+            info!("⊘ GraphDB: SKIPPED");
+        }
+
+        if !args.skip_tigergraph {
+            match self.tigergraph_adapter.health_check().await {
+                Ok(true) => info!("✓ TigerGraph is healthy"),
+                Ok(false) => warn!("⚠ TigerGraph health check returned unhealthy"),
+                Err(e) => warn!("⚠ TigerGraph health check failed: {}", e),
+            }
+        } else {
+            info!("⊘ TigerGraph: SKIPPED");
+        }
+
         if !args.skip_fabric {
             match self.fabric_adapter.health_check().await {
                 Ok(true) => info!("✓ Hyperledger Fabric gateway is healthy"),
@@ -416,6 +512,16 @@ impl SystemClients {
     ) -> Result<Duration> {
         let dataset_path = Path::new(dataset_path).join(dataset_file);
         self.fluree_adapter.load_jsonld(&dataset_path).await
+    }
+
+    async fn load_dataset_graphdb(
+        &self,
+        dataset_path: &str,
+        dataset_file: &str,
+    ) -> Result<Duration> {
+        let dataset_path = Path::new(dataset_path).join(dataset_file);
+        self.graphdb_adapter.reset_repository().await?;
+        self.graphdb_adapter.load_turtle(&dataset_path).await
     }
 }
 
@@ -478,6 +584,16 @@ fn build_environment_manifest(args: &Args) -> EnvironmentManifest {
     } else {
         benchmark_targets.push("Fluree".to_string());
     }
+    if args.skip_graphdb {
+        skipped_targets.push("GraphDB".to_string());
+    } else {
+        benchmark_targets.push("GraphDB".to_string());
+    }
+    if args.skip_tigergraph {
+        skipped_targets.push("TigerGraph".to_string());
+    } else {
+        benchmark_targets.push("TigerGraph".to_string());
+    }
     if args.skip_fabric {
         skipped_targets.push("Hyperledger Fabric".to_string());
     } else {
@@ -493,6 +609,11 @@ fn build_environment_manifest(args: &Args) -> EnvironmentManifest {
     dataset_files.insert("provchain".to_string(), args.provchain_dataset_file.clone());
     dataset_files.insert("neo4j".to_string(), args.neo4j_dataset_file.clone());
     dataset_files.insert("fluree".to_string(), args.fluree_dataset_file.clone());
+    dataset_files.insert("graphdb".to_string(), args.graphdb_dataset_file.clone());
+    dataset_files.insert(
+        "tigergraph".to_string(),
+        "translated CSV/GSQL model preloaded by install-tigergraph-trace-model.sh".to_string(),
+    );
     dataset_files.insert(
         "fabric".to_string(),
         format!("logical-records:{}", args.fabric_batch_size),
@@ -511,6 +632,12 @@ fn build_environment_manifest(args: &Args) -> EnvironmentManifest {
     }
     if let Ok(value) = std::env::var("BENCHMARK_FLUREE_IMAGE") {
         image_refs.insert("fluree".to_string(), value);
+    }
+    if let Ok(value) = std::env::var("BENCHMARK_GRAPHDB_IMAGE") {
+        image_refs.insert("graphdb".to_string(), value);
+    }
+    if let Ok(value) = std::env::var("BENCHMARK_TIGERGRAPH_IMAGE") {
+        image_refs.insert("tigergraph".to_string(), value);
     }
     if let Ok(value) = std::env::var("BENCHMARK_FABRIC_GATEWAY_IMAGE") {
         image_refs.insert("fabric-gateway".to_string(), value);
@@ -591,6 +718,8 @@ async fn benchmark_query_performance(
     let provchain_adapter = ProvChainAdapter::new(clients.provchain_url.clone());
     let neo4j_adapter = clients.neo4j_client.as_ref().map(Neo4jTraceAdapter::new);
     let fluree_adapter = (!args.skip_fluree).then_some(&clients.fluree_adapter);
+    let graphdb_adapter = (!args.skip_graphdb).then_some(&clients.graphdb_adapter);
+    let tigergraph_adapter = (!args.skip_tigergraph).then_some(&clients.tigergraph_adapter);
 
     for scenario in scenarios {
         info!("Trace query scenario: {}", scenario.name);
@@ -630,6 +759,34 @@ async fn benchmark_query_performance(
                                 benchmark_result_from_trace(trace_result, i, metadata)
                                     .with_fairness_label(FairnessLabel::NativeComparable)
                                     .with_capability_path(CapabilityPath::NativeRdfPath),
+                            );
+                        }
+
+                        if let Some(adapter) = graphdb_adapter {
+                            let mut metadata = HashMap::new();
+                            metadata.insert("batch_id".to_string(), batch_id.clone().into());
+                            let trace_result = adapter.entity_lookup(batch_id).await?;
+                            results.push(
+                                benchmark_result_from_trace(trace_result, i, metadata)
+                                    .with_fairness_label(FairnessLabel::NativeComparable)
+                                    .with_capability_path(CapabilityPath::NativeRdfPath),
+                            );
+                        }
+
+                        if let Some(adapter) = tigergraph_adapter {
+                            let mut metadata = HashMap::new();
+                            metadata.insert("batch_id".to_string(), batch_id.clone().into());
+                            metadata.insert(
+                                "claim_boundary".to_string(),
+                                "translated-property-graph-model".into(),
+                            );
+                            let trace_result = adapter.entity_lookup(batch_id).await?;
+                            results.push(
+                                benchmark_result_from_trace(trace_result, i, metadata)
+                                    .with_fairness_label(FairnessLabel::SecondaryBaseline)
+                                    .with_capability_path(
+                                        CapabilityPath::TranslatedPropertyGraphModel,
+                                    ),
                             );
                         }
                     }
@@ -677,6 +834,36 @@ async fn benchmark_query_performance(
                                     .with_capability_path(CapabilityPath::NativeRdfPath),
                             );
                         }
+
+                        if let Some(adapter) = graphdb_adapter {
+                            let mut metadata = HashMap::new();
+                            metadata.insert("batch_id".to_string(), batch_id.clone().into());
+                            metadata.insert("hops".to_string(), hops.into());
+                            let trace_result = adapter.trace_multi_hop(batch_id, hops).await?;
+                            results.push(
+                                benchmark_result_from_trace(trace_result, i, metadata)
+                                    .with_fairness_label(FairnessLabel::NativeComparable)
+                                    .with_capability_path(CapabilityPath::NativeRdfPath),
+                            );
+                        }
+
+                        if let Some(adapter) = tigergraph_adapter {
+                            let mut metadata = HashMap::new();
+                            metadata.insert("batch_id".to_string(), batch_id.clone().into());
+                            metadata.insert("hops".to_string(), hops.into());
+                            metadata.insert(
+                                "claim_boundary".to_string(),
+                                "translated-property-graph-model".into(),
+                            );
+                            let trace_result = adapter.trace_multi_hop(batch_id, hops).await?;
+                            results.push(
+                                benchmark_result_from_trace(trace_result, i, metadata)
+                                    .with_fairness_label(FairnessLabel::SecondaryBaseline)
+                                    .with_capability_path(
+                                        CapabilityPath::TranslatedPropertyGraphModel,
+                                    ),
+                            );
+                        }
                     }
                 }
             }
@@ -708,6 +895,29 @@ async fn benchmark_query_performance(
                             benchmark_result_from_trace(trace_result, i, HashMap::new())
                                 .with_fairness_label(FairnessLabel::NativeComparable)
                                 .with_capability_path(CapabilityPath::NativeRdfPath),
+                        );
+                    }
+
+                    if let Some(adapter) = graphdb_adapter {
+                        let trace_result = adapter.aggregation_by_producer().await?;
+                        results.push(
+                            benchmark_result_from_trace(trace_result, i, HashMap::new())
+                                .with_fairness_label(FairnessLabel::NativeComparable)
+                                .with_capability_path(CapabilityPath::NativeRdfPath),
+                        );
+                    }
+
+                    if let Some(adapter) = tigergraph_adapter {
+                        let mut metadata = HashMap::new();
+                        metadata.insert(
+                            "claim_boundary".to_string(),
+                            "translated-property-graph-model".into(),
+                        );
+                        let trace_result = adapter.aggregation_by_producer().await?;
+                        results.push(
+                            benchmark_result_from_trace(trace_result, i, metadata)
+                                .with_fairness_label(FairnessLabel::SecondaryBaseline)
+                                .with_capability_path(CapabilityPath::TranslatedPropertyGraphModel),
                         );
                     }
                 }
@@ -1605,7 +1815,9 @@ async fn benchmark_data_loading(
                         0,
                         0.0,
                     )
-                    .with_error(error_chain),
+                    .with_error(error_chain)
+                    .with_fairness_label(FairnessLabel::NativeComparable)
+                    .with_capability_path(CapabilityPath::NativeRdfPath),
                 );
             }
         }
@@ -1709,6 +1921,55 @@ async fn benchmark_data_loading(
                 "Skipping Fluree data loading because dataset '{}' is not JSON-LD",
                 args.fluree_dataset_file
             );
+        }
+    }
+
+    // GraphDB data loading
+    if !args.skip_graphdb {
+        info!("Loading data into GraphDB...");
+        match clients
+            .load_dataset_graphdb(&args.dataset_path, &args.graphdb_dataset_file)
+            .await
+        {
+            Ok(duration) => {
+                let mut result = BenchmarkResult::new(
+                    "GraphDB",
+                    BenchmarkFamily::LedgerWrite,
+                    MetricType::LoadLatencyMs,
+                    "Data Loading",
+                    "Turtle RDF Import",
+                    0,
+                    duration.as_millis() as f64,
+                );
+                result.operations_per_second = 1000.0 / duration.as_secs_f64();
+                result = result
+                    .with_fairness_label(FairnessLabel::NativeComparable)
+                    .with_capability_path(CapabilityPath::NativeRdfPath);
+                result.metadata.insert(
+                    "dataset".to_string(),
+                    args.graphdb_dataset_file.clone().into(),
+                );
+                result = result
+                    .with_metadata("repository", args.graphdb_repository.clone())
+                    .with_metadata("graph_iri", args.graphdb_graph_iri.clone());
+                results.push(result);
+            }
+            Err(e) => {
+                let error_chain = format!("{e:#}");
+                error!("Failed to load data into GraphDB: {error_chain}");
+                results.push(
+                    BenchmarkResult::new(
+                        "GraphDB",
+                        BenchmarkFamily::LedgerWrite,
+                        MetricType::LoadLatencyMs,
+                        "Data Loading",
+                        "Turtle RDF Import",
+                        0,
+                        0.0,
+                    )
+                    .with_error(error_chain),
+                );
+            }
         }
     }
 
@@ -2300,6 +2561,18 @@ async fn main() -> Result<()> {
     } else {
         info!("Fluree: SKIPPED");
     }
+    if !args.skip_graphdb {
+        info!("GraphDB URL: {}", args.graphdb_url);
+        info!("GraphDB repository: {}", args.graphdb_repository);
+    } else {
+        info!("GraphDB: SKIPPED");
+    }
+    if !args.skip_tigergraph {
+        info!("TigerGraph URL: {}", args.tigergraph_url);
+        info!("TigerGraph graph: {}", args.tigergraph_graph);
+    } else {
+        info!("TigerGraph: SKIPPED");
+    }
     if !args.skip_fabric {
         info!("Fabric gateway URL: {}", args.fabric_gateway_url);
     } else {
@@ -2319,6 +2592,8 @@ async fn main() -> Result<()> {
     info!("ProvChain dataset file: {}", args.provchain_dataset_file);
     info!("Neo4j dataset file: {}", args.neo4j_dataset_file);
     info!("Fluree dataset file: {}", args.fluree_dataset_file);
+    info!("GraphDB dataset file: {}", args.graphdb_dataset_file);
+    info!("TigerGraph graph: {}", args.tigergraph_graph);
     info!("Fabric batch size: {}", args.fabric_batch_size);
     info!("═══════════════════════════════════════════════════\n");
 

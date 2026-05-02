@@ -1,0 +1,19 @@
+services:
+  graphdb:
+    image: ${GRAPHDB_IMAGE:-ontotext/graphdb:10.8.13}
+    container_name: ${GRAPHDB_CONTAINER_NAME:-graphdb-benchmark}
+    restart: unless-stopped
+    ports:
+      - "${GRAPHDB_HTTP_PORT:-17200}:7200"
+    environment:
+      GDB_JAVA_OPTS: ${GRAPHDB_JAVA_OPTS:--Xms1g -Xmx2g}
+    volumes:
+      - ${GRAPHDB_HOME_DIR:-/tmp/provchain-graphdb-home-10.8}:/opt/graphdb/home
+      - ./datasets:/benchmark/datasets:ro
+      - ./graphdb:/benchmark/graphdb:ro
+    networks:
+      - graphdb_benchmark_net
+
+networks:
+  graphdb_benchmark_net:
+    driver: bridge

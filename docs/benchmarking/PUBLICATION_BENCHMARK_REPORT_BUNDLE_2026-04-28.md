@@ -1,7 +1,7 @@
 # Publication Benchmark Report Bundle
 
 - Generated at: `2026-04-29T09:57:54Z`
-- Manual addendum updated at: `2026-04-30T05:18:06Z`
+- Manual addendum updated at: `2026-05-02T12:40:34Z`
 - Scope: family-specific benchmark evidence only
 - Rule: no single global winner table is generated
 
@@ -20,12 +20,37 @@ R002 adds a final reference campaign for ProvChain bulk Turtle dataset admission
 - Neo4j `Turtle to Cypher Import`: mean `11431.367 ms`, p95 `11855.800 ms`, p99 `11935.670 ms`
 - Claim boundary: this is bulk dataset-admission/load-reference evidence. It corrects the old per-triple import algorithm and must not be used as per-transaction ledger/write throughput or finality evidence.
 
+## 2026-05-01 GraphDB Comparator Addendum
+
+GraphDB is now included as an RDF/SPARQL-native trace-query comparator:
+
+- Evidence directory: `docs/benchmarking/data/reference/trace_supply_chain_1000_provchain_neo4j_fluree_graphdb_n30_20260501/`
+- Campaign: `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30`
+- Status: `passed`, `30/30`
+- GraphDB path: `native-rdf-path`
+- GraphDB Turtle RDF Import: mean `2707.967 ms`, p95 `2923.100 ms`, p99 `2930.390 ms`
+- GraphDB trace-query means: Simple Product Lookup `14.567 ms`, Multi-hop Traceability `9.618 ms`, Aggregation by Producer `13.733 ms`
+- Claim boundary: GraphDB rows are valid RDF/SPARQL-native comparator evidence for the `supply_chain_1000` trace-query family. Load/import rows remain setup-path evidence, not primary ledger-write evidence.
+
+## 2026-05-02 TigerGraph Comparator Addendum
+
+TigerGraph is now included as an optional translated property-graph trace-query comparator:
+
+- Evidence directory: `docs/benchmarking/data/reference/trace_supply_chain_1000_provchain_neo4j_tigergraph_n30_20260502/`
+- Campaign: `20260502_trace_supply1000_provchain-neo4j-tigergraph_n30`
+- Status: `passed`, `30/30`
+- TigerGraph path: `translated-property-graph-model`
+- TigerGraph trace-query means: Simple Product Lookup `3.222 ms`, Multi-hop Traceability `4.038 ms`, Aggregation by Producer `3.276 ms`
+- Claim boundary: TigerGraph rows are valid only as secondary translated property-graph comparator evidence for the `supply_chain_1000` trace-query family. They must not be used as RDF/SPARQL-native, ontology-validation, semantic-admission, ledger-write, or finality evidence.
+
 ## Evidence Sources
 
 | Evidence Directory | Campaign | Status | Family | Dataset | Workload | Products |
 |---|---|---|---|---|---|---|
 | `docs/benchmarking/data/trace_supply1000_provchain_neo4j_n30_20260424` | `20260424_trace_supply1000_provchain-neo4j_n30` | `passed` | `trace_query` | `supply_chain_1000` | `` | `provchain, neo4j` |
 | `docs/benchmarking/data/trace_supply1000_provchain_neo4j_fluree_n30_20260428` | `20260428_trace_supply1000_provchain-neo4j-fluree_n30` | `passed` | `trace_query` | `supply_chain_1000` | `` | `provchain, neo4j, fluree` |
+| `docs/benchmarking/data/reference/trace_supply_chain_1000_provchain_neo4j_fluree_graphdb_n30_20260501` | `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `passed` | `trace_query` | `supply_chain_1000` | `trace_query` | `provchain, neo4j, fluree, graphdb` |
+| `docs/benchmarking/data/reference/trace_supply_chain_1000_provchain_neo4j_tigergraph_n30_20260502` | `20260502_trace_supply1000_provchain-neo4j-tigergraph_n30` | `passed` | `trace_query` | `supply_chain_1000` | `trace_query` | `provchain, neo4j, tigergraph` |
 | `docs/benchmarking/data/ledger_supply1000_provchain_fabric_managed_n30_20260425` | `20260425_ledger_supply1000_provchain-fabric_managed_n30_fix3` | `passed` | `ledger_write` | `supply_chain_1000` | `` | `provchain, fabric` |
 | `docs/benchmarking/data/semantic_supply1000_provchain_fluree_n30_20260428` | `20260428_semantic_supply1000_provchain-fluree_n30` | `passed` | `semantic` | `supply_chain_1000` | `` | `provchain, fluree` |
 | `docs/benchmarking/data/policy_supply1000_provchain_fabric_e2e_n30_20260429` | `20260429_policy_supply1000_provchain-fabric_e2e_n30` | `passed` | `governance_policy` | `supply_chain_1000` | `policy` | `provchain, fabric` |
@@ -87,6 +112,12 @@ These rows are retained as evidence context, but they are not primary within-fam
 | `20260428_trace_supply1000_provchain-neo4j-fluree_n30` | `supply_chain_1000` | `JSON-LD Import` | `Fluree` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 469.767 | 570.300 | 580.810 | load/import setup metric; not primary ledger-write evidence |
 | `20260428_trace_supply1000_provchain-neo4j-fluree_n30` | `supply_chain_1000` | `Turtle RDF Import` | `ProvChain-Org` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 12122.067 | 12339.900 | 12405.990 | load/import setup metric; not primary ledger-write evidence |
 | `20260428_trace_supply1000_provchain-neo4j-fluree_n30` | `supply_chain_1000` | `Turtle to Cypher Import` | `Neo4j` | `secondary-transactional-baseline` | `secondary-baseline` | `load-latency-ms` | `ms` | 30 | 100.00% | 30715.400 | 32151.950 | 32751.500 | load/import setup metric; not primary ledger-write evidence; secondary reference path |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `JSON-LD Import` | `Fluree` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 509.133 | 570.600 | 576.000 | load/import setup metric; not primary ledger-write evidence |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Turtle RDF Import` | `GraphDB` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 2707.967 | 2923.100 | 2930.390 | load/import setup metric; not primary ledger-write evidence; RDF/SPARQL-native comparator |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Turtle RDF Import` | `ProvChain-Org` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 24.133 | 33.350 | 41.710 | bulk dataset-admission path; load/import setup metric; not per-transaction ledger/write throughput or finality evidence |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Turtle to Cypher Import` | `Neo4j` | `secondary-transactional-baseline` | `secondary-baseline` | `load-latency-ms` | `ms` | 30 | 100.00% | 31224.833 | 32667.500 | 32896.400 | load/import setup metric; not primary ledger-write evidence; secondary reference path |
+| `20260502_trace_supply1000_provchain-neo4j-tigergraph_n30` | `supply_chain_1000` | `Turtle RDF Import` | `ProvChain-Org` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 23.200 | 24.000 | 24.000 | bulk dataset-admission path; load/import setup metric; not per-transaction ledger/write throughput or finality evidence |
+| `20260502_trace_supply1000_provchain-neo4j-tigergraph_n30` | `supply_chain_1000` | `Turtle to Cypher Import` | `Neo4j` | `secondary-transactional-baseline` | `secondary-baseline` | `load-latency-ms` | `ms` | 30 | 100.00% | 31592.100 | 33048.100 | 34265.980 | load/import setup metric; not primary ledger-write evidence; secondary reference path |
 | `20260430_import_supply1000_provchain-bulk-r002_final_n30` | `supply_chain_1000` | `JSON-LD Import` | `Fluree` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 478.467 | 560.650 | 575.970 | R002 bulk-import reference; load/import setup metric; not primary ledger-write evidence |
 | `20260430_import_supply1000_provchain-bulk-r002_final_n30` | `supply_chain_1000` | `Turtle RDF Import` | `ProvChain-Org` | `native-rdf-path` | `native-comparable` | `load-latency-ms` | `ms` | 30 | 100.00% | 24.333 | 35.150 | 41.000 | R002 bulk dataset-admission path; not per-transaction ledger/write throughput or finality evidence |
 | `20260430_import_supply1000_provchain-bulk-r002_final_n30` | `supply_chain_1000` | `Turtle to Cypher Import` | `Neo4j` | `secondary-transactional-baseline` | `secondary-baseline` | `load-latency-ms` | `ms` | 30 | 100.00% | 11431.367 | 11855.800 | 11935.670 | R002 bulk-import reference; load/import setup metric; not primary ledger-write evidence; secondary reference path |
@@ -137,6 +168,21 @@ Semantic capability fields:
 | `20260428_trace_supply1000_provchain-neo4j-fluree_n30` | `supply_chain_1000` | `Simple Product Lookup` | `Fluree` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 9.722 | 12.069 | 85.969 | primary scoped metric |
 | `20260428_trace_supply1000_provchain-neo4j-fluree_n30` | `supply_chain_1000` | `Simple Product Lookup` | `Neo4j` | `translated-graph-model` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 10.304 | 36.000 | 112.010 | primary scoped metric |
 | `20260428_trace_supply1000_provchain-neo4j-fluree_n30` | `supply_chain_1000` | `Simple Product Lookup` | `ProvChain-Org` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 0.487 | 0.732 | 1.091 | primary scoped metric |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Aggregation by Producer` | `Fluree` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 300 | 100.00% | 133.887 | 267.464 | 311.512 | primary scoped metric |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Aggregation by Producer` | `GraphDB` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 300 | 100.00% | 13.733 | 56.765 | 62.838 | primary scoped metric; RDF/SPARQL-native comparator |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Aggregation by Producer` | `Neo4j` | `translated-graph-model` | `native-comparable` | `query-latency-ms` | `ms` | 300 | 100.00% | 30.000 | 254.000 | 271.140 | primary scoped metric; translated graph-model baseline |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Aggregation by Producer` | `ProvChain-Org` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 300 | 100.00% | 0.587 | 0.962 | 1.201 | primary scoped metric |
+| `20260502_trace_supply1000_provchain-neo4j-tigergraph_n30` | `supply_chain_1000` | `Aggregation by Producer` | `TigerGraph` | `translated-property-graph-model` | `secondary-baseline` | `query-latency-ms` | `ms` | 300 | 100.00% | 3.276 | 3.686 | 5.557 | primary scoped metric; secondary translated property-graph baseline |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Multi-hop Traceability (10 hops)` | `Fluree` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 10.418 | 17.186 | 28.950 | primary scoped metric |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Multi-hop Traceability (10 hops)` | `GraphDB` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 9.618 | 12.872 | 19.724 | primary scoped metric; RDF/SPARQL-native comparator |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Multi-hop Traceability (10 hops)` | `Neo4j` | `translated-graph-model` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 15.163 | 65.000 | 263.010 | primary scoped metric; translated graph-model baseline |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Multi-hop Traceability (10 hops)` | `ProvChain-Org` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 0.492 | 0.735 | 0.951 | primary scoped metric |
+| `20260502_trace_supply1000_provchain-neo4j-tigergraph_n30` | `supply_chain_1000` | `Multi-hop Traceability (10 hops)` | `TigerGraph` | `translated-property-graph-model` | `secondary-baseline` | `query-latency-ms` | `ms` | 1500 | 100.00% | 4.038 | 4.767 | 6.467 | primary scoped metric; secondary translated property-graph baseline |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Simple Product Lookup` | `Fluree` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 10.226 | 13.014 | 96.942 | primary scoped metric |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Simple Product Lookup` | `GraphDB` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 14.567 | 16.336 | 230.547 | primary scoped metric; RDF/SPARQL-native comparator |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Simple Product Lookup` | `Neo4j` | `translated-graph-model` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 11.011 | 38.000 | 129.000 | primary scoped metric; translated graph-model baseline |
+| `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` | `supply_chain_1000` | `Simple Product Lookup` | `ProvChain-Org` | `native-rdf-path` | `native-comparable` | `query-latency-ms` | `ms` | 1500 | 100.00% | 0.510 | 0.858 | 1.080 | primary scoped metric |
+| `20260502_trace_supply1000_provchain-neo4j-tigergraph_n30` | `supply_chain_1000` | `Simple Product Lookup` | `TigerGraph` | `translated-property-graph-model` | `secondary-baseline` | `query-latency-ms` | `ms` | 1500 | 100.00% | 3.222 | 3.740 | 5.311 | primary scoped metric; secondary translated property-graph baseline |
 
 
 ## Fairness And Limitations
@@ -149,4 +195,6 @@ Semantic capability fields:
 - `externalized-semantic-pipeline` rows include a different semantic capability path from native ProvChain validation.
 - `public-chain-baseline` rows are public-chain execution evidence, not permissioned-enterprise ledger evidence.
 - `cross-model-with-caveat` rows are scenario-level parity evidence and must preserve endpoint/model differences in any claim.
+- GraphDB rows are RDF/SPARQL-native comparator evidence for trace-query only; they do not establish ledger-write, policy, or semantic-validation claims.
+- TigerGraph rows are secondary translated property-graph comparator evidence for trace-query only; they do not establish RDF/SPARQL-native, ontology-validation, semantic-admission, ledger-write, or finality claims.
 - Failed or partial campaigns must remain excluded from publication claims unless explicitly discussed as negative evidence.

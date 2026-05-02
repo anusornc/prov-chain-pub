@@ -1,0 +1,8 @@
+{
+  "campaign_id": "20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30",
+  "completed_at_utc": "2026-05-01T03:46:10Z",
+  "epoch_count_target": 30,
+  "passed_epochs": 30,
+  "failed_epochs": 0,
+  "status": "passed"
+}

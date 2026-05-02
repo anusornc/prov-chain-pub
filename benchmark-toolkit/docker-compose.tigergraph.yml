@@ -1,0 +1,20 @@
+services:
+  tigergraph:
+    image: ${TIGERGRAPH_IMAGE:-tigergraph/community:4.2.2}
+    container_name: ${TIGERGRAPH_CONTAINER_NAME:-tigergraph-benchmark}
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 1000000
+        hard: 1000000
+    ports:
+      - "${TIGERGRAPH_RESTPP_PORT:-19000}:9000"
+      - "${TIGERGRAPH_GRAPHSTUDIO_PORT:-19240}:14240"
+    volumes:
+      - ./tigergraph:/benchmark/tigergraph:ro
+    networks:
+      - tigergraph_benchmark_net
+
+networks:
+  tigergraph_benchmark_net:
+    driver: bridge

@@ -370,6 +370,38 @@ Current implementation evidence:
     - scale slices were generated successfully
     - JSON-LD translation validation could not run in the agent host because `rdflib` is not installed outside the benchmark-runner container
 
+### R006 - Add GraphDB / TigerGraph comparator coverage
+
+- Priority: `P1` for GraphDB, `P2` for TigerGraph
+- Status: `Done`
+- Plan: [GRAPHDB_TIGERGRAPH_COMPARATOR_TASK_LIST_2026-04-30.md](./GRAPHDB_TIGERGRAPH_COMPARATOR_TASK_LIST_2026-04-30.md)
+- Goal: ขยาย graph database comparator coverage ให้ตรงกับ thesis proposal โดยไม่ rerun benchmark หลักทั้งหมด
+- Tasks:
+  - [x] สร้าง task list เฉพาะ GraphDB/TigerGraph
+  - [x] เพิ่ม GraphDB runtime feasibility gate tooling
+  - [x] run GraphDB live feasibility smoke ใน shell ที่เข้าถึง Docker daemon ได้
+  - [x] rerun GraphDB live feasibility smoke with default `ontotext/graphdb:10.8.13`
+  - [ ] rerun GraphDB live feasibility smoke with `GRAPHDB_LICENSE_FILE` only if GraphDB 11.x evidence is required
+  - [x] เพิ่ม GraphDB adapter contract
+  - [x] เพิ่ม GraphDB trace-query parity contract
+  - [x] เพิ่ม one-command GraphDB-inclusive campaign wrapper
+  - [x] run GraphDB profile campaign พร้อม curated reference evidence
+  - [x] run GraphDB full campaign พร้อม curated publication-facing evidence
+  - [x] เพิ่ม TigerGraph feasibility gate tooling
+  - [x] run TigerGraph live feasibility smoke ก่อนตัดสินใจ implement adapter
+  - [x] เพิ่ม TigerGraph translated-model adapter contract
+  - [x] เพิ่ม TigerGraph generated CSV/GSQL loader artifacts
+  - [x] verify TigerGraph live translated-model install ใน Docker-enabled shell
+  - [x] run TigerGraph translated-model smoke campaign
+  - [x] run TigerGraph translated-model profile campaign
+  - [x] run TigerGraph translated-model full campaign
+  - [x] update paper ด้วย GraphDB passed curated evidence
+  - [x] update paper ด้วย TigerGraph only if translated-model campaign evidence passes
+- Done when:
+  - GraphDB full campaign ผ่าน validity gate และ export เข้า `docs/benchmarking/data/reference/`
+  - TigerGraph มี either passed campaign evidence หรือ documented deferred decision
+  - publication benchmark report และ paper provenance map ระบุ GraphDB/TigerGraph claim boundary ชัดเจน
+
 ## Required Next Order
 
 1. `R001` ก่อน เพราะเป็น paper/report correctness - `Done`
@@ -377,6 +409,7 @@ Current implementation evidence:
 3. `R003` เพื่อทำ semantic claim ให้ defensible
 4. `R004` เพื่อปิด policy parity gap - `Done`
 5. `R005` trace-query scale-up confidence - `Done`; larger-slice bulk-import scale-up remains optional future evidence
+6. `R006` GraphDB ก่อน TigerGraph เพื่อเพิ่ม comparator coverage ตาม thesis proposal; paper update หลัง GraphDB/TigerGraph evidence ผ่านแล้วเท่านั้น
 
 ## Current Claim Boundary
 
@@ -388,3 +421,6 @@ Current implementation evidence:
 - ยังไม่ควร claim ว่า ProvChain ชนะด้าน ledger/write throughput หรือ semantic admission latency
 - ยังไม่ควรใช้ R002 bulk import เป็นหลักฐานแทน per-transaction ledger/write throughput หรือ finality
 - ยังไม่ควร claim ว่า ProvChain policy path เป็น native-comparable กับ Fabric ledger-state policy path แบบไม่มี caveat
+- claim ได้ว่า GraphDB เป็น RDF/SPARQL-native comparator สำหรับ trace-query จาก campaign `20260501_trace_supply1000_provchain-neo4j-fluree-graphdb_n30` ที่ผ่าน `30/30`
+- claim ได้ว่า TigerGraph เป็น optional translated property-graph comparator สำหรับ trace-query จาก campaign `20260502_trace_supply1000_provchain-neo4j-tigergraph_n30` ที่ผ่าน `30/30`
+- ยังไม่ควร claim TigerGraph เป็น RDF-native, semantic-validation, ledger-write, หรือ ontology comparator

@@ -1,0 +1,51 @@
+{
+  "campaign_id": "20260502_trace_supply1000_provchain-neo4j-tigergraph_n30",
+  "created_at_utc": "2026-05-02T11:49:00Z",
+  "benchmark_family": "trace_query",
+  "dataset_slice": "supply_chain_1000",
+  "dataset_file": "supply_chain_1000.ttl",
+  "fluree_dataset_file": "translated/fluree/supply_chain_1000.jsonld",
+  "graphdb_dataset_file": "supply_chain_1000.ttl",
+  "dataset_sha256": "ff6b3699e67923849522f5d48d2c121dd23428070c3d490fa796d5c2792f001e",
+  "dataset_bytes": 28153,
+  "test_batch_ids": "BATCH001,BATCH010,BATCH017,BATCH025,BATCH050",
+  "evidence_role": "tigergraph_translated_property_graph_candidate",
+  "products": ["provchain", "neo4j", "tigergraph"],
+  "provchain_import_mode": "bulk-turtle-single-block",
+  "epoch_count_target": 30,
+  "iterations_per_epoch": 10,
+  "clean_volumes_per_epoch": true,
+  "build_images": "once",
+  "host_ports": {
+    "provchain_http": 18580,
+    "provchain_metrics": 19590,
+    "neo4j_http": 18874,
+    "neo4j_bolt": 19087,
+    "fluree_http": 18090,
+    "graphdb_http": 17200
+  },
+  "graphdb_runtime": {
+    "repository": "provchain_trace",
+    "graph_iri": "http://provchain.org/benchmark/graphdb/trace"
+  },
+  "tigergraph_runtime": {
+    "url": "http://host.docker.internal:19000",
+    "graph": "ProvChainTrace",
+    "path": "translated-property-graph-model",
+    "loader": "benchmark-toolkit/scripts/install-tigergraph-trace-model.sh"
+  },
+  "neo4j_runtime": {
+    "heap_initial": "512m",
+    "heap_max": "1G",
+    "pagecache": "512m",
+    "load_batch_size": 100
+  },
+  "preflight_required": true,
+  "preflight_skipped": false,
+  "validity_gate": [
+    "local preflight must pass unless explicitly skipped",
+    "each compared system must have success_rate greater than zero",
+    "run artifacts must include benchmark_results.json, benchmark_results.csv, summary.json, and summary.md"
+  ],
+  "notes": "Campaign runner args: --query. Skip flags: Neo4j=false, Fluree=true, GraphDB=true, Fabric=true, Geth=true."
+}

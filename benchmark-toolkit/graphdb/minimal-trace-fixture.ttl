@@ -1,0 +1,22 @@
+@prefix ex: <http://example.org/supplychain/> .
+@prefix batch: <http://example.org/batch/> .
+@prefix tx: <http://example.org/transaction/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+batch:BATCH001 a ex:ProductBatch ;
+    ex:batchId "BATCH001" ;
+    ex:hasProducer "Farm-A" ;
+    ex:quantity 100 ;
+    ex:hasTransaction tx:T001 .
+
+batch:BATCH002 a ex:ProductBatch ;
+    ex:batchId "BATCH002" ;
+    ex:hasProducer "Farm-A" ;
+    ex:quantity 80 ;
+    ex:hasTransaction tx:T002 ;
+    prov:wasDerivedFrom batch:BATCH001 .
+
+tx:T001 a ex:TraceTransaction ;
+    ex:nextTransaction tx:T002 .
+
+tx:T002 a ex:TraceTransaction .

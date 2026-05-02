@@ -17,9 +17,14 @@ pub use adapters::fabric::{
 };
 pub use adapters::fluree::{FlureeAdapter, FlureeConfig};
 pub use adapters::geth::{GethAdapter, GethConfig, GethTransactionRequest};
+pub use adapters::graphdb::{GraphDbAdapter, GraphDbConfig, GraphDbTurtleLoadTiming};
 pub use adapters::neo4j::Neo4jTraceAdapter;
 pub use adapters::provchain::{
     ProvChainAdapter, ProvChainPolicyCheckRequest, ProvChainPolicyCheckResponse,
+};
+pub use adapters::tigergraph::{
+    translate_turtle_to_tigergraph, TigerGraphAdapter, TigerGraphConfig,
+    TigerGraphTranslatedDataset,
 };
 pub use core::adapter::{AdapterCapabilities, BenchmarkAdapter, TraceQueryAdapter};
 pub use core::result::{

@@ -21,15 +21,23 @@ PRODUCTS="${PRODUCTS:-provchain,neo4j}"
 RUNNER_MODE_ARGS="${RUNNER_MODE_ARGS:---query}"
 SKIP_NEO4J="${SKIP_NEO4J:-${BENCHMARK_SKIP_NEO4J:-false}}"
 SKIP_FLUREE="${SKIP_FLUREE:-${BENCHMARK_SKIP_FLUREE:-true}}"
+SKIP_GRAPHDB="${SKIP_GRAPHDB:-${BENCHMARK_SKIP_GRAPHDB:-true}}"
+SKIP_TIGERGRAPH="${SKIP_TIGERGRAPH:-${BENCHMARK_SKIP_TIGERGRAPH:-true}}"
 SKIP_FABRIC="${SKIP_FABRIC:-${BENCHMARK_SKIP_FABRIC:-true}}"
 SKIP_GETH="${SKIP_GETH:-${BENCHMARK_SKIP_GETH:-true}}"
 SKIP_PREFLIGHT="${SKIP_PREFLIGHT:-false}"
 CLEAN_VOLUMES="${CLEAN_VOLUMES:-true}"
+BUILD_IMAGES="${BUILD_IMAGES:-each}"
 PROVCHAIN_TRACE_HTTP_PORT="${PROVCHAIN_TRACE_HTTP_PORT:-18080}"
 PROVCHAIN_TRACE_METRICS_PORT="${PROVCHAIN_TRACE_METRICS_PORT:-19090}"
 NEO4J_TRACE_HTTP_PORT="${NEO4J_TRACE_HTTP_PORT:-17474}"
 NEO4J_TRACE_BOLT_PORT="${NEO4J_TRACE_BOLT_PORT:-17687}"
 FLUREE_TRACE_HTTP_PORT="${FLUREE_TRACE_HTTP_PORT:-18090}"
+GRAPHDB_TRACE_HTTP_PORT="${GRAPHDB_TRACE_HTTP_PORT:-17200}"
+GRAPHDB_REPOSITORY="${GRAPHDB_REPOSITORY:-provchain_trace}"
+GRAPHDB_GRAPH_IRI="${GRAPHDB_GRAPH_IRI:-http://provchain.org/benchmark/graphdb/trace}"
+TIGERGRAPH_URL="${TIGERGRAPH_URL:-http://host.docker.internal:19000}"
+TIGERGRAPH_GRAPH="${TIGERGRAPH_GRAPH:-ProvChainTrace}"
 PROVCHAIN_IMPORT_MODE="${PROVCHAIN_IMPORT_MODE:-bulk-turtle-single-block}"
 NEO4J_HEAP_INITIAL="${NEO4J_HEAP_INITIAL:-512m}"
 NEO4J_HEAP_MAX="${NEO4J_HEAP_MAX:-1G}"
@@ -66,7 +74,8 @@ if [ -d "${CAMPAIGN_DIR}" ] && [ -n "$(find "${CAMPAIGN_DIR}" -mindepth 1 -print
 fi
 
 export PROVCHAIN_TRACE_HTTP_PORT PROVCHAIN_TRACE_METRICS_PORT
-export NEO4J_TRACE_HTTP_PORT NEO4J_TRACE_BOLT_PORT FLUREE_TRACE_HTTP_PORT
+export NEO4J_TRACE_HTTP_PORT NEO4J_TRACE_BOLT_PORT FLUREE_TRACE_HTTP_PORT GRAPHDB_TRACE_HTTP_PORT
+export GRAPHDB_REPOSITORY GRAPHDB_GRAPH_IRI
 export PROVCHAIN_IMPORT_MODE
 export NEO4J_HEAP_INITIAL NEO4J_HEAP_MAX NEO4J_PAGECACHE NEO4J_LOAD_BATCH_SIZE
 
@@ -115,6 +124,7 @@ write_campaign_manifest() {
   "dataset_slice": "${DATASET_SLICE}",
   "dataset_file": "${DATASET_FILE}",
   "fluree_dataset_file": "${FLUREE_DATASET_FILE}",
+  "graphdb_dataset_file": "${DATASET_FILE}",
   "dataset_sha256": "${dataset_sha256}",
   "dataset_bytes": ${dataset_bytes},
   "test_batch_ids": "${TEST_BATCH_IDS}",
@@ -124,12 +134,24 @@ write_campaign_manifest() {
   "epoch_count_target": ${EPOCHS},
   "iterations_per_epoch": ${ITERATIONS},
   "clean_volumes_per_epoch": ${CLEAN_VOLUMES},
+  "build_images": "${BUILD_IMAGES}",
   "host_ports": {
     "provchain_http": ${PROVCHAIN_TRACE_HTTP_PORT},
     "provchain_metrics": ${PROVCHAIN_TRACE_METRICS_PORT},
     "neo4j_http": ${NEO4J_TRACE_HTTP_PORT},
     "neo4j_bolt": ${NEO4J_TRACE_BOLT_PORT},
-    "fluree_http": ${FLUREE_TRACE_HTTP_PORT}
+    "fluree_http": ${FLUREE_TRACE_HTTP_PORT},
+    "graphdb_http": ${GRAPHDB_TRACE_HTTP_PORT}
+  },
+  "graphdb_runtime": {
+    "repository": "${GRAPHDB_REPOSITORY}",
+    "graph_iri": "${GRAPHDB_GRAPH_IRI}"
+  },
+  "tigergraph_runtime": {
+    "url": "${TIGERGRAPH_URL}",
+    "graph": "${TIGERGRAPH_GRAPH}",
+    "path": "translated-property-graph-model",
+    "loader": "benchmark-toolkit/scripts/install-tigergraph-trace-model.sh"
   },
   "neo4j_runtime": {
     "heap_initial": "${NEO4J_HEAP_INITIAL}",
@@ -144,7 +166,7 @@ write_campaign_manifest() {
     "each compared system must have success_rate greater than zero",
     "run artifacts must include benchmark_results.json, benchmark_results.csv, summary.json, and summary.md"
   ],
-  "notes": "Campaign runner args: ${RUNNER_MODE_ARGS}. Skip flags: Neo4j=${SKIP_NEO4J}, Fluree=${SKIP_FLUREE}, Fabric=${SKIP_FABRIC}, Geth=${SKIP_GETH}."
+  "notes": "Campaign runner args: ${RUNNER_MODE_ARGS}. Skip flags: Neo4j=${SKIP_NEO4J}, Fluree=${SKIP_FLUREE}, GraphDB=${SKIP_GRAPHDB}, Fabric=${SKIP_FABRIC}, Geth=${SKIP_GETH}."
 }
 EOF_MANIFEST
 }
@@ -188,7 +210,7 @@ append_campaign_summary_header() {
 | Epoch target | \`${EPOCHS}\` |
 | Iterations per epoch | \`${ITERATIONS}\` |
 | Clean volumes per epoch | \`${CLEAN_VOLUMES}\` |
-| Host ports | \`provchain=${PROVCHAIN_TRACE_HTTP_PORT}, metrics=${PROVCHAIN_TRACE_METRICS_PORT}, neo4j_http=${NEO4J_TRACE_HTTP_PORT}, neo4j_bolt=${NEO4J_TRACE_BOLT_PORT}, fluree=${FLUREE_TRACE_HTTP_PORT}\` |
+| Host ports | \`provchain=${PROVCHAIN_TRACE_HTTP_PORT}, metrics=${PROVCHAIN_TRACE_METRICS_PORT}, neo4j_http=${NEO4J_TRACE_HTTP_PORT}, neo4j_bolt=${NEO4J_TRACE_BOLT_PORT}, fluree=${FLUREE_TRACE_HTTP_PORT}, graphdb=${GRAPHDB_TRACE_HTTP_PORT}\` |
 | Neo4j runtime | \`heap_initial=${NEO4J_HEAP_INITIAL}, heap_max=${NEO4J_HEAP_MAX}, pagecache=${NEO4J_PAGECACHE}, load_batch_size=${NEO4J_LOAD_BATCH_SIZE}\` |
 
 ## Epochs
@@ -266,6 +288,9 @@ run_compose_epoch() {
   if [ "${SKIP_FLUREE}" != "true" ]; then
     compose_cmd+=(--profile fluree)
   fi
+  if [ "${SKIP_GRAPHDB}" != "true" ]; then
+    compose_cmd+=(--profile graphdb)
+  fi
 
   if [ "${CLEAN_VOLUMES}" = "true" ]; then
     "${compose_cmd[@]}" down -v --remove-orphans >> "${log_file}" 2>&1 || true
@@ -291,20 +316,52 @@ run_compose_epoch() {
     fi
   fi
 
+  if [ "${compose_status}" -eq 0 ] && [ "${SKIP_GRAPHDB}" != "true" ]; then
+    "${compose_cmd[@]}" up -d graphdb >> "${log_file}" 2>&1 || compose_status=$?
+    if [ "${compose_status}" -eq 0 ]; then
+      local graphdb_url="http://localhost:${GRAPHDB_TRACE_HTTP_PORT}/rest/repositories"
+      local graphdb_ready="false"
+      for _ in $(seq 1 90); do
+        if curl -fsS "${graphdb_url}" >/dev/null 2>&1; then
+          graphdb_ready="true"
+          break
+        fi
+        sleep 2
+      done
+      if [ "${graphdb_ready}" != "true" ]; then
+        printf 'GraphDB did not become ready at %s\n' "${graphdb_url}" >> "${log_file}"
+        compose_status=1
+      fi
+    fi
+  fi
+
   if [ "${compose_status}" -eq 0 ]; then
+    local up_args=(up)
+    if [ "${BUILD_IMAGES}" = "each" ]; then
+      up_args+=(--build)
+    fi
+    up_args+=(--abort-on-container-exit --exit-code-from benchmark-runner)
+
     BENCHMARK_RUN_ID="${run_id}" \
     ITERATIONS="${ITERATIONS}" \
     PROVCHAIN_DATASET_FILE="${DATASET_FILE}" \
     NEO4J_DATASET_FILE="${DATASET_FILE}" \
     FLUREE_DATASET_FILE="${FLUREE_DATASET_FILE}" \
+    GRAPHDB_DATASET_FILE="${DATASET_FILE}" \
     RUNNER_MODE_ARGS="${RUNNER_MODE_ARGS}" \
     TEST_BATCH_IDS="${TEST_BATCH_IDS}" \
     BENCHMARK_SKIP_NEO4J="${SKIP_NEO4J}" \
     BENCHMARK_SKIP_FLUREE="${SKIP_FLUREE}" \
+    BENCHMARK_SKIP_GRAPHDB="${SKIP_GRAPHDB}" \
+    BENCHMARK_SKIP_TIGERGRAPH="${SKIP_TIGERGRAPH}" \
     BENCHMARK_SKIP_FABRIC="${SKIP_FABRIC}" \
     BENCHMARK_SKIP_GETH="${SKIP_GETH}" \
     PROVCHAIN_IMPORT_MODE="${PROVCHAIN_IMPORT_MODE}" \
-      "${compose_cmd[@]}" up --build --abort-on-container-exit --exit-code-from benchmark-runner >> "${log_file}" 2>&1 || compose_status=$?
+    GRAPHDB_REPOSITORY="${GRAPHDB_REPOSITORY}" \
+    GRAPHDB_GRAPH_IRI="${GRAPHDB_GRAPH_IRI}" \
+    TIGERGRAPH_URL="${TIGERGRAPH_URL}" \
+    TIGERGRAPH_GRAPH="${TIGERGRAPH_GRAPH}" \
+      "${compose_cmd[@]}" "${up_args[@]}" >> "${log_file}" 2>&1 || compose_status=$?
   fi
 
   "${compose_cmd[@]}" logs --no-color benchmark-runner > "${epoch_dir}/benchmark-runner.log" 2>&1 || true
@@ -330,6 +387,18 @@ main() {
   fi
 
   check_docker_access 2>&1 | tee "${LOGS_DIR}/docker-access.log"
+
+  case "${BUILD_IMAGES}" in
+    each|never)
+      ;;
+    once)
+      docker compose -f "${COMPOSE_FILE}" build provchain benchmark-runner 2>&1 | tee "${LOGS_DIR}/compose-build.log"
+      ;;
+    *)
+      printf 'error: invalid BUILD_IMAGES=%s; expected each, once, or never\n' "${BUILD_IMAGES}" >&2
+      exit 1
+      ;;
+  esac
 
   local passed_count=0
   local failed_count=0

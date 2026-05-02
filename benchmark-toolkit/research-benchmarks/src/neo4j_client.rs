@@ -289,7 +289,10 @@ impl Neo4jClient {
                 .and_then(|value| value.parse::<usize>().ok())
                 .filter(|value| *value > 0)
                 .unwrap_or(100);
-            info!("Loading Neo4j triples with subject batch size {}", batch_size);
+            info!(
+                "Loading Neo4j triples with subject batch size {}",
+                batch_size
+            );
             let subjects: Vec<_> = subject_groups.keys().cloned().collect();
 
             for chunk in subjects.chunks(batch_size) {
