@@ -150,13 +150,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Store token
         localStorage.setItem("authToken", authToken);
 
-        // Use a microtask to ensure state updates are batched properly
-        Promise.resolve().then(() => {
-          setToken(authToken);
-          setUser({
-            username: username,
-            role: authData.user_role,
-          });
+        setToken(authToken);
+        setUser({
+          username: username,
+          role: authData.user_role,
         });
 
         return { success: true };

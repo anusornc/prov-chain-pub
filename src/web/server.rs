@@ -87,13 +87,14 @@ impl WebServer {
         let websocket_state = WebSocketState::new(blockchain_arc);
         let event_broadcaster = BlockchainEventBroadcaster::new(websocket_state.clone());
 
-        let app_state = AppState::new(blockchain)
+        let app_state = AppState::with_runtime_mode(blockchain, config.web.runtime_mode)
             .map_err(|e| anyhow::anyhow!("Failed to initialize app state: {}", e))?;
 
         Ok(Self {
             app_state,
-            // SECURITY: Use empty user database - users must be explicitly created
-            auth_state: AuthState::new(),
+            // SECURITY: Load configured users or fail closed on auth-store errors.
+            auth_state: AuthState::try_new_from_env()
+                .map_err(|e| anyhow::anyhow!("Failed to initialize auth state: {}", e))?,
             websocket_state,
             event_broadcaster,
             config,

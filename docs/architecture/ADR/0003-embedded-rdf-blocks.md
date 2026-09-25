@@ -4,6 +4,7 @@
 **Date:** 2024-01-15
 **Supersedes:** None
 **Superseded by:** None
+**Clarified by:** [ADR 0024](./0024-commit-canonical-post-block-public-provenance-state.md) — the RDFC-1.0 sections below describe intended architecture, not the current `state_root` implementation; [ADR 0028](./0028-make-privacy-control-ledger-authoritative.md), [ADR 0032](./0032-make-privacy-grant-revocation-terminal-and-prospective.md), and [ADR 0033](./0033-use-one-immutable-ciphertext-and-per-object-dek-envelopes.md) — the RDF ACL example below is a historical sketch, not the accepted privacy-control, envelope, or live-release path.
 
 ---
 
@@ -121,6 +122,8 @@ Speedup: 10,000-100,000×
 
 ### 2. RDF Canonicalization for Deterministic Hashing
 
+> **Implementation alignment (2026-08-30):** The following solution and code are illustrative design material. ADR 0024 is the accepted production commitment contract; current code does not yet provide this conforming post-state canonicalization.
+
 **Problem:** Hash must be deterministic regardless of triple order
 
 **Solution:** RDFC-1.0 Canonicalization
@@ -172,7 +175,12 @@ WHERE {
 
 **Capability:** Transitive supply chain discovery without manual traversal
 
-### 4. Permission Control Integration
+### 4. Historical Permission-Control Sketch (non-normative)
+
+The following RDF ACL was an early design illustration. The accepted v1 architecture does not use
+RDF ACL triples or automatic SPARQL filtering as privacy authority. Privacy authority comes from
+journaled `PrivacyControlV1` transitions and current Network-Converged Privacy Grant state; the
+grant-aware implementation remains pending.
 
 **ACL Stored in RDF:**
 ```turtle
@@ -468,4 +476,4 @@ ORDER BY ?timestamp
 - [RDF 1.1 Concepts](https://www.w3.org/TR/rdf11-concepts/)
 - [SPARQL 1.1 Query Language](https://www.w3.org/TR/sparql11-query/)
 - [OWL 2 Web Ontology Language](https://www.w3.org/TR/owl2-overview/)
-- [RDF Canonicalization](https://w3c.github.io/rdf-canon/spec/)
+- [RDF Dataset Canonicalization 1.0](https://www.w3.org/TR/rdf-canon/)

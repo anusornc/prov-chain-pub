@@ -447,6 +447,7 @@ mod tests {
             ontology_package_id: "pkg-a".to_string(),
             ontology_package_version: "1.0.0".to_string(),
             ontology_package_hash: "hash-a".to_string(),
+            semantic_execution_profile_id: "provchain.semantic-execution.v1".to_string(),
             validation_mode: "strict".to_string(),
         };
 
@@ -472,6 +473,7 @@ mod tests {
                     ontology_package_id: "pkg-b".to_string(),
                     ontology_package_version: "1.0.0".to_string(),
                     ontology_package_hash: "hash-b".to_string(),
+                    semantic_execution_profile_id: "provchain.semantic-execution.v1".to_string(),
                     validation_mode: "strict".to_string(),
                 }),
             ))

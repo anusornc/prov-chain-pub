@@ -18,7 +18,7 @@ Prerequisites
 
 Before starting, ensure you have:
 
-- **Rust 1.70+**: `rustc --version`
+- **Rust 1.87+**: `rustc --version`
 - **Git**: For cloning the repository
 - **Basic terminal knowledge**: Running commands and editing files
 
@@ -369,7 +369,7 @@ Common Issues
 ~~~~~~~~~~~~~
 
 **Build Errors**
-   Ensure you have Rust 1.70+ installed: `rustup update`
+   Ensure you have Rust 1.87+ installed: `rustup update`
 
 **Query Errors**
    Check SPARQL syntax and ensure prefixes are defined

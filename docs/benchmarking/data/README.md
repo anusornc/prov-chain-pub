@@ -2,6 +2,8 @@
 
 This directory contains machine-readable exports derived from benchmark results.
 
+Publication and thesis use must follow the evidence boundary in `../BENCHMARK_EVIDENCE_BOUNDARY_2026-05-11.md`. Raw local benchmark outputs and legacy runner outputs are not evidence unless they have been intentionally curated into this directory and documented.
+
 Primary publication bundle exports:
 
 - `domain_dataset_admission_summary_2026-03-11.csv`
@@ -13,6 +15,7 @@ Primary publication bundle exports:
 - `ledger_supply1000_provchain_geth_n30_20260428/`
 - `policy_supply1000_provchain_fabric_e2e_n30_20260429/`
 - `reference/trace_supply_chain_1000_provchain_neo4j_fluree_graphdb_n30_20260501/`
+- `reference/trace_supply_chain_1000_provchain_neo4j_tigergraph_n30_20260502/`
 
 Reference and superseded exports:
 
@@ -35,6 +38,8 @@ Reference and superseded exports:
 - `reference/20260430_import_supply1000_provchain-bulk-r002_final_n30/`
 - `reference/trace_supply_chain_1000_provchain_neo4j_fluree_graphdb_n3_20260501/`
 - `reference/trace_supply_chain_1000_provchain_neo4j_fluree_graphdb_n30_20260501/`
+- `reference/trace_supply_chain_1000_provchain_neo4j_tigergraph_n3_20260502/`
+- `reference/trace_supply_chain_1000_provchain_neo4j_tigergraph_n30_20260502/`
 
 Scale-up confidence inputs are tracked separately from publication exports:
 

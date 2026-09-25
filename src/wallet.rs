@@ -214,6 +214,7 @@ pub struct Wallet {
     /// Raw private key bytes for persistence (serialized but protected by file-level encryption)
     pub secret_key_bytes: Vec<u8>,
     /// Public key for verification
+    #[serde(with = "crate::ed25519_serde::verifying_key")]
     pub public_key: VerifyingKey,
     /// Key derivation path (for HD wallets)
     pub derivation_path: Option<String>,

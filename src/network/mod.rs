@@ -6,11 +6,17 @@
 //! - WebSocket-based communication between nodes
 //! - Blockchain synchronization and consensus
 
+mod canonical;
 pub mod consensus;
+pub mod convergence;
 pub mod discovery;
+pub mod membership;
 pub mod messages;
 pub mod peer;
+pub mod peer_session;
+pub mod poa;
 pub mod profile;
+pub mod reference;
 pub mod sync;
 
 use anyhow::Result;
@@ -584,7 +590,11 @@ mod tests {
         );
         assert_eq!(
             contract.ontology_package_hash,
-            "720781c9daf1935b8cb2929d7448240767dc205b35236eeed1fc3819af4c28fc"
+            "70e4fdd190887944531a9c984020af6fc0afeb7aff3a6a26972dbfd6d2ae9a9f"
+        );
+        assert_eq!(
+            contract.semantic_execution_profile_id,
+            "provchain.semantic-execution.v1"
         );
     }
 

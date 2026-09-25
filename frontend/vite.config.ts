@@ -29,6 +29,15 @@ export default defineConfig({
   build: {
     // Enable code splitting and chunk optimization
     rollupOptions: {
+      onwarn(warning, warn) {
+        if (
+          warning.code === 'MODULE_LEVEL_DIRECTIVE' &&
+          warning.message.includes('react-virtualized')
+        ) {
+          return
+        }
+        warn(warning)
+      },
       output: {
         // Manual chunk splitting for better caching
         manualChunks: {

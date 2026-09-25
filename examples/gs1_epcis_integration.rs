@@ -66,7 +66,7 @@ fn main() -> anyhow::Result<()> {
     println!("\n🥛 Step 3: Creating UHT Supply Chain Events...");
     let batch_id = "UHT-BATCH-2024-001";
 
-    let events = vec![
+    let events = [
         create_milk_collection_event(batch_id),
         create_quality_test_event(batch_id),
         create_uht_processing_event(batch_id),
@@ -121,7 +121,7 @@ fn main() -> anyhow::Result<()> {
             event
                 .get("epcis:bizStep")
                 .and_then(|v| v.as_str())
-                .map(|s| s.split('/').last().unwrap_or(s))
+                .map(|s| s.split('/').next_back().unwrap_or(s))
                 .unwrap_or("N/A")
         );
     }

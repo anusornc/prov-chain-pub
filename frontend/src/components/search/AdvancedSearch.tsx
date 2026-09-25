@@ -78,6 +78,10 @@ const AdvancedSearch: React.FC = () => {
       setResults([]);
       setTotalResults(0);
     }
+    // performSearch is defined below and reads the same state listed here.
+    // Keeping the dependencies explicit avoids triggering a search on function
+    // identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, currentPage, sortBy]);
 
   const performSearch = async () => {

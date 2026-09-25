@@ -77,6 +77,9 @@ const Timeline: React.FC = () => {
 
   useEffect(() => {
     applyFilters();
+    // applyFilters is a local pure projection of events + filters; the effect
+    // should run only when those inputs change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, filters]);
 
   const loadTimelineData = async () => {

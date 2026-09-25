@@ -31,8 +31,14 @@ connection_timeout = 30
 ping_interval = 30
 
 [consensus]
-# Consensus protocol used by this network ("poa" or "pbft")
+# Consensus protocol used by this network.
+# "poa" is the production-supported backend. "pbft" is experimental until
+# peer-message handling, view-change, persistence, and fault-evidence gaps are
+# closed and independently validated.
 consensus_type = "poa"
+
+# Required explicit opt-in before a node config may start with consensus_type = "pbft".
+allow_experimental_pbft = false
 
 # Whether this node is an authority (can create blocks)
 is_authority = false
@@ -95,6 +101,8 @@ port = 8080
 # Deprecated: runtime auth requires JWT_SECRET environment variable.
 # This field is retained for backward compatibility and is ignored by auth.
 jwt_secret = ""
+# Runtime API behavior: "production" fails closed for missing data; "demo" allows example fallbacks.
+runtime_mode = "production"
 
 [web.cors]
 # CORS (Cross-Origin Resource Sharing) configuration

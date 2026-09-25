@@ -2,6 +2,14 @@
 //!
 //! This module provides real-time monitoring of system integrity,
 //! including alerting and notification capabilities for integrity issues.
+//!
+//! # Production maturity
+//!
+//! Core in-process validation, status tracking, and metric aggregation are
+//! production-aligned. External alert delivery integrations (email, webhook,
+//! Slack, and phase-7 alert workflow helpers) are currently planned/demo
+//! scaffolding and must not be claimed as production-complete until real
+//! dispatch implementations and tests are added.
 
 use crate::core::blockchain::Blockchain;
 use crate::error::Result;

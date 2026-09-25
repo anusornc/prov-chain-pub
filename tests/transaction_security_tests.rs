@@ -17,6 +17,16 @@ use provchain_org::transaction::transaction::{
     TransactionType,
 };
 
+fn should_skip_profiled_ignored_test(env_var: &str, description: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+        _ => {
+            eprintln!("skipping ignored {description}; set {env_var}=1 to run this profile");
+            true
+        }
+    }
+}
+
 /// Advanced transaction security attack scenarios
 pub struct TransactionSecurityTester {
     pub attack_results: HashMap<String, AttackResult>,
@@ -1071,6 +1081,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_transaction_security_tester() {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_STRESS_TESTS",
+            "transaction security stress tests",
+        ) {
+            return;
+        }
         let mut tester = TransactionSecurityTester::new();
         let results = tester.run_all_security_tests();
 
@@ -1117,6 +1133,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_concurrent_security_testing() {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_STRESS_TESTS",
+            "transaction security stress tests",
+        ) {
+            return;
+        }
         let tester = Arc::new(Mutex::new(TransactionSecurityTester::new()));
         let mut handles = vec![];
 
@@ -1147,6 +1169,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_performance_attack_resistance() {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_STRESS_TESTS",
+            "transaction security stress tests",
+        ) {
+            return;
+        }
         let mut tester = TransactionSecurityTester::new();
 
         // Test performance-heavy attacks

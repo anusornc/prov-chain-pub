@@ -1,5 +1,16 @@
 # Performance Testing Guide for ProvChain-Org
 
+> **Superseded legacy guide — not current evidence (2026-08-31).** This file is
+> an aspirational inventory and may name absent or obsolete scripts, tests,
+> workflows, commands, targets, SLAs, and production-readiness claims. Do not
+> use its body as proof that a capability exists, passed, scales, or is suitable
+> for production. Current implementation order and capability gaps are in
+> [`architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md`](architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md);
+> publication-facing evidence is bounded by
+> [`paper_submission/PAPER_EVIDENCE_INDEX.md`](paper_submission/PAPER_EVIDENCE_INDEX.md).
+> Follow the root [`AGENTS.md`](../AGENTS.md) and verify every command and
+> artifact against the current revision before use.
+
 ## Overview
 
 This comprehensive performance testing suite provides production-ready validation of the ProvChain-Org blockchain supply chain traceability system. The suite covers all aspects of system performance including backend operations, frontend rendering, load handling, and system resilience.

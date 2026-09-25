@@ -2,7 +2,8 @@ use crate::core::blockchain::BlockAdmissionTimings;
 use crate::security::encryption::PrivacyManager;
 use crate::transaction::transaction::{
     ComplianceInfo, EnvironmentalConditions, QualityData, Transaction, TransactionInput,
-    TransactionMetadata, TransactionOutput, TransactionPayload, TransactionType,
+    TransactionMetadata, TransactionOutput, TransactionPayload, TransactionSignature,
+    TransactionType,
 };
 use crate::wallet::{ContactInfo, Participant, ParticipantType};
 use crate::web::handlers::utils::{validate_literal, validate_uri};
@@ -22,6 +23,7 @@ use chrono::Utc;
 use oxigraph::{io::RdfFormat, store::Store};
 use std::io::Cursor;
 use std::time::Instant;
+use uuid::Uuid;
 
 fn emit_stage_timings() -> bool {
     std::env::var("PROVCHAIN_BENCHMARK_STAGE_TIMINGS")
@@ -78,6 +80,108 @@ fn build_handler_timings(
     }
 
     serde_json::Value::Object(timings)
+}
+
+fn api_error(
+    status: StatusCode,
+    error: &str,
+    message: impl Into<String>,
+) -> (StatusCode, Json<ApiError>) {
+    (
+        status,
+        Json(ApiError {
+            error: error.to_string(),
+            message: message.into(),
+            timestamp: Utc::now(),
+        }),
+    )
+}
+
+fn decode_privacy_secret(
+    key_id: &str,
+    secret: &str,
+) -> Result<[u8; 32], (StatusCode, Json<ApiError>)> {
+    let key_bytes = hex::decode(secret).map_err(|_| {
+        api_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "privacy_key_invalid",
+            format!(
+                "Stored privacy key '{}' is not valid hex-encoded key material",
+                key_id
+            ),
+        )
+    })?;
+
+    key_bytes.try_into().map_err(|bytes: Vec<u8>| {
+        api_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "privacy_key_invalid",
+            format!(
+                "Stored privacy key '{}' has invalid length: expected 32 bytes, got {}",
+                key_id,
+                bytes.len()
+            ),
+        )
+    })
+}
+
+fn authorize_participant_signer(
+    claims: &UserClaims,
+    participant_id: Uuid,
+) -> Result<(), (StatusCode, Json<ApiError>)> {
+    let Ok(claim_subject) = Uuid::parse_str(&claims.sub) else {
+        return Err(api_error(
+            StatusCode::FORBIDDEN,
+            "signer_not_authorized",
+            "Authenticated user is not authorized to sign for this participant",
+        ));
+    };
+
+    if claim_subject != participant_id {
+        return Err(api_error(
+            StatusCode::FORBIDDEN,
+            "signer_not_authorized",
+            "Authenticated user is not authorized to sign for this participant",
+        ));
+    }
+
+    Ok(())
+}
+
+async fn load_privacy_key_for_claim(
+    app_state: &AppState,
+    claims: &UserClaims,
+    key_id: &str,
+) -> Result<[u8; 32], (StatusCode, Json<ApiError>)> {
+    let participant_id = Uuid::parse_str(&claims.sub).map_err(|_| {
+        api_error(
+            StatusCode::FORBIDDEN,
+            "privacy_wallet_unavailable",
+            "Encrypted triples require an authenticated participant UUID with a wallet",
+        )
+    })?;
+
+    let mut wallet_manager = app_state.wallet_manager.write().await;
+    if wallet_manager.get_wallet(participant_id).is_none() {
+        let _ = wallet_manager.load_wallet(participant_id);
+    }
+
+    let secret = wallet_manager
+        .get_wallet(participant_id)
+        .and_then(|wallet| wallet.get_secret(key_id))
+        .cloned()
+        .ok_or_else(|| {
+            api_error(
+                StatusCode::FORBIDDEN,
+                "privacy_key_not_found",
+                format!(
+                    "Privacy key '{}' is not available for participant '{}'",
+                    key_id, participant_id
+                ),
+            )
+        })?;
+
+    decode_privacy_secret(key_id, &secret)
 }
 
 fn object_is_uri(object: &str) -> bool {
@@ -293,6 +397,15 @@ pub async fn add_triple(
     validate_add_triple_request(&request)?;
     let request_validation_ms = validation_start.elapsed().as_secs_f64() * 1000.0;
 
+    let privacy_key = if let Some(key_id) = &request.privacy_key_id {
+        Some((
+            key_id.clone(),
+            load_privacy_key_for_claim(&app_state, &claims, key_id).await?,
+        ))
+    } else {
+        None
+    };
+
     let lock_start = Instant::now();
     let mut blockchain = app_state.blockchain.write().await;
     let blockchain_lock_wait_ms = lock_start.elapsed().as_secs_f64() * 1000.0;
@@ -305,13 +418,8 @@ pub async fn add_triple(
     eprintln!("Adding triple data: {}", triple_data);
 
     // Check for privacy request
-    if let Some(key_id) = &request.privacy_key_id {
-        // In a real implementation, we would retrieve the key from the wallet manager via AppState
-        // For this thesis demonstration, we generate a key on the fly if one isn't found,
-        // effectively simulating that the user has provided a valid key ID.
-        let key = PrivacyManager::generate_key(); // Simulation of retrieving key for 'key_id'
-
-        match PrivacyManager::encrypt(&triple_data, &key, key_id) {
+    if let Some((key_id, key)) = privacy_key.as_ref() {
+        match PrivacyManager::encrypt(&triple_data, key, key_id) {
             Ok(encrypted) => {
                 let encrypted_json = serde_json::to_string(&encrypted).unwrap_or_default();
 
@@ -638,9 +746,20 @@ pub async fn check_policy(
 
 /// Create a new transaction
 pub async fn create_transaction(
-    State(_app_state): State<AppState>,
+    State(app_state): State<AppState>,
     Json(request): Json<CreateTransactionRequest>,
 ) -> Result<Json<CreateTransactionResponse>, (StatusCode, Json<ApiError>)> {
+    if request.rdf_data.trim().is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "empty_rdf_data".to_string(),
+                message: "Transaction RDF data must not be empty".to_string(),
+                timestamp: Utc::now(),
+            }),
+        ));
+    }
+
     // Validate transaction type
     let tx_type = match request.tx_type.as_str() {
         "production" => TransactionType::Production,
@@ -707,14 +826,27 @@ pub async fn create_transaction(
     let outputs = request
         .outputs
         .into_iter()
-        .map(|output| TransactionOutput {
-            id: output.id,
-            owner: uuid::Uuid::parse_str(&output.owner).unwrap_or(uuid::Uuid::nil()),
-            asset_type: output.asset_type,
-            value: output.value,
-            metadata: output.metadata,
+        .map(|output| {
+            let owner = uuid::Uuid::parse_str(&output.owner).map_err(|_| {
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        error: "invalid_output_owner".to_string(),
+                        message: format!("Invalid output owner UUID: {}", output.owner),
+                        timestamp: Utc::now(),
+                    }),
+                )
+            })?;
+
+            Ok(TransactionOutput {
+                id: output.id,
+                owner,
+                asset_type: output.asset_type,
+                value: output.value,
+                metadata: output.metadata,
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
 
     // Create transaction
     let transaction = Transaction::new(
@@ -729,9 +861,8 @@ pub async fn create_transaction(
 
     let tx_id = transaction.id.clone();
 
-    // In a real implementation, we would:
-    // 1. Store the transaction in a pending pool
-    // 2. Return the transaction ID for signing
+    let mut pending_transactions = app_state.pending_transactions.write().await;
+    pending_transactions.insert(tx_id.clone(), transaction);
 
     let response = CreateTransactionResponse {
         tx_id: tx_id.clone(),
@@ -746,7 +877,8 @@ pub async fn create_transaction(
 
 /// Sign a transaction with a participant's wallet
 pub async fn sign_transaction(
-    State(_app_state): State<AppState>,
+    State(app_state): State<AppState>,
+    Extension(claims): Extension<UserClaims>,
     Json(request): Json<SignTransactionRequest>,
 ) -> Result<Json<SignTransactionResponse>, (StatusCode, Json<ApiError>)> {
     let tx_id = request.tx_id;
@@ -764,19 +896,96 @@ pub async fn sign_transaction(
         }
     };
 
-    // In a real implementation, we would:
-    // 1. Retrieve the transaction from the pending pool
-    // 2. Retrieve the participant's wallet
-    // 3. Sign the transaction with the wallet's private key
-    // 4. Add the signature to the transaction
-    // 5. Update the transaction in the pending pool
+    authorize_participant_signer(&claims, participant_id)?;
+
+    let mut pending_transactions = app_state.pending_transactions.write().await;
+    let transaction = pending_transactions.get_mut(&tx_id).ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ApiError {
+                error: "transaction_not_found".to_string(),
+                message: format!("Pending transaction '{}' was not found", tx_id),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    let hash = transaction.calculate_hash().map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "transaction_hash_failed".to_string(),
+                message: format!("Failed to calculate transaction hash: {}", e),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    let mut wallet_manager = app_state.wallet_manager.write().await;
+    if wallet_manager.get_wallet(participant_id).is_none() {
+        let _ = wallet_manager.load_wallet(participant_id);
+    }
+
+    let (signature, public_key, wallet_snapshot) = {
+        let wallet = wallet_manager
+            .get_wallet_mut(participant_id)
+            .ok_or_else(|| {
+                (
+                    StatusCode::NOT_FOUND,
+                    Json(ApiError {
+                        error: "wallet_not_found".to_string(),
+                        message: format!(
+                            "Wallet for participant '{}' was not found",
+                            participant_id
+                        ),
+                        timestamp: Utc::now(),
+                    }),
+                )
+            })?;
+
+        let signature = wallet.sign(hash.as_bytes()).map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    error: "transaction_signing_failed".to_string(),
+                    message: format!("Failed to sign transaction: {}", e),
+                    timestamp: Utc::now(),
+                }),
+            )
+        })?;
+        let public_key = wallet.public_key;
+        wallet.update_activity();
+        (signature, public_key, wallet.clone())
+    };
+
+    wallet_manager.save_wallet(&wallet_snapshot).map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError {
+                error: "wallet_persistence_failed".to_string(),
+                message: format!("Failed to persist wallet activity: {}", e),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    transaction.signatures.push(TransactionSignature {
+        signature,
+        public_key,
+        signer_id: participant_id,
+        timestamp: Utc::now(),
+    });
 
     let response = SignTransactionResponse {
         tx_id: tx_id.clone(),
-        signatures: vec![crate::web::models::TransactionSignatureInfo {
-            signer_id: participant_id.to_string(),
-            timestamp: Utc::now(),
-        }],
+        signatures: transaction
+            .signatures
+            .iter()
+            .map(|signature| crate::web::models::TransactionSignatureInfo {
+                signer_id: signature.signer_id.to_string(),
+                timestamp: signature.timestamp,
+            })
+            .collect(),
         message: "Transaction signed successfully".to_string(),
         timestamp: Utc::now(),
     };
@@ -791,21 +1000,58 @@ pub async fn sign_transaction(
 
 /// Submit a signed transaction to the blockchain
 pub async fn submit_transaction(
-    State(_app_state): State<AppState>,
+    State(app_state): State<AppState>,
     Json(request): Json<SubmitTransactionRequest>,
 ) -> Result<Json<SubmitTransactionResponse>, (StatusCode, Json<ApiError>)> {
     let tx_id = request.tx_id;
 
-    // In a real implementation, we would:
-    // 1. Retrieve the signed transaction from the pending pool
-    // 2. Validate the transaction (signatures, business logic, etc.)
-    // 3. Submit the transaction to the blockchain
-    // 4. Remove the transaction from the pending pool
-    // 5. Return the block index where the transaction was included
+    let transaction = {
+        let pending_transactions = app_state.pending_transactions.read().await;
+        pending_transactions.get(&tx_id).cloned().ok_or_else(|| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(ApiError {
+                    error: "transaction_not_found".to_string(),
+                    message: format!("Pending transaction '{}' was not found", tx_id),
+                    timestamp: Utc::now(),
+                }),
+            )
+        })?
+    };
+
+    transaction.validate().map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "transaction_validation_failed".to_string(),
+                message: format!("Transaction validation failed: {}", e),
+                timestamp: Utc::now(),
+            }),
+        )
+    })?;
+
+    let block_index = {
+        let mut blockchain = app_state.blockchain.write().await;
+        blockchain.add_block(transaction.to_rdf()).map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    error: "blockchain_submission_failed".to_string(),
+                    message: format!("Failed to submit transaction to blockchain: {}", e),
+                    timestamp: Utc::now(),
+                }),
+            )
+        })?;
+
+        blockchain.chain.last().map(|block| block.index as usize)
+    };
+
+    let mut pending_transactions = app_state.pending_transactions.write().await;
+    pending_transactions.remove(&tx_id);
 
     let response = SubmitTransactionResponse {
         tx_id: tx_id.clone(),
-        block_index: Some(0), // Placeholder - in real implementation this would be the actual block index
+        block_index,
         message: "Transaction submitted successfully".to_string(),
         timestamp: Utc::now(),
     };
@@ -890,6 +1136,23 @@ pub async fn create_participant(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::RuntimeMode;
+    use crate::core::blockchain::Blockchain;
+    use crate::wallet::WalletManager;
+    use std::collections::HashMap;
+    use std::sync::{atomic::AtomicU64, Arc};
+    use tempfile::{tempdir, TempDir};
+    use tokio::sync::RwLock;
+
+    fn test_state_with_wallet_manager(wallet_manager: WalletManager) -> AppState {
+        AppState {
+            blockchain: Arc::new(RwLock::new(Blockchain::new())),
+            network_peers: Arc::new(AtomicU64::new(0)),
+            wallet_manager: Arc::new(RwLock::new(wallet_manager)),
+            pending_transactions: Arc::new(RwLock::new(HashMap::new())),
+            runtime_mode: RuntimeMode::Production,
+        }
+    }
 
     #[test]
     fn validates_non_empty_turtle_import_payload() {
@@ -931,5 +1194,181 @@ mod tests {
 
         assert_eq!(status, StatusCode::BAD_REQUEST);
         assert_eq!(error.error, "invalid_turtle_import");
+    }
+
+    #[tokio::test]
+    async fn privacy_key_lookup_requires_registered_wallet_secret() {
+        let state = test_state_with_wallet_manager(
+            WalletManager::new(tempdir().unwrap().path(), None).unwrap(),
+        );
+        let claims = UserClaims {
+            sub: Uuid::new_v4().to_string(),
+            role: "user".to_string(),
+            exp: usize::MAX,
+        };
+
+        let (status, Json(error)) = load_privacy_key_for_claim(&state, &claims, "key-1")
+            .await
+            .expect_err("missing wallet/key should fail closed");
+
+        assert_eq!(status, StatusCode::FORBIDDEN);
+        assert_eq!(error.error, "privacy_key_not_found");
+    }
+
+    fn minimal_transaction(rdf_data: &str) -> Transaction {
+        Transaction::new(
+            TransactionType::Production,
+            vec![],
+            vec![],
+            rdf_data.to_string(),
+            None,
+            TransactionMetadata {
+                location: None,
+                environmental_conditions: None,
+                compliance_info: None,
+                quality_data: None,
+                custom_fields: HashMap::new(),
+            },
+            TransactionPayload::RdfData(String::new()),
+        )
+    }
+
+    fn test_claims(sub: impl Into<String>) -> UserClaims {
+        UserClaims {
+            sub: sub.into(),
+            role: "user".to_string(),
+            exp: usize::MAX,
+        }
+    }
+
+    async fn state_with_wallet_and_pending_transaction() -> (AppState, Uuid, String, TempDir) {
+        let wallet_dir = tempdir().unwrap();
+        let mut wallet_manager = WalletManager::new(wallet_dir.path(), None).unwrap();
+        let participant = Participant::new_farmer("test farm".to_string(), "test".to_string());
+        let participant_id = participant.id;
+        wallet_manager.create_wallet(participant).unwrap();
+        let state = test_state_with_wallet_manager(wallet_manager);
+        let transaction = minimal_transaction(
+            r#"@prefix ex: <http://example.com/> .
+ex:tx ex:status "created" ."#,
+        );
+        let tx_id = transaction.id.clone();
+        state
+            .pending_transactions
+            .write()
+            .await
+            .insert(tx_id.clone(), transaction);
+        (state, participant_id, tx_id, wallet_dir)
+    }
+
+    #[tokio::test]
+    async fn privacy_key_lookup_uses_wallet_secret_without_generating_key() {
+        let wallet_dir = tempdir().unwrap();
+        let mut wallet_manager = WalletManager::new(wallet_dir.path(), None).unwrap();
+        let participant = Participant::new_farmer("test farm".to_string(), "test".to_string());
+        let participant_id = participant.id;
+        wallet_manager.create_wallet(participant).unwrap();
+        wallet_manager
+            .get_wallet_mut(participant_id)
+            .unwrap()
+            .add_secret("key-1".to_string(), hex::encode([7u8; 32]));
+
+        let state = test_state_with_wallet_manager(wallet_manager);
+        let claims = UserClaims {
+            sub: participant_id.to_string(),
+            role: "user".to_string(),
+            exp: usize::MAX,
+        };
+
+        let key = load_privacy_key_for_claim(&state, &claims, "key-1")
+            .await
+            .expect("registered wallet secret should be accepted");
+
+        assert_eq!(key, [7u8; 32]);
+    }
+
+    #[tokio::test]
+    async fn sign_transaction_rejects_participant_mismatch_before_signing() {
+        let (state, participant_id, tx_id, _wallet_dir) =
+            state_with_wallet_and_pending_transaction().await;
+        let other_participant_id = Uuid::new_v4();
+
+        let (status, Json(error)) = sign_transaction(
+            State(state),
+            Extension(test_claims(other_participant_id.to_string())),
+            Json(SignTransactionRequest {
+                tx_id,
+                participant_id: participant_id.to_string(),
+            }),
+        )
+        .await
+        .expect_err("mismatched participant signer should fail closed");
+
+        assert_eq!(status, StatusCode::FORBIDDEN);
+        assert_eq!(error.error, "signer_not_authorized");
+    }
+
+    #[tokio::test]
+    async fn sign_transaction_rejects_unauthorized_nonexistent_tx_without_oracle() {
+        let (state, participant_id, _tx_id, _wallet_dir) =
+            state_with_wallet_and_pending_transaction().await;
+        let other_participant_id = Uuid::new_v4();
+
+        let (status, Json(error)) = sign_transaction(
+            State(state),
+            Extension(test_claims(other_participant_id.to_string())),
+            Json(SignTransactionRequest {
+                tx_id: "missing-transaction".to_string(),
+                participant_id: participant_id.to_string(),
+            }),
+        )
+        .await
+        .expect_err("authorization must happen before transaction lookup");
+
+        assert_eq!(status, StatusCode::FORBIDDEN);
+        assert_eq!(error.error, "signer_not_authorized");
+    }
+
+    #[tokio::test]
+    async fn sign_transaction_accepts_matching_participant_claim() {
+        let (state, participant_id, tx_id, _wallet_dir) =
+            state_with_wallet_and_pending_transaction().await;
+
+        let response = sign_transaction(
+            State(state),
+            Extension(test_claims(participant_id.to_string())),
+            Json(SignTransactionRequest {
+                tx_id,
+                participant_id: participant_id.to_string(),
+            }),
+        )
+        .await
+        .expect("matching participant claim should sign");
+
+        assert_eq!(response.0.signatures.len(), 1);
+        assert_eq!(
+            response.0.signatures[0].signer_id,
+            participant_id.to_string()
+        );
+    }
+
+    #[tokio::test]
+    async fn sign_transaction_rejects_non_uuid_claim_subject() {
+        let (state, participant_id, tx_id, _wallet_dir) =
+            state_with_wallet_and_pending_transaction().await;
+
+        let (status, Json(error)) = sign_transaction(
+            State(state),
+            Extension(test_claims("username-subject")),
+            Json(SignTransactionRequest {
+                tx_id,
+                participant_id: participant_id.to_string(),
+            }),
+        )
+        .await
+        .expect_err("username subject must not imply participant authority");
+
+        assert_eq!(status, StatusCode::FORBIDDEN);
+        assert_eq!(error.error, "signer_not_authorized");
     }
 }

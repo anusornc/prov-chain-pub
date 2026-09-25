@@ -13,7 +13,6 @@
 //! - CBV 2.0 (ISO/IEC 19988:2024)
 //! - GS1 Web Vocabulary
 
-use anyhow::Result;
 use std::collections::HashMap;
 
 /// GS1 EPCIS namespace constants
@@ -328,6 +327,6 @@ mod tests {
         let doc = create_epcis_document(events);
         assert_eq!(doc["@type"], "EPCISDocument");
         assert_eq!(doc["schemaVersion"], "2.0");
-        assert!(doc["epcisBody"]["eventList"].as_array().unwrap().len() > 0);
+        assert!(!doc["epcisBody"]["eventList"].as_array().unwrap().is_empty());
     }
 }

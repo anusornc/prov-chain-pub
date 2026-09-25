@@ -31,6 +31,11 @@ The intended semantic stack is:
 - optional mappings to external standards such as GS1/EPCIS where needed,
 - SPACL-backed validation and reasoning through `src/ontology/*` as the production path.
 
+These are ontology-package/data-ingest mappings inside one network's semantic contract. They are
+not bridge-time RDF transformations: the bounded bridge in
+[ADR 0037](./ADR/0037-bound-provchain-bridge-to-converged-source-evidence-and-final-admission.md)
+copies one exact public payload between two networks using the same package contract.
+
 The intended network stack is:
 
 - a network-wide consensus and semantic contract shared by all members,

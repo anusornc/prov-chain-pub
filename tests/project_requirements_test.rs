@@ -47,17 +47,21 @@ async fn test_consensus_switching_mechanism() {
 async fn test_cross_chain_foundation() {
     // Setup Source Chain
     let source_chain = Arc::new(RwLock::new(Blockchain::new()));
-    let source_bridge = BridgeManager::new(source_chain.clone());
+    let source_bridge =
+        BridgeManager::with_network_ids(source_chain.clone(), "source-net", "dest-net")
+            .expect("source bridge should be configured");
 
     // Setup Destination Chain
     let dest_chain = Arc::new(RwLock::new(Blockchain::new()));
-    let dest_bridge = BridgeManager::new(dest_chain.clone());
+    let dest_bridge = BridgeManager::with_network_ids(dest_chain.clone(), "dest-net", "source-net")
+        .expect("destination bridge should be configured");
 
     // 1. Create a "transfer" block on Source Chain
     // In a real scenario, this block would contain specific burn/lock transaction data
     let mut source_chain_write = source_chain.write().await;
     let index = 1;
-    let data = "TRANSFER_ASSET_TO_DEST_NET";
+    let data = r#"@prefix ex: <http://example.com/> .
+ex:transfer1 ex:status "locked" ."#;
     let previous_hash = "0".repeat(64);
     let state_root = "root_hash".to_string();
     let node_id = Uuid::new_v4().to_string();
@@ -89,7 +93,7 @@ async fn test_cross_chain_foundation() {
     // 3. Import Proof to Destination
     // First, register a trusted authority so the bridge accepts the proof
     dest_bridge
-        .add_trusted_authority("local-net", source_signing_key.verifying_key().as_bytes())
+        .add_trusted_authority("source-net", source_signing_key.verifying_key().as_bytes())
         .await
         .expect("Failed to add trusted authority");
 
@@ -99,4 +103,23 @@ async fn test_cross_chain_foundation() {
         .expect("Import failed");
 
     assert!(result, "Proof should be accepted and verified");
+    assert_eq!(dest_chain.read().await.chain.len(), 2);
+
+    let replay = dest_bridge
+        .import_proof(&proof)
+        .await
+        .expect("Replay should be rejected without crashing");
+    assert!(!replay, "Transfer IDs should be replay-protected");
+
+    let mut tampered_replay = proof;
+    tampered_replay.message.transfer_id = Uuid::new_v4();
+    let tampered_result = dest_bridge
+        .import_proof(&tampered_replay)
+        .await
+        .expect("Tampered transfer identity should be rejected without crashing");
+    assert!(
+        !tampered_result,
+        "Transfer IDs are part of the signed bridge envelope"
+    );
+    assert_eq!(dest_chain.read().await.chain.len(), 2);
 }

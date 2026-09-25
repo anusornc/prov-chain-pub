@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct Config {
     pub network: NetworkConfig,
@@ -25,6 +25,26 @@ pub struct WebConfig {
     pub port: u16,
     pub jwt_secret: String,
     pub cors: CorsConfig,
+    /// Runtime behavior mode for web/API handlers.
+    pub runtime_mode: RuntimeMode,
+}
+
+/// Runtime behavior mode for web/API handlers.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RuntimeMode {
+    /// Production mode fails closed instead of returning demo or synthetic data.
+    #[default]
+    Production,
+    /// Demo mode permits example fallbacks for local demonstrations.
+    Demo,
+}
+
+impl RuntimeMode {
+    /// Returns true when demo fallbacks are allowed.
+    pub fn allows_demo_fallbacks(self) -> bool {
+        matches!(self, Self::Demo)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,19 +86,6 @@ impl Default for OntologyConfigFile {
     }
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            network: NetworkConfig::default(),
-            consensus: ConsensusConfig::default(),
-            storage: StorageConfig::default(),
-            logging: LoggingConfig::default(),
-            web: WebConfig::default(),
-            ontology_config: None,
-        }
-    }
-}
-
 impl Default for WebConfig {
     fn default() -> Self {
         Self {
@@ -86,6 +93,7 @@ impl Default for WebConfig {
             port: 8080,
             jwt_secret: "".to_string(),
             cors: CorsConfig::default(),
+            runtime_mode: RuntimeMode::default(),
         }
     }
 }
@@ -189,6 +197,7 @@ mod tests {
         let config = Config::default();
         assert_eq!(config.network.listen_port, 8080);
         assert!(config.web.cors.enabled);
+        assert_eq!(config.web.runtime_mode, RuntimeMode::Production);
         // In debug mode, default origins include localhost dev ports
         assert!(config
             .web
@@ -214,6 +223,7 @@ mod tests {
         assert_eq!(config.network.listen_port, 8080);
         assert!(config.web.cors.enabled);
         assert!(!config.web.cors.allowed_origins.is_empty());
+        assert_eq!(config.web.runtime_mode, RuntimeMode::Production);
     }
 
     #[test]
@@ -273,5 +283,6 @@ port = 9090
         );
         assert_eq!(config.web.port, 9090);
         assert_eq!(config.web.host, WebConfig::default().host);
+        assert_eq!(config.web.runtime_mode, RuntimeMode::Production);
     }
 }

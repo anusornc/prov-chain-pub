@@ -1,14 +1,30 @@
 Introduction to ProvChainOrg
 ===========================
 
-Welcome to ProvChainOrg, a semantic blockchain platform that combines the security and immutability of blockchain technology with the expressiveness and queryability of RDF (Resource Description Framework) graphs.
+.. warning::
+   **Current evidence boundary (2026-08-31).** This page is a legacy,
+   feature-oriented introduction to a research prototype. The implemented
+   foundation is public RDF payload handling with Oxigraph/SPARQL plus selected
+   ontology-aware checks. The complete-envelope journal and replay, atomic
+   Final Admission, authenticated membership, reproducible three-node PoA,
+   full package-declared SHACL enforcement, durable privacy lifecycle, bounded
+   ProvChain bridge, and corrected end-to-end evidence are pending. PBFT,
+   heterogeneous/SPV bridging, human usability, operational deployment, and
+   production-pilot controls are future work. Consult
+   ``docs/architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md`` and
+   ``docs/paper_submission/PAPER_EVIDENCE_INDEX.md`` before relying on a
+   capability claim; ``AGENTS.md`` governs repository work.
+
+Welcome to ProvChainOrg, a semantic-ledger research prototype that combines
+cryptographically linked public provenance records with the expressiveness and
+queryability of RDF (Resource Description Framework) graphs.
 
 .. raw:: html
 
    <div class="hero-section">
      <div class="hero-content">
        <h1>Introduction to ProvChainOrg</h1>
-       <p class="hero-subtitle">Transparent, verifiable supply chain traceability with semantic blockchain</p>
+       <p class="hero-subtitle">Queryable public-RDF provenance in a semantic-ledger research prototype</p>
        <div class="hero-badges">
          <span class="badge badge-user">User Guide</span>
          <span class="badge badge-introduction">Introduction</span>
@@ -21,9 +37,9 @@ Welcome to ProvChainOrg, a semantic blockchain platform that combines the securi
 What is ProvChainOrg?
 ---------------------
 
-ProvChainOrg is a revolutionary platform that brings together two powerful technologies:
+ProvChainOrg explores the combination of two technologies:
 
-1. **Blockchain Technology**: Provides cryptographic security, immutability, and decentralized consensus
+1. **Cryptographically linked ledger structures**: The repository includes local/prototype block and PoA components; durable commitment and three-node convergence remain pending
 2. **Semantic Web Technologies**: Enables rich, queryable data with formal semantics and relationships
 
 Unlike traditional blockchains that store opaque data, ProvChainOrg stores semantic data that can be queried and understood using standard web technologies. This makes it particularly well-suited for supply chain traceability applications where transparency, verifiability, and semantic richness are essential.
@@ -32,16 +48,22 @@ Key Concepts
 ------------
 
 **RDF-Native Storage**
-   Every piece of data in ProvChainOrg is stored as RDF triples, making it inherently semantic and queryable. This means you can ask complex questions about your supply chain data using standard SPARQL queries.
+   Public provenance payloads can be represented as RDF triples and projected
+   into Oxigraph for querying. Private and control data are not covered by an
+   "all data is RDF" claim.
 
 **SPARQL Queries**
-   Query the entire blockchain using SPARQL, the standard query language for semantic data. This allows you to perform sophisticated analysis that would be impossible with traditional blockchain systems.
+   Query the current Oxigraph provenance projection using SPARQL, the standard
+   query language for RDF data.
 
 **Ontology Validation**
-   All data is automatically validated against formal ontologies to ensure consistency, quality, and compliance with industry standards.
+   Selected ontology-aware paths perform focused checks. Universal,
+   package-declared full-state SHACL enforcement at Final Admission remains a
+   target milestone and no industry-conformance certification is implied.
 
-**Supply Chain Focus**
-   Built specifically for tracking products, processes, and provenance across complex supply chains with environmental monitoring and quality assurance.
+**Traceability Reference Focus**
+   Supply-chain packages exercise product, process, provenance, and
+   environmental-condition models without defining the platform boundary.
 
 Why Use ProvChainOrg?
 ---------------------
@@ -64,13 +86,13 @@ Traditional Solutions vs. ProvChainOrg
      - ✅ Standard SPARQL queries
    * - Data Validation
      - ❌ Manual validation
-     - ✅ Automatic ontology validation
+     - Selected ontology checks; universal Final Admission gate pending
    * - Interoperability
      - ❌ Vendor-specific formats
-     - ✅ W3C standards (RDF, SPARQL)
+     - RDF/SPARQL-based data and query model; no blanket conformance claim
    * - Auditability
      - ❌ Requires specialized tools
-     - ✅ Human-readable semantic data
+     - Queryable public provenance; durable journal evidence pending
 
 Real-World Example
 ~~~~~~~~~~~~~~~~~~
@@ -96,39 +118,42 @@ Imagine tracking a batch of organic tomatoes through the supply chain:
                 :recordedAt ?timestamp .
    }
 
-This level of semantic querying is impossible with traditional blockchain systems without extensive custom development.
+This example illustrates the kind of query the RDF/SPARQL model is intended to
+support without a bespoke query language.
 
 Core Features
 -------------
 
-🔗 **RDF-Native Blockchain**
-   Store semantic data directly in blocks with cryptographic integrity
+🔗 **Public RDF Provenance**
+   Carry public RDF payloads in cryptographically linked prototype blocks
 
 🔍 **SPARQL Query Engine**
-   Query across the entire blockchain using standard semantic web technologies
+   Query the current Oxigraph projection using SPARQL
 
 🧠 **Ontology Integration**
-   Automatic validation against formal ontologies ensures data quality
+   Apply selected production-path ontology checks while the complete package gate remains pending
 
 📊 **Supply Chain Traceability**
-   Track products from origin to consumer with complete provenance
+   Model and query provenance in supply-chain reference packages
 
-🌐 **Standards Compliance**
-   Built on W3C standards (RDF, SPARQL, OWL) for maximum interoperability
+🌐 **Standards-Facing Model**
+   Reuse RDF, SPARQL, PROV-O, and selected ontology concepts without claiming full conformance certification
 
 🔒 **Cryptographic Security**
-   All the security benefits of blockchain with semantic data richness
+   Use established cryptographic components in the prototype; the accepted end-to-end security lifecycle remains pending
 
 🌡️ **Environmental Monitoring**
    Track temperature, humidity, and other conditions throughout the supply chain
 
-📋 **Regulatory Compliance**
-   Maintain transparent, auditable records for regulatory requirements
+📋 **Regulatory Workflows**
+   Explore queryable provenance as input to regulatory and audit workflows; compliance is not certified
 
 User Interface Overview
 ----------------------
 
-ProvChainOrg provides an intuitive web interface for managing your supply chain data:
+The repository includes web/API and frontend scaffolding. Available screens and
+routes depend on the selected runtime and should be verified before a demo;
+the intended interface areas include:
 
 **Dashboard**
    Get an overview of your blockchain status, recent activities, and key metrics at a glance.
@@ -148,16 +173,17 @@ ProvChainOrg provides an intuitive web interface for managing your supply chain 
 Target Industries
 ----------------
 
-ProvChainOrg is ideal for applications in:
+ProvChainOrg uses the following as research or reference-package scenarios:
 
 **Food & Agriculture**
    Track food products from farm to table with environmental monitoring and quality assurance.
 
 **Pharmaceuticals**
-   Ensure drug authenticity and prevent counterfeiting with immutable provenance records.
+   Explore medicine-batch provenance and evidence that applications may use in
+   authenticity or anti-counterfeit workflows.
 
 **Luxury Goods**
-   Verify the authenticity and provenance of high-value items.
+   Explore provenance inputs to application-level authenticity checks.
 
 **Manufacturing**
    Track components and materials through complex manufacturing processes.
@@ -165,8 +191,9 @@ ProvChainOrg is ideal for applications in:
 **Logistics & Transportation**
    Monitor environmental conditions and handling throughout transport.
 
-**Regulatory Compliance**
-   Maintain transparent, auditable records for regulatory requirements.
+**Regulatory Workflows**
+   Explore provenance records that may support regulatory workflows; no
+   regulatory-compliance result is claimed.
 
 Getting Started
 --------------
@@ -176,7 +203,7 @@ Quick Installation
 
 .. code-block:: bash
 
-   # Prerequisites: Rust 1.70+
+   # Prerequisites: Rust 1.87+
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
    # Clone and build
@@ -191,48 +218,54 @@ First Steps
 
    .. code-block:: bash
 
-      cargo run demo
+      cargo run -- demo
 
-   This demonstrates a complete supply chain scenario with semantic data.
+   This runs a reference demo; it is not proof of the pending end-to-end
+   guarantees listed above.
 
 2. **Try a Query**
 
    .. code-block:: bash
 
-      cargo run -- query queries/trace_by_batch_ontology.sparql
+      cargo run -- query src/semantic/queries/trace_by_batch_ontology.sparql
 
-   This shows how to query supply chain data using SPARQL.
+   This invokes an existing legacy query fixture. It demonstrates CLI syntax,
+   not the package-declared production semantic contract.
 
 3. **Explore the Web Interface**
 
    .. code-block:: bash
 
-      cargo run --bin demo_ui
+      cargo run --example demo_ui
 
    Open your browser to http://localhost:8080 to explore the web interface.
 
 Use Cases
 ---------
 
-ProvChainOrg excels in several key use cases:
+ProvChainOrg is being evaluated against several reference use cases:
 
-**Complete Supply Chain Visibility**
-   Track products from origin to consumer with complete transparency about every step in the process.
+**Cross-Organization Provenance Views**
+   Model and query linked public provenance across reference workflows; data
+   completeness is not guaranteed by the current prototype.
 
 **Quality Assurance**
    Monitor environmental conditions, processing parameters, and quality checks throughout the supply chain.
 
 **Counterfeit Prevention**
-   Verify product authenticity through immutable blockchain records.
+   Explore provenance evidence that applications may use during authenticity
+   checks; product authenticity is not established automatically.
 
-**Regulatory Compliance**
-   Maintain auditable records that meet industry and government requirements.
+**Regulatory Workflows**
+   Explore queryable provenance for audit workflows without claiming that
+   records meet any specific regulation.
 
 **Sustainability Tracking**
    Monitor environmental impact and sustainability metrics across supply chains.
 
 **Recall Management**
-   Quickly identify and isolate affected products during recalls.
+   Explore queries that help identify potentially affected products; operational
+   isolation remains an application responsibility.
 
 Architecture Overview
 ---------------------
@@ -269,7 +302,10 @@ Now that you understand what ProvChainOrg is, you can:
 4. **Explore Use Cases**: Read about :doc:`food-safety` and other industry applications
 
 .. note::
-   ProvChainOrg is based on the GraphChain research concept but extends it with production-ready features, comprehensive ontology support, and real-world supply chain use cases.
+   ProvChainOrg is based on the GraphChain research concept and extends it with
+   public-RDF/Oxigraph/SPARQL foundations, selected ontology checks, and
+   reference-package use cases. It is not yet the thesis-defensible end-to-end
+   reference system described in the warning above.
 
 Community & Support
 --------------------

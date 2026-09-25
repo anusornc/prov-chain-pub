@@ -3,14 +3,21 @@ use chrono::{DateTime, Utc};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::env;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
-/// Benchmark runner for comparing ProvChain-Org with other systems
+const LEGACY_RUNNER_ENV: &str = "PROVCHAIN_ALLOW_LEGACY_BENCHMARK_RUNNER";
+
+/// Legacy benchmark runner retained for historical comparison only.
+///
+/// This runner is not part of the current benchmark evidence chain. It still
+/// contains stale API route assumptions and placeholder comparator summaries.
+/// Use `benchmark-toolkit/research-benchmarks/` for current evidence.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -131,6 +138,7 @@ impl SystemClient {
         Ok(())
     }
 
+    #[allow(dead_code)]
     async fn load_dataset_provchain(&self, dataset_path: &str) -> Result<Duration> {
         let dataset_file = Path::new(dataset_path).join("supply_chain_1000.ttl");
         let content = fs::read_to_string(&dataset_file)
@@ -155,7 +163,8 @@ impl SystemClient {
         Ok(start.elapsed())
     }
 
-    async fn load_dataset_neo4j(&self, dataset_path: &str) -> Result<Duration> {
+    #[allow(dead_code)]
+    async fn load_dataset_neo4j(&self, _dataset_path: &str) -> Result<Duration> {
         // For Neo4j, we'd use Cypher queries or the APOC load procedure
         // This is a simplified placeholder
         let start = Instant::now();
@@ -383,10 +392,7 @@ fn generate_report(results: &[BenchmarkResult], results_path: &str) -> Result<()
             .collect();
 
         if !provchain_results.is_empty() {
-            let avg_duration: f64 = provchain_results
-                .iter()
-                .map(|r| r.duration_ms)
-                .sum::<f64>()
+            let avg_duration: f64 = provchain_results.iter().map(|r| r.duration_ms).sum::<f64>()
                 / provchain_results.len() as f64;
 
             let avg_ops: f64 = provchain_results
@@ -397,8 +403,8 @@ fn generate_report(results: &[BenchmarkResult], results_path: &str) -> Result<()
 
             // Parse scenario and test_name from key
             let parts: Vec<&str> = key.split(':').collect();
-            let scenario = parts.get(0).unwrap_or(&"").to_string();
-            let test_name = parts.get(1).unwrap_or(&"").to_string();
+            let scenario = parts.first().unwrap_or(&"").to_string();
+            let _test_name = parts.get(1).unwrap_or(&"").to_string();
 
             let summary = BenchmarkSummary {
                 scenario,
@@ -406,7 +412,7 @@ fn generate_report(results: &[BenchmarkResult], results_path: &str) -> Result<()
                 neo4j_avg_ms: 0.0, // TODO: Calculate from Neo4j results
                 provchain_ops_per_sec: avg_ops,
                 neo4j_ops_per_sec: 0.0,
-                improvement_percent: 0.0, // TODO: Calculate
+                improvement_percent: 0.0,            // TODO: Calculate
                 winner: "ProvChain-Org".to_string(), // Placeholder
             };
 
@@ -430,8 +436,11 @@ fn generate_report(results: &[BenchmarkResult], results_path: &str) -> Result<()
 
     for summary in &summaries {
         writeln!(md, "### {}", summary.scenario)?;
-        writeln!(md, "- **ProvChain-Org**: {:.2} ms ({:.2} ops/sec)",
-            summary.provchain_avg_ms, summary.provchain_ops_per_sec)?;
+        writeln!(
+            md,
+            "- **ProvChain-Org**: {:.2} ms ({:.2} ops/sec)",
+            summary.provchain_avg_ms, summary.provchain_ops_per_sec
+        )?;
         writeln!(md, "- **Improvement**: {:.1}%", summary.improvement_percent)?;
         writeln!(md, "- **Winner**: {}\n", summary.winner)?;
     }
@@ -450,6 +459,15 @@ async fn main() -> Result<()> {
                 .add_directive(tracing::Level::INFO.into()),
         )
         .init();
+
+    if env::var(LEGACY_RUNNER_ENV).as_deref() != Ok("1") {
+        anyhow::bail!(
+            "benchmark-toolkit/src/main.rs is a legacy non-evidence runner. \
+             It uses stale API routes and placeholder comparator summaries. \
+             Use benchmark-toolkit/research-benchmarks/ for current benchmark evidence. \
+             To run this historical runner anyway, set {LEGACY_RUNNER_ENV}=1."
+        );
+    }
 
     let args = Args::parse();
 

@@ -19,6 +19,7 @@ import Card from "../ui/Card";
 import Badge from "../ui/Badge";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import Alert from "../ui/Alert";
+import TraceGraphWorkspace from "./TraceGraphWorkspace";
 import type { TraceabilityItem, SearchQuery } from "../../types";
 
 interface TraceabilityExplorerProps {
@@ -46,6 +47,8 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({
   const [filters, setFilters] = useState<SearchQuery["filters"]>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const [selectedGraphItem, setSelectedGraphItem] =
+    useState<TraceabilityItem | null>(null);
 
   // Get current items to display (search results or all items)
   const currentItems = searchResults ? searchResults.items : items;
@@ -93,6 +96,7 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({
   };
 
   const handleItemClick = (item: TraceabilityItem) => {
+    setSelectedGraphItem(item);
     if (onItemSelect) {
       onItemSelect(item);
     }
@@ -274,6 +278,13 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({
           </div>
         )}
 
+        <div className="mb-6">
+          <TraceGraphWorkspace
+            target={selectedGraphItem}
+            onClearTarget={() => setSelectedGraphItem(null)}
+          />
+        </div>
+
         {/* Results Summary */}
         {(searchResults || items.length > 0) && (
           <div className="mb-4 flex items-center justify-between">
@@ -313,7 +324,11 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({
             {paginatedItems.map((item) => (
               <Card
                 key={item.id}
-                className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                className={`p-6 hover:shadow-lg transition-shadow cursor-pointer ${
+                  selectedGraphItem?.id === item.id
+                    ? "ring-2 ring-blue-500 border-blue-300"
+                    : ""
+                }`}
                 onClick={() => handleItemClick(item)}
               >
                 <div className="flex items-start justify-between mb-4">
@@ -323,7 +338,13 @@ const TraceabilityExplorer: React.FC<TraceabilityExplorerProps> = ({
                       {item.name}
                     </h3>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <ChevronRight
+                    className={`w-4 h-4 flex-shrink-0 ${
+                      selectedGraphItem?.id === item.id
+                        ? "text-blue-500"
+                        : "text-gray-400"
+                    }`}
+                  />
                 </div>
 
                 <div className="space-y-2 mb-4">

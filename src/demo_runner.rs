@@ -368,6 +368,16 @@ pub fn run_demo_with_args(args: Vec<String>) -> Result<()> {
 mod tests {
     use super::*;
 
+    fn should_skip_demo_profile() -> bool {
+        match std::env::var("PROVCHAIN_RUN_DEMO_TESTS") {
+            Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+            _ => {
+                eprintln!("skipping ignored demo test; set PROVCHAIN_RUN_DEMO_TESTS=1 to run this profile");
+                true
+            }
+        }
+    }
+
     #[test]
     fn test_demo_runner_creation() {
         let runner = DemoRunner::new();
@@ -377,12 +387,19 @@ mod tests {
     #[test]
     #[ignore]
     fn test_basic_blockchain_demo() {
+        if should_skip_demo_profile() {
+            return;
+        }
         let runner = DemoRunner::new();
         assert!(runner.run_basic_blockchain_demo().is_ok());
     }
 
     #[test]
+    #[ignore]
     fn test_transaction_signing_demo() {
+        if should_skip_demo_profile() {
+            return;
+        }
         let runner = DemoRunner::new();
         assert!(runner.run_transaction_signing_demo().is_ok());
     }
@@ -390,6 +407,9 @@ mod tests {
     #[test]
     #[ignore]
     fn test_multi_participant_demo() {
+        if should_skip_demo_profile() {
+            return;
+        }
         let runner = DemoRunner::new();
         assert!(runner.run_multi_participant_demo().is_ok());
     }

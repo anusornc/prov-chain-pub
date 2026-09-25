@@ -1,5 +1,14 @@
 # ProvChainOrg Experimental Benchmark Results
 
+> **Dated mixed benchmark record — not the current paper evidence boundary (2026-08-31).** This
+> file combines historical component benchmarks with a custom load-test summary. The custom
+> load-test values are withdrawn because the harness did not retain an admissible raw-sample
+> artifact and its running-average and percentile calculations are defective. Do not quote a
+> ledger-throughput, response-time, percentile, or success-rate result from that section. Use
+> [`BENCHMARK_EVIDENCE_BOUNDARY_2026-05-11.md`](BENCHMARK_EVIDENCE_BOUNDARY_2026-05-11.md) and the
+> current [`PAPER_EVIDENCE_INDEX.md`](../paper_submission/PAPER_EVIDENCE_INDEX.md) to select
+> admissible focused ontology-admission and curated trace-query artifacts.
+
 **Date:** 2026-01-17
 **Platform:** Linux 6.8.0-1044-gcp
 **Compiler:** Rust 1.70+ (release profile with optimizations)
@@ -9,9 +18,9 @@
 
 ## Executive Summary
 
-This document contains **REAL EXPERIMENTAL DATA** from actual benchmark executions. All results were measured using Criterion.rs with 100 samples per benchmark, following rigorous statistical methodology for academic publication.
-
-**Important:** All performance figures below are actual measurements from real experiments, not estimates or projections.
+This document preserves dated outputs from multiple experimental paths. Criterion component rows
+must be interpreted within their original workload, and the withdrawn custom load-test section is
+not Criterion or publication evidence. No blanket validity claim applies to the whole file.
 
 ---
 
@@ -275,107 +284,71 @@ This document contains **REAL EXPERIMENTAL DATA** from actual benchmark executio
 
 ---
 
-## Statistical Methodology
+## Historical Methodology Annotation
 
-All benchmarks follow this methodology:
+The January draft recorded the following parameters for its Criterion component rows. They are not
+a complete immutable environment manifest and do not apply to the withdrawn custom load test:
 - **Samples:** 100 measurements per benchmark
 - **Warm-up:** 3 seconds (or 200ms for micro-benchmarks)
 - **Analysis:** Criterion.rs with 95% confidence intervals
 - **Outliers:** Detected and reported using Quartile method
 - **Platform:** Linux on Google Cloud Platform
 
-**Note on Ethics:** All data presented is from actual experiments. No estimates, projections, or synthetic data.
+**Evidence note:** historical output is retained for auditability, but retention does not make every
+value statistically correct or admissible for a current claim.
 
 ---
 
 ## Comparison with Research Objectives
 
-### Target vs Actual (from ADR 0001)
+### Historical Target Comparison (from ADR 0001)
 
-| Metric | Target | Actual (Measured) | Status |
-|--------|--------|-------------------|--------|
-| Write Throughput | > 8,000 TPS | **19.58 TPS** (load test) | ⚠️ Below target |
-| Read Latency (P95) | < 100ms | **0.04-18ms** (SPARQL queries) | ✅ Pass |
-| OWL2 Reasoning | < 200ms | **0.015-0.17ms** (consistency) | ✅ Pass |
-| Memory Usage | < 16 GB | **~200MB** (OWL2 reasoner) | ✅ Pass |
+| Metric | Target | Historical component result | Status |
+|--------|--------|-----------------------------|--------|
+| Write Throughput | > 8,000 TPS | **Withdrawn** — no corrected ledger-throughput artifact | Not admitted |
+| Read Latency (P95) | < 100ms | **0.04-18ms** (SPARQL component draft) | Historical component row; not a current service target |
+| OWL2 Reasoning | < 200ms | **0.015-0.17ms** (legacy consistency path) | Historical component row; not production semantic-path evidence |
+| Memory Usage | < 16 GB | **~200MB** (legacy reasoner draft) | Historical component row; not a node resource envelope |
 
-**Load Test Results (2026-01-18 - Reconfigured Test):**
+**Withdrawn Custom Load-Test Summary (2026-01-18):**
 
-| Metric | Value |
-|--------|-------|
-| **Test Configuration** | 200 users × 100 requests / 60 seconds |
-| **Theoretical Max TPS** | 333 TPS |
-| **Actual Throughput** | **19.58 TPS** |
-| **Success Rate** | 100% (1,397 / 1,397 requests) |
-| **Average Response Time** | 51.02 ms |
-| **P95 Response Time** | 98.29 ms ✅ |
-| **P99 Response Time** | 98.29 ms ✅ |
-| **Test Duration** | 71.73 seconds |
-
-**Load Test Suite Summary:**
-
-| Test | Status | Notes |
-|------|--------|-------|
-| test_supply_chain_workload_simulation | ✅ PASS | Supply chain workload |
-| test_concurrent_api_user_simulation | ✅ PASS | API user simulation |
-| test_scalability_endurance | ✅ PASS | Endurance test |
-| test_cross_ontology_reasoning_load | ✅ PASS | Cross-ontology reasoning |
-| test_high_volume_transaction_processing | ✅ PASS | 19.58 TPS (reconfigured) |
-| test_real_time_traceability_queries | ✅ PASS | Real-time traceability |
-
-**Performance Analysis:**
-- ✅ All 6 load tests now pass
-- ✅ 100% success rate (no transaction failures)
-- ✅ Excellent latency (P95 under 100ms)
-- ⚠️ Throughput bottleneck identified: processed 1,397 / 20,000 potential requests
-- **Bottleneck Analysis**: Transaction processing limited by single-threaded blockchain state management or RDF canonicalization
-
-**Important Notes:**
-1. The write throughput target of > 8,000 TPS was established in ADR 0001 as a PROJECTION for production deployment
-2. Current load test measures development environment performance (single node, limited resources)
-3. **Production configuration** (100 nodes, distributed consensus, optimized hardware) would achieve higher throughput through network-level parallelism
-4. **Next step**: Profile transaction pipeline to identify specific bottleneck (RDF canonicalization vs state management)
+The former summary table and “all tests pass” interpretation have been removed from the current
+evidence path. In addition to the defective running-average and percentile calculations, the test
+was ignored/profile-gated, exercised an in-process chain behind a process mutex, and did not emit
+the raw request samples and environment/dependency metadata required for curated evidence. It
+cannot establish ledger throughput, concurrency, bottlenecks, production scalability, or
+multi-node behavior. A future corrected campaign must measure the exact admitted and durable write
+path and archive raw samples before publishing any replacement value.
 
 ---
 
-## Reproducibility
+## Reproducibility Boundary
 
-To reproduce these results:
-
-```bash
-# Clone repository
-git clone https://github.com/your-org/provchain-org.git
-cd provchain-org
-
-# Run all benchmarks
-cargo bench --all
-
-# Results will be in target/criterion/
-```
-
-**Hardware Requirements:** Minimum 4GB RAM for benchmark execution
+This mixed historical record cannot be reproduced byte-for-byte from one archived command and
+environment. Running `cargo bench` today would produce a new local run, not validate every value in
+this file, and a local `target/criterion/` directory is not curated evidence. Use the evidence index
+for admitted artifact paths and archive commands, versions, raw samples, environment metadata, and
+hashes for any replacement campaign.
 
 ---
 
 ## Next Steps for Thesis
 
-1. **✅ Load Tests Completed** - All 6 tests pass (2026-01-18)
-   - Results: 19.58 TPS in development environment (single node)
-   - 100% success rate (1,397 / 1,397 requests)
-   - Bottleneck identified: processed 1,397 / 20,000 potential requests
-   - **Action needed**: Profile transaction pipeline (RDF canonicalization vs state management)
+1. **Correct the ledger-throughput harness**
+   - retain raw request samples and correct running-average/percentile calculations
+   - identify the exact admission, journal-commit, and acknowledgement boundary
+   - record environment/dependency metadata and publish a curated artifact
 
-2. **Generate Plots** from Criterion HTML reports in `target/criterion/`
+2. **Implement the locked reference-system milestones in dependency order**
+   - complete-envelope journal and verified replay
+   - universal Final Admission
+   - authenticated three-node PoA convergence
+   - complete package-declared SHACL, durable privacy, and bounded six-process bridge
 
-3. **Cross-chain Benchmarks** using portable toolkit:
-   ```bash
-   cd benchmark-toolkit && ./run.sh
-   ```
-
-4. **Statistical Analysis** for publication:
-   - Calculate effect sizes (Cohen's d)
-   - Run ANOVA for multiple comparisons
-   - Generate box plots for distribution visualization
+3. **Archive corrected end-to-end evidence**
+   - retain raw samples and failure/failpoint outputs
+   - record dependency, environment, topology, and exact command metadata
+   - publish hashes plus a claim-to-artifact map before statistical conclusions
 
 ---
 

@@ -426,72 +426,6 @@ impl Blockchain {
         Ok(())
     }
 
-    /// Extract RDF data from a specific graph
-    fn extract_rdf_data_from_graph(&self, graph_uri: &str) -> Result<String> {
-        // Debug output
-        println!("Attempting to extract RDF data from graph: '{}'", graph_uri);
-
-        let graph_name = NamedNode::new(graph_uri)?;
-
-        // Collect all triples from the specific graph
-        let mut triples = Vec::new();
-        let graph_name_ref = oxigraph::model::GraphNameRef::NamedNode((&graph_name).into());
-        for quad in self
-            .rdf_store
-            .store
-            .quads_for_pattern(None, None, None, Some(graph_name_ref))
-            .flatten()
-        {
-            // Create a triple from the quad (without the graph component)
-            let triple = oxigraph::model::Triple::new(quad.subject, quad.predicate, quad.object);
-            triples.push(triple);
-        }
-
-        println!("Found {} triples in graph '{}'", triples.len(), graph_uri);
-
-        // If no triples, return empty string
-        if triples.is_empty() {
-            return Ok(String::new());
-        }
-
-        // Manually serialize triples to Turtle format
-        let mut turtle_data = String::new();
-
-        // Add prefixes (simplified - in a real implementation we'd extract actual prefixes)
-        turtle_data.push_str("@prefix ex: <http://example.org/> .\n");
-        turtle_data.push_str("@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n");
-        turtle_data.push_str("@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n");
-        turtle_data.push_str("@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\n");
-
-        // Serialize each triple
-        for triple in triples {
-            let subject_str = match &triple.subject {
-                oxigraph::model::Subject::NamedNode(node) => format!("<{}>", node.as_str()),
-                oxigraph::model::Subject::BlankNode(node) => format!("_:{}", node.as_str()),
-                oxigraph::model::Subject::Triple(_) => {
-                    "<http://example.org/quoted-triple>".to_string()
-                } // Simplified
-            };
-
-            let predicate_str = format!("<{}>", triple.predicate.as_str());
-
-            let object_str = match &triple.object {
-                oxigraph::model::Term::NamedNode(node) => format!("<{}>", node.as_str()),
-                oxigraph::model::Term::BlankNode(node) => format!("_:{}", node.as_str()),
-                oxigraph::model::Term::Literal(lit) => format!("{}", lit),
-                oxigraph::model::Term::Triple(_) => "<< >>".to_string(), // Simplified
-            };
-
-            turtle_data.push_str(&format!(
-                "{} {} {} .\n",
-                subject_str, predicate_str, object_str
-            ));
-        }
-
-        println!("Generated Turtle data: {}", turtle_data);
-        Ok(turtle_data)
-    }
-
     /// Get storage statistics
     pub fn get_storage_stats(&self) -> Result<crate::storage::rdf_store::StorageStats> {
         self.rdf_store.get_storage_stats().map_err(|e| e.into())
@@ -797,13 +731,13 @@ impl Blockchain {
                 let genesis_rdf_start = Instant::now();
                 self.rdf_store
                     .add_rdf_to_graph(&genesis_block.data, &graph_name);
-                if let Some(timings) = timings.as_deref_mut() {
+                if let Some(timings) = timings.as_mut() {
                     timings.genesis_rdf_store_add_ms =
                         genesis_rdf_start.elapsed().as_secs_f64() * 1000.0;
                 }
                 let genesis_metadata_start = Instant::now();
                 self.rdf_store.add_block_metadata(&genesis_block);
-                if let Some(timings) = timings.as_deref_mut() {
+                if let Some(timings) = timings.as_mut() {
                     timings.genesis_metadata_insert_ms =
                         genesis_metadata_start.elapsed().as_secs_f64() * 1000.0;
                 }
@@ -818,7 +752,7 @@ impl Blockchain {
             genesis_block.hash = genesis_block.calculate_hash_with_store(Some(&self.rdf_store));
             self.chain.push(genesis_block);
         }
-        if let Some(timings) = timings.as_deref_mut() {
+        if let Some(timings) = timings.as_mut() {
             timings.ensure_genesis_ms = genesis_start.elapsed().as_secs_f64() * 1000.0;
         }
 
@@ -831,7 +765,7 @@ impl Blockchain {
             let validation_start = Instant::now();
             match self.validate_block_data_against_ontology(&data) {
                 Ok(validation_result) => {
-                    if let Some(timings) = timings.as_deref_mut() {
+                    if let Some(timings) = timings.as_mut() {
                         timings.ontology_validation_ms =
                             validation_start.elapsed().as_secs_f64() * 1000.0;
                         timings.ontology_validation_reported_ms = validation_result
@@ -854,7 +788,7 @@ impl Blockchain {
                     if !validation_result.is_valid {
                         let explanation_start = Instant::now();
                         let explanation_summary = validation_result.explanation_summary();
-                        if let Some(timings) = timings.as_deref_mut() {
+                        if let Some(timings) = timings.as_mut() {
                             timings.ontology_explanation_summary_ms =
                                 explanation_start.elapsed().as_secs_f64() * 1000.0;
                         }
@@ -877,7 +811,7 @@ impl Blockchain {
                     }
                     let explanation_start = Instant::now();
                     let explanation_summary = validation_result.explanation_summary();
-                    if let Some(timings) = timings.as_deref_mut() {
+                    if let Some(timings) = timings.as_mut() {
                         timings.ontology_explanation_summary_ms =
                             explanation_start.elapsed().as_secs_f64() * 1000.0;
                     }
@@ -887,7 +821,7 @@ impl Blockchain {
                     );
                 }
                 Err(validation_error) => {
-                    if let Some(timings) = timings.as_deref_mut() {
+                    if let Some(timings) = timings.as_mut() {
                         timings.ontology_validation_ms =
                             validation_start.elapsed().as_secs_f64() * 1000.0;
                     }
@@ -908,14 +842,14 @@ impl Blockchain {
         // Calculate state root
         let state_root_start = Instant::now();
         let state_root = self.rdf_store.calculate_state_root();
-        if let Some(timings) = timings.as_deref_mut() {
+        if let Some(timings) = timings.as_mut() {
             timings.state_root_ms = state_root_start.elapsed().as_secs_f64() * 1000.0;
         }
 
         let block_construct_start = Instant::now();
         let mut block = Block::new(index, data, previous_hash, state_root, validator);
         block.encrypted_data = encrypted_data;
-        if let Some(timings) = timings.as_deref_mut() {
+        if let Some(timings) = timings.as_mut() {
             timings.block_construct_hash_ms =
                 block_construct_start.elapsed().as_secs_f64() * 1000.0;
         }
@@ -924,7 +858,7 @@ impl Blockchain {
         let signature_start = Instant::now();
         let signature = self.signing_key.sign(block.hash.as_bytes());
         block.signature = hex::encode(signature.to_bytes());
-        if let Some(timings) = timings.as_deref_mut() {
+        if let Some(timings) = timings.as_mut() {
             timings.signature_create_ms = signature_start.elapsed().as_secs_f64() * 1000.0;
             timings.create_block_proposal_total_ms =
                 proposal_start.elapsed().as_secs_f64() * 1000.0;
@@ -1008,7 +942,7 @@ impl Blockchain {
                 block.validator
             );
         }
-        if let Some(timings) = timings.as_deref_mut() {
+        if let Some(timings) = timings.as_mut() {
             timings.signature_verify_ms = signature_verify_start.elapsed().as_secs_f64() * 1000.0;
         }
 
@@ -1019,12 +953,12 @@ impl Blockchain {
             let rdf_store_timings = self
                 .rdf_store
                 .add_rdf_to_graph_with_timings(&block.data, &graph_name);
-            if let Some(timings) = timings.as_deref_mut() {
+            if let Some(timings) = timings.as_mut() {
                 copy_rdf_graph_timings(timings, &rdf_store_timings);
             }
             let metadata_start = Instant::now();
             self.rdf_store.add_block_metadata(&block);
-            if let Some(timings) = timings.as_deref_mut() {
+            if let Some(timings) = timings.as_mut() {
                 timings.metadata_insert_ms = metadata_start.elapsed().as_secs_f64() * 1000.0;
             }
         } else {
@@ -1040,7 +974,7 @@ impl Blockchain {
         // invalidate the signature. The signed hash must remain stable.
         let chain_push_start = Instant::now();
         self.chain.push(block.clone());
-        if let Some(timings) = timings.as_deref_mut() {
+        if let Some(timings) = timings.as_mut() {
             timings.chain_push_ms = chain_push_start.elapsed().as_secs_f64() * 1000.0;
         }
 
@@ -1051,7 +985,7 @@ impl Blockchain {
                 BlockchainError::BlockAdditionFailed(format!("Failed to persist block: {}", e)),
             ));
         }
-        if let Some(timings) = timings.as_deref_mut() {
+        if let Some(timings) = timings.as_mut() {
             timings.persistence_ms = persistence_start.elapsed().as_secs_f64() * 1000.0;
             timings.submit_signed_block_total_ms = submit_start.elapsed().as_secs_f64() * 1000.0;
         }

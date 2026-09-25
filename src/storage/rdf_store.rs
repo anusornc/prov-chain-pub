@@ -1023,7 +1023,7 @@ impl RDFStore {
 
         let mut level = sorted_hashes.to_vec();
         while level.len() > 1 {
-            let mut next_level = Vec::with_capacity((level.len() + 1) / 2);
+            let mut next_level = Vec::with_capacity(level.len().div_ceil(2));
             for chunk in level.chunks(2) {
                 if chunk.len() == 2 {
                     let mut hasher = Sha256::new();

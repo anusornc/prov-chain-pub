@@ -360,6 +360,7 @@ mod tests {
                 ontology_package_id: "pkg".to_string(),
                 ontology_package_version: "1.0.0".to_string(),
                 ontology_package_hash: "hash".to_string(),
+                semantic_execution_profile_id: "provchain.semantic-execution.v1".to_string(),
                 validation_mode: "strict".to_string(),
             }),
         );

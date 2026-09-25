@@ -10,11 +10,16 @@
 pub mod domain_manager;
 pub mod error;
 pub mod package;
+pub mod semantic_admission;
 pub mod shacl_validator;
 
 pub use domain_manager::{DomainConfig, OntologyManager};
 pub use error::{ConsistencyError, OntologyError, ShapeViolation, ValidationError};
-pub use package::OntologyPackageManifest;
+pub use package::{OntologyPackageManifest, SEMANTIC_EXECUTION_PROFILE_V1};
+pub use semantic_admission::{
+    ActivatedSemanticPackage, SemanticActivationError, SemanticAdmissionError,
+    SemanticAdmissionVerdict,
+};
 pub use shacl_validator::{ShaclConstraint, ShaclProperty, ShaclShape, ShaclValidator};
 
 use crate::config::Config;

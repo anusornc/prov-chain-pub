@@ -1,6 +1,17 @@
 Introduction to the ProvChainOrg Stack
 ======================================
 
+.. warning::
+
+   **QUARANTINED / SUPERSEDED — HISTORICAL ONLY (2026-08-31).**
+
+   This page is non-authoritative. Its commands, results, and contracts have not been verified
+   against the current code and must not be used as current implementation, thesis, publication,
+   or deployment evidence. Use ``../reviews/CODEX_CONTINUITY_MEMORY.md``,
+   ``../reviews/THESIS_CODE_ALIGNMENT_REVIEW_2026-07-10.md``,
+   ``../architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md``, and
+   ``../paper_submission/PAPER_EVIDENCE_INDEX.md`` as the current sources.
+
 The ProvChainOrg stack is a comprehensive set of tools, libraries, and technologies that enable developers to build semantic blockchain applications for supply chain traceability. This page provides an overview of the entire development ecosystem.
 
 Stack Overview

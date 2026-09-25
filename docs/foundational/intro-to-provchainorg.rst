@@ -1,7 +1,24 @@
 Introduction to ProvChainOrg
 ============================
 
-ProvChainOrg is a semantic blockchain platform that combines the security and immutability of blockchain technology with the expressiveness and queryability of RDF (Resource Description Framework) graphs. It's designed specifically for supply chain traceability applications where transparency, verifiability, and semantic richness are essential.
+.. warning::
+   **Current evidence boundary (2026-08-31).** This page is a legacy conceptual
+   introduction, not evidence of production readiness. Public RDF payloads,
+   Oxigraph/SPARQL querying, and selected ``src/ontology/*`` checks are the
+   implemented foundation. The complete-envelope journal/replay, atomic Final
+   Admission, authenticated membership, reproducible three-node PoA, full
+   package-declared SHACL enforcement, durable privacy, bounded ProvChain
+   bridge, and corrected end-to-end evidence are pending. PBFT,
+   heterogeneous/SPV bridging, human usability, operational deployment, and
+   production-pilot controls are future work. Current status and evidence are
+   tracked in ``docs/architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md`` and
+   ``docs/paper_submission/PAPER_EVIDENCE_INDEX.md``; follow ``AGENTS.md`` for
+   repository work.
+
+ProvChainOrg is a semantic-ledger research prototype that combines
+cryptographically linked public provenance records with the expressiveness and
+queryability of RDF (Resource Description Framework) graphs. Supply-chain
+domains are reference packages rather than the platform boundary.
 
 What is ProvChainOrg?
 ---------------------
@@ -23,16 +40,19 @@ Key Concepts
 ------------
 
 **RDF-Native Storage**
-   Every piece of data is stored as RDF triples, making it inherently semantic and queryable.
+   Public provenance payloads can be represented as RDF triples and projected
+   into Oxigraph. This does not mean every ledger/control/private datum is RDF.
 
 **SPARQL Queries**
-   Query the entire blockchain using SPARQL, the standard query language for semantic data.
+   Query the current Oxigraph public-provenance projection using SPARQL.
 
 **Ontology Validation**
-   All data is automatically validated against formal ontologies to ensure consistency and quality.
+   Selected ontology-aware paths perform focused checks; the universal
+   package-declared SHACL gate at Final Admission is pending.
 
-**Supply Chain Focus**
-   Built specifically for tracking products, processes, and provenance across complex supply chains.
+**Traceability Reference Focus**
+   Supply-chain packages exercise product, process, and provenance models
+   without defining the platform boundary.
 
 Why Use ProvChainOrg?
 ---------------------
@@ -55,13 +75,13 @@ Traditional Solutions vs. ProvChainOrg
      - ✅ Standard SPARQL queries
    * - Data Validation
      - ❌ Manual validation
-     - ✅ Automatic ontology validation
+     - Selected ontology checks; universal Final Admission gate pending
    * - Interoperability
      - ❌ Vendor-specific formats
-     - ✅ W3C standards (RDF, SPARQL)
+     - RDF/SPARQL-based model; no blanket standards-conformance claim
    * - Auditability
      - ❌ Requires specialized tools
-     - ✅ Human-readable semantic data
+     - Queryable public provenance; durable journal evidence pending
 
 Real-World Example
 ~~~~~~~~~~~~~~~~~~
@@ -87,28 +107,29 @@ Imagine tracking a batch of organic tomatoes:
                 :recordedAt ?timestamp .
    }
 
-This level of semantic querying is impossible with traditional blockchain systems without extensive custom development.
+This example illustrates the intended benefit of an RDF/SPARQL model without
+making a universal claim about other blockchain systems.
 
 Core Features
 -------------
 
-🔗 **RDF-Native Blockchain**
-   Store semantic data directly in blocks with cryptographic integrity
+🔗 **Public RDF Provenance**
+   Carry public RDF payloads in cryptographically linked prototype blocks
 
 🔍 **SPARQL Query Engine**
-   Query across the entire blockchain using standard semantic web technologies
+   Query the current Oxigraph projection using SPARQL
 
 🧠 **Ontology Integration**
-   Automatic validation against formal ontologies ensures data quality
+   Apply selected production-path ontology checks while full package enforcement remains pending
 
 📊 **Supply Chain Traceability**
-   Track products from origin to consumer with complete provenance
+   Model and query provenance in supply-chain reference packages
 
-🌐 **Standards Compliance**
-   Built on W3C standards (RDF, SPARQL, OWL) for maximum interoperability
+🌐 **Standards-Facing Model**
+   Reuse RDF, SPARQL, PROV-O, and selected ontology concepts without claiming conformance certification
 
 🔒 **Cryptographic Security**
-   All the security benefits of blockchain with semantic data richness
+   Use cryptographic components in the prototype while accepted end-to-end guarantees remain pending
 
 Getting Started
 ---------------
@@ -118,7 +139,7 @@ Quick Installation
 
 .. code-block:: bash
 
-   # Prerequisites: Rust 1.70+
+   # Prerequisites: Rust 1.87+
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
    # Clone and build
@@ -133,43 +154,46 @@ First Steps
 
    .. code-block:: bash
 
-      cargo run demo
+      cargo run -- demo
 
-   This demonstrates a complete supply chain scenario with semantic data.
+   This runs a reference demo, not end-to-end conformance evidence.
 
 2. **Try a Query**
 
    .. code-block:: bash
 
-      cargo run -- query queries/trace_by_batch_ontology.sparql
+      cargo run -- query src/semantic/queries/trace_by_batch_ontology.sparql
 
-   This shows how to query supply chain data using SPARQL.
+   This invokes an existing legacy query fixture and demonstrates CLI syntax.
 
 3. **Explore the Data**
 
    .. code-block:: bash
 
-      # View the RDF data
-      cat demo_data/store.ttl
+      # Inspect the current chain representation
+      cargo run -- dump
 
-   This shows the semantic data structure used by ProvChainOrg.
+   This prints the current chain representation; it is not a Verified Journal
+   Replay or durable-evidence check.
 
 Use Cases
 ---------
 
-ProvChainOrg is ideal for applications requiring:
+ProvChainOrg uses these domains as research and reference-package scenarios:
 
 **Food Safety & Traceability**
    Track food products from farm to table with environmental monitoring and quality assurance.
 
 **Pharmaceutical Supply Chains**
-   Ensure drug authenticity and prevent counterfeiting with immutable provenance records.
+   Explore medicine-batch provenance; authenticity and anti-counterfeit
+   outcomes require application and operational controls beyond this prototype.
 
 **Luxury Goods Authentication**
-   Verify the authenticity and provenance of high-value items.
+   Explore provenance evidence that an application may use for authenticity checks.
 
-**Regulatory Compliance**
-   Maintain transparent, auditable records for regulatory requirements.
+**Regulatory Workflows**
+   Explore queryable provenance for audit workflows without claiming compliance
+   with a specific regulation.
 
 **Sustainability Tracking**
    Monitor environmental impact and sustainability metrics across supply chains.
@@ -206,10 +230,15 @@ Now that you understand what ProvChainOrg is, you can:
 1. **Learn the Fundamentals**: Continue with :doc:`intro-to-rdf-blockchain` to understand the core technology
 2. **Explore Use Cases**: Read :doc:`intro-to-supply-chain-traceability` for practical applications
 3. **Start Building**: Jump to :doc:`../tutorials/first-supply-chain` for a hands-on tutorial
-4. **Understand the Stack**: Explore :doc:`../stack/intro-to-stack` for development information
+4. **Check Current Architecture Status**: Read
+   ``docs/architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md`` before relying on a component or
+   end-to-end capability claim
 
 .. note::
-   ProvChainOrg is based on the GraphChain research concept but extends it with production-ready features, comprehensive ontology support, and real-world supply chain use cases.
+   ProvChainOrg is based on the GraphChain research concept and extends it with
+   public-RDF/Oxigraph/SPARQL foundations, selected ontology checks, and
+   reference-package scenarios. Production-readiness remains outside the
+   current evidence boundary.
 
 Community & Support
 --------------------

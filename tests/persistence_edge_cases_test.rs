@@ -292,7 +292,7 @@ fn test_corrupted_wal_recovery() {
 
     // Should still have the valid blocks
     assert!(
-        blockchain.chain.len() >= 1,
+        !blockchain.chain.is_empty(),
         "Should recover at least genesis block even with WAL corruption"
     );
 }

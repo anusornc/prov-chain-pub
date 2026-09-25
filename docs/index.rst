@@ -1,15 +1,31 @@
 ProvChainOrg Documentation
 =========================
 
+.. warning::
+   **Current evidence boundary (2026-08-31).** This is a research-prototype
+   documentation entry page, not a production-readiness or end-to-end
+   conformance statement. Public RDF payload handling, Oxigraph/SPARQL query
+   support, and selected ``src/ontology/*`` checks are implemented foundations.
+   The complete-envelope journal and Verified Journal Replay, atomic Final
+   Admission, authenticated membership, reproducible three-node PoA
+   convergence, full package-declared SHACL enforcement, durable privacy
+   lifecycle, bounded ProvChain-to-ProvChain bridge, and corrected end-to-end
+   evidence are still pending. PBFT, heterogeneous/SPV bridging, a human
+   usability study, operational deployment, and production-pilot controls are
+   future work. Use
+   ``docs/architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md`` and
+   ``docs/paper_submission/PAPER_EVIDENCE_INDEX.md`` for current status and
+   evidence boundaries; repository work is governed by ``AGENTS.md``.
+
 .. raw:: html
 
    <div class="hero-section">
      <div class="hero-content">
        <h1>Build with Semantic Blockchain Technology</h1>
-       <p class="hero-subtitle">ProvChainOrg combines blockchain security with semantic web technologies for transparent, queryable supply chain traceability.</p>
+       <p class="hero-subtitle">ProvChainOrg is a research prototype for cryptographically linked, queryable public-RDF provenance.</p>
        <div class="hero-badges">
          <span class="badge badge-version">Version 0.1.0</span>
-         <span class="badge badge-rust">Rust 1.70+</span>
+         <span class="badge badge-rust">Rust 1.87+</span>
          <span class="badge badge-license">MIT License</span>
        </div>
      </div>
@@ -31,10 +47,10 @@ Get up and running with ProvChainOrg in minutes:
    # Clone and run
    git clone https://github.com/anusornc/provchain-org.git
    cd provchain-org
-   cargo run demo
+   cargo run -- demo
 
-   # Try a SPARQL query
-   cargo run -- query queries/trace_by_batch_ontology.sparql
+   # Try an existing legacy SPARQL query fixture
+   cargo run -- query src/semantic/queries/trace_by_batch_ontology.sparql
 
 .. raw:: html
 
@@ -47,16 +63,17 @@ Get up and running with ProvChainOrg in minutes:
        <h3>💻 For Developers</h3>
        <p>API reference and technical documentation</p>
      </a>
-     <a href="research/index.html" class="quick-link">
+     <a href="paper_submission/PAPER_EVIDENCE_INDEX.md" class="quick-link">
        <h3>🔬 For Researchers</h3>
-       <p>Academic papers and technical specifications</p>
+       <p>Current claim-to-artifact evidence boundary</p>
      </a>
    </div>
 
 Comprehensive Documentation
 ---------------------------
 
-ProvChainOrg provides complete documentation for all stakeholders, from end users to researchers and developers.
+This tree contains both current sources and legacy material. Treat the warning above and the linked
+working plan/evidence index as authoritative when another page conflicts.
 
 User Documentation
 ~~~~~~~~~~~~~~~~~~
@@ -91,13 +108,13 @@ For developers, technical architects, and integration specialists:
 Research Documentation
 ~~~~~~~~~~~~~~~~~~~~~~
 
-For researchers, academics, and advanced technical users:
+For researchers, academics, and advanced technical users. The quarantined historical research
+landing page is intentionally absent from active navigation:
 
 .. toctree::
    :maxdepth: 2
    :caption: Research Documentation
 
-   research/index
    research/rdf-canonicalization-algorithm
    research/technical-specifications
 
@@ -113,15 +130,12 @@ Learn the core concepts that make ProvChainOrg unique:
    foundational/intro-to-rdf-blockchain
    foundational/intro-to-supply-chain-traceability
 
-ProvChainOrg Stack
-~~~~~~~~~~~~~~~~~~
+Legacy Stack Page
+~~~~~~~~~~~~~~~~~
 
-Understand the tools and technologies for building applications:
-
-.. toctree::
-   :maxdepth: 1
-
-   stack/intro-to-stack
+The old stack overview is quarantined because it names unverified SDKs, routes, integrations, and
+deployment commands. Use ``AGENTS.md`` plus the shared-ontology working plan for current repository
+and architecture guidance.
 
 Tutorials & Guides
 ~~~~~~~~~~~~~~~~~~
@@ -140,32 +154,33 @@ What Makes ProvChainOrg Different?
 
    <div class="feature-grid">
      <div class="feature-item">
-       <h3>🔗 RDF-Native Blockchain</h3>
-       <p>Store semantic data directly in blocks with cryptographic integrity</p>
+       <h3>🔗 Public RDF Payloads</h3>
+       <p>Represent public provenance payloads as RDF in cryptographically linked prototype blocks</p>
      </div>
      <div class="feature-item">
        <h3>🔍 SPARQL Queries</h3>
-       <p>Query across the entire blockchain using standard semantic web technologies</p>
+       <p>Query the current Oxigraph projection using SPARQL</p>
      </div>
      <div class="feature-item">
        <h3>🧠 Ontology Validation</h3>
-       <p>Automatic validation against formal ontologies ensures data quality</p>
+       <p>Exercise selected ontology-aware checks; the universal package-declared gate is pending</p>
      </div>
      <div class="feature-item">
-       <h3>📊 Supply Chain Focus</h3>
-       <p>Built specifically for transparent, verifiable supply chain traceability</p>
+       <h3>📊 Traceability References</h3>
+       <p>Use supply-chain domains as reference packages without hardcoding the platform boundary</p>
      </div>
    </div>
 
 Use Cases
 ---------
 
-ProvChainOrg is designed for applications that need:
+ProvChainOrg uses the following as research and reference-package scenarios;
+this list does not establish regulatory conformance or production deployment:
 
 - **Food Safety**: Track products from farm to table with environmental monitoring
-- **Pharmaceutical Traceability**: Ensure drug authenticity and prevent counterfeiting  
-- **Luxury Goods Authentication**: Verify provenance and prevent fraud
-- **Regulatory Compliance**: Maintain immutable audit trails for compliance
+- **Pharmaceutical Traceability**: Explore medicine-batch provenance and anti-counterfeit evidence
+- **Luxury Goods Authentication**: Explore provenance inputs to application-level authenticity checks
+- **Regulatory Review**: Explore queryable provenance records as inputs to audit workflows
 - **Sustainability Tracking**: Monitor environmental impact across supply chains
 
 Community & Support
@@ -211,7 +226,10 @@ ProvChainOrg is based on the GraphChain research concept:
    
    -- Sopek, M., et al. (2018), The 2018 Web Conference
 
-Our implementation extends the original research with production-ready features, comprehensive ontology support, and real-world supply chain use cases.
+This prototype extends the original research with public-RDF provenance,
+Oxigraph/SPARQL foundations, selected ontology checks, and supply-chain
+reference packages. The end-to-end guarantees listed in the warning above
+remain implementation and evidence milestones.
 
 License
 -------

@@ -36,7 +36,7 @@ Prerequisites
 Before starting, ensure you have:
 
 - **Operating System**: Linux, macOS, or Windows with WSL
-- **Rust 1.70+**: `rustc --version` (install with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
+- **Rust 1.87+**: `rustc --version` (install with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
 - **Git**: For cloning the repository
 - **Basic terminal knowledge**: Running commands and navigating directories
 - **Web browser**: For accessing the web interface

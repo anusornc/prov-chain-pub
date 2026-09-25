@@ -84,7 +84,9 @@ fn emit_payload(case: DatasetCase) -> String {
     let repo = repo_root();
     let normalized_path = temp_path(case.package, "normalized.json");
     let turtle_path = temp_path(case.package, "ttl");
-    let normalizer = repo.join("scripts/data_normalization").join(case.normalizer);
+    let normalizer = repo
+        .join("scripts/data_normalization")
+        .join(case.normalizer);
     let raw_input = repo.join(case.raw_input);
     let emitter = repo.join("scripts/data_projection/emit_ontology_package_turtle.py");
 
@@ -123,7 +125,9 @@ fn emit_batch_payload(case: DatasetCase) -> String {
     let repo = repo_root();
     let normalized_path = temp_path(case.package, "normalized.json");
     let turtle_path = temp_path(case.package, "ttl");
-    let normalizer = repo.join("scripts/data_normalization").join(case.normalizer);
+    let normalizer = repo
+        .join("scripts/data_normalization")
+        .join(case.normalizer);
     let raw_input = repo.join(case.raw_input);
     let emitter = repo.join("scripts/data_projection/emit_ontology_package_turtle.py");
 
@@ -181,10 +185,9 @@ where
         for _ in 0..iters {
             let mut blockchain = factory();
             let start = std::time::Instant::now();
-            let block = blockchain
+            blockchain
                 .add_block(payload.to_string())
                 .expect("valid ontology event");
-            black_box(block);
             total += start.elapsed();
         }
         total
@@ -206,25 +209,24 @@ fn bench_cross_package_round_robin_single_record(
                 Blockchain::new_with_ontology(uht_ontology_config()).expect("blockchain");
             let mut healthcare =
                 Blockchain::new_with_ontology(healthcare_ontology_config()).expect("blockchain");
-            let mut pharma =
-                Blockchain::new_with_ontology(pharmaceutical_ontology_config()).expect("blockchain");
+            let mut pharma = Blockchain::new_with_ontology(pharmaceutical_ontology_config())
+                .expect("blockchain");
 
             let start = std::time::Instant::now();
-            let uht_block = uht
-                .add_block(uht_payload.to_string())
+            uht.add_block(uht_payload.to_string())
                 .expect("valid uht event");
-            let uht_epcis_block = uht_epcis
+            uht_epcis
                 .add_block(uht_epcis_payload.to_string())
                 .expect("valid uht epcis event");
-            let healthcare_block = healthcare
+            healthcare
                 .add_block(healthcare_payload.to_string())
                 .expect("valid healthcare event");
-            let pharma_block = pharma
+            pharma
                 .add_block(pharma_payload.to_string())
                 .expect("valid pharma event");
             total += start.elapsed();
 
-            black_box((uht_block, uht_epcis_block, healthcare_block, pharma_block));
+            black_box((&uht, &uht_epcis, &healthcare, &pharma));
         }
         total
     });
@@ -245,25 +247,24 @@ fn bench_cross_package_round_robin_batch(
                 Blockchain::new_with_ontology(uht_ontology_config()).expect("blockchain");
             let mut healthcare =
                 Blockchain::new_with_ontology(healthcare_ontology_config()).expect("blockchain");
-            let mut pharma =
-                Blockchain::new_with_ontology(pharmaceutical_ontology_config()).expect("blockchain");
+            let mut pharma = Blockchain::new_with_ontology(pharmaceutical_ontology_config())
+                .expect("blockchain");
 
             let start = std::time::Instant::now();
-            let uht_block = uht
-                .add_block(uht_batch_payload.to_string())
+            uht.add_block(uht_batch_payload.to_string())
                 .expect("valid uht batch");
-            let uht_epcis_block = uht_epcis
+            uht_epcis
                 .add_block(uht_epcis_batch_payload.to_string())
                 .expect("valid uht epcis batch");
-            let healthcare_block = healthcare
+            healthcare
                 .add_block(healthcare_batch_payload.to_string())
                 .expect("valid healthcare batch");
-            let pharma_block = pharma
+            pharma
                 .add_block(pharma_batch_payload.to_string())
                 .expect("valid pharma batch");
             total += start.elapsed();
 
-            black_box((uht_block, uht_epcis_block, healthcare_block, pharma_block));
+            black_box((&uht, &uht_epcis, &healthcare, &pharma));
         }
         total
     });
@@ -332,17 +333,19 @@ fn bench_domain_dataset_admission(c: &mut Criterion) {
         b.iter_batched(
             || Blockchain::new_with_ontology(uht_ontology_config()).expect("blockchain"),
             |mut blockchain| {
-                let block = blockchain
+                blockchain
                     .add_block(black_box(payload.clone()))
                     .expect("valid uht event");
-                black_box(block);
+                black_box(&blockchain);
             },
             BatchSize::SmallInput,
         );
     });
 
     group.bench_function("uht_product_event_setup_only", |b| {
-        bench_setup_only(b, || Blockchain::new_with_ontology(uht_ontology_config()).expect("blockchain"));
+        bench_setup_only(b, || {
+            Blockchain::new_with_ontology(uht_ontology_config()).expect("blockchain")
+        });
     });
 
     group.bench_function("uht_product_event_add_block_only", |b| {
@@ -382,10 +385,10 @@ fn bench_domain_dataset_admission(c: &mut Criterion) {
         b.iter_batched(
             || Blockchain::new_with_ontology(uht_ontology_config()).expect("blockchain"),
             |mut blockchain| {
-                let block = blockchain
+                blockchain
                     .add_block(black_box(payload.clone()))
                     .expect("valid uht epcis event");
-                black_box(block);
+                black_box(&blockchain);
             },
             BatchSize::SmallInput,
         );
@@ -428,10 +431,10 @@ fn bench_domain_dataset_admission(c: &mut Criterion) {
         b.iter_batched(
             || Blockchain::new_with_ontology(healthcare_ontology_config()).expect("blockchain"),
             |mut blockchain| {
-                let block = blockchain
+                blockchain
                     .add_block(black_box(payload.clone()))
                     .expect("valid healthcare event");
-                black_box(block);
+                black_box(&blockchain);
             },
             BatchSize::SmallInput,
         );
@@ -480,10 +483,10 @@ fn bench_domain_dataset_admission(c: &mut Criterion) {
         b.iter_batched(
             || Blockchain::new_with_ontology(pharmaceutical_ontology_config()).expect("blockchain"),
             |mut blockchain| {
-                let block = blockchain
+                blockchain
                     .add_block(black_box(payload.clone()))
                     .expect("valid pharma event");
-                black_box(block);
+                black_box(&blockchain);
             },
             BatchSize::SmallInput,
         );
@@ -527,15 +530,18 @@ fn bench_domain_dataset_admission(c: &mut Criterion) {
         );
     });
 
-    group.bench_function("cross_package_round_robin_single_record_add_block_only", |b| {
-        bench_cross_package_round_robin_single_record(
-            b,
-            &uht_payload,
-            &uht_epcis_payload,
-            &healthcare_payload,
-            &pharma_payload,
-        );
-    });
+    group.bench_function(
+        "cross_package_round_robin_single_record_add_block_only",
+        |b| {
+            bench_cross_package_round_robin_single_record(
+                b,
+                &uht_payload,
+                &uht_epcis_payload,
+                &healthcare_payload,
+                &pharma_payload,
+            );
+        },
+    );
 
     group.bench_function("cross_package_round_robin_batch_add_block_only", |b| {
         bench_cross_package_round_robin_batch(

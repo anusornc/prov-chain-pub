@@ -4,6 +4,7 @@
 **Date:** 2024-01-15
 **Supersedes:** None
 **Superseded by:** None
+**Clarified by:** [ADR 0016](./0016-make-the-ledger-journal-the-sole-commit-authority.md) — Oxigraph is the RDF query/projection backend, not the ledger-wide commit authority; [ADR 0024](./0024-commit-canonical-post-block-public-provenance-state.md) — RDFC-1.0 state commitment is a separate, pending admission responsibility rather than an evidenced Oxigraph capability.
 
 ---
 
@@ -84,6 +85,8 @@ UPDATE operation    | 5ms       | 20ms     | 15ms
 ```
 
 ### 3. RDF Canonicalization (RDFC-1.0)
+
+> **Implementation alignment (2026-08-30):** This subsection records an intended design, not current implementation evidence. ADR 0024 is authoritative for the production Post-State Commitment; the current raw-quad `state_root` is not conforming RDFC-1.0 canonicalization.
 
 **Critical for ProvChainOrg:**
 Block hashes require deterministic serialization regardless of triple order.
@@ -373,5 +376,5 @@ WHERE {
 
 - [Oxigraph GitHub](https://github.com/oxigraph/oxigraph)
 - [SPARQL 1.1 Specification](https://www.w3.org/TR/sparql11-overview/)
-- [RDF Canonicalization](https://w3c.github.io/rdf-canon/spec/)
+- [RDF Dataset Canonicalization 1.0](https://www.w3.org/TR/rdf-canon/)
 - [Oxigraph Benchmarks](https://github.com/oxigraph/oxigraph/wiki/Benchmarks)

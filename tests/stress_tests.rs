@@ -15,6 +15,16 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
+fn should_skip_profiled_ignored_test(env_var: &str, description: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+        _ => {
+            eprintln!("skipping ignored {description}; set {env_var}=1 to run this profile");
+            true
+        }
+    }
+}
+
 /// Stress test configuration
 #[derive(Debug, Clone)]
 pub struct StressTestConfig {
@@ -200,6 +210,9 @@ impl Default for StressTestConfig {
 #[tokio::test]
 #[ignore]
 async fn test_maximum_system_capacity() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_STRESS_TESTS", "stress tests") {
+        return Ok(());
+    }
     println!("Starting Maximum System Capacity Stress Test...");
 
     let config = StressTestConfig {
@@ -244,6 +257,9 @@ async fn test_maximum_system_capacity() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_resource_exhaustion() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_STRESS_TESTS", "stress tests") {
+        return Ok(());
+    }
     println!("Starting Resource Exhaustion Stress Test...");
 
     let config = StressTestConfig {
@@ -284,6 +300,9 @@ async fn test_resource_exhaustion() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_network_failure_resilience() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_STRESS_TESTS", "stress tests") {
+        return Ok(());
+    }
     println!("Starting Network Failure Resilience Stress Test...");
 
     let config = StressTestConfig {
@@ -324,6 +343,9 @@ async fn test_network_failure_resilience() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_memory_pressure() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_STRESS_TESTS", "stress tests") {
+        return Ok(());
+    }
     println!("Starting Memory Pressure Stress Test...");
 
     let config = StressTestConfig {
@@ -364,6 +386,9 @@ async fn test_memory_pressure() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_database_contention() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_STRESS_TESTS", "stress tests") {
+        return Ok(());
+    }
     println!("Starting Database Contention Stress Test...");
 
     let config = StressTestConfig {
@@ -399,6 +424,9 @@ async fn test_database_contention() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_long_running_stability() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_STRESS_TESTS", "stress tests") {
+        return Ok(());
+    }
     println!("Starting Long-Running Stability Stress Test...");
 
     let config = StressTestConfig {

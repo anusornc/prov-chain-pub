@@ -1,348 +1,246 @@
 # ProvChainOrg Integration Architecture
 
-**Version:** 1.0
-**Last Updated:** 2026-01-28
+**Version:** 1.1
+**Last Updated:** 2026-08-31
 **Author:** Anusorn Chaikaew (Student Code: 640551018)
 
 ---
 
+## Claim and evidence boundary
+
+This document separates **current foundation** from **accepted target** and **future integration**.
+Examples are non-normative unless linked to a current route/test or an accepted ADR. External
+ERP/vendor adapters, IoT ingestion, webhooks, and their schemas are future work; they are not current
+implementation or thesis evidence. The bounded ProvChain bridge is an accepted target whose
+implementation and six-process conformance evidence remain pending. PBFT, heterogeneous/SPV bridge,
+operational deployment, and production-pilot controls are also future work.
+
 ## 1. External System Integrations
 
-### 1.1 ERP System Integration
+### 1.1 Future ERP System Integration
 
-**Purpose:** Automated transaction submission from enterprise systems
+**Status:** Future integration target. No ERP-vendor connector is claimed by the current repository.
 
-**Protocol:** REST API with JWT authentication
+**Purpose:** Transform an authenticated enterprise event into a bounded unsigned RDF request under
+the target ledger/profile and ontology package.
 
-**Authentication:**
-```bash
-# Get JWT token
-curl -X POST http://provchain-api:8080/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "erp_user", "password": "..."}'
+The current `/auth/login` and `/api/datasets/import-turtle` routes are reusable HTTP/JWT
+foundations, not an ERP contract and not evidence that writes pass the accepted universal Final
+Admission/journal path. A future adapter must define and test:
 
-# Submit transactions
-curl -X POST http://provchain-api:8080/api/transactions \
-  -H "Authorization: Bearer <JWT_TOKEN>" \
-  -H "Content-Type: text/turtle" \
-  --data-binary @transaction.ttl
-```
-
-**Batch Submission:**
-```python
-import requests
-
-# Batch submit 1000 transactions
-transactions = [f"transaction_{i}.ttl" for i in range(1000)]
-
-headers = {
-    "Authorization": f"Bearer {jwt_token}",
-    "Content-Type": "text/turtle"
-}
-
-for tx_file in transactions:
-    with open(tx_file, 'rb') as f:
-        response = requests.post(
-            "http://provchain-api:8080/api/transactions",
-            headers=headers,
-            data=f
-        )
-        assert response.status_code == 201
-```
-
-**Integration with SAP/Oracle/Dynamics:**
-- Use middleware connectors to transform ERP data to RDF
-- Map ERP entities to ProvChain ontology
-- Schedule batch jobs for periodic data sync
+- vendor authentication and credential custody;
+- deterministic source-to-package mapping with versioned fixtures;
+- request-size, batch, timeout, and retry/idempotency bounds;
+- fail-closed propagation of semantic/admission rejection; and
+- receipts that distinguish node-local commitment from three-node convergence.
 
 ---
 
-### 1.2 IoT Sensor Integration
+### 1.2 Future IoT Sensor Integration
 
-**Purpose:** Real-time sensor data for cold chain monitoring
+**Status:** Future integration target. `/ws/iot` is not a current route, and the current generic
+`/ws` event-subscription route is not sensor ingestion.
 
-**Protocol:** WebSocket or MQTT
+**Purpose:** Authenticate a sensor or gateway, bound and normalize readings, map them under a pinned
+ontology package, then submit an unsigned ordinary request through universal Final Admission.
 
-**WebSocket Integration:**
-```javascript
-// IoT sensor connection
-const ws = new WebSocket('ws://provchain-api:8080/ws/iot');
-
-// Send sensor data
-ws.send(JSON.stringify({
-  sensor_id: "temp_001",
-  timestamp: "2026-01-28T10:15:00Z",
-  temperature: 4.5,
-  humidity: 65,
-  location: "warehouse_a"
-}));
-```
-
-**MQTT Integration (Future):**
-```python
-import paho.mqtt.client as mqtt
-
-def on_connect(client, userdata, flags, rc):
-    client.subscribe("sensors/temperature/#")
-
-def on_message(client, userdata, msg):
-    # Forward to ProvChainOrg
-    submit_to_provchain(msg.payload)
-
-client = mqtt.Client()
-client.on_connect = on_connect
-client.on_message = on_message
-client.connect("mqtt://provchain-mqtt-broker")
-client.loop_forever()
-```
-
-**Data Types Supported:**
-- Temperature readings (2-8°C for pharmaceuticals)
-- GPS location tracking
-- Humidity levels
-- Shock/vibration events
+WebSocket or MQTT may be evaluated later, but no transport, wire schema, units/ranges, device list,
+batching policy, or broker configuration is declared current here. A future adapter must add device
+identity/authorization, replay protection, bounded queues/backpressure, unit normalization,
+package-conformance fixtures, and crash-safe retry evidence.
 
 ---
 
-## 2. Cross-Chain Bridge
+## 2. Bounded ProvChain-to-ProvChain Bridge
 
-### 2.1 Lock & Mint Protocol
+### 2.1 Accepted contract and current boundary
 
-**Overview:** Transfer assets between ProvChainOrg and other blockchains by locking assets on source and minting equivalent on destination.
+The accepted bridge is [ADR 0037](./ADR/0037-bound-provchain-bridge-to-converged-source-evidence-and-final-admission.md): one-hop, byte-for-byte copying of one complete public `OrdinaryProvenanceV1` payload between two explicitly pinned ProvChain ledger instances using the same state, semantic, and ontology-package contract.
 
-### 2.2 Protocol Flow
+The source must commit a target-bound Bridge Export Declaration and reach all-three Network
+Convergence. The target profile must already pin the source ledger, governance root, profile,
+signed manifest, three receipt signers, and allowed contracts. The target Scheduled Authority and
+every ordinary target Final Admission gate remain mandatory. Only target Ledger Journal append plus
+`fsync` creates terminal Imported state, and replay state is reconstructed from that journal.
+
+Current `src/interop/bridge.rs` is a legacy in-process one-signature/RAM-replay prototype. It does
+not implement or evidence the accepted contract.
+
+All ordinary, privacy-control, and bridge requests share one PoA Proposal Coordinator for the
+pending turn. It serializes and fully preflights unsigned requests and durably fences one exact
+unsigned proposal body before the Scheduled Authority signs. Parent advancement may refresh only a
+request that remains unselected, has not begun fence persistence, and has not invoked the signer.
+Once selection or a fence-write attempt begins, only the exact fenced body and its deterministic
+signature may be recovered or rebroadcast, including when the signer response is unknown; a
+distinct signed proposal for that turn is Equivocation, not a Final Admission race. The Signing
+Fence is safety state, not a second ledger commit authority.
+
+### 2.2 Protocol flow
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Source as Source Chain
-    participant Bridge as Cross-Chain Bridge
-    participant Mapping as Ontology Mapper
-    participant Dest as Destination Chain
+    participant SA as Source Scheduled Authority
+    participant SF as Source Final Admission
+    participant SN as Three Source Nodes
+    participant R as Untrusted Relayer
+    participant BA as Target Bridge Adapter
+    participant TC as Target PoA Proposal Coordinator
+    participant TA as Target Scheduled Authority
+    participant TF as Target Final Admission
+    participant TN as Three Target Nodes
 
-    Source->>Bridge: LOCK_ASSET_REQUEST<br/>{ asset_id: "abc123", amount: 100 }
-
-    Bridge->>Source: VERIFY_LOCK_TRANSACTION
-    Source-->>Bridge: LOCK_CONFIRMED<br/>Tx Hash: 0xabc123...
-
-    Bridge->>Mapping: MAP_ONTOLOGIES
-    Mapping-->>Bridge: ONTOLOGY_MAPPED ✅
-
-    Bridge->>Dest: MINT_ASSET_REQUEST<br/>{ mapped_data: {...} }
-
-    Dest->>Dest: MINT_NEW_ASSET
-    Dest-->>Bridge: MINT_CONFIRMED<br/>Asset ID: "xyz789"
-
-    Bridge-->>Source: TRANSFER_COMPLETE
+    SA->>SF: OrdinaryProvenanceV1 + target-bound export declaration
+    SF->>SF: Verify source contracts; append envelope + fsync
+    SF->>SN: Replicate exact committed envelope and prefix
+    SN-->>R: Exact envelope + 3/3 matching Commit Receipts
+    Note over R: Assemble exact Bridge Proof Bundle; derive no authority
+    R->>BA: Proof bundle + unchanged public payload
+    BA->>BA: Strict decode/bounds + verified Effective Bridge State
+    alt Exact transfer already Imported
+        BA-->>R: AlreadyImported + stored target reference; no proposal
+    else Same transfer ID conflicts
+        BA-->>R: ReplayConflict; no proposal
+    else Transfer absent and request valid
+        BA->>TC: Unsigned exact proof/payload request
+        TC->>TC: Serialize/coalesce + complete read-only preflight
+        alt Parent advances before selection/fence persistence
+            TC->>TC: Refresh parent and rerun complete unsigned preflight
+        else Selected for the current PoA Turn
+            TC->>TC: Durably fence exact unsigned proposal body and digest
+            TC->>TA: Exact fenced canonical proposal body
+            TA-->>TC: One signature for the PoA Turn
+            TC->>TF: Exact signed target proposal + Bridge Origin Evidence
+            TF->>TF: Verify target parent/turn/contracts
+            TF->>TF: Verify pinned source trust + 3/3 receipts + derived transfer ID
+            TF->>TF: Run target RDF/state/package/full-union SHACL admission
+            alt Every gate passes
+                TF->>TF: Append complete target envelope + fsync
+                TF->>TN: Replicate exact target envelope and prefix
+                TN-->>R: Target Commit Receipts as available
+            else Any deterministic gate fails
+                TF-->>TC: Rejected; no journal or bridge-state mutation
+                Note over TC,TF: Safety incident and stalled turn;<br/>no replacement proposal
+            else Node incapable or commit outcome unknown
+                TF-->>TC: No global verdict
+                TC->>TC: Recover journal + Signing Fence; query transfer
+                Note over TC,TF: Retry only exact signed bytes if still uncommitted
+            end
+        end
+    end
 ```
 
-### 2.3 Ontology Mapping
+### 2.3 Explicit v1 boundaries
 
-**Source Ontology (ProvChainOrg):**
-```turtle
-@prefix ex: <http://provchain.org/> .
-
-ex:Product a ex:Product ;
-    ex:hasOwner "Alice" ;
-    ex:suppliedBy "ManufacturerX" .
-```
-
-**Destination Ontology (External Chain):**
-```turtle
-@prefix prod: <http://external-chain.org/> .
-
-prod:Product a prod:Product ;
-    prod:hasOwner "Alice" ;
-    prod:manufacturedBy "ManufacturerX" .
-```
-
-**Mapping Rules:**
-```javascript
-const mappings = {
-  "http://provchain.org/Product": "http://external-chain.org/Product",
-  "http://provchain.org/hasOwner": "http://external-chain.org/hasOwner",
-  "http://provchain.org/suppliedBy": "http://external-chain.org/manufacturedBy"
-};
-```
+| Included | Excluded |
+|---|---|
+| Exact public RDF payload | RDF or ontology transformation |
+| Native source envelope with no bridge origin | Private payload, grants, keys, or privacy transitions |
+| Pinned source profile/manifest and all three receipts | Proof-supplied trust or one configurable authority |
+| Shared pre-sign coordinator/fence, target PoA, and full target Final Admission | Competing signed proposals, direct bridge append, or optional SHACL |
+| Journal-derived `Imported`, `AlreadyImported`, and `ReplayConflict` behavior | Process-local replay set or exactly-once transport claim |
+| One direct ProvChain-to-ProvChain hop | Multihop, heterogeneous, SPV, lock/mint, or asset transfer |
 
 ---
 
 ## 3. API Reference
 
+This section records **current route foundations**, not a stable external-vendor contract and not
+proof of target Final Admission. Integrators must verify request/response models against the running
+build and pin an API version before relying on them.
+
 ### 3.1 REST API Endpoints
 
 #### Authentication
 
-```http
-POST /auth/login
-Content-Type: application/json
+`POST /auth/login` exists as a current JWT foundation. Credentials, bootstrap policy, token claims,
+expiry, TLS termination, and production identity controls are deployment/security concerns and are
+not specified by this integration reference.
 
-{
-  "username": "supply_chain_manager",
-  "password": "password123"
-}
-```
-
-**Response:**
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "expires_in": 86400
-}
-```
-
-#### Submit Transaction
+#### Import Turtle Dataset
 
 ```http
-POST /api/transactions
+POST /api/datasets/import-turtle
 Authorization: Bearer <JWT_TOKEN>
-Content-Type: text/turtle
-
-@prefix ex: <http://example.org/> .
-ex:Product ex:name "Widget" .
-```
-
-**Response:**
-```http
-HTTP/1.1 201 Created
 Content-Type: application/json
 
 {
-  "block_hash": "0xdef456...",
-  "block_number": 42,
-  "transaction_count": 1
+  "turtle_data": "@prefix ex: <http://example.org/> . ex:Product ex:name \"Widget\" ."
 }
 ```
+
+The current handler returns development block metadata. Treat it as a foundation response only: it
+does not yet prove complete-envelope journal commitment or three-node convergence. The accepted
+target response must expose those states distinctly.
 
 #### SPARQL Query
 
 ```http
-POST /api/query
+POST /api/sparql/query
 Authorization: Bearer <JWT_TOKEN>
-Content-Type: application/sparql-query
-
-SELECT ?s ?p ?o WHERE {
-  ?s ex:suppliedBy ?o .
-  ?o ex:locatedIn "warehouse_a"
-}
-```
-
-**Response:**
-```http
-HTTP/1.1 200 OK
 Content-Type: application/json
 
 {
-  "results": [
-    {
-      "s": "http://provchain.org/block/42#product1",
-      "p": "http://provchain.org/ontology/suppliedBy",
-      "o": "http://provchain.org/ontology/warehouse_a"
-    }
-  ],
-  "query_time_ms": 15
+  "query": "SELECT ?s ?p ?o WHERE { ?s ex:suppliedBy ?o . ?o ex:locatedIn \"warehouse_a\" }",
+  "format": "json"
 }
 ```
 
+The current response model includes results, `execution_time_ms`, and `result_count`. Result shape
+depends on query/format. A query response is a read of projected state, not a ledger receipt or a
+claim that package-controlled reasoning ran.
+
 ### 3.2 WebSocket API
 
-#### Connect to P2P Network
-
-```javascript
-const ws = new WebSocket('ws://provchain-api:8080/ws');
-
-// Subscribe to new blocks
-ws.send(JSON.stringify({
-  type: "subscribe",
-  channel: "blocks"
-}));
-
-// Receive blocks
-ws.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  if (message.type === "new_block") {
-    console.log("New block:", message.block);
-  }
-};
-```
-
-#### WebSocket Message Types
-
-| Type | Direction | Description |
-|------|-----------|-------------|
-| `subscribe` | Client → Server | Subscribe to channel |
-| `unsubscribe` | Client → Server | Unsubscribe from channel |
-| `new_block` | Server → Client | New block created |
-| `vote` | Server → Client | Consensus vote |
-| `sync_request` | Node → Node | Synchronization request |
-| `sync_response` | Node → Node | Synchronization response |
+The current web server exposes generic `/ws` event subscription with authenticated connection
+handling and messages such as subscribe/unsubscribe, ping/pong, event, error, and connected. This is
+separate from the node-to-node exact-envelope protocol and must not be described as P2P consensus,
+sync, IoT ingestion, or durable delivery. Its exact JSON schema must be taken from the current Rust
+types and pinned by a consumer contract test before external use.
 
 ---
 
 ## 4. Integration Patterns
 
-### 4.1 Webhook Notifications
+### 4.1 Future Webhook Notifications
 
-**Purpose:** Notify external systems of blockchain events
+Webhook delivery is a future integration pattern. The repository has monitoring configuration
+structures/logging stubs, but no current production HTTP delivery contract, signing scheme,
+durable outbox, retry/dead-letter behavior, or conformance evidence. No example configuration or
+payload in this document is a usable current webhook contract.
 
-**Configuration:**
-```toml
-[webhooks]
-enabled = true
-url = "https://external-system.example.com/webhook"
-events = ["block_created", "transaction_submitted"]
-secret = "webhook_secret_key"
-```
-
-**Webhook Payload:**
-```json
-{
-  "event": "block_created",
-  "timestamp": "2026-01-28T10:15:00Z",
-  "block": {
-    "hash": "0xdef456...",
-    "number": 42,
-    "transaction_count": 100
-  },
-  "signature": "0xabc123..."
-}
-```
+A future design must trigger only from a committed journal envelope, include a stable event ID and
+ledger/profile/prefix reference, authenticate payloads without embedding secrets in configuration,
+bound retries, survive restart, and state explicitly that delivery is at-least-once unless stronger
+evidence exists.
 
 ### 4.2 Polling vs Push
 
-| Pattern | Use Case | Pros | Cons |
-|--------|---------|------|------|
-| **Polling** | Legacy systems | Simple, no webhook needed | High latency, server load |
-| **WebSocket Push** | Real-time updates | Low latency, efficient | Requires persistent connection |
-| **Webhook** | Event notification | Decoupled, async | Delivery retries needed |
+| Pattern | Current boundary | Future requirement |
+|---------|------------------|--------------------|
+| **Polling** | Current read APIs may be polled; no vendor SLA | Pin query/prefix semantics and rate bounds |
+| **Generic `/ws` push** | Current non-durable event-subscription foundation | Pin schema/auth and define reconnect/gap recovery |
+| **Webhook** | Not implemented as an external delivery contract | Journal-derived durable outbox, authentication, bounded retries |
 
 ---
 
 ## 5. Integration Testing
 
-### 5.1 Test Scenarios
+### 5.1 Planned harness requirements
 
-**ERP Integration Test:**
-```bash
-# Test batch transaction submission
-./tests/integration/erp_integration_test.sh
-```
+There is no current ERP- or IoT-specific integration harness. Earlier script names were design
+placeholders, not repository evidence.
 
-**IoT Integration Test:**
-```bash
-# Test WebSocket sensor data submission
-./tests/integration/iot_sensor_test.sh
-```
+| Harness | Minimum evidence before claiming support |
+|---------|------------------------------------------|
+| ERP adapter | Real selected vendor sandbox/fixture; authenticated mapping; invalid/boundary cases; restart-safe retry; rejection and node-commit/convergence receipts archived |
+| IoT adapter | Real transport and schema; device authentication/replay defense; bounds/backpressure; unit/package fixtures; disconnect/restart behavior archived |
+| Generic WebSocket consumer | Current Rust message schema pinned; auth, subscription, reconnect, lag/gap behavior, and non-durability documented and tested |
+| Webhook | Committed-envelope trigger; payload authentication; durable outbox; duplicate/retry/dead-letter and restart cases |
+| Bounded bridge | Two independent three-process ProvChain networks; exact source/target envelopes, manifests, strict feature graphs, 3/3 receipts, rejection, replay/conflict, crash, and restart artifacts required by ADR 0037 |
 
-**Cross-Chain Bridge Test:**
-```bash
-# Test asset transfer between chains
-./tests/integration/cross_chain_test.sh
-```
+Only the bounded bridge harness is inside the locked thesis reference-system scope. ERP, IoT,
+generic external notification hardening, and production operational controls remain future work.
 
 ---
 

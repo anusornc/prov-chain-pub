@@ -7,6 +7,13 @@ import type {
   KnowledgeGraph,
 } from "../types";
 import { API_ENDPOINTS } from "../config/api";
+import {
+  normalizeKnowledgeGraphResponse,
+  normalizeTraceabilityListResponse,
+  normalizeTraceResponse,
+  normalizeTraceSteps,
+  normalizeTraceTarget,
+} from "./traceGraphAdapter";
 
 const API_BASE_URL = API_ENDPOINTS.API;
 
@@ -65,7 +72,7 @@ export class TraceabilityService {
         throw new Error(`Failed to fetch items: ${response.statusText}`);
       }
 
-      return await response.json();
+      return normalizeTraceabilityListResponse(await response.json());
     } catch (error) {
       console.error("Error fetching traceability items:", error);
       throw error;
@@ -85,7 +92,7 @@ export class TraceabilityService {
         throw new Error(`Failed to fetch item trace: ${response.statusText}`);
       }
 
-      return await response.json();
+      return normalizeTraceResponse(await response.json());
     } catch (error) {
       console.error("Error fetching item trace:", error);
       throw error;
@@ -105,7 +112,7 @@ export class TraceabilityService {
         throw new Error(`Failed to fetch item: ${response.statusText}`);
       }
 
-      return await response.json();
+      return normalizeTraceTarget(await response.json());
     } catch (error) {
       console.error("Error fetching item:", error);
       throw error;
@@ -130,7 +137,10 @@ export class TraceabilityService {
         );
       }
 
-      return await response.json();
+      const payload = await response.json();
+      return Array.isArray(payload)
+        ? normalizeTraceSteps(payload, itemId)
+        : normalizeTraceSteps(payload.trace_steps ?? payload.provenance_chain, itemId);
     } catch (error) {
       console.error("Error fetching provenance chain:", error);
       throw error;
@@ -158,7 +168,7 @@ export class TraceabilityService {
         );
       }
 
-      return await response.json();
+      return normalizeKnowledgeGraphResponse(await response.json());
     } catch (error) {
       console.error("Error fetching knowledge graph:", error);
       throw error;

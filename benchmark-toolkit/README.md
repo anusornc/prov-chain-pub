@@ -1,17 +1,25 @@
 # ProvChain-Org Benchmark Toolkit
 
-🚀 **Portable, One-Command Benchmark Suite for Any Machine**
+> Status note: the legacy portable runner under `benchmark-toolkit/src/` is retained for historical comparison only and is not publication evidence. Current paper/thesis evidence must come from `benchmark-toolkit/research-benchmarks/` and curated exports documented in `docs/benchmarking/BENCHMARK_EVIDENCE_BOUNDARY_2026-05-11.md`.
 
-Automated performance comparison between ProvChain-Org (blockchain with embedded ontology) and traditional systems like Neo4j.
+🚀 **Portable Benchmark Toolkit**
+
+This directory contains both the current research benchmark harness and older
+portable smoke tooling. For thesis/paper claims, use
+`benchmark-toolkit/research-benchmarks/`, campaign scripts under
+`benchmark-toolkit/scripts/`, and curated exports under
+`docs/benchmarking/data/` or `docs/benchmarking/data/reference/`.
 
 ## 🎯 What This Does
 
 - ✅ **Auto-detects** your hardware capabilities
 - ✅ **Optimizes** configuration for your machine
 - ✅ **Deploys** all services (ProvChain + Neo4j + Monitoring)
-- ✅ **Runs** comprehensive benchmarks
-- ✅ **Generates** comparison reports
+- ✅ **Runs** local benchmark smoke checks
+- ✅ **Generates** local comparison reports
 - ✅ **Visualizes** results in Grafana dashboards
+- ⚠️ **Publication boundary**: legacy `run.sh`/`src/` output is non-evidence
+  until exported and curated under `docs/benchmarking/BENCHMARK_EVIDENCE_BOUNDARY_2026-05-11.md`
 
 ## ⚡ Quick Start (4 Steps)
 
@@ -29,19 +37,28 @@ chmod +x scripts/preflight-trace-benchmark.sh
 ./scripts/preflight-trace-benchmark.sh
 ```
 
-### 3. Run the Benchmark
+### 3. Run an Evidence Harness Command
+
+```bash
+./scripts/provchain-neo4j-fluree-graphdb-campaign.sh --help
+```
+
+For legacy local smoke exploration only:
 
 ```bash
 chmod +x run.sh
 ./run.sh
 ```
 
-That's it! The script will:
+The legacy script will:
 - Detect your hardware (RAM, CPU, disk)
 - Select optimal configuration
 - Start all services
 - Run benchmarks
 - Display results
+
+Do not cite `results/` directly in the thesis or paper unless the result is
+curated and linked under the benchmark evidence boundary.
 
 ### 4. View Results
 
@@ -102,10 +119,11 @@ provchain-benchmark-toolkit/
 │       └── dashboards/             # Grafana dashboards
 ├── data/
 │   └── supply_chain.ttl            # RDF dataset (1000 triples)
-├── src/                            # Benchmark runner source
+├── src/                            # Legacy non-evidence runner source
 │   ├── main.rs
 │   ├── Cargo.toml
 │   └── Dockerfile
+├── research-benchmarks/            # Active benchmark harness
 ├── results/                        # 📊 Benchmark output
 │   ├── benchmark_results.json
 │   ├── benchmark_results.csv
@@ -213,16 +231,16 @@ rm -rf results/* logs/*
 
 ### Summary File
 
-Results are saved in `results/summary.md`:
+Legacy local results are saved in `results/summary.md`. They are useful for
+debugging, but are not thesis/paper evidence by themselves:
 
 ```markdown
 ## Query Performance
 
 ### Simple Product Lookup
-- **ProvChain-Org**: 45.23 ms (22.11 ops/sec)
-- **Neo4j**: 67.89 ms (14.73 ops/sec)
-- **Improvement**: 33.4%
-- **Winner**: ProvChain-Org ✅
+- Local debugging measurements only
+- Not thesis/paper evidence unless exported and curated
+- Use `docs/benchmarking/data/reference/` for citable campaign summaries
 ```
 
 ### Grafana Dashboard
@@ -337,42 +355,40 @@ done
 
 ## 📚 Thesis Integration
 
-### Generating Figures for Thesis
+### Using Curated Evidence for Thesis
 
 ```bash
-# Run benchmark
-./run.sh medium
+# Start from the repository evidence boundary
+less ../docs/benchmarking/BENCHMARK_EVIDENCE_BOUNDARY_2026-05-11.md
 
-# Results are in:
-# - results/benchmark_results.json (data)
-# - results/benchmark_results.csv (for plotting)
-# - http://localhost:3000 (visualizations)
-
-# Export Grafana dashboard
-# 1. Open dashboard
-# 2. Click Share > Export
-# 3. Save as PNG/PDF for thesis
+# Use curated benchmark exports
+ls ../docs/benchmarking/data/
+ls ../docs/benchmarking/data/reference/
 ```
 
-### Sample Thesis Text
+Legacy `./run.sh` output, `results/benchmark_results.json`,
+`results/benchmark_results.csv`, and local Grafana screenshots are useful for
+debugging only. They must not be used in thesis figures or paper tables unless
+the run is curated, exported, and linked under the evidence boundary.
+
+### Thesis Text Template
 
 ```markdown
 ## Performance Evaluation
 
 ### Experimental Setup
 
-We evaluated ProvChain-Org against Neo4j graph database using
-a standardized RDF dataset containing 1000 triples representing
-food supply chain transactions. Benchmarks were conducted on a
-system with 8GB RAM and 4 CPU cores, using 10 iterations per
-test.
+We evaluated ProvChain-Org on the <benchmark family> workload using
+the curated reference export <artifact path>. The benchmark family,
+hardware/runtime context, run status, and caveats are recorded in
+the exported campaign status and aggregate summary.
 
 ### Results
 
-ProvChain-Org demonstrated 33.4% faster query performance for
-multi-hop traceability queries (45.23ms vs 67.89ms). Transaction
-throughput reached 150 tx/sec compared to Neo4j's 95 tx/sec,
-representing a 58% improvement.
+The result supports only the <trace-query / semantic-admission /
+ledger-write / policy / diagnostic> claim stated in the evidence
+artifact. It is not generalized to unrelated families such as
+ledger finality or production deployment readiness.
 ```
 
 ## 🎓 Citation

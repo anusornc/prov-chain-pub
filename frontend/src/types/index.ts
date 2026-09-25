@@ -71,7 +71,7 @@ export interface TraceStep {
 export interface KnowledgeGraphNode {
   id: string;
   label: string;
-  type: "item" | "participant" | "location" | "process";
+  type: "item" | "participant" | "location" | "process" | "entity" | "unknown";
   properties: Record<string, unknown>;
   x?: number;
   y?: number;

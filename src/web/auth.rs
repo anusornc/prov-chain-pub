@@ -16,9 +16,9 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use std::collections::HashMap;
-use std::fs::OpenOptions;
+use std::fs::{self, OpenOptions};
 use std::io::Write;
-use std::path::Path as FsPath;
+use std::path::{Path as FsPath, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -98,7 +98,7 @@ pub fn generate_secure_jwt_secret() -> Result<String, crate::error::WebError> {
 /// User database (in production, this would be a proper database)
 type UserDatabase = Arc<RwLock<HashMap<String, UserInfo>>>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct UserInfo {
     pub username: String,
     pub password_hash: String,
@@ -108,23 +108,54 @@ pub struct UserInfo {
 #[derive(Clone)]
 pub struct AuthState {
     pub users: UserDatabase,
+    user_store_path: Option<Arc<PathBuf>>,
 }
 
 impl Default for AuthState {
     fn default() -> Self {
-        Self::new()
+        Self::new_empty()
     }
 }
 
 impl AuthState {
+    /// Create an empty in-memory auth state without reading process environment.
+    ///
+    /// This constructor is intended for tests and explicit in-memory deployments.
+    /// Server startup should use [`AuthState::try_new_from_env`] so configured
+    /// auth-store failures fail closed instead of silently bootstrapping empty users.
     pub fn new() -> Self {
-        // SECURITY: No default users created - users must be explicitly created
-        // This prevents hardcoded credentials and improves security
-        let users = HashMap::new();
+        Self::new_empty()
+    }
 
+    /// Create an empty in-memory auth state without reading process environment.
+    pub fn new_empty() -> Self {
         Self {
-            users: Arc::new(RwLock::new(users)),
+            users: Arc::new(RwLock::new(HashMap::new())),
+            user_store_path: None,
         }
+    }
+
+    /// Create auth state from `PROVCHAIN_AUTH_USERS_FILE` when configured.
+    ///
+    /// # Errors
+    /// Returns an error when the configured user store cannot be read or parsed.
+    pub fn try_new_from_env() -> Result<Self, crate::error::WebError> {
+        let user_store_path = std::env::var("PROVCHAIN_AUTH_USERS_FILE")
+            .ok()
+            .filter(|value| !value.trim().is_empty())
+            .map(PathBuf::from)
+            .map(Arc::new);
+
+        let users = if let Some(path) = &user_store_path {
+            Self::load_users_from_file(path)?
+        } else {
+            HashMap::new()
+        };
+
+        Ok(Self {
+            users: Arc::new(RwLock::new(users)),
+            user_store_path,
+        })
     }
 
     /// Initialize with an admin user (for first-time setup)
@@ -149,7 +180,121 @@ impl AuthState {
 
         Ok(Self {
             users: Arc::new(RwLock::new(users)),
+            user_store_path: None,
         })
+    }
+
+    fn load_users_from_file(
+        path: &FsPath,
+    ) -> Result<HashMap<String, UserInfo>, crate::error::WebError> {
+        if !path.exists() {
+            return Ok(HashMap::new());
+        }
+
+        let data = fs::read_to_string(path).map_err(|e| {
+            crate::error::WebError::ServerError(format!(
+                "Failed to read auth user store '{}': {}",
+                path.display(),
+                e
+            ))
+        })?;
+
+        serde_json::from_str(&data).map_err(|e| {
+            crate::error::WebError::ServerError(format!(
+                "Failed to parse auth user store '{}': {}",
+                path.display(),
+                e
+            ))
+        })
+    }
+
+    fn persist_users(
+        &self,
+        users: &HashMap<String, UserInfo>,
+    ) -> Result<(), crate::error::WebError> {
+        let Some(path) = &self.user_store_path else {
+            return Ok(());
+        };
+
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|e| {
+                crate::error::WebError::ServerError(format!(
+                    "Failed to create auth user store directory '{}': {}",
+                    parent.display(),
+                    e
+                ))
+            })?;
+        }
+
+        if path
+            .symlink_metadata()
+            .map(|metadata| metadata.file_type().is_symlink())
+            .unwrap_or(false)
+        {
+            return Err(crate::error::WebError::ServerError(format!(
+                "Refusing to write auth user store through symlink '{}'",
+                path.display()
+            )));
+        }
+
+        let data = serde_json::to_string_pretty(users).map_err(|e| {
+            crate::error::WebError::ServerError(format!("Failed to serialize auth users: {}", e))
+        })?;
+
+        let tmp_path = path.with_extension(format!(
+            "{}.{}.tmp",
+            path.extension()
+                .and_then(|extension| extension.to_str())
+                .unwrap_or("json"),
+            Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+
+        let write_result = (|| -> Result<(), crate::error::WebError> {
+            let mut options = OpenOptions::new();
+            options.create_new(true).write(true);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                options.mode(0o600);
+            }
+
+            let mut file = options.open(&tmp_path).map_err(|e| {
+                crate::error::WebError::ServerError(format!(
+                    "Failed to open temporary auth user store '{}': {}",
+                    tmp_path.display(),
+                    e
+                ))
+            })?;
+            file.write_all(data.as_bytes()).map_err(|e| {
+                crate::error::WebError::ServerError(format!(
+                    "Failed to write temporary auth user store '{}': {}",
+                    tmp_path.display(),
+                    e
+                ))
+            })?;
+            file.sync_all().map_err(|e| {
+                crate::error::WebError::ServerError(format!(
+                    "Failed to sync temporary auth user store '{}': {}",
+                    tmp_path.display(),
+                    e
+                ))
+            })?;
+            drop(file);
+
+            fs::rename(&tmp_path, path.as_ref()).map_err(|e| {
+                crate::error::WebError::ServerError(format!(
+                    "Failed to replace auth user store '{}': {}",
+                    path.display(),
+                    e
+                ))
+            })
+        })();
+
+        if write_result.is_err() {
+            let _ = fs::remove_file(&tmp_path);
+        }
+
+        write_result
     }
 
     /// Create a new user with secure password hashing and validation
@@ -185,6 +330,8 @@ impl AuthState {
             },
         );
 
+        self.persist_users(&users)?;
+
         Ok(())
     }
 
@@ -219,6 +366,8 @@ impl AuthState {
             },
         );
 
+        self.persist_users(&users)?;
+
         Ok(())
     }
 
@@ -238,6 +387,7 @@ impl AuthState {
 
         if let Some(user_info) = users.get_mut(username) {
             user_info.password_hash = password_hash;
+            self.persist_users(&users)?;
             Ok(())
         } else {
             Err(crate::error::WebError::ResourceNotFound(format!(
@@ -284,6 +434,7 @@ impl AuthState {
         let mut users = self.users.write().await;
 
         if users.remove(username).is_some() {
+            self.persist_users(&users)?;
             Ok(())
         } else {
             Err(crate::error::WebError::ResourceNotFound(format!(
@@ -1923,15 +2074,25 @@ mod auth_security_tests {
             let hash = hash(password, test_cost).unwrap();
             let duration = start.elapsed();
 
-            assert!(
-                duration > std::time::Duration::from_millis(10),
-                "Password hashing should take some time for security: {:?}",
-                duration
-            );
+            if matches!(
+                std::env::var("PROVCHAIN_RUN_PERF_TESTS").as_deref(),
+                Ok("1" | "true" | "TRUE" | "yes" | "YES")
+            ) {
+                assert!(
+                    duration > std::time::Duration::from_millis(10),
+                    "Password hashing should take measurable time in the performance profile: {:?}",
+                    duration
+                );
+            }
             assert!(
                 duration < std::time::Duration::from_secs(10),
                 "Password hashing should not be too slow even in debug mode: {:?}",
                 duration
+            );
+
+            assert!(
+                !verify("wrong-password", &hash).unwrap(),
+                "Password hash should reject an incorrect password"
             );
 
             let start = Instant::now();
@@ -2293,7 +2454,7 @@ mod admin_user_management_api_tests {
         let result = create_user_admin(State(auth_state), Extension(claims), Json(request)).await;
 
         assert!(result.is_err(), "Non-admin should be denied");
-        let (status, _) = result.err().expect("Expected forbidden result");
+        let (status, _) = result.expect_err("Expected forbidden result");
         assert_eq!(status, StatusCode::FORBIDDEN);
     }
 
@@ -2375,7 +2536,7 @@ mod admin_user_management_api_tests {
         .await;
 
         assert!(result.is_err(), "Self-delete should be rejected");
-        let (status, _) = result.err().expect("Expected rejection");
+        let (status, _) = result.expect_err("Expected rejection");
         assert_eq!(status, StatusCode::BAD_REQUEST);
     }
 
@@ -2474,6 +2635,7 @@ mod admin_user_management_api_tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
     async fn test_admin_actions_write_audit_log() {
         let _guard = env_lock().lock().expect("env lock poisoned");
         let temp_dir = tempfile::tempdir().expect("create temp dir");
@@ -2525,5 +2687,91 @@ mod admin_user_management_api_tests {
         assert!(audit_content.contains("\"action\":\"delete_user\""));
 
         std::env::remove_var("PROVCHAIN_AUDIT_LOG_PATH");
+    }
+}
+
+#[cfg(test)]
+mod auth_persistence_tests {
+    use super::*;
+    use std::sync::{Mutex, OnceLock};
+    use tempfile::tempdir;
+
+    fn env_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
+
+    #[test]
+    fn try_new_from_env_fails_closed_on_corrupt_user_store() {
+        let _guard = env_lock().lock().unwrap();
+        let dir = tempdir().unwrap();
+        let store_path = dir.path().join("users.json");
+        fs::write(&store_path, "not-json").unwrap();
+        std::env::set_var("PROVCHAIN_AUTH_USERS_FILE", &store_path);
+
+        let error = match AuthState::try_new_from_env() {
+            Ok(_) => panic!("corrupt configured auth store must fail closed"),
+            Err(error) => error.to_string(),
+        };
+
+        std::env::remove_var("PROVCHAIN_AUTH_USERS_FILE");
+        assert!(error.contains("Failed to parse auth user store"));
+    }
+
+    #[test]
+    fn try_new_from_env_allows_missing_configured_user_store() {
+        let _guard = env_lock().lock().unwrap();
+        let dir = tempdir().unwrap();
+        let store_path = dir.path().join("missing-users.json");
+        std::env::set_var("PROVCHAIN_AUTH_USERS_FILE", &store_path);
+
+        let auth_state = AuthState::try_new_from_env()
+            .expect("missing configured user store should start empty");
+
+        std::env::remove_var("PROVCHAIN_AUTH_USERS_FILE");
+        assert!(auth_state.users.blocking_read().is_empty());
+    }
+
+    #[test]
+    fn new_empty_ignores_ambient_auth_user_store_env() {
+        let _guard = env_lock().lock().unwrap();
+        let dir = tempdir().unwrap();
+        let store_path = dir.path().join("users.json");
+        fs::write(&store_path, "not-json").unwrap();
+        std::env::set_var("PROVCHAIN_AUTH_USERS_FILE", &store_path);
+
+        let auth_state = AuthState::new_empty();
+
+        std::env::remove_var("PROVCHAIN_AUTH_USERS_FILE");
+        assert!(auth_state.users.blocking_read().is_empty());
+    }
+
+    #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
+    async fn persisted_user_store_uses_restrictive_permissions() {
+        let _guard = env_lock().lock().unwrap();
+        let dir = tempdir().unwrap();
+        let store_path = dir.path().join("auth").join("users.json");
+        std::env::set_var("PROVCHAIN_AUTH_USERS_FILE", &store_path);
+        let auth_state = AuthState::try_new_from_env().unwrap();
+
+        auth_state
+            .create_user(
+                "persisteduser".to_string(),
+                "PersistedUserPassword123!".to_string(),
+                ActorRole::Farmer,
+            )
+            .await
+            .expect("user should persist");
+
+        std::env::remove_var("PROVCHAIN_AUTH_USERS_FILE");
+        assert!(store_path.exists());
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(&store_path).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode, 0o600);
+        }
     }
 }

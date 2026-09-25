@@ -10,8 +10,7 @@
 //! - Full transaction lifecycle
 
 use provchain_org::core::blockchain::Blockchain;
-use provchain_org::semantic::owl2_traceability::Owl2EnhancedTraceability;
-use provchain_org::storage::rdf_store::{RDFStore, StorageConfig};
+use provchain_org::storage::rdf_store::StorageConfig;
 use std::collections::HashMap;
 use std::time::Instant;
 
@@ -112,8 +111,6 @@ fn main() -> anyhow::Result<()> {
 
 /// Initialize blockchain with GS1 EPCIS ontology
 fn initialize_blockchain_with_gs1_epcis() -> anyhow::Result<Blockchain> {
-    use provchain_org::semantic::owl_reasoner::{OwlReasoner, OwlReasonerConfig};
-
     // Create storage config for demo
     let config = StorageConfig {
         data_dir: std::path::PathBuf::from("data/gs1_epcis_uht_demo"),
@@ -595,7 +592,7 @@ fn demonstrate_property_chain_inference(
     }
 
     // Check temperature chain
-    let temp_query = format!(
+    let _temp_query = format!(
         r#"
         PREFIX provchain: <http://provchain.org/core#>
         SELECT (AVG(?temp) AS ?avgTemp) (MAX(?temp) AS ?maxTemp) WHERE {{
@@ -620,7 +617,7 @@ fn demonstrate_haskey_validation(
     println!("   Validating batch ID uniqueness with owl:hasKey...");
 
     // Try to create a duplicate batch (should be caught by validation)
-    let duplicate_attempt = format!(
+    let _duplicate_attempt = format!(
         r#"
         @prefix provchain: <http://provchain.org/core#> .
         
@@ -644,18 +641,16 @@ fn demonstrate_haskey_validation(
     );
 
     // Create a unique batch to show it works
-    let unique_batch = format!(
-        r#"
+    let unique_batch = r#"
         @prefix provchain: <http://provchain.org/core#> .
         
         <http://example.org/batch/UHT-BATCH-2024-002> a provchain:UHTMilkBatch ;
             provchain:batchId "UHT-BATCH-2024-002" ;
             provchain:productType "UHT_Skim_Milk_1L" ;
             provchain:productionDate "2024-01-16" .
-        "#
-    );
+        "#;
 
-    blockchain.add_block(unique_batch)?;
+    blockchain.add_block(unique_batch.to_string())?;
     println!("   ✓ New unique batch added: UHT-BATCH-2024-002");
 
     Ok(())
@@ -770,7 +765,7 @@ fn perform_full_traceability_query(blockchain: &Blockchain, batch_id: &str) -> a
                     .get("timestamp")
                     .map(|t| t.to_string())
                     .unwrap_or_default();
-                let short_type = event_type.split('#').last().unwrap_or(&event_type);
+                let short_type = event_type.split('#').next_back().unwrap_or(&event_type);
                 println!("     {}. {} at {}", i + 1, short_type, timestamp);
             }
         }

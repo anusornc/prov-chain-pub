@@ -2,6 +2,14 @@
 //!
 //! This module provides automatic repair capabilities for common
 //! integrity issues detected by the validation system.
+//!
+//! # Production maturity
+//!
+//! Conservative detection and repair orchestration are production-aligned where
+//! they operate through implemented blockchain/RDF-store APIs. SPARQL repair,
+//! backup, rollback, validation, and RDF reconstruction helpers still contain
+//! planned/demo scaffolding and must not be claimed as production-complete
+//! recovery automation until real implementations and tests are added.
 
 use crate::core::blockchain::Blockchain;
 use crate::error::Result;

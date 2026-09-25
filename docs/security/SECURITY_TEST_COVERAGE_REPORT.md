@@ -6,6 +6,16 @@
 **Scope:** Web API Handlers (/home/cit/provchain-org/src/web/handlers/)
 **Focus:** Input Validation, Error Handling, SPARQL Injection, Authentication Edge Cases
 
+> **Archival scope notice (2026-08-31):** this 2025 report remains a historical review of the then
+> current web handlers. It predates ADRs 0027-0037 and does not assess `PrivacyControlV1`,
+> `ProtectedDataSuiteV1`, `ParticipantKeyCustodyV1`, or `ParticipantKeystoreSuiteV1` conformance. Its original free-form
+> privacy-key, generic cipher, server-wallet, and server-decryption examples are superseded by ADRs
+> 0034-0036; suite and custody implementation and profile activation remain pending. It also does
+> not assess ADR 0037 exact source envelopes, pinned source membership, strict all-three Commit
+> Receipts, the shared PoA Proposal Coordinator and crash-safe Signing Fence, target Final
+> Admission, exact default-off Ed25519 feature-graph enforcement, journal-derived replay, or
+> six-node bridge recovery; those remain pending.
+
 ---
 
 ## Executive Summary
@@ -484,44 +494,28 @@ GET /api/analytics?end_date=TOMORROW
 
 ---
 
-### 6. Privacy & Encryption Tests (LOW-MEDIUM)
+### 6. Privacy & Encryption Tests (Superseded for `PrivacyControlV1`)
 
-#### [LOW-001] Missing Privacy Feature Tests
+#### [ARCHIVAL-LOW-001] Historical Privacy Test Gap
 
 **Location:** `/home/cit/provchain-org/src/web/handlers/transaction.rs:96-176`
 
-**Existing:** Privacy code exists for encrypted triples
+The original section tested legacy encrypted triples through caller-selected key identifiers and a
+generic "AES-256 or equivalent" assertion. Those are not valid requirements for the closed suite.
+Current conformance evidence must instead cover:
 
-**Missing Tests:**
-```rust
-// NO TESTS FOR:
+- exact ADR 0034 canonical bytes and bounds for keys, possession proofs, payloads, commitments,
+  Owner and Grant DEK Envelopes, transitions, and release evidence;
+- one fresh per-object DEK, a one-use derived payload key, ChaCha20Poly1305 with the all-zero 12-byte
+  nonce, and raw `O` as associated data;
+- walletless Final Admission, tamper and context-transplant rejection, rejected-candidate
+  non-mutation, exact journal replay/restart, and three-node byte equality;
+- Active/Retired/Revoked recipient-key eligibility and Live Privacy Release races at one exact
+  Network-Converged prefix; and
+- release of only the exact ciphertext, one applicable envelope, and evidence for client-side
+  decryption, with no server plaintext, unwrapped DEK, private key, or decryption oracle.
 
-// 1. Verify encrypted data is actually encrypted
-test_encrypted_triple_not_plaintext() {
-    let response = add_triple_with_privacy_key();
-    let block_data = get_latest_block_data();
-    assert!(!block_data.contains("Secret Ingredient"));
-    assert!(block_data.contains("EncryptedData"));
-}
-
-// 2. Key validation tests
-test_invalid_privacy_key_rejected() {
-    // Empty key ID
-    // Null bytes in key ID
-    // Extremely long key ID
-}
-
-// 3. Encryption strength tests
-test_encryption_uses_secure_algorithm() {
-    // Verify AES-256 or equivalent is used
-    // NOT DES, RC4, or other weak algorithms
-}
-
-// 4. Access control tests
-test_privacy_key_required_to_decrypt() {
-    // Users without key cannot access encrypted data
-}
-```
+See [ADR 0034](../architecture/ADR/0034-pin-protected-data-suite-v1-and-canonical-privacy-encoding.md).
 
 ---
 
@@ -583,10 +577,10 @@ test_privacy_key_required_to_decrypt() {
    - Fragmentation attacks (10 tests)
    - Unicode expansion (10 tests)
 
-7. **Privacy Features** (~40 tests)
-   - Encryption verification (20 tests)
-   - Access control (10 tests)
-   - Key management (10 tests)
+7. **`PrivacyControlV1` conformance campaign** (supersedes the historical ~40-test estimate)
+   - Canonical suite vectors and deterministic admission
+   - Key lifecycle, grants, release eligibility, and concurrency
+   - Crash, replay, restart, and three-node convergence
 
 ---
 

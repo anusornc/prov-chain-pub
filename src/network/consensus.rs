@@ -740,7 +740,9 @@ pub enum PbftMessage {
         block_hash: String,
         block: Block,
         sender: Uuid,
+        #[serde(with = "crate::ed25519_serde::signature")]
         signature: Signature,
+        #[serde(with = "crate::ed25519_serde::verifying_key")]
         public_key: VerifyingKey,
     },
     Prepare {
@@ -748,7 +750,9 @@ pub enum PbftMessage {
         sequence: u64,
         block_hash: String,
         sender: Uuid,
+        #[serde(with = "crate::ed25519_serde::signature")]
         signature: Signature,
+        #[serde(with = "crate::ed25519_serde::verifying_key")]
         public_key: VerifyingKey,
     },
     Commit {
@@ -756,13 +760,17 @@ pub enum PbftMessage {
         sequence: u64,
         block_hash: String,
         sender: Uuid,
+        #[serde(with = "crate::ed25519_serde::signature")]
         signature: Signature,
+        #[serde(with = "crate::ed25519_serde::verifying_key")]
         public_key: VerifyingKey,
     },
     ViewChange {
         new_view: u64,
         sender: Uuid,
+        #[serde(with = "crate::ed25519_serde::signature")]
         signature: Signature,
+        #[serde(with = "crate::ed25519_serde::verifying_key")]
         public_key: VerifyingKey,
     },
 }

@@ -84,7 +84,7 @@ Yes, this is an open source research project.
 - **RAM**: 4 GB
 - **Storage**: 20 GB SSD
 - **OS**: Linux (Ubuntu 20.04+), macOS
-- **Dependencies**: Rust 1.70+, Node.js 18+ (optional frontend)
+- **Dependencies**: Rust 1.87+, Node.js 18+ (optional frontend)
 
 **For 3-Node Cluster Testing:**
 - **CPU**: 4 cores per node
@@ -154,7 +154,7 @@ cargo build --release
 ### How do I install from source?
 
 **Prerequisites:**
-- Rust 1.70+ (install via `rustup`)
+- Rust 1.87+ (install via `rustup`)
 - Git
 
 **Build Steps:**

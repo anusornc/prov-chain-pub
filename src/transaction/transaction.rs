@@ -44,8 +44,10 @@ pub struct TransactionInput {
     /// Output index in previous transaction
     pub output_index: u32,
     /// Signature proving ownership
+    #[serde(with = "crate::ed25519_serde::optional_signature")]
     pub signature: Option<Signature>,
     /// Public key of the signer
+    #[serde(with = "crate::ed25519_serde::optional_verifying_key")]
     pub public_key: Option<VerifyingKey>,
 }
 
@@ -166,8 +168,10 @@ pub struct Transaction {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionSignature {
     /// The signature itself
+    #[serde(with = "crate::ed25519_serde::signature")]
     pub signature: Signature,
     /// Public key of the signer
+    #[serde(with = "crate::ed25519_serde::verifying_key")]
     pub public_key: VerifyingKey,
     /// Participant ID of the signer
     pub signer_id: Uuid,
@@ -1040,9 +1044,24 @@ mod security_tests {
     mod transaction_validation_security {
         use super::*;
 
+        fn should_skip_profiled_ignored_test() -> bool {
+            match std::env::var("PROVCHAIN_RUN_STRESS_TESTS") {
+                Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => {
+                    false
+                }
+                _ => {
+                    eprintln!("skipping ignored transaction validation security test; set PROVCHAIN_RUN_STRESS_TESTS=1 to run this profile");
+                    true
+                }
+            }
+        }
+
         #[test]
         #[ignore]
         fn test_malformed_transaction_rejection() {
+            if should_skip_profiled_ignored_test() {
+                return;
+            }
             let signing_key = SigningKey::from_bytes(&rand::random::<[u8; 32]>());
             let signer_id = Uuid::new_v4();
 
@@ -1083,6 +1102,9 @@ mod security_tests {
         #[test]
         #[ignore]
         fn test_business_logic_enforcement() {
+            if should_skip_profiled_ignored_test() {
+                return;
+            }
             let signing_key = SigningKey::from_bytes(&rand::random::<[u8; 32]>());
             let signer_id = Uuid::new_v4();
 

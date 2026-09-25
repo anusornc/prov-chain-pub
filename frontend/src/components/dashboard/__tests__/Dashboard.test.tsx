@@ -1,5 +1,5 @@
 import React from "react";
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Dashboard from "../Dashboard";
 import { customRender } from "../../../test-utils/test-utils";
@@ -21,6 +21,16 @@ jest.mock("../../../hooks/useWebSocket", () => ({
 // Mock fetch for recent activity
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
+
+const renderDashboard = async () => {
+  const result = customRender(<Dashboard />, { withAuth: false });
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  return result;
+};
 
 // Mock localStorage
 const localStorageMock = {
@@ -84,8 +94,8 @@ describe("Dashboard Component", () => {
   });
 
   describe("Component Rendering", () => {
-    test("should render dashboard header correctly", () => {
-      customRender(<Dashboard />);
+    test("should render dashboard header correctly", async () => {
+      await renderDashboard();
 
       expect(
         screen.getByText("Blockchain Explorer Dashboard"),
@@ -97,8 +107,8 @@ describe("Dashboard Component", () => {
       ).toBeInTheDocument();
     });
 
-    test("should display connection status", () => {
-      customRender(<Dashboard />);
+    test("should display connection status", async () => {
+      await renderDashboard();
 
       expect(screen.getByText("Connected")).toBeInTheDocument();
       const statusIndicator =
@@ -106,8 +116,8 @@ describe("Dashboard Component", () => {
       expect(statusIndicator).toHaveClass("bg-green-400");
     });
 
-    test("should display all metric cards", () => {
-      customRender(<Dashboard />);
+    test("should display all metric cards", async () => {
+      await renderDashboard();
 
       // Core metrics
       expect(screen.getByText("Total Blocks")).toBeInTheDocument();
@@ -130,8 +140,8 @@ describe("Dashboard Component", () => {
       expect(screen.getAllByText("healthy").length).toBeGreaterThan(0);
     });
 
-    test("should display network status section", () => {
-      customRender(<Dashboard />);
+    test("should display network status section", async () => {
+      await renderDashboard();
 
       expect(screen.getAllByText("Network Status").length).toBeGreaterThan(0);
       expect(screen.getAllByText("healthy").length).toBeGreaterThan(0);
@@ -141,7 +151,7 @@ describe("Dashboard Component", () => {
     });
 
     test("should display recent activity section", async () => {
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       expect(screen.getByText("Recent Activity")).toBeInTheDocument();
       await waitFor(() => {
@@ -153,7 +163,7 @@ describe("Dashboard Component", () => {
   });
 
   describe("Loading States", () => {
-    test("should show loading state when metrics are loading", () => {
+    test("should show loading state when metrics are loading", async () => {
       // Mock loading state
       mockUseBlockchain.mockReturnValue({
         metrics: null,
@@ -163,7 +173,7 @@ describe("Dashboard Component", () => {
         refresh: jest.fn(),
       });
 
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       // Check for loading skeletons
       const loadingElements = document.querySelectorAll(".animate-pulse");
@@ -172,7 +182,7 @@ describe("Dashboard Component", () => {
   });
 
   describe("Error Handling", () => {
-    test("should display error message when there is an error", () => {
+    test("should display error message when there is an error", async () => {
       // Mock error state
       mockUseBlockchain.mockReturnValue({
         metrics: null,
@@ -182,7 +192,7 @@ describe("Dashboard Component", () => {
         refresh: jest.fn(),
       });
 
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       expect(
         screen.getByText(
@@ -220,7 +230,7 @@ describe("Dashboard Component", () => {
       });
 
       const user = userEvent.setup();
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       const refreshButton = screen.getByText("Refresh");
       await user.click(refreshButton);
@@ -228,7 +238,7 @@ describe("Dashboard Component", () => {
       expect(mockRefresh).toHaveBeenCalled();
     });
 
-    test("should disable refresh button while loading", () => {
+    test("should disable refresh button while loading", async () => {
       mockUseBlockchain.mockReturnValue({
         metrics: null,
         networkHealth: null,
@@ -237,7 +247,7 @@ describe("Dashboard Component", () => {
         refresh: jest.fn(),
       });
 
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       const refreshButton = screen.getByText("Refresh");
       expect(refreshButton).toBeDisabled();
@@ -246,7 +256,7 @@ describe("Dashboard Component", () => {
 
   describe("Recent Activity", () => {
     test("should handle recent activity fetch success", async () => {
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
@@ -269,16 +279,24 @@ describe("Dashboard Component", () => {
     });
 
     test("should handle recent activity fetch failure with fallback", async () => {
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
       // Mock failed fetch
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       await waitFor(() => {
         expect(
           screen.getByText("System active - 1234 blocks processed"),
         ).toBeInTheDocument();
       });
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error fetching recent activity:",
+        expect.any(Error),
+      );
+      consoleErrorSpy.mockRestore();
     });
 
     test("should handle recent activity fetch with non-OK response", async () => {
@@ -288,7 +306,7 @@ describe("Dashboard Component", () => {
         status: 500,
       });
 
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       await waitFor(() => {
         expect(
@@ -313,7 +331,7 @@ describe("Dashboard Component", () => {
         }),
       });
 
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       await waitFor(() => {
         const timeElement = screen.getByText(/\d{1,2}:\d{2}:\d{2} [AP]M/); // Time format
@@ -323,8 +341,8 @@ describe("Dashboard Component", () => {
   });
 
   describe("Accessibility", () => {
-    test("should have proper heading hierarchy", () => {
-      customRender(<Dashboard />);
+    test("should have proper heading hierarchy", async () => {
+      await renderDashboard();
 
       const mainHeading = screen.getByRole("heading", { level: 1 });
       expect(mainHeading).toHaveTextContent("Blockchain Explorer Dashboard");
@@ -335,7 +353,7 @@ describe("Dashboard Component", () => {
 
     test("should support keyboard navigation", async () => {
       const user = userEvent.setup();
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       const refreshButton = screen.getByRole("button", { name: /refresh/i });
       await user.tab();
@@ -343,8 +361,8 @@ describe("Dashboard Component", () => {
       expect(refreshButton).toHaveFocus();
     });
 
-    test("should have proper ARIA labels", () => {
-      customRender(<Dashboard />);
+    test("should have proper ARIA labels", async () => {
+      await renderDashboard();
 
       // Check for proper button labels
       const refreshButton = screen.getByRole("button", { name: /refresh/i });
@@ -353,7 +371,7 @@ describe("Dashboard Component", () => {
   });
 
   describe("Responsive Design", () => {
-    test("should render correctly on mobile viewports", () => {
+    test("should render correctly on mobile viewports", async () => {
       // Mock mobile viewport
       Object.defineProperty(window, "innerWidth", {
         writable: true,
@@ -361,7 +379,7 @@ describe("Dashboard Component", () => {
         value: 375,
       });
 
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       // Should still render all main components
       expect(
@@ -374,27 +392,27 @@ describe("Dashboard Component", () => {
   });
 
   describe("Data Display", () => {
-    test("should format large numbers correctly", () => {
-      customRender(<Dashboard />);
+    test("should format large numbers correctly", async () => {
+      await renderDashboard();
 
       expect(screen.getByText("1,234")).toBeInTheDocument(); // Thousands separator
       expect(screen.getByText("5,678")).toBeInTheDocument();
       expect(screen.getByText("9,012")).toBeInTheDocument();
     });
 
-    test("should format hash rate correctly", () => {
-      customRender(<Dashboard />);
+    test("should format hash rate correctly", async () => {
+      await renderDashboard();
 
       expect(screen.getByText("1500.0M")).toBeInTheDocument(); // Convert to millions
     });
 
-    test("should format uptime correctly", () => {
-      customRender(<Dashboard />);
+    test("should format uptime correctly", async () => {
+      await renderDashboard();
 
       expect(screen.getByText("24h 0m")).toBeInTheDocument(); // 86400 seconds
     });
 
-    test("should handle zero values gracefully", () => {
+    test("should handle zero values gracefully", async () => {
       mockUseBlockchain.mockReturnValue({
         metrics: {
           total_blocks: 0,
@@ -418,7 +436,7 @@ describe("Dashboard Component", () => {
         refresh: jest.fn(),
       });
 
-      customRender(<Dashboard />);
+      await renderDashboard();
 
       expect(screen.getAllByText("0").length).toBeGreaterThan(0);
       expect(screen.getByText("0s")).toBeInTheDocument();

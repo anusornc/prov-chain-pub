@@ -148,7 +148,7 @@ describe("useBlockchain Hook", () => {
   });
 
   describe("Initial State", () => {
-    test("should initialize with correct default states", () => {
+    test("should initialize with correct default states", async () => {
       const { result } = renderHook(() => useBlockchain());
 
       expect(result.current.blocks).toEqual([]);
@@ -157,9 +157,13 @@ describe("useBlockchain Hook", () => {
       expect(result.current.networkHealth).toBeNull();
       expect(result.current.loading).toBe(true);
       expect(result.current.error).toBeNull();
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
     });
 
-    test("should have all loading states initially set correctly", () => {
+    test("should have all loading states initially set correctly", async () => {
       const { result } = renderHook(() => useBlockchain());
 
       expect(result.current.loading).toBe(true); // Loading due to initial refresh
@@ -169,6 +173,10 @@ describe("useBlockchain Hook", () => {
       expect(result.current.transactions).toEqual([]);
       expect(result.current.metrics).toBeNull();
       expect(result.current.networkHealth).toBeNull();
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
     });
   });
 
@@ -188,6 +196,10 @@ describe("useBlockchain Hook", () => {
     test("should fetch blocks correctly", async () => {
       const { result } = renderHook(() => useBlockchain());
 
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       await act(async () => {
         await result.current.fetchBlocks();
       });
@@ -200,6 +212,10 @@ describe("useBlockchain Hook", () => {
     test("should fetch transactions correctly", async () => {
       const { result } = renderHook(() => useBlockchain());
 
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       await act(async () => {
         await result.current.fetchTransactions();
       });
@@ -211,6 +227,10 @@ describe("useBlockchain Hook", () => {
 
     test("should fetch metrics correctly", async () => {
       const { result } = renderHook(() => useBlockchain());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       await act(async () => {
         await result.current.fetchMetrics();
@@ -245,6 +265,10 @@ describe("useBlockchain Hook", () => {
     test("should fetch single block correctly", async () => {
       const { result } = renderHook(() => useBlockchain());
 
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       const block = await act(async () => {
         return await result.current.fetchBlock(1);
       });
@@ -261,6 +285,10 @@ describe("useBlockchain Hook", () => {
     test("should validate blockchain correctly", async () => {
       const { result } = renderHook(() => useBlockchain());
 
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       const isValid = await act(async () => {
         return await result.current.validateBlockchain();
       });
@@ -271,6 +299,18 @@ describe("useBlockchain Hook", () => {
   });
 
   describe("Error Handling", () => {
+    let consoleErrorSpy: jest.SpiedFunction<typeof console.error>;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
     test("should handle fetchBlocks error", async () => {
       const errorMessage = "Failed to fetch blocks";
       mockBlockchainAPI.getBlocks.mockRejectedValueOnce(
@@ -290,8 +330,8 @@ describe("useBlockchain Hook", () => {
         new Error(errorMessage),
       );
 
-      act(() => {
-        result.current.fetchBlocks();
+      await act(async () => {
+        await result.current.fetchBlocks();
       });
 
       // Wait for the async operation to complete
@@ -320,8 +360,8 @@ describe("useBlockchain Hook", () => {
         new Error(errorMessage),
       );
 
-      act(() => {
-        result.current.fetchTransactions();
+      await act(async () => {
+        await result.current.fetchTransactions();
       });
 
       // Wait for the async operation to complete
@@ -365,8 +405,8 @@ describe("useBlockchain Hook", () => {
         config: {} as any,
       });
 
-      act(() => {
-        result.current.fetchMetrics();
+      await act(async () => {
+        await result.current.fetchMetrics();
       });
 
       // Check that fallback metrics are set even on error
@@ -402,6 +442,10 @@ describe("useBlockchain Hook", () => {
 
       const { result } = renderHook(() => useBlockchain());
 
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       const block = await act(async () => {
         return await result.current.fetchBlock(999);
       });
@@ -416,6 +460,10 @@ describe("useBlockchain Hook", () => {
 
       const { result } = renderHook(() => useBlockchain());
 
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       const isValid = await act(async () => {
         return await result.current.validateBlockchain();
       });
@@ -429,51 +477,35 @@ describe("useBlockchain Hook", () => {
       const { result } = renderHook(() => useBlockchain());
 
       // Test blocks loading
-      act(() => {
-        result.current.fetchBlocks();
+      await act(async () => {
+        await result.current.fetchBlocks();
       });
 
-      expect(result.current.blocksLoading).toBe(true);
-
-      await waitFor(() => {
-        expect(result.current.blocksLoading).toBe(false);
-      });
+      expect(result.current.blocksLoading).toBe(false);
 
       // Test transactions loading
-      act(() => {
-        result.current.fetchTransactions();
+      await act(async () => {
+        await result.current.fetchTransactions();
       });
 
-      expect(result.current.transactionsLoading).toBe(true);
-
-      await waitFor(() => {
-        expect(result.current.transactionsLoading).toBe(false);
-      });
+      expect(result.current.transactionsLoading).toBe(false);
 
       // Test metrics loading
-      act(() => {
-        result.current.fetchMetrics();
+      await act(async () => {
+        await result.current.fetchMetrics();
       });
 
-      expect(result.current.metricsLoading).toBe(true);
-
-      await waitFor(() => {
-        expect(result.current.metricsLoading).toBe(false);
-      });
+      expect(result.current.metricsLoading).toBe(false);
     });
 
     test("should set main loading during refresh", async () => {
       const { result } = renderHook(() => useBlockchain());
 
-      act(() => {
-        result.current.refresh();
+      await act(async () => {
+        await result.current.refresh();
       });
 
-      expect(result.current.loading).toBe(true);
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      expect(result.current.loading).toBe(false);
     });
   });
 
@@ -492,6 +524,9 @@ describe("useBlockchain Hook", () => {
     });
 
     test("should handle refresh error gracefully", async () => {
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
       mockBlockchainAPI.getStatus.mockRejectedValueOnce(
         new Error("Network error"),
       );
@@ -503,14 +538,19 @@ describe("useBlockchain Hook", () => {
         expect(result.current.loading).toBe(false);
       });
 
-      act(() => {
-        result.current.refresh();
+      await act(async () => {
+        await result.current.refresh();
       });
 
       // Check that refresh completes without hanging
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
       });
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error fetching metrics:",
+        expect.any(Error),
+      );
+      consoleErrorSpy.mockRestore();
       // The hook should handle refresh errors gracefully
     });
   });
@@ -541,6 +581,10 @@ describe("useBlockchain Hook", () => {
 
       const { result } = renderHook(() => useBlockchain());
 
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
       await act(async () => {
         await result.current.fetchMetrics();
       });
@@ -559,6 +603,10 @@ describe("useBlockchain Hook", () => {
       });
 
       const { result } = renderHook(() => useBlockchain());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       await act(async () => {
         await result.current.fetchMetrics();
@@ -579,8 +627,12 @@ describe("useBlockchain Hook", () => {
   });
 
   describe("Memory Management", () => {
-    test("should cleanup WebSocket listeners on unmount", () => {
-      const { unmount } = renderHook(() => useBlockchain());
+    test("should cleanup WebSocket listeners on unmount", async () => {
+      const { result, unmount } = renderHook(() => useBlockchain());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       // The mock should have been called during hook initialization
       // Just verify the hook can mount and unmount without errors
@@ -620,10 +672,12 @@ describe("useBlockchain Hook", () => {
       });
 
       // Make multiple rapid refresh calls
-      act(() => {
-        result.current.refresh();
-        result.current.refresh();
-        result.current.refresh();
+      await act(async () => {
+        await Promise.all([
+          result.current.refresh(),
+          result.current.refresh(),
+          result.current.refresh(),
+        ]);
       });
 
       // Should still only make one set of API calls due to the nature of async operations

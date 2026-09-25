@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-03-09
 **Context:** Semantic interoperability and traceability validation in permissioned networks
+**Clarified by:** [ADR 0025](./0025-enforce-the-package-semantic-profile-at-final-admission.md) — package-declared enforcement is a Final Admission invariant under an explicit bounded profile, not a claim of arbitrary SHACL support.
 
 ---
 

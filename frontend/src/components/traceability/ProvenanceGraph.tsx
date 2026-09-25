@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useTraceability } from "../../hooks/useTraceability";
 import cytoscape from "cytoscape";
 import type { Core } from "cytoscape";
@@ -140,7 +140,7 @@ const ProvenanceGraph: React.FC<ProvenanceGraphProps> = ({
   // Use provided knowledgeGraph or hook's knowledgeGraph
   const graphData = knowledgeGraph || hookKnowledgeGraph;
 
-  const config: GraphConfig = {
+  const config: GraphConfig = useMemo(() => ({
     width: isFullscreen ? window.innerWidth : 1200,
     height: isFullscreen ? window.innerHeight : 700,
     layouts: [
@@ -237,6 +237,27 @@ const ProvenanceGraph: React.FC<ProvenanceGraphProps> = ({
         "font-size": "12px",
         "font-weight": "bold",
       },
+      entity: {
+        "background-color": "#0ea5e9",
+        "border-color": "#0369a1",
+        "border-width": 2,
+        color: "#ffffff",
+        "text-valign": "center",
+        "text-halign": "center",
+        "font-size": "12px",
+        "font-weight": "bold",
+      },
+      unknown: {
+        "background-color": "#f97316",
+        "border-color": "#9a3412",
+        "border-width": 3,
+        color: "#ffffff",
+        "text-valign": "center",
+        "text-halign": "center",
+        "font-size": "12px",
+        "font-weight": "bold",
+        "border-style": "dashed",
+      },
     },
     edgeStyles: {
       default: {
@@ -255,7 +276,7 @@ const ProvenanceGraph: React.FC<ProvenanceGraphProps> = ({
         width: 4,
       },
     },
-  };
+  }), [isFullscreen]);
 
   // Load knowledge graph if not provided
   useEffect(() => {
@@ -318,6 +339,10 @@ const ProvenanceGraph: React.FC<ProvenanceGraphProps> = ({
           label: filters.showLabels ? node.label : "",
           type: node.type,
           properties: node.properties,
+          isTarget: node.properties.isTarget === true,
+          isUnknown: node.properties.isUnknown === true,
+          confidence: node.properties.confidence,
+          completeness: node.properties.completeness,
           size: Math.max(
             filters.minNodeSize,
             Math.min(filters.maxNodeSize, node.size || 40),
@@ -334,6 +359,9 @@ const ProvenanceGraph: React.FC<ProvenanceGraphProps> = ({
           label: filters.showEdgeLabels ? edge.label : "",
           type: edge.type,
           properties: edge.properties,
+          isUnknown: edge.properties.isUnknown === true,
+          direction: edge.properties.direction,
+          confidence: edge.properties.confidence,
           weight: edge.weight || 1,
         },
       }));
@@ -386,6 +414,25 @@ const ProvenanceGraph: React.FC<ProvenanceGraphProps> = ({
           style: config.nodeStyles.process as Record<string, unknown>,
         },
         {
+          selector: 'node[type="entity"]',
+          style: config.nodeStyles.entity as Record<string, unknown>,
+        },
+        {
+          selector: 'node[type="unknown"]',
+          style: config.nodeStyles.unknown as Record<string, unknown>,
+        },
+        {
+          selector: 'node[isTarget = "true"]',
+          style: {
+            "border-width": 5,
+            "border-color": "#22c55e",
+          },
+        },
+        {
+          selector: 'node[isUnknown = "true"]',
+          style: config.nodeStyles.unknown as Record<string, unknown>,
+        },
+        {
           selector: "edge",
           style: {
             label: "data(label)",
@@ -398,6 +445,15 @@ const ProvenanceGraph: React.FC<ProvenanceGraphProps> = ({
             "border-width": 4,
             "border-color": "#3b82f6",
             "background-color": "#dbeafe",
+          },
+        },
+        {
+          selector: 'edge[isUnknown = "true"]',
+          style: {
+            "line-color": "#f97316",
+            "target-arrow-color": "#f97316",
+            "line-style": "dashed",
+            width: 3,
           },
         },
         {
@@ -454,7 +510,6 @@ const ProvenanceGraph: React.FC<ProvenanceGraphProps> = ({
   }, [
     graphData,
     currentLayout,
-    filters,
     getFilteredGraphData,
     convertToCytoscapeFormat,
     config,

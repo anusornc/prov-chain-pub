@@ -3,6 +3,12 @@ Introduction to RDF Blockchain
 
 RDF Blockchain is the core innovation that makes ProvChainOrg unique. Unlike traditional blockchains that store opaque binary data, RDF blockchain stores semantic data as RDF (Resource Description Framework) graphs, making every piece of information queryable and meaningful.
 
+.. note::
+   This chapter is a conceptual primer. Examples of federation, automatic validation, evolution,
+   and scaling illustrate design intent and are not current end-to-end evidence. For the current
+   implementation boundary, read ``docs/reviews/THESIS_CODE_ALIGNMENT_REVIEW_2026-07-10.md`` and
+   ``docs/architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md``.
+
 What is RDF?
 ------------
 
@@ -323,7 +329,7 @@ Now that you understand RDF blockchain fundamentals:
 1. **Learn Supply Chain Applications**: :doc:`intro-to-supply-chain-traceability`
 2. **Compare with Traditional Systems**: :doc:`semantic-web-vs-traditional-blockchain`
 3. **Understand SPARQL Queries**: :doc:`sparql-queries`
-4. **Explore the Development Stack**: :doc:`../stack/intro-to-stack`
+4. **Review the Current Architecture Boundary**: `Shared Ontology Network Working Plan <../architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md>`_
 
 .. note::
    RDF blockchain represents a paradigm shift from opaque data storage to semantic, queryable information systems. This enables unprecedented transparency and interoperability in supply chain applications.

@@ -86,7 +86,7 @@ export default {
   testTimeout: 10000,
 
   // Browser mocks
-  setupFiles: ['jest-canvas-mock'],
+  setupFiles: ['jest-canvas-mock', '<rootDir>/src/setupActEnvironment.ts'],
 
   // Extensions
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
@@ -104,6 +104,7 @@ export default {
       testMatch: ['<rootDir>/src/**/__tests__/**/*.{ts,tsx}'],
       setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
       testEnvironment: 'jsdom',
+      setupFiles: ['jest-canvas-mock', '<rootDir>/src/setupActEnvironment.ts'],
       transform: {
         '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }]
       },

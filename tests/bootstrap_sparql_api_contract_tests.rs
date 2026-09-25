@@ -87,6 +87,7 @@ async fn login_admin(client: &Client, base_url: &str) -> Result<AuthResponse> {
     Ok(response.json::<AuthResponse>().await?)
 }
 
+#[allow(clippy::await_holding_lock)]
 #[tokio::test]
 async fn test_bootstrap_login_and_prefixed_sparql_query_contract() -> Result<()> {
     let _guard = env_lock().lock().unwrap_or_else(|error| error.into_inner());
@@ -153,6 +154,7 @@ async fn test_bootstrap_login_and_prefixed_sparql_query_contract() -> Result<()>
     Ok(())
 }
 
+#[allow(clippy::await_holding_lock)]
 #[tokio::test]
 async fn test_sparql_query_requires_authentication() -> Result<()> {
     let _guard = env_lock().lock().unwrap_or_else(|error| error.into_inner());

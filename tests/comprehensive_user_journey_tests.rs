@@ -15,6 +15,16 @@ const TEST_BOOTSTRAP_TOKEN: &str = "test-bootstrap-token-for-comprehensive-journ
 const ADMIN_USERNAME: &str = "adminroot";
 const ADMIN_PASSWORD: &str = "AdminRootPassword123!";
 
+fn should_skip_profiled_ignored_test(env_var: &str, description: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+        _ => {
+            eprintln!("skipping ignored {description}; set {env_var}=1 to run this profile");
+            true
+        }
+    }
+}
+
 /// Comprehensive test data for complex scenarios
 const COMPLEX_SUPPLY_CHAIN_DATA: &str = r#"
 @prefix : <http://example.org/> .
@@ -281,6 +291,12 @@ async fn test_edge_cases() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_blockchain_performance() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_PERF_TESTS",
+        "comprehensive user-journey performance test",
+    ) {
+        return Ok(());
+    }
     let mut blockchain = Blockchain::new();
 
     let start = Instant::now();

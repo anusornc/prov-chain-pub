@@ -6,11 +6,20 @@ Comprehensive guides, API references, and technical resources for building appli
 .. note::
    **Documentation Status**: This section is under active development. Many of the detailed guides referenced below are still being written. For the most current information, please refer to the main project documentation.
 
+   **Current Capability Boundary**: The repository contains public-RDF/Oxigraph foundations,
+   selected ontology checks, local PoA and networking scaffolding, and focused benchmark
+   artifacts. It does not yet provide the complete-envelope journal/replay contract, universal
+   Final Admission, authenticated membership, reproducible three-node PoA convergence, the
+   durable privacy lifecycle, or the bounded ProvChain-to-ProvChain bridge. PBFT, operational
+   deployment, and production-pilot controls are future work. Test-file names do not establish
+   those pending end-to-end properties.
+
    **Key Resources Available**:
    - **[Contributing Guide](../../CONTRIBUTING.md)** - Development setup and contribution guidelines
    - **[Architecture Documentation](../architecture/README.md)** - C4 model architecture and design decisions
-   - **[Deployment Guide](../deployment/HANDS_ON_DEPLOYMENT_GUIDE.md)** - Deployment instructions
-   - **[Project CLAUDE.md](../../CLAUDE.md)** - Project patterns and coding standards
+   - **[Local Execution Guide](../Run.md)** - Development/reference execution; operational deployment remains future work
+   - **[Project AGENTS.md](../../AGENTS.md)** - Project patterns, source-of-truth routing, and coding standards
+   - **[Thesis-Code Alignment Review](../reviews/THESIS_CODE_ALIGNMENT_REVIEW_2026-07-10.md)** - Current implementation and evidence gaps
 
 Getting Started
 ---------------
@@ -20,7 +29,7 @@ New to ProvChainOrg development? Start with these resources:
 **Prerequisites**
 Before you begin development with ProvChainOrg, ensure you have:
 
-- **Rust 1.70+**: `rustc --version`
+- **Rust 1.87+**: `rustc --version`
 - **Git**: For version control
 - **Docker**: For containerized deployment (optional)
 - **Python 3.7+**: For client library development (optional)
@@ -53,7 +62,7 @@ Before you begin development with ProvChainOrg, ensure you have:
    - Architectural Decision Records (ADRs)
    - Technology stack details
 
-3. **[../../CLAUDE.md](../../CLAUDE.md)**: Project patterns
+3. **[../../AGENTS.md](../../AGENTS.md)**: Project patterns and current source-of-truth routing
    - Error handling patterns
    - Async runtime usage
    - Security best practices
@@ -141,15 +150,16 @@ Architecture Overview
    - Persistent RDF storage
    - SPARQL query processing
 
-3. **Ontology Package Integration** (`src/ontology/` + `Cargo.toml`): Production semantic contract and reasoning path via SPACL dependency
-   - Tableaux algorithm implementation
-   - OWL2 RL support
-   - Query optimization
+3. **Ontology Package Integration** (`src/ontology/` + `Cargo.toml`): production orchestration path
+   - Package/profile loading and selected SHACL constraint support
+   - SPACL-backed subclass-aware checks on focused paths
+   - Complete package-declared staged-union enforcement remains pending
 
 4. **Network Layer** (`src/network/`): Peer-to-peer communication
-   - Consensus protocols (PoA/PBFT)
-   - WebSocket communication
-   - Peer discovery
+   - Local PoA reference candidate; exact three-node convergence/recovery evidence is pending
+   - Experimental PBFT code is not a current supported consensus profile
+   - WebSocket and peer-discovery scaffolding; authenticated membership and exact-envelope
+     replication are pending
 
 5. **API Layer** (`src/web/`): External interface management
    - REST API handlers
@@ -164,10 +174,10 @@ provchain-org/
 │   ├── core/           # Blockchain core (block, state, signatures)
 │   ├── storage/        # RDF storage and persistence
 │   ├── network/        # P2P networking and consensus
-│   ├── semantic/       # OWL2 reasoning and SHACL validation
+│   ├── semantic/       # Legacy/demo OWL modules plus ontology/shape assets
 │   ├── security/       # Encryption and wallet management
 │   ├── integrity/      # Blockchain validation
-│   ├── interop/        # Cross-chain bridge
+│   ├── interop/        # Legacy in-process bridge prototype; ADR 0037 target pending
 │   ├── web/            # REST API and JWT auth
 │   └── analytics/      # Performance monitoring
 └── tests/              # Integration tests
@@ -182,17 +192,17 @@ Testing Framework
    - Inline tests in source files
    - Module-level test organization
 
-2. **Integration Testing**: End-to-end system testing
-   - `tests/` directory for integration tests
-   - Full system validation
+2. **Integration Testing**: Component and integration-path checks
+   - `tests/` directory for focused integration fixtures
+   - Not proof of the pending thesis-reference end-to-end contract
 
 3. **Performance Testing**: Criterion.rs for benchmarking
    - Microbenchmarking in `benches/`
    - Statistical analysis (95% confidence intervals)
 
-4. **Load Testing**: High-volume transaction testing
-   - Concurrent user simulation
-   - Throughput measurement
+4. **Load Testing**: Profile-gated custom test scaffolding
+   - Useful for harness development and diagnostics
+   - No ledger-throughput value from the legacy custom harness is admitted as current evidence
 
 **Running Tests**
 
@@ -201,7 +211,7 @@ Testing Framework
    cargo test --workspace
 
    # Run specific test file
-   cargo test --test load_tests
+   cargo test --test load_tests -- --ignored
 
    # Run benchmarks
    cargo bench
@@ -212,10 +222,12 @@ Testing Framework
 **Test Coverage**
 
 Key test files include:
-- `tests/project_requirements_test.rs` - Consensus and bridge validation
-- `tests/privacy_test.rs` - Encryption and wallet tests
+- `tests/project_requirements_test.rs` - Legacy component/requirements checks; not three-node
+  convergence or bounded-bridge evidence
+- `tests/privacy_test.rs` - Cryptographic and wallet component checks; not the durable privacy lifecycle
 - `tests/enhanced_traceability_demo.rs` - Traceability validation
-- `tests/load_tests.rs` - Performance testing (200 users × 100 requests)
+- `tests/load_tests.rs` - Profile-gated custom load-test scaffolding; its former summary
+  statistics are withdrawn from the publication evidence path
 - `tests/owl2_*` and `tests/enhanced_owl2_*` - OWL2 integration test suites
 
 Security Guidelines
@@ -272,36 +284,37 @@ Performance Optimization
 
 **Performance Benchmarks**
 
-Current performance measurements (development environment):
-
-- **OWL2 Reasoning**: 0.015-0.17ms per axiom
-- **SPARQL Queries**: 0.04-18ms (P95 < 100ms target ✅)
-- **Memory Usage**: ~200MB baseline
-- **Write Throughput**: 19.58 TPS (single-node dev environment)
-
-See `[../benchmarking/EXPERIMENTAL_RESULTS.md](../benchmarking/EXPERIMENTAL_RESULTS.md)` for detailed experimental results.
+Use the `benchmark evidence boundary
+<../benchmarking/BENCHMARK_EVIDENCE_BOUNDARY_2026-05-11.md>`_ and `paper evidence index
+<../paper_submission/PAPER_EVIDENCE_INDEX.md>`_ before quoting a measurement. Current admitted
+quantitative evidence is family-scoped: focused ontology-admission Criterion artifacts and curated
+trace-query campaigns. No corrected ledger-throughput value is currently admitted.
+`EXPERIMENTAL_RESULTS.md <../benchmarking/EXPERIMENTAL_RESULTS.md>`_ is a dated mixed historical
+record whose custom load-test section has been withdrawn.
 
 Deployment Guides
 -----------------
 
-**Deployment Documentation**
+**Deployment References**
 
-- **[../deployment/HANDS_ON_DEPLOYMENT_GUIDE.md](../deployment/HANDS_ON_DEPLOYMENT_GUIDE.md)**: Comprehensive deployment guide
-- **[../deployment/DOCKER_DEPLOYMENT_ARCHITECTURE.md](../deployment/DOCKER_DEPLOYMENT_ARCHITECTURE.md)**: Docker deployment architecture
+- `Run.md <../Run.md>`_: local development/reference execution
+- `Container Architecture <../architecture/CONTAINER_ARCHITECTURE.md>`_: target/reference topology,
+  not operational deployment evidence
+
+Operational deployment and production-pilot controls remain future work.
 
 **Deployment Scenarios**
 
 1. **Single Node**: Development and testing environments
-2. **Multi-Node Network**: Production deployments
+2. **Multi-Node Network**: Future controlled three-node PoA convergence/recovery evidence
 3. **Docker Deployment**: Containerized setups
 4. **Benchmark Comparison**: Performance testing with baseline systems
 
-**Quick Docker Deployment**
+**Container Scaffolding**
 
-.. code-block:: bash
-   # Quick start single-node deployment
-   cd deploy
-   docker-compose -f docker-compose.quickstart.yml up -d
+`deploy/docker-compose.node.yml` and `deploy/docker-compose.3node.yml` are development/reference
+configuration, not operational deployment or convergence evidence. Verify them against the current
+working plan before use; there is no `deploy/docker-compose.quickstart.yml` in this revision.
 
 **Configuration Management**
 

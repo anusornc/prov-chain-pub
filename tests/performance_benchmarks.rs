@@ -6,10 +6,23 @@ use anyhow::Result;
 use provchain_org::core::blockchain::Blockchain;
 use std::time::{Duration, Instant};
 
+fn should_skip_profiled_ignored_test(env_var: &str, description: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+        _ => {
+            eprintln!("skipping ignored {description}; set {env_var}=1 to run this profile");
+            true
+        }
+    }
+}
+
 /// Test blockchain performance under realistic load
 #[test]
 #[ignore]
 fn test_blockchain_performance_realistic_load() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_PERF_TESTS", "performance tests") {
+        return Ok(());
+    }
     let start = Instant::now();
     let mut blockchain = Blockchain::new();
 
@@ -188,6 +201,9 @@ fn test_rdf_canonicalization_performance() -> Result<()> {
 #[test]
 #[ignore]
 fn test_concurrent_access_performance() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_PERF_TESTS", "performance tests") {
+        return Ok(());
+    }
     use std::sync::Arc;
     use std::thread;
 
@@ -262,6 +278,9 @@ fn test_concurrent_access_performance() -> Result<()> {
 #[test]
 #[ignore]
 fn test_memory_usage_performance() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_PERF_TESTS", "performance tests") {
+        return Ok(());
+    }
     let mut blockchain = Blockchain::new();
 
     // Add progressively larger blocks to test memory efficiency
@@ -305,6 +324,9 @@ fn test_memory_usage_performance() -> Result<()> {
 #[test]
 #[ignore]
 fn test_validation_performance_large_chain() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_PERF_TESTS", "performance tests") {
+        return Ok(());
+    }
     let mut blockchain = Blockchain::new();
 
     // Create a large blockchain
@@ -347,6 +369,9 @@ fn test_validation_performance_large_chain() -> Result<()> {
 #[test]
 #[ignore]
 fn test_performance_degradation() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_PERF_TESTS", "performance tests") {
+        return Ok(());
+    }
     let mut blockchain = Blockchain::new();
     let mut add_times = Vec::new();
     let mut validation_times = Vec::new();
@@ -420,6 +445,9 @@ fn test_performance_degradation() -> Result<()> {
 #[test]
 #[ignore]
 fn test_complex_query_performance() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_PERF_TESTS", "performance tests") {
+        return Ok(());
+    }
     let mut blockchain = Blockchain::new();
 
     // Add diverse test data

@@ -16,6 +16,16 @@ const TEST_BOOTSTRAP_TOKEN: &str = "test-bootstrap-token-for-user-journeys";
 const ADMIN_USERNAME: &str = "adminroot";
 const ADMIN_PASSWORD: &str = "AdminRootPassword123!";
 
+fn should_skip_profiled_ignored_test(env_var: &str, description: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+        _ => {
+            eprintln!("skipping ignored {description}; set {env_var}=1 to run this profile");
+            true
+        }
+    }
+}
+
 /// Test helper to start a test web server
 async fn start_test_server() -> anyhow::Result<(u16, tokio::task::JoinHandle<()>)> {
     use std::net::TcpListener;
@@ -529,6 +539,12 @@ async fn test_administrator_system_management_journey() -> Result<()> {
 #[tokio::test]
 #[ignore = "Browser automation test needs implementation with fantoccini"]
 async fn test_browser_ui_complete_workflow() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_E2E_FEATURE_TESTS",
+        "feature-gated browser E2E tests",
+    ) {
+        return Ok(());
+    }
     // Placeholder test - browser automation needs proper implementation
     // using the fantoccini library which is available in dev-dependencies
     println!("Browser UI test is not yet implemented");

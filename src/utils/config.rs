@@ -71,6 +71,13 @@ pub struct ConsensusConfig {
     /// Consensus protocol type ("poa" or "pbft")
     pub consensus_type: String,
 
+    /// Explicit opt-in for the experimental PBFT implementation.
+    ///
+    /// PBFT is present for research and interoperability experiments, but it is
+    /// not a production consensus backend until peer-message handling, view
+    /// change, persistence, and byzantine-fault evidence are completed.
+    pub allow_experimental_pbft: bool,
+
     /// Whether this node is an authority (can create blocks)
     pub is_authority: bool,
 
@@ -170,6 +177,7 @@ impl Default for ConsensusConfig {
     fn default() -> Self {
         Self {
             consensus_type: "poa".to_string(),
+            allow_experimental_pbft: false,
             is_authority: false,
             authority_key_file: None,
             authority_keys: vec![],
@@ -290,6 +298,12 @@ impl NodeConfig {
         let valid_consensus_types = ["poa", "pbft"];
         if !valid_consensus_types.contains(&self.consensus.consensus_type.as_str()) {
             anyhow::bail!("Invalid consensus type: {}", self.consensus.consensus_type);
+        }
+
+        if self.consensus.consensus_type == "pbft" && !self.consensus.allow_experimental_pbft {
+            anyhow::bail!(
+                "PBFT consensus is experimental and requires consensus.allow_experimental_pbft = true"
+            );
         }
 
         if self.consensus.is_authority && self.consensus.authority_key_file.is_none() {
@@ -535,5 +549,20 @@ format = "pretty"
 
         assert_eq!(loaded.consensus.consensus_type, "poa");
         assert!(loaded.ontology.is_some());
+    }
+
+    #[test]
+    fn test_pbft_requires_explicit_experimental_opt_in() {
+        let mut config = NodeConfig::default();
+        config.consensus.consensus_type = "pbft".to_string();
+
+        let error = config
+            .validate()
+            .expect_err("PBFT should fail production config validation by default")
+            .to_string();
+        assert!(error.contains("PBFT consensus is experimental"));
+
+        config.consensus.allow_experimental_pbft = true;
+        assert!(config.validate().is_ok());
     }
 }

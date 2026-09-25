@@ -3,15 +3,22 @@
 //! This module defines the deployable semantic package artifact that network
 //! participants are expected to share when they join the same traceability network.
 
-use crate::ontology::{OntologyConfig, OntologyError, ValidationMode};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::Path;
 
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+
+use crate::ontology::{OntologyConfig, OntologyError, ValidationMode};
+
+/// First bounded package-selected semantic execution profile.
+pub const SEMANTIC_EXECUTION_PROFILE_V1: &str = "provchain.semantic-execution.v1";
+
+const PACKAGE_HASH_DOMAIN: &[u8] = b"PROVCHAIN_ONTOLOGY_PACKAGE_V2\0";
+
 /// Deployable ontology package manifest shared across a permissioned network.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct OntologyPackageManifest {
     /// Stable package identifier shared across the network.
     pub package_id: String,
@@ -29,6 +36,8 @@ pub struct OntologyPackageManifest {
     pub mappings: Vec<String>,
     /// Validation mode enforced by the package.
     pub validation_mode: String,
+    /// Exact bounded semantic execution profile selected by this package.
+    pub semantic_execution_profile_id: String,
     /// Optional expected package hash. If present, validation checks it.
     pub package_hash: Option<String>,
 }
@@ -44,6 +53,7 @@ impl Default for OntologyPackageManifest {
             domain_shacl_path: "src/semantic/shapes/core.shacl.ttl".to_string(),
             mappings: vec![],
             validation_mode: "strict".to_string(),
+            semantic_execution_profile_id: SEMANTIC_EXECUTION_PROFILE_V1.to_string(),
             package_hash: None,
         }
     }
@@ -67,20 +77,7 @@ impl OntologyPackageManifest {
 
     /// Validate manifest structure and referenced files.
     pub fn validate(&self) -> anyhow::Result<()> {
-        if self.package_id.trim().is_empty() {
-            anyhow::bail!("Ontology package ID cannot be empty");
-        }
-
-        if self.package_version.trim().is_empty() {
-            anyhow::bail!("Ontology package version cannot be empty");
-        }
-
-        if self.validation_mode != "strict" {
-            anyhow::bail!(
-                "Unsupported ontology package validation mode: {}",
-                self.validation_mode
-            );
-        }
+        self.validate_metadata()?;
 
         for path in self.required_paths() {
             if !Path::new(path).exists() {
@@ -102,17 +99,103 @@ impl OntologyPackageManifest {
         Ok(())
     }
 
-    /// Compute a deterministic hash from manifest metadata and referenced file contents.
-    pub fn compute_package_hash(&self) -> anyhow::Result<String> {
-        let mut hasher = Sha256::new();
-        hasher.update(self.package_id.as_bytes());
-        hasher.update(self.package_version.as_bytes());
-        hasher.update(self.validation_mode.as_bytes());
+    /// Validate verdict-affecting metadata without reading package assets.
+    pub(crate) fn validate_metadata(&self) -> anyhow::Result<()> {
+        if self.package_id.trim().is_empty() {
+            anyhow::bail!("Ontology package ID cannot be empty");
+        }
 
-        for path in self.required_paths() {
-            hasher.update(path.as_bytes());
-            let content = fs::read(path)?;
-            hasher.update(content);
+        if self.package_version.trim().is_empty() {
+            anyhow::bail!("Ontology package version cannot be empty");
+        }
+
+        if self.validation_mode != "strict" {
+            anyhow::bail!(
+                "Unsupported ontology package validation mode: {}",
+                self.validation_mode
+            );
+        }
+
+        if self.semantic_execution_profile_id != SEMANTIC_EXECUTION_PROFILE_V1 {
+            anyhow::bail!(
+                "Unsupported semantic execution profile: {}",
+                self.semantic_execution_profile_id
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Compute a path-independent digest from canonical metadata, logical roles,
+    /// and the exact declared asset bytes.
+    pub fn compute_package_hash(&self) -> anyhow::Result<String> {
+        let fixed_assets = [
+            fs::read(&self.core_ontology_path)?,
+            fs::read(&self.domain_ontology_path)?,
+            fs::read(&self.core_shacl_path)?,
+            fs::read(&self.domain_shacl_path)?,
+        ];
+        let mapping_assets = self
+            .mappings
+            .iter()
+            .map(fs::read)
+            .collect::<Result<Vec<_>, _>>()?;
+        self.compute_package_hash_from_assets(
+            [
+                &fixed_assets[0],
+                &fixed_assets[1],
+                &fixed_assets[2],
+                &fixed_assets[3],
+            ],
+            &mapping_assets,
+        )
+    }
+
+    /// Compute the digest from one authenticated in-memory asset snapshot.
+    pub(crate) fn compute_package_hash_from_assets(
+        &self,
+        fixed_assets: [&[u8]; 4],
+        mapping_assets: &[Vec<u8>],
+    ) -> anyhow::Result<String> {
+        if mapping_assets.len() != self.mappings.len() {
+            anyhow::bail!(
+                "Ontology package mapping asset count mismatch: expected {}, received {}",
+                self.mappings.len(),
+                mapping_assets.len()
+            );
+        }
+
+        let mut hasher = Sha256::new();
+        hasher.update(PACKAGE_HASH_DOMAIN);
+        hash_component(&mut hasher, b"package-id", self.package_id.as_bytes());
+        hash_component(
+            &mut hasher,
+            b"package-version",
+            self.package_version.as_bytes(),
+        );
+        hash_component(
+            &mut hasher,
+            b"validation-mode",
+            self.validation_mode.as_bytes(),
+        );
+        hash_component(
+            &mut hasher,
+            b"semantic-execution-profile",
+            self.semantic_execution_profile_id.as_bytes(),
+        );
+
+        let fixed_roles = [
+            b"core-ontology".as_slice(),
+            b"domain-ontology".as_slice(),
+            b"core-shapes".as_slice(),
+            b"domain-shapes".as_slice(),
+        ];
+        for (role, bytes) in fixed_roles.into_iter().zip(fixed_assets) {
+            hash_component(&mut hasher, role, bytes);
+        }
+        for (index, bytes) in mapping_assets.iter().enumerate() {
+            let role = format!("mapping-{index}");
+            hash_component(&mut hasher, role.as_bytes(), bytes);
         }
 
         Ok(format!("{:x}", hasher.finalize()))
@@ -158,6 +241,13 @@ impl OntologyPackageManifest {
         }
         paths
     }
+}
+
+fn hash_component(hasher: &mut Sha256, role: &[u8], bytes: &[u8]) {
+    hasher.update((role.len() as u64).to_be_bytes());
+    hasher.update(role);
+    hasher.update((bytes.len() as u64).to_be_bytes());
+    hasher.update(bytes);
 }
 
 #[cfg(test)]

@@ -16,6 +16,16 @@ const TEST_BOOTSTRAP_TOKEN: &str = "test-bootstrap-token-for-web-interface";
 const ADMIN_USERNAME: &str = "adminroot";
 const ADMIN_PASSWORD: &str = "AdminRootPassword123!";
 
+fn should_skip_profiled_ignored_test(env_var: &str, description: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+        _ => {
+            eprintln!("skipping ignored {description}; set {env_var}=1 to run this profile");
+            true
+        }
+    }
+}
+
 /// Test helper to start a test web server with sample data
 async fn start_test_server_with_data() -> Result<(u16, tokio::task::JoinHandle<()>)> {
     use std::net::TcpListener;
@@ -173,6 +183,12 @@ async fn login_via_ui(client: &fantoccini::Client, username: &str, password: &st
 #[tokio::test]
 #[ignore]
 async fn test_dashboard_functionality() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_WEBDRIVER_E2E",
+        "WebDriver browser E2E tests",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = start_test_server_with_data().await?;
     let base_url = format!("http://localhost:{}", port);
 
@@ -221,6 +237,12 @@ async fn test_dashboard_functionality() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_block_explorer_functionality() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_WEBDRIVER_E2E",
+        "WebDriver browser E2E tests",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = start_test_server_with_data().await?;
     let base_url = format!("http://localhost:{}", port);
 
@@ -277,6 +299,12 @@ async fn test_block_explorer_functionality() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_product_traceability_interface() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_WEBDRIVER_E2E",
+        "WebDriver browser E2E tests",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = start_test_server_with_data().await?;
     let base_url = format!("http://localhost:{}", port);
 
@@ -359,6 +387,12 @@ async fn test_product_traceability_interface() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_sparql_query_interface() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_WEBDRIVER_E2E",
+        "WebDriver browser E2E tests",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = start_test_server_with_data().await?;
     let base_url = format!("http://localhost:{}", port);
 
@@ -460,6 +494,12 @@ async fn test_sparql_query_interface() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_transaction_management_interface() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_WEBDRIVER_E2E",
+        "WebDriver browser E2E tests",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = start_test_server_with_data().await?;
     let base_url = format!("http://localhost:{}", port);
 
@@ -549,6 +589,12 @@ async fn test_transaction_management_interface() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_authentication_flow() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_WEBDRIVER_E2E",
+        "WebDriver browser E2E tests",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = start_test_server_with_data().await?;
     let base_url = format!("http://localhost:{}", port);
 
@@ -658,6 +704,12 @@ async fn test_authentication_flow() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_navigation_and_routing() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_WEBDRIVER_E2E",
+        "WebDriver browser E2E tests",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = start_test_server_with_data().await?;
     let base_url = format!("http://localhost:{}", port);
 
@@ -732,6 +784,12 @@ async fn test_navigation_and_routing() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_responsive_design() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_WEBDRIVER_E2E",
+        "WebDriver browser E2E tests",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = start_test_server_with_data().await?;
     let base_url = format!("http://localhost:{}", port);
 
@@ -782,6 +840,12 @@ async fn test_responsive_design() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_error_handling_ui() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_WEBDRIVER_E2E",
+        "WebDriver browser E2E tests",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = start_test_server_with_data().await?;
     let base_url = format!("http://localhost:{}", port);
 
@@ -877,6 +941,12 @@ async fn test_error_handling_ui() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_real_time_updates() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_WEBDRIVER_E2E",
+        "WebDriver browser E2E tests",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = start_test_server_with_data().await?;
     let base_url = format!("http://localhost:{}", port);
 

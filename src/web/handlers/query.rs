@@ -16,7 +16,139 @@ use axum::{
 use chrono::Utc;
 use oxigraph::model::{NamedNode, Subject, Term};
 use std::collections::HashSet;
-use std::time::Instant;
+use std::time::{Duration, Instant};
+
+const SAVED_QUERIES_NOT_PERSISTENT: &str =
+    "Saved SPARQL queries are not persistent in production mode.";
+
+fn production_not_found(message: impl Into<String>) -> (StatusCode, Json<ApiError>) {
+    (
+        StatusCode::NOT_FOUND,
+        Json(ApiError {
+            error: "not_found".to_string(),
+            message: message.into(),
+            timestamp: Utc::now(),
+        }),
+    )
+}
+
+fn production_not_implemented(message: impl Into<String>) -> (StatusCode, Json<ApiError>) {
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        Json(ApiError {
+            error: "not_implemented".to_string(),
+            message: message.into(),
+            timestamp: Utc::now(),
+        }),
+    )
+}
+
+fn saved_queries_not_persistent() -> (StatusCode, Json<ApiError>) {
+    production_not_implemented(SAVED_QUERIES_NOT_PERSISTENT)
+}
+
+fn escape_sparql_string(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+fn invalid_product_type(message: impl Into<String>) -> (StatusCode, Json<ApiError>) {
+    (
+        StatusCode::BAD_REQUEST,
+        Json(ApiError {
+            error: "invalid_product_type".to_string(),
+            message: message.into(),
+            timestamp: Utc::now(),
+        }),
+    )
+}
+
+fn canonical_product_type_iri(product_type: &str) -> Result<(&'static str, &'static str), String> {
+    let normalized = product_type
+        .chars()
+        .filter(|character| *character != '_' && *character != '-')
+        .flat_map(char::to_lowercase)
+        .collect::<String>();
+
+    match normalized.as_str() {
+        "product" => Ok(("http://provchain.org/core#Product", "Product")),
+        "batch" => Ok(("http://provchain.org/core#Batch", "Batch")),
+        "component" => Ok(("http://provchain.org/core#Component", "Component")),
+        "rawmaterial" => Ok(("http://provchain.org/core#RawMaterial", "RawMaterial")),
+        "digitalasset" => Ok((
+            "http://provchain.org/core#DigitalAsset",
+            "DigitalAsset",
+        )),
+        _ => Err(format!(
+            "Unsupported product type '{}'. Supported types are Product, Batch, Component, RawMaterial, and DigitalAsset.",
+            product_type
+        )),
+    }
+}
+
+fn quality_score_value(allows_demo_fallbacks: bool) -> serde_json::Value {
+    if allows_demo_fallbacks {
+        serde_json::json!(85.0)
+    } else {
+        serde_json::Value::Null
+    }
+}
+
+fn compliance_status_value(allows_demo_fallbacks: bool) -> serde_json::Value {
+    if allows_demo_fallbacks {
+        serde_json::json!("compliant")
+    } else {
+        serde_json::Value::Null
+    }
+}
+
+fn synthetic_metric_source(allows_demo_fallbacks: bool) -> &'static str {
+    if allows_demo_fallbacks {
+        "synthetic_demo"
+    } else {
+        "unavailable"
+    }
+}
+
+fn validate_resource_iri(resource_id: &str) -> Result<NamedNode, (StatusCode, Json<ApiError>)> {
+    validate_sparql_identifier(resource_id).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "invalid_product_id".to_string(),
+                message: format!("Invalid product ID: {}", e),
+                timestamp: Utc::now(),
+            }),
+        )
+    })
+}
+
+fn item_exists_query(item_iri: &str) -> String {
+    format!(
+        r#"
+        ASK WHERE {{
+            GRAPH ?g {{
+                <{item_iri}> ?p ?o .
+            }}
+        }}
+        "#
+    )
+}
+
+fn timestamp_duration_days(timestamps: &[String]) -> Option<f64> {
+    let mut parsed = timestamps
+        .iter()
+        .filter_map(|timestamp| chrono::DateTime::parse_from_rfc3339(timestamp).ok())
+        .collect::<Vec<_>>();
+
+    if parsed.len() < 2 {
+        return None;
+    }
+
+    parsed.sort();
+    let first = parsed.first()?;
+    let last = parsed.last()?;
+    Some(last.signed_duration_since(*first).num_seconds().max(0) as f64 / 86_400.0)
+}
 
 /// Get blockchain status
 pub async fn get_blockchain_status(
@@ -54,8 +186,10 @@ pub async fn get_blockchain_status(
             let avg = total_duration as f64 / (sample_size - 1) as f64;
             let current_tps = (sample_size - 1) as f64 / total_duration as f64;
             (avg, current_tps)
+        } else if app_state.runtime_mode.allows_demo_fallbacks() {
+            (10.0, 0.1)
         } else {
-            (10.0, 0.1) // Default fallbacks
+            (0.0, 0.0)
         }
     } else {
         (0.0, 0.0)
@@ -71,8 +205,11 @@ pub async fn get_blockchain_status(
         0
     };
 
-    // Calculate a synthetic hash rate as blocks_per_second * complexity_factor
-    let network_hash_rate = (tps * 1000000.0) as u64;
+    let network_hash_rate = if app_state.runtime_mode.allows_demo_fallbacks() {
+        serde_json::Value::from((tps * 1000000.0) as u64)
+    } else {
+        serde_json::Value::Null
+    };
 
     let status = serde_json::json!({
         "total_blocks": total_blocks,
@@ -84,6 +221,7 @@ pub async fn get_blockchain_status(
         "avg_block_time": avg_block_time,
         "transactions_per_second": tps,
         "network_hash_rate": network_hash_rate,
+        "network_hash_rate_source": if app_state.runtime_mode.allows_demo_fallbacks() { "synthetic_demo" } else { "unavailable" },
         "uptime": uptime,
         "peer_count": app_state.network_peers.load(std::sync::atomic::Ordering::Relaxed),
         "sync_status": "synced",
@@ -301,11 +439,24 @@ pub async fn validate_sparql_endpoint(body: String) -> Json<serde_json::Value> {
 }
 
 /// Saved queries endpoints (non-persistent demo)
-pub async fn get_saved_sparql_queries() -> Json<Vec<serde_json::Value>> {
-    Json(Vec::new())
+pub async fn get_saved_sparql_queries(
+    State(app_state): State<AppState>,
+) -> Result<Json<Vec<serde_json::Value>>, (StatusCode, Json<ApiError>)> {
+    if !app_state.runtime_mode.allows_demo_fallbacks() {
+        return Err(saved_queries_not_persistent());
+    }
+
+    Ok(Json(Vec::new()))
 }
 
-pub async fn save_sparql_query(Json(query): Json<serde_json::Value>) -> Json<serde_json::Value> {
+pub async fn save_sparql_query(
+    State(app_state): State<AppState>,
+    Json(query): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
+    if !app_state.runtime_mode.allows_demo_fallbacks() {
+        return Err(saved_queries_not_persistent());
+    }
+
     // Echo back with an id if missing
     let mut q = query.clone();
     if q.get("id").is_none() {
@@ -316,18 +467,32 @@ pub async fn save_sparql_query(Json(query): Json<serde_json::Value>) -> Json<ser
             );
         }
     }
-    Json(q)
+    Ok(Json(q))
 }
 
-pub async fn delete_sparql_query(_id: Path<String>) -> StatusCode {
-    StatusCode::NO_CONTENT
+pub async fn delete_sparql_query(
+    State(app_state): State<AppState>,
+    _id: Path<String>,
+) -> Result<StatusCode, (StatusCode, Json<ApiError>)> {
+    if !app_state.runtime_mode.allows_demo_fallbacks() {
+        return Err(saved_queries_not_persistent());
+    }
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
-pub async fn toggle_favorite_sparql_query(Path(id): Path<String>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({
+pub async fn toggle_favorite_sparql_query(
+    State(app_state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
+    if !app_state.runtime_mode.allows_demo_fallbacks() {
+        return Err(saved_queries_not_persistent());
+    }
+
+    Ok(Json(serde_json::json!({
         "id": id,
         "toggled": true
-    }))
+    })))
 }
 
 /// Get all products with filtering and pagination
@@ -363,25 +528,17 @@ pub async fn get_products(
 
     // Add filters if provided
     if let Some(product_type) = &params.product_type {
-        // Validate product_type to prevent SPARQL injection
-        match validate_sparql_local_name(product_type) {
-            Ok(()) => {
-                sparql_query = sparql_query.replace(
-                    "?product a ?type .",
-                    &format!("?product a <http://provchain.org/trace#{}>", product_type),
-                );
-            }
-            Err(e) => {
-                return Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        error: "invalid_product_type".to_string(),
-                        message: format!("Invalid product type: {}", e),
-                        timestamp: Utc::now(),
-                    }),
-                ));
-            }
-        }
+        validate_sparql_local_name(product_type)
+            .map_err(|e| invalid_product_type(format!("Invalid product type: {}", e)))?;
+        let (type_iri, _) =
+            canonical_product_type_iri(product_type).map_err(invalid_product_type)?;
+        sparql_query = sparql_query.replace(
+            "?product a ?type .",
+            &format!(
+                "?product a <{}> .\n                BIND(<{}> AS ?type)",
+                type_iri, type_iri
+            ),
+        );
     }
 
     // Execute SPARQL query
@@ -414,6 +571,7 @@ pub async fn get_products(
                 })
                 .unwrap_or_else(|| format!("product_{}", products.len()));
 
+            let allows_demo_fallbacks = app_state.runtime_mode.allows_demo_fallbacks();
             let product = serde_json::json!({
                 "id": product_id,
                 "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("Unknown Product".to_string()),
@@ -423,8 +581,10 @@ pub async fn get_products(
                 "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
                 "timestamp": sol.get("timestamp").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(Utc::now().to_rfc3339()),
                 "trace_steps": 0,
-                "quality_score": 85.0,
-                "compliance_status": "compliant"
+                "quality_score": quality_score_value(allows_demo_fallbacks),
+                "quality_score_source": synthetic_metric_source(allows_demo_fallbacks),
+                "compliance_status": compliance_status_value(allows_demo_fallbacks),
+                "compliance_status_source": synthetic_metric_source(allows_demo_fallbacks)
             });
 
             products.push(product);
@@ -535,6 +695,7 @@ pub async fn get_product_by_id(
         };
 
         let mut product_found = false;
+        let allows_demo_fallbacks = app_state.runtime_mode.allows_demo_fallbacks();
         let mut product = serde_json::json!({
             "id": product_id,
             "name": "Unknown Product",
@@ -545,8 +706,10 @@ pub async fn get_product_by_id(
             "timestamp": Utc::now().to_rfc3339(),
             "description": "",
             "trace_steps": 0,
-            "quality_score": 85.0,
-            "compliance_status": "compliant"
+            "quality_score": quality_score_value(allows_demo_fallbacks),
+            "quality_score_source": synthetic_metric_source(allows_demo_fallbacks),
+            "compliance_status": compliance_status_value(allows_demo_fallbacks),
+            "compliance_status_source": synthetic_metric_source(allows_demo_fallbacks)
         });
 
         let mut encrypted_payload_json = None;
@@ -752,8 +915,14 @@ pub async fn get_product_trace_path(
         }
     }
 
-    // If no trace steps found, create a default one
     if trace_steps.is_empty() {
+        if !app_state.runtime_mode.allows_demo_fallbacks() {
+            return Err(production_not_found(format!(
+                "No trace steps found for product '{}'.",
+                product_id
+            )));
+        }
+
         trace_steps.push(serde_json::json!({
             "id": format!("{}_origin", product_id),
             "timestamp": Utc::now().to_rfc3339(),
@@ -761,7 +930,8 @@ pub async fn get_product_trace_path(
             "participant": "Original Producer",
             "action": "Created",
             "status": "active",
-            "metadata": {}
+            "metadata": {},
+            "source": "demo_fallback"
         }));
     }
 
@@ -845,15 +1015,22 @@ pub async fn get_product_provenance(
         }
     }
 
-    // If no provenance found, create a default chain
     if provenance_chain.is_empty() {
+        if !app_state.runtime_mode.allows_demo_fallbacks() {
+            return Err(production_not_found(format!(
+                "No provenance found for product '{}'.",
+                product_id
+            )));
+        }
+
         provenance_chain.push(serde_json::json!({
             "entity": product_id,
             "activity": "creation",
             "agent": "original_producer",
             "timestamp": Utc::now().to_rfc3339(),
             "location": "origin",
-            "type": "provenance_step"
+            "type": "provenance_step",
+            "source": "demo_fallback"
         }));
     }
 
@@ -1021,21 +1198,50 @@ pub async fn get_product_analytics(
     Path(product_id): Path<String>,
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
+    let validated_product_id = validate_resource_iri(&product_id)?;
+    let product_id_str = validated_product_id.as_str();
+    let allows_demo_fallbacks = app_state.runtime_mode.allows_demo_fallbacks();
     let blockchain = app_state.blockchain.read().await;
 
-    // Build SPARQL query to get analytics data
+    let item_exists = match blockchain
+        .rdf_store
+        .store
+        .query(&item_exists_query(product_id_str))
+    {
+        Ok(oxigraph::sparql::QueryResults::Boolean(exists)) => exists,
+        Ok(_) => false,
+        Err(_) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    error: "query_execution_failed".to_string(),
+                    message: "Failed to verify product existence".to_string(),
+                    timestamp: Utc::now(),
+                }),
+            ));
+        }
+    };
+
+    if !item_exists && !allows_demo_fallbacks {
+        return Err(production_not_found(format!(
+            "No product found for '{}'.",
+            product_id
+        )));
+    }
+
+    // Build SPARQL query to get analytics data using the validated product IRI.
     let sparql_query = format!(
         r#"
         SELECT ?step ?participant ?location ?timestamp WHERE {{
             GRAPH ?g {{
-                ?step <http://provchain.org/trace#product> <{}> .
+                ?step <http://provchain.org/trace#product> <{product_id}> .
                 OPTIONAL {{ ?step <http://provchain.org/trace#participant> ?participant }}
                 OPTIONAL {{ ?step <http://provchain.org/trace#location> ?location }}
                 OPTIONAL {{ ?step <http://provchain.org/trace#timestamp> ?timestamp }}
             }}
         }}
         "#,
-        product_id
+        product_id = product_id_str
     );
 
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
@@ -1070,28 +1276,43 @@ pub async fn get_product_analytics(
             }
 
             if let Some(timestamp) = sol.get("timestamp") {
-                timestamps.push(timestamp.to_string().trim_matches('"').to_string());
+                let timestamp = match timestamp {
+                    Term::Literal(literal) => literal.value().to_string(),
+                    _ => timestamp.to_string().trim_matches('"').to_string(),
+                };
+                timestamps.push(timestamp);
             }
         }
     }
 
-    // Calculate duration
-    timestamps.sort();
-    let duration_days = if timestamps.len() >= 2 {
-        // Simple duration calculation (in practice, you'd parse the timestamps properly)
-        7.0 // Placeholder
+    if total_steps == 0 && !allows_demo_fallbacks {
+        return Err(production_not_found(format!(
+            "No analytics trace data found for product '{}'.",
+            product_id
+        )));
+    }
+
+    let duration_days = timestamp_duration_days(&timestamps).map(serde_json::Value::from);
+    let duration_days = duration_days.unwrap_or(serde_json::Value::Null);
+    let derived_source = if duration_days.is_null() {
+        "unavailable"
     } else {
-        0.0
+        "derived"
     };
 
     let analytics = serde_json::json!({
+        "product_id": product_id,
         "total_steps": total_steps,
         "total_participants": participants.len(),
         "total_locations": locations.len(),
         "duration_days": duration_days,
-        "carbon_footprint": 2.5, // Placeholder
-        "quality_scores": [85.0, 90.0, 88.0, 92.0], // Placeholder
-        "compliance_status": "compliant"
+        "duration_days_source": derived_source,
+        "carbon_footprint": if allows_demo_fallbacks { serde_json::json!(2.5) } else { serde_json::Value::Null },
+        "carbon_footprint_source": synthetic_metric_source(allows_demo_fallbacks),
+        "quality_scores": if allows_demo_fallbacks { serde_json::json!([85.0, 90.0, 88.0, 92.0]) } else { serde_json::Value::Null },
+        "quality_scores_source": synthetic_metric_source(allows_demo_fallbacks),
+        "compliance_status": compliance_status_value(allows_demo_fallbacks),
+        "compliance_status_source": synthetic_metric_source(allows_demo_fallbacks)
     });
 
     Ok(Json(analytics))
@@ -1102,21 +1323,10 @@ pub async fn get_products_by_type(
     Path(product_type): Path<String>,
     State(app_state): State<AppState>,
 ) -> Result<Json<Vec<serde_json::Value>>, (StatusCode, Json<ApiError>)> {
-    // Validate product_type to prevent SPARQL injection
-    // product_type is used as a local name (after #), so we validate accordingly
-    let validated_type = match validate_sparql_local_name(&product_type) {
-        Ok(()) => product_type.clone(),
-        Err(e) => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ApiError {
-                    error: "invalid_product_type".to_string(),
-                    message: format!("Invalid product type: {}", e),
-                    timestamp: Utc::now(),
-                }),
-            ));
-        }
-    };
+    validate_sparql_local_name(&product_type)
+        .map_err(|e| invalid_product_type(format!("Invalid product type: {}", e)))?;
+    let (type_iri, canonical_type) =
+        canonical_product_type_iri(&product_type).map_err(invalid_product_type)?;
 
     let blockchain = app_state.blockchain.read().await;
 
@@ -1125,7 +1335,7 @@ pub async fn get_products_by_type(
         r#"
         SELECT DISTINCT ?product ?name ?status ?participant ?location ?timestamp WHERE {{
             GRAPH ?g {{
-                ?product a <http://provchain.org/trace#{typ}> .
+                ?product a <{typ}> .
                 OPTIONAL {{ ?product <http://provchain.org/trace#name> ?name }}
                 OPTIONAL {{ ?product <http://provchain.org/trace#status> ?status }}
                 OPTIONAL {{ ?product <http://provchain.org/trace#participant> ?participant }}
@@ -1134,7 +1344,7 @@ pub async fn get_products_by_type(
             }}
         }}
         "#,
-        typ = validated_type
+        typ = type_iri
     );
 
     let query_results = match blockchain.rdf_store.store.query(&sparql_query) {
@@ -1166,8 +1376,8 @@ pub async fn get_products_by_type(
 
             items.push(serde_json::json!({
                 "id": product_id,
-                "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(product_type.clone()),
-                "type": product_type,
+                "name": sol.get("name").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or(canonical_type.to_string()),
+                "type": canonical_type,
                 "status": sol.get("status").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
                 "participant": sol.get("participant").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
                 "location": sol.get("location").map(|t| t.to_string().trim_matches('"').to_string()).unwrap_or("unknown".to_string()),
@@ -1370,37 +1580,67 @@ pub async fn get_related_items(
 
 /// Validate item integrity and authenticity
 pub async fn validate_item(
-    Path(_item_id): Path<String>,
+    Path(item_id): Path<String>,
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
+    let validated_item_id = validate_resource_iri(&item_id)?;
+    let item_id_str = validated_item_id.as_str();
     let blockchain = app_state.blockchain.read().await;
+
+    let item_exists = match blockchain
+        .rdf_store
+        .store
+        .query(&item_exists_query(item_id_str))
+    {
+        Ok(oxigraph::sparql::QueryResults::Boolean(exists)) => exists,
+        Ok(_) => false,
+        Err(_) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    error: "query_execution_failed".to_string(),
+                    message: "Failed to verify item existence".to_string(),
+                    timestamp: Utc::now(),
+                }),
+            ));
+        }
+    };
+
+    if !item_exists && !app_state.runtime_mode.allows_demo_fallbacks() {
+        return Err(production_not_found(format!(
+            "No item found for '{}'.",
+            item_id
+        )));
+    }
+
+    if !app_state.runtime_mode.allows_demo_fallbacks() {
+        return Err(production_not_implemented(
+            "Item-specific validation is not implemented in production mode; use /api/blockchain/validate for chain-level validation.",
+        ));
+    }
+
     let start_time = Instant::now();
 
-    // Perform comprehensive validation
+    // Demo mode preserves the legacy chain-level calculation, but labels it
+    // explicitly so callers do not confuse it with item-specific validation.
     let chain_valid = blockchain.is_valid();
 
-    // Signature validation: check block signatures
     let signature_valid = if !blockchain.chain.is_empty() {
-        // Check if blocks have valid signatures
-        blockchain.chain.iter().all(|block| {
-            // Verify signature exists and is properly formatted
-            !block.signature.is_empty() && block.signature.len() > 32
-        })
+        blockchain
+            .chain
+            .iter()
+            .all(|block| !block.signature.is_empty() && block.signature.len() > 32)
     } else {
         false
     };
 
     let chain_intact = chain_valid;
 
-    // Data consistency checks
     let data_consistent = if !blockchain.chain.is_empty() {
-        // Check data consistency across blocks
         let all_blocks_valid = blockchain
             .chain
             .iter()
             .all(|block| !block.data.is_empty() && block.data.len() < 10_000_000);
-
-        // Verify state roots match (if available)
         let state_roots_valid = blockchain
             .chain
             .iter()
@@ -1411,20 +1651,16 @@ pub async fn validate_item(
         false
     };
 
-    // Timestamp validation: check for reasonable timestamps
     let timestamp_valid = if !blockchain.chain.is_empty() {
         let now = Utc::now().timestamp();
         let all_timestamps_valid = blockchain.chain.iter().all(|block| {
-            // Parse timestamp string to DateTime
             let block_ts = match chrono::DateTime::parse_from_rfc3339(&block.timestamp) {
                 Ok(dt) => dt.timestamp(),
                 Err(_) => return false,
             };
-            // Timestamp should be reasonable: not in far future, not too old
             block_ts <= now + 300 && block_ts >= now - 86400 * 365
         });
 
-        // Check chronological ordering
         let timestamps_ordered = blockchain.chain.windows(2).all(|w| {
             let ts1 = chrono::DateTime::parse_from_rfc3339(&w[0].timestamp).ok();
             let ts2 = chrono::DateTime::parse_from_rfc3339(&w[1].timestamp).ok();
@@ -1443,9 +1679,14 @@ pub async fn validate_item(
     let validation_time_ms = start_time.elapsed().as_millis() as u64;
 
     let response = serde_json::json!({
+        "requested_item_id": item_id,
+        "validation_scope": "chain_demo_fallback",
+        "source": "demo_fallback",
+        "item_specific_validation": "not_implemented",
         "is_authentic": chain_valid && signature_valid && data_consistent,
         "integrity_score": integrity_score,
         "validation_details": {
+            "item_exists": item_exists,
             "signature_valid": signature_valid,
             "chain_intact": chain_intact,
             "data_consistent": data_consistent,
@@ -1749,6 +1990,71 @@ pub async fn get_analytics(
     Ok(Json(response))
 }
 
+fn materialize_sparql_results(
+    query_results: oxigraph::sparql::QueryResults,
+    max_result_set_size: usize,
+) -> Result<serde_json::Value, String> {
+    match query_results {
+        oxigraph::sparql::QueryResults::Solutions(solutions) => {
+            let head_vars: Vec<String> = solutions
+                .variables()
+                .iter()
+                .map(|v| v.as_str().to_string())
+                .collect();
+
+            let mut bindings = Vec::new();
+            for (result_count, solution) in solutions.enumerate() {
+                if result_count >= max_result_set_size {
+                    eprintln!(
+                        "Warning: SPARQL query exceeded maximum result set size of {}",
+                        max_result_set_size
+                    );
+                    break;
+                }
+
+                let solution = solution.map_err(|e| e.to_string())?;
+                let mut binding = serde_json::Map::new();
+                for (var, term) in solution.iter() {
+                    let value_obj = match term {
+                        Term::NamedNode(nn) => {
+                            serde_json::json!({ "type": "uri", "value": nn.as_str() })
+                        }
+                        Term::BlankNode(bn) => {
+                            serde_json::json!({ "type": "bnode", "value": bn.as_str() })
+                        }
+                        Term::Literal(lit) => {
+                            if let Some(lang) = lit.language() {
+                                serde_json::json!({ "type": "literal", "value": lit.value(), "xml:lang": lang })
+                            } else {
+                                let dt = lit.datatype();
+                                serde_json::json!({ "type": "literal", "value": lit.value(), "datatype": dt.as_str() })
+                            }
+                        }
+                        Term::Triple(t) => {
+                            serde_json::json!({ "type": "triple", "value": t.to_string() })
+                        }
+                    };
+                    binding.insert(var.as_str().to_string(), value_obj);
+                }
+                bindings.push(serde_json::Value::Object(binding));
+            }
+
+            Ok(serde_json::json!({
+                "head": { "vars": head_vars },
+                "results": { "bindings": bindings }
+            }))
+        }
+        oxigraph::sparql::QueryResults::Boolean(result) => Ok(serde_json::json!({
+            "head": {},
+            "boolean": result
+        })),
+        oxigraph::sparql::QueryResults::Graph(_) => Ok(serde_json::json!({
+            "head": {},
+            "results": "Graph results not yet supported"
+        })),
+    }
+}
+
 /// Execute SPARQL query
 pub async fn execute_sparql_query(
     State(app_state): State<AppState>,
@@ -1786,13 +2092,33 @@ pub async fn execute_sparql_query(
         ));
     }
 
-    let blockchain = app_state.blockchain.read().await;
+    let store = {
+        let blockchain = app_state.blockchain.read().await;
+        blockchain.rdf_store.store.clone()
+    };
 
-    // Execute query (Oxigraph has built-in query optimization and timeout support)
+    // Execute query off the async runtime and enforce a wall-clock timeout around
+    // query execution plus result materialization. Dropping the timed-out task
+    // does not forcibly cancel the underlying Oxigraph work, but it prevents the
+    // request from holding the handler indefinitely.
     let start_time = Instant::now();
-    let query_results = match blockchain.rdf_store.store.query(&request.query) {
-        Ok(results) => results,
-        Err(_) => {
+    let query = request.query.clone();
+    let query_task = tokio::task::spawn_blocking(move || {
+        let query_results = store
+            .query(&query)
+            .map_err(|e| format!("Failed to execute SPARQL query: {}", e))?;
+
+        materialize_sparql_results(query_results, MAX_RESULT_SET_SIZE)
+    });
+
+    let results_json = match tokio::time::timeout(
+        Duration::from_millis(MAX_QUERY_EXECUTION_TIME_MS),
+        query_task,
+    )
+    .await
+    {
+        Ok(Ok(Ok(results_json))) => results_json,
+        Ok(Ok(Err(_))) => {
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(ApiError {
@@ -1802,100 +2128,32 @@ pub async fn execute_sparql_query(
                 }),
             ));
         }
+        Ok(Err(e)) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError {
+                    error: "query_task_failed".to_string(),
+                    message: format!("SPARQL query task failed: {}", e),
+                    timestamp: Utc::now(),
+                }),
+            ));
+        }
+        Err(_) => {
+            return Err((
+                StatusCode::REQUEST_TIMEOUT,
+                Json(ApiError {
+                    error: "query_timeout".to_string(),
+                    message: format!(
+                        "SPARQL query exceeded maximum execution time of {}ms",
+                        MAX_QUERY_EXECUTION_TIME_MS
+                    ),
+                    timestamp: Utc::now(),
+                }),
+            ));
+        }
     };
 
     let execution_time = start_time.elapsed().as_millis() as u64;
-
-    // Check if query took too long (post-execution check)
-    if execution_time > MAX_QUERY_EXECUTION_TIME_MS {
-        return Err((
-            StatusCode::REQUEST_TIMEOUT,
-            Json(ApiError {
-                error: "query_timeout".to_string(),
-                message: format!(
-                    "SPARQL query exceeded maximum execution time of {}ms (actual: {}ms)",
-                    MAX_QUERY_EXECUTION_TIME_MS, execution_time
-                ),
-                timestamp: Utc::now(),
-            }),
-        ));
-    }
-
-    // Convert QueryResults to JSON
-    let results_json = match query_results {
-        oxigraph::sparql::QueryResults::Solutions(solutions) => {
-            // Populate head.vars from the projected variables provided by Oxigraph
-            let head_vars: Vec<String> = solutions
-                .variables()
-                .iter()
-                .map(|v| v.as_str().to_string())
-                .collect();
-
-            let mut bindings = Vec::new();
-            let mut result_count = 0usize;
-            for solution in solutions {
-                // Enforce result set size limit to prevent memory exhaustion
-                if result_count >= MAX_RESULT_SET_SIZE {
-                    eprintln!(
-                        "Warning: SPARQL query exceeded maximum result set size of {}",
-                        MAX_RESULT_SET_SIZE
-                    );
-                    break;
-                }
-                match solution {
-                    Ok(sol) => {
-                        let mut binding = serde_json::Map::new();
-                        for (var, term) in sol.iter() {
-                            // Serialize terms per W3C SPARQL Results JSON format
-                            let value_obj = match term {
-                                Term::NamedNode(nn) => {
-                                    serde_json::json!({ "type": "uri", "value": nn.as_str() })
-                                }
-                                Term::BlankNode(bn) => {
-                                    serde_json::json!({ "type": "bnode", "value": bn.as_str() })
-                                }
-                                Term::Literal(lit) => {
-                                    if let Some(lang) = lit.language() {
-                                        serde_json::json!({ "type": "literal", "value": lit.value(), "xml:lang": lang })
-                                    } else {
-                                        let dt = lit.datatype();
-                                        serde_json::json!({ "type": "literal", "value": lit.value(), "datatype": dt.as_str() })
-                                    }
-                                }
-                                Term::Triple(t) => {
-                                    // RDF-star triple term; serialize as string fallback
-                                    serde_json::json!({ "type": "triple", "value": t.to_string() })
-                                }
-                            };
-                            binding.insert(var.as_str().to_string(), value_obj);
-                        }
-                        bindings.push(serde_json::Value::Object(binding));
-                        result_count += 1;
-                    }
-                    Err(e) => {
-                        eprintln!("Error processing SPARQL solution: {}", e);
-                        continue;
-                    }
-                }
-            }
-            serde_json::json!({
-                "head": { "vars": head_vars },
-                "results": { "bindings": bindings }
-            })
-        }
-        oxigraph::sparql::QueryResults::Boolean(result) => {
-            serde_json::json!({
-                "head": {},
-                "boolean": result
-            })
-        }
-        oxigraph::sparql::QueryResults::Graph(_) => {
-            serde_json::json!({
-                "head": {},
-                "results": "Graph results not yet supported"
-            })
-        }
-    };
 
     let result_count =
         if let Some(bindings) = results_json.get("results").and_then(|r| r.get("bindings")) {
@@ -1922,41 +2180,91 @@ pub async fn get_product_trace(
 ) -> Result<Json<ProductTrace>, (StatusCode, Json<ApiError>)> {
     let blockchain = app_state.blockchain.read().await;
 
-    let batch_id = params.batch_id.unwrap_or_else(|| "unknown".to_string());
-
-    // Build SPARQL query to get product information using the actual namespace
-    // Each triple is stored in a separate graph (one per blockchain block)
-    let sparql_query = r#"
-        SELECT ?product ?origin ?status WHERE {
-            OPTIONAL {
-                GRAPH ?g1 {
-                    <http://example.org/batch456> <http://provchain.org/trace#product> ?product .
-                }
-            }
-            OPTIONAL {
-                GRAPH ?g2 {
-                    <http://example.org/batch456> <http://provchain.org/trace#origin> ?origin .
-                }
-            }
-            OPTIONAL {
-                GRAPH ?g3 {
-                    <http://example.org/batch456> <http://provchain.org/trace#status> ?status .
-                }
-            }
+    let Some(batch_id) = params.batch_id else {
+        if app_state.runtime_mode.allows_demo_fallbacks() {
+            return Ok(Json(ProductTrace {
+                batch_id: "unknown".to_string(),
+                product_name: params.product_name.unwrap_or_default(),
+                origin: String::new(),
+                current_location: String::new(),
+                status: String::new(),
+                timeline: vec![],
+                certifications: vec![],
+                environmental_data: None,
+            }));
         }
-        "#
-    .to_string();
+
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                error: "missing_batch_id".to_string(),
+                message: "batch_id is required in production mode.".to_string(),
+                timestamp: Utc::now(),
+            }),
+        ));
+    };
+
+    let escaped_batch_id = escape_sparql_string(&batch_id);
+
+    // Build SPARQL query to get product information by the requested batch ID.
+    // Each triple is stored in a separate graph (one per blockchain block), so
+    // optional properties may be distributed across graphs.
+    let sparql_query = format!(
+        r#"
+        SELECT ?subject ?product ?origin ?status ?temperature ?humidity ?certification WHERE {{
+            GRAPH ?batch_graph {{
+                ?subject <http://provchain.org/trace#hasBatchID> "{batch_id}" .
+            }}
+            OPTIONAL {{
+                GRAPH ?product_graph {{
+                    ?subject <http://provchain.org/trace#product> ?product .
+                }}
+            }}
+            OPTIONAL {{
+                GRAPH ?origin_graph {{
+                    ?subject <http://provchain.org/trace#origin> ?origin .
+                }}
+            }}
+            OPTIONAL {{
+                GRAPH ?status_graph {{
+                    ?subject <http://provchain.org/trace#status> ?status .
+                }}
+            }}
+            OPTIONAL {{
+                GRAPH ?temperature_graph {{
+                    ?subject <http://provchain.org/trace#hasTemperature> ?temperature .
+                }}
+            }}
+            OPTIONAL {{
+                GRAPH ?humidity_graph {{
+                    ?subject <http://provchain.org/trace#hasHumidity> ?humidity .
+                }}
+            }}
+            OPTIONAL {{
+                GRAPH ?cert_graph {{
+                    ?subject <http://provchain.org/trace#certification> ?certification .
+                }}
+            }}
+        }}
+        "#,
+        batch_id = escaped_batch_id
+    );
 
     // Access the RDF store through the blockchain
     let query_results = blockchain.rdf_store.query(&sparql_query);
 
-    let mut product_name = "Unknown Product".to_string();
-    let mut origin = "Unknown Origin".to_string();
-    let mut status = "Unknown Status".to_string();
+    let mut found_batch = false;
+    let mut product_name = String::new();
+    let mut origin = String::new();
+    let mut status = String::new();
+    let mut temperature = None;
+    let mut humidity = None;
+    let mut certifications = Vec::new();
 
     // Parse SPARQL results
     if let oxigraph::sparql::QueryResults::Solutions(solutions) = query_results {
-        if let Some(sol) = solutions.flatten().next() {
+        for sol in solutions.flatten() {
+            found_batch = true;
             if let Some(product_term) = sol.get("product") {
                 product_name = product_term.to_string().trim_matches('"').to_string();
             }
@@ -1966,7 +2274,40 @@ pub async fn get_product_trace(
             if let Some(status_term) = sol.get("status") {
                 status = status_term.to_string().trim_matches('"').to_string();
             }
+            if let Some(temperature_term) = sol.get("temperature") {
+                temperature = temperature_term
+                    .to_string()
+                    .trim_matches('"')
+                    .parse::<f64>()
+                    .ok();
+            }
+            if let Some(humidity_term) = sol.get("humidity") {
+                humidity = humidity_term
+                    .to_string()
+                    .trim_matches('"')
+                    .parse::<f64>()
+                    .ok();
+            }
+            if let Some(certification_term) = sol.get("certification") {
+                let certification = certification_term.to_string().trim_matches('"').to_string();
+                if !certification.is_empty() && !certifications.contains(&certification) {
+                    certifications.push(certification);
+                }
+            }
         }
+    }
+
+    if !found_batch {
+        if !app_state.runtime_mode.allows_demo_fallbacks() {
+            return Err(production_not_found(format!(
+                "No product trace found for batch '{}'.",
+                batch_id
+            )));
+        }
+
+        product_name = "Unknown Product".to_string();
+        origin = "Unknown Origin".to_string();
+        status = "Unknown Status".to_string();
     }
 
     // Override with query parameter if provided
@@ -1978,16 +2319,23 @@ pub async fn get_product_trace(
         batch_id: batch_id.clone(),
         product_name,
         origin,
-        current_location: "Unknown Location".to_string(),
+        current_location: String::new(),
         status,
         timeline: vec![], // TODO: Parse timeline events from SPARQL results
-        certifications: vec![],
-        environmental_data: Some(EnvironmentalData {
-            temperature: Some(22.5),
-            humidity: Some(65.0),
-            co2_footprint: Some(1.2),
-            certifications: vec!["Organic".to_string(), "Fair Trade".to_string()],
-        }),
+        certifications: certifications.clone(),
+        environmental_data: if temperature.is_some()
+            || humidity.is_some()
+            || !certifications.is_empty()
+        {
+            Some(EnvironmentalData {
+                temperature,
+                humidity,
+                co2_footprint: None,
+                certifications,
+            })
+        } else {
+            None
+        },
     };
 
     Ok(Json(product_trace))
@@ -1999,12 +2347,18 @@ pub async fn trace_path_api(
     State(app_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiError>)> {
     let _blockchain = app_state.blockchain.read().await;
-    let batch_id = params.batch_id.unwrap_or_else(|| "unknown".to_string());
+    let batch_id = params.batch_id.unwrap_or_default();
 
-    // Simulate finding a trace path
+    if !app_state.runtime_mode.allows_demo_fallbacks() {
+        return Err(production_not_implemented(
+            "The legacy trace path endpoint is demo-only; use product trace endpoints backed by real blockchain data.",
+        ));
+    }
+
     Ok(Json(serde_json::json!({
         "batch_id": batch_id,
         "path": [],
-        "message": "Trace path retrieved successfully"
+        "message": "Trace path retrieved successfully",
+        "source": "demo_fallback"
     })))
 }

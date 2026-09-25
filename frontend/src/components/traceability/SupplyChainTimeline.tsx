@@ -364,6 +364,9 @@ const SupplyChainTimeline: React.FC<SupplyChainTimelineProps> = ({
 
   useEffect(() => {
     renderTimeline();
+    // renderTimeline owns imperative D3 drawing; rerender only when the drawing
+    // inputs change instead of on helper identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timelineData, zoomLevel, filterType, filterParticipant]);
 
   if (traceLoading) {

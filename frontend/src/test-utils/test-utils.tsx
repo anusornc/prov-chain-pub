@@ -61,18 +61,25 @@ const mockTheme = {
 const AllTheProviders = ({
   children,
   queryClient,
+  withAuth = true,
 }: {
   children: ReactNode;
   queryClient?: QueryClient;
+  withAuth?: boolean;
 }) => {
   const testQueryClient = queryClient || createTestQueryClient();
+  const themedChildren = withAuth ? (
+    <AuthProvider>{children}</AuthProvider>
+  ) : (
+    children
+  );
 
   return (
     <QueryClientProvider client={testQueryClient}>
-      <BrowserRouter>
-        <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </ThemeProvider>
+      <BrowserRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <ThemeProvider>{themedChildren}</ThemeProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );
@@ -81,13 +88,18 @@ const AllTheProviders = ({
 // Custom render function with all providers
 export const customRender = (
   ui: ReactElement,
-  options?: Omit<RenderOptions, "wrapper"> & { queryClient?: QueryClient },
+  options?: Omit<RenderOptions, "wrapper"> & {
+    queryClient?: QueryClient;
+    withAuth?: boolean;
+  },
 ): RenderResult => {
-  const { queryClient, ...renderOptions } = options || {};
+  const { queryClient, withAuth = true, ...renderOptions } = options || {};
 
   return render(ui, {
     wrapper: ({ children }) => (
-      <AllTheProviders queryClient={queryClient}>{children}</AllTheProviders>
+      <AllTheProviders queryClient={queryClient} withAuth={withAuth}>
+        {children}
+      </AllTheProviders>
     ),
     ...renderOptions,
   });

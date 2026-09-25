@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-01-28
 **Context:** REST API authentication and authorization
+**Clarified by:** [ADR 0027](./0027-use-participant-principals-for-privacy-identity.md) — a participant privacy token names the stable Participant Principal UUID in `sub`; username remains a login alias rather than the privacy owner.
 
 ---
 
@@ -40,6 +41,7 @@
 ## Related Decisions
 
 - [ADR 0004](./0004-use-ed25519-signatures.md): Use Ed25519 for Signatures (JWT signature algorithm)
+- [ADR 0027](./0027-use-participant-principals-for-privacy-identity.md): Use Participant Principals for Privacy Identity
 
 ---
 

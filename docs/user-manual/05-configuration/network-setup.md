@@ -1,17 +1,26 @@
-# Network Setup and Peer Configuration
+# Experimental Network Configuration Reference
 
-**Configure ProvChain-Org nodes and connect them into a network**
+**Legacy/target examples for inspecting ProvChain-Org peer and container scaffolding**
+
+> **Non-operational reference — not convergence evidence (2026-08-31).** The examples below are
+> retained to document historical configuration intent. They are not a verified current runbook,
+> and named environment variables, API routes, Compose commands, and expected outputs must be
+> checked against the current revision before use. The repository has not yet demonstrated
+> authenticated membership, scheduled-authority acceptance, exact complete-envelope replication,
+> matching three-node journal prefixes, partition/rejoin recovery, or crash-safe convergence.
+> PBFT and operational deployment are future work. Do not infer data replication, availability,
+> finality, or production readiness from process startup or peer visibility.
 
 ---
 
 ## What You'll Learn
 
 In this guide, you will:
-- Understand peer-to-peer networking in ProvChain
-- Configure a single node
-- Set up a multi-node network
-- Manage peer connections
-- Troubleshoot network issues
+- Inspect the intended peer-to-peer configuration model
+- Identify single-process development settings
+- Read historical multi-process examples without treating them as verified convergence
+- Distinguish peer visibility from authenticated membership and replicated commitment
+- Locate current source-of-truth architecture and evidence requirements
 
 **Prerequisites**: Complete [10-Minute Setup](../00-quick-start/10-minute-setup.md)
 
@@ -21,28 +30,36 @@ In this guide, you will:
 
 ### Peer-to-Peer Architecture
 
-ProvChain uses a **peer-to-peer (P2P)** network where:
+ProvChain contains **peer-to-peer (P2P) and WebSocket scaffolding**. Current code presence supports
+development experiments only:
 
-- Each node is equal (no master/slave)
-- Nodes communicate directly with each other
-- Data is replicated across all nodes
-- No single point of failure
+- process startup does not establish an equal-peer governance model;
+- a visible connection does not authenticate consortium membership;
+- data replication across all nodes has not been demonstrated; and
+- no-single-point-of-failure or recovery property is currently claimed.
 
 ```
 Node A ←→ Node B ←→ Node C
    ↑         ↑         ↑
    └─────────┴─────────┘
-        All connected
+   Target topology only
 ```
 
 ### Bootstrap vs Regular Nodes
 
 | Node Type | PEERS Setting | Role |
 |-----------|---------------|------|
-| **Bootstrap** | Empty (`PEERS=""`) | Starts the network, first node |
-| **Regular** | List of peers (`PEERS="node1:8080,node2:8080"`) | Joins existing network |
+| **Bootstrap** | Empty (`PEERS=""`) | Historical configuration role; verify current loader support |
+| **Regular** | List of peers (`PEERS="node1:8080,node2:8080"`) | Historical peer-discovery intent; not authenticated membership |
 
-**Best Practice**: Start with one bootstrap node, then add regular nodes.
+These roles are configuration examples, not a validated operating procedure.
+
+## Historical Examples Below
+
+Everything below this heading is retained as legacy/target material. Commands and “expected”
+results do not represent a current passing campaign. The acceptance test for the thesis reference
+system is the reproducible three-process exact-envelope convergence/recovery campaign defined by
+the shared-ontology working plan.
 
 ---
 
@@ -200,7 +217,8 @@ curl http://localhost:8080/api/peers | jq .
 
 ### Scenario 2: Three Nodes on Separate Machines
 
-**Use Case**: Production deployment, geographic distribution
+**Historical target scenario**: Geographic-distribution example only; this is not an
+operational deployment or verified convergence procedure.
 
 **Architecture**:
 ```
@@ -460,7 +478,7 @@ echo "  Node 2: $length2 blocks"
 echo "  Node 3: $length3 blocks"
 
 if [ "$length1" -eq "$length2" ] && [ "$length2" -eq "$length3" ]; then
-    echo "  ✓ All nodes synchronized"
+    echo "  ✓ Reported block counts match (not convergence proof)"
 else
     echo "  ✗ Blockchain sync mismatch"
 fi
@@ -597,19 +615,19 @@ services:
 
 ---
 
-## Best Practices
+## Historical Experiment Checklist
 
 1. **Start with bootstrap node** - Always have at least one node with `PEERS=""`
-2. **Use static IPs** - Avoid DHCP for production nodes
+2. **Use stable test addresses** - Keep experiment endpoints deterministic
 3. **Configure firewall** - Only open necessary ports
-4. **Monitor sync status** - Regularly check `block_count` matches
-5. **Backup regularly** - Each node has full blockchain copy
+4. **Treat block counts as diagnostic only** - Matching counts do not prove exact-envelope convergence
+5. **Preserve experiment data** - Do not assume each node has a complete durable copy
 6. **Use DNS names** - Easier than IPs for peer configuration
-7. **Test in single-machine mode first** - Verify before multi-machine deployment
+7. **Test in single-machine mode first** - Verify scaffolding before a multi-machine experiment
 
 ---
 
-## Advanced Scenarios
+## Historical Target Scenarios
 
 ### NAT/Firewall Traversal
 
@@ -620,9 +638,10 @@ If nodes are behind NAT, use:
 docker run -p 8080:8080 -e PROVCHAIN_PUBLIC_ADDRESS=public-ip:8080 ...
 ```
 
-### TLS/SSL Encryption
+### TLS/SSL Encryption Target
 
-For secure communication, use a reverse proxy:
+The historical target placed a reverse proxy in front of a node. This snippet is not evidence of
+authenticated consortium membership or a verified secure deployment:
 
 ```nginx
 # nginx.conf
@@ -637,7 +656,9 @@ stream {
 }
 ```
 
-### Docker Swarm Deployment
+### Docker Swarm Target
+
+This unverified orchestration sketch is retained for historical context only:
 
 ```yaml
 version: '3.8'

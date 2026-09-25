@@ -4,6 +4,11 @@
 **Date:** 2024-01-15  
 **Context:** Initial architecture design for ProvChainOrg thesis research
 
+> **Evidence amendment (2026-08-31):** this ADR still governs the language choice, but its
+> historical performance targets are not current results. The former custom load-test statistics
+> are withdrawn because the harness has defective running-average/percentile calculations and no
+> admitted raw-sample artifact. No ledger-throughput value is established by this ADR.
+
 ---
 
 ## Context
@@ -46,13 +51,10 @@ Language options considered:
 **Rust Solution:**
 - Compile-time memory safety guarantees (borrow checker)
 - Deterministic memory deallocation (RAII pattern)
-- No GC pauses → consistent P95 latency < 100ms
+- No language-runtime garbage collector
 
-**Evidence:**
-```
-Rust: P95 latency = 45ms (consistent)
-Go:  P95 latency = 250ms (GC spikes to 500ms)
-```
+This rationale is qualitative. The project does not admit a controlled Rust-versus-Go latency
+comparison from this ADR.
 
 ### 2. Zero-Cost Abstractions
 
@@ -76,26 +78,24 @@ Go:  P95 latency = 250ms (GC spikes to 500ms)
 
 ## Performance Validation
 
-> **Note:** This ADR documents the DECISION to use Rust. The figures below were PROJECTED TARGETS at decision time (2024-01-15). For actual experimental results, see `/docs/benchmarking/EXPERIMENTAL_RESULTS.md`.
+> **Note:** This ADR documents the decision to use Rust. The target/projected columns below are
+> historical design inputs from 2024-01-15. Dated component outputs must be checked through the
+> current benchmark evidence boundary; `EXPERIMENTAL_RESULTS.md` is a mixed historical record, not
+> an authority for current paper claims.
 
-| Metric | Target | Projected | Actual (Measured 2026-01-18) | Status |
-|--------|--------|-----------|------------------------------|--------|
-| Write Throughput | > 8,000 TPS | 8,500 TPS (projected) | **19.58 TPS** (dev environment) | ⚠️ Below target |
-| Read Latency (P95) | < 100ms | 45ms (projected) | 0.04-18ms (SPARQL queries) | ✅ Pass |
-| OWL2 Reasoning | < 200ms | 120ms (projected) | 0.015-0.17ms (consistency) | ✅ Pass |
-| Memory Usage | < 16 GB | 8 GB (projected) | ~200MB (OWL2 reasoner) | ✅ Pass |
+| Metric | Target | Projected | Dated component status | Evidence status |
+|--------|--------|-----------|------------------------|-----------------|
+| Write Throughput | > 8,000 TPS | 8,500 TPS (projected) | Custom load-test result withdrawn | No corrected ledger-throughput artifact |
+| Read Latency (P95) | < 100ms | 45ms (projected) | 0.04-18ms (historical SPARQL component draft) | Historical only; not admitted here |
+| OWL2 Reasoning | < 200ms | 120ms (projected) | 0.015-0.17ms (legacy consistency path) | Historical only; not production semantic-path evidence |
+| Memory Usage | < 16 GB | 8 GB (projected) | ~200MB (historical reasoner-helper draft) | Historical only; environment artifact incomplete |
 
-**Key Findings from Actual Benchmarks:**
-- SPARQL queries: 35 µs - 18 ms (scales with dataset size)
-- OWL2 consistency checking: 15-169 µs (linear scaling verified)
-- Memory overhead: Negligible compared to 16 GB target
-- **Write Throughput**: 19.58 TPS measured in development environment
-  - Test config: 200 users × 100 requests over 60 seconds (theoretical max: 333 TPS)
-  - Actual: 1,397 requests processed with 100% success rate
-  - Bottleneck identified: processed 1,397 / 20,000 potential requests
-  - **Note**: This is single-node development performance, not production
-  - Production target (8,000+ TPS) assumes distributed deployment with 100+ nodes
-  - **Next step**: Profile transaction pipeline to identify specific bottleneck (RDF canonicalization vs state management)
+**Historical draft annotations (not current admitted findings):**
+- SPARQL queries: 35 µs - 18 ms was recorded without a complete admitted artifact here
+- OWL2 consistency checking: 15-169 µs was measured on a legacy component path
+- Memory overhead: no current claim is admitted from the historical comparison to the 16 GB target
+- **Write throughput**: no value admitted; a corrected harness must measure the exact durable
+  admission/commit path, retain raw samples, and archive reproducible environment metadata
 
 ---
 

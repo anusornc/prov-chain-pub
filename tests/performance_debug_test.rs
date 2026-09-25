@@ -1,9 +1,22 @@
 use provchain_org::core::blockchain::Blockchain;
 use std::time::Instant;
 
+fn should_skip_profiled_ignored_test(env_var: &str, description: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+        _ => {
+            eprintln!("skipping ignored {description}; set {env_var}=1 to run this profile");
+            true
+        }
+    }
+}
+
 #[test]
 #[ignore]
 fn test_blockchain_performance_debug() {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_PERF_TESTS", "performance debug test") {
+        return;
+    }
     let mut blockchain = Blockchain::new();
 
     // Measure time for adding blocks in smaller batches

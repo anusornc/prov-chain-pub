@@ -1,4 +1,5 @@
 use crate::ontology::error::{ConstraintType, ShapeViolation, ValidationError, ValidationResult};
+use chrono::{DateTime, NaiveDate};
 use owl2_reasoner::{SimpleReasoner, IRI};
 use oxigraph::model::*;
 use oxigraph::sparql::QueryResults;
@@ -458,6 +459,7 @@ impl ShaclValidator {
         ))
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn attach_validation_metadata(
         &self,
         result: ValidationResult,
@@ -896,18 +898,44 @@ impl ShaclValidator {
         Ok(())
     }
 
-    /// Simple datatype validation
+    /// Validate common XML Schema datatypes used by ontology packages.
     fn validate_datatype(&self, value: &str, expected_datatype: &str) -> bool {
+        let normalized = value.trim();
         match expected_datatype {
             "http://www.w3.org/2001/XMLSchema#string" => true, // All values can be strings
-            "http://www.w3.org/2001/XMLSchema#integer" => value.parse::<i64>().is_ok(),
-            "http://www.w3.org/2001/XMLSchema#decimal" => value.parse::<f64>().is_ok(),
-            "http://www.w3.org/2001/XMLSchema#boolean" => value == "true" || value == "false",
-            "http://www.w3.org/2001/XMLSchema#dateTime" => {
-                // Simplified datetime validation
-                value.contains('T') && value.len() >= 19
+            "http://www.w3.org/2001/XMLSchema#integer"
+            | "http://www.w3.org/2001/XMLSchema#int"
+            | "http://www.w3.org/2001/XMLSchema#long"
+            | "http://www.w3.org/2001/XMLSchema#short"
+            | "http://www.w3.org/2001/XMLSchema#byte" => normalized.parse::<i64>().is_ok(),
+            "http://www.w3.org/2001/XMLSchema#nonNegativeInteger" => {
+                normalized.parse::<u64>().is_ok()
             }
-            _ => true, // Unknown datatypes pass validation
+            "http://www.w3.org/2001/XMLSchema#positiveInteger" => normalized
+                .parse::<u64>()
+                .map(|value| value > 0)
+                .unwrap_or(false),
+            "http://www.w3.org/2001/XMLSchema#decimal"
+            | "http://www.w3.org/2001/XMLSchema#double"
+            | "http://www.w3.org/2001/XMLSchema#float" => normalized
+                .parse::<f64>()
+                .map(|value| value.is_finite())
+                .unwrap_or(false),
+            "http://www.w3.org/2001/XMLSchema#boolean" => {
+                matches!(normalized, "true" | "false" | "1" | "0")
+            }
+            "http://www.w3.org/2001/XMLSchema#date" => {
+                NaiveDate::parse_from_str(normalized, "%Y-%m-%d").is_ok()
+            }
+            "http://www.w3.org/2001/XMLSchema#dateTime" => {
+                DateTime::parse_from_rfc3339(normalized).is_ok()
+            }
+            "http://www.w3.org/2001/XMLSchema#anyURI" => {
+                normalized.starts_with("http://")
+                    || normalized.starts_with("https://")
+                    || normalized.starts_with("urn:")
+            }
+            _ => true, // Unknown datatypes are documented as unsupported instead of rejected
         }
     }
 

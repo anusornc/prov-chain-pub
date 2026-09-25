@@ -16,6 +16,16 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::sync::Semaphore;
 
+fn should_skip_profiled_ignored_test(env_var: &str, description: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+        _ => {
+            eprintln!("skipping ignored {description}; set {env_var}=1 to run this profile");
+            true
+        }
+    }
+}
+
 /// Load test configuration
 #[derive(Debug, Clone)]
 pub struct LoadTestConfig {
@@ -64,6 +74,9 @@ pub struct LoadTestResults {
 #[tokio::test]
 #[ignore]
 async fn test_high_volume_transaction_processing() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_LOAD_TESTS", "load tests") {
+        return Ok(());
+    }
     println!("Starting High-Volume Transaction Processing Load Test...");
     println!("Test Configuration: 200 users × 100 requests over 60 seconds");
     println!("Theoretical Max TPS: 333 (development environment)");
@@ -116,6 +129,9 @@ async fn test_high_volume_transaction_processing() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_concurrent_api_user_simulation() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_LOAD_TESTS", "load tests") {
+        return Ok(());
+    }
     println!("Starting Concurrent API User Simulation Test...");
 
     // Set JWT secret for the test
@@ -171,6 +187,9 @@ async fn test_concurrent_api_user_simulation() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_real_time_traceability_queries() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_LOAD_TESTS", "load tests") {
+        return Ok(());
+    }
     println!("Starting Real-Time Traceability Query Load Test...");
 
     let config = LoadTestConfig {
@@ -211,6 +230,9 @@ async fn test_real_time_traceability_queries() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_supply_chain_workload_simulation() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_LOAD_TESTS", "load tests") {
+        return Ok(());
+    }
     println!("Starting Supply Chain Workload Simulation Test...");
 
     let results = run_supply_chain_load_test().await?;
@@ -243,6 +265,9 @@ async fn test_supply_chain_workload_simulation() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_cross_ontology_reasoning_load() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_LOAD_TESTS", "load tests") {
+        return Ok(());
+    }
     println!("Starting Cross-Ontology Reasoning Load Test...");
 
     let config = LoadTestConfig {
@@ -279,6 +304,9 @@ async fn test_cross_ontology_reasoning_load() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_scalability_endurance() -> Result<()> {
+    if should_skip_profiled_ignored_test("PROVCHAIN_RUN_LOAD_TESTS", "load tests") {
+        return Ok(());
+    }
     println!("Starting Scalability Endurance Test...");
 
     let config = LoadTestConfig {

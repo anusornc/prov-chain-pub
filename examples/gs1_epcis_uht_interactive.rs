@@ -90,7 +90,7 @@ fn run_full_demo() {
     let start = Instant::now();
 
     // Phase indicators
-    let phases = vec![
+    let phases = [
         ("📦", "Initializing GS1 EPCIS Ontology", 5),
         ("🏭", "Creating Supply Chain Participants", 10),
         ("🥛", "UHT Production & Processing Events", 25),
@@ -198,7 +198,7 @@ fn run_interactive_mode() {
     let _ = io::stdin().read_line(&mut String::new());
 
     // Interactive phase selection
-    let phases = vec![
+    let phases = [
         ("🐄", "Milk Collection", "Raw milk collection at farm"),
         (
             "🚛",
@@ -767,7 +767,7 @@ fn wait_for_enter() {
 }
 
 // Keep original demo functions for compatibility
-fn initialize_blockchain_with_gs1_epcis() -> anyhow::Result<Blockchain> {
+fn _initialize_blockchain_with_gs1_epcis() -> anyhow::Result<Blockchain> {
     let config = StorageConfig {
         data_dir: std::path::PathBuf::from("data/gs1_epcis_uht_demo"),
         enable_backup: true,
@@ -782,7 +782,7 @@ fn initialize_blockchain_with_gs1_epcis() -> anyhow::Result<Blockchain> {
 
     let mut blockchain = Blockchain::new_persistent_with_config(config)?;
 
-    let ontology_data = include_str!("../src/semantic/ontologies/generic_core.owl");
+    let _ontology_data = include_str!("../src/semantic/ontologies/generic_core.owl");
     let ontology_block = format!(
         r#"@prefix provchain: <http://provchain.org/core#> .
         provchain:OntologyBlock_{} a provchain:OntologyBlock ;
@@ -794,7 +794,7 @@ fn initialize_blockchain_with_gs1_epcis() -> anyhow::Result<Blockchain> {
     Ok(blockchain)
 }
 
-fn create_uht_supply_chain_participants(
+fn _create_uht_supply_chain_participants(
     blockchain: &mut Blockchain,
 ) -> anyhow::Result<HashMap<String, String>> {
     let mut participants = HashMap::new();

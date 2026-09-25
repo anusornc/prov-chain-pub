@@ -744,12 +744,35 @@ mod jwt_validation_tests {
 
     #[test]
     fn test_validate_jwt_requires_env_secret() {
+        let current_exe = std::env::current_exe().expect("Failed to resolve current test binary");
+        let output = std::process::Command::new(current_exe)
+            .arg("--exact")
+            .arg("jwt_validation_tests::jwt_secret_absent_child_probe")
+            .arg("--ignored")
+            .arg("--nocapture")
+            .env_remove("JWT_SECRET")
+            .env("PROVCHAIN_JWT_SECRET_ABSENT_CHILD", "1")
+            .output()
+            .expect("Failed to run JWT_SECRET absence child probe");
+
+        assert!(
+            output.status.success(),
+            "JWT_SECRET absence child probe failed\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    #[test]
+    #[ignore = "subprocess probe; invoked by test_validate_jwt_requires_env_secret with JWT_SECRET removed"]
+    fn jwt_secret_absent_child_probe() {
         use jsonwebtoken::{encode, EncodingKey, Header};
 
-        // This test must run without JWT_SECRET environment variable.
-        if std::env::var("JWT_SECRET").is_ok() {
+        if std::env::var("PROVCHAIN_JWT_SECRET_ABSENT_CHILD").is_err() {
+            eprintln!("skipping direct child probe; parent test launches this with isolated env");
             return;
         }
+        std::env::remove_var("JWT_SECRET");
 
         let config = SecurityConfig::default();
         let middleware = SecurityMiddleware::new(config);

@@ -129,27 +129,6 @@ export const useTraceability = (): UseTraceabilityReturn => {
     [],
   );
 
-  // Select and load detailed item information
-  const selectItem = useCallback(async (itemId: string) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const item = await traceabilityService.getItem(itemId);
-      setSelectedItem(item);
-
-      // Automatically load trace data for selected item
-      await loadItemTrace(itemId);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to load item";
-      setError(errorMessage);
-      console.error("Error selecting item:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Load item trace data
   const loadItemTrace = useCallback(async (itemId: string) => {
     setTraceLoading(true);
@@ -167,6 +146,30 @@ export const useTraceability = (): UseTraceabilityReturn => {
       setTraceLoading(false);
     }
   }, []);
+
+  // Select and load detailed item information
+  const selectItem = useCallback(
+    async (itemId: string) => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const item = await traceabilityService.getItem(itemId);
+        setSelectedItem(item);
+
+        // Automatically load trace data for selected item
+        await loadItemTrace(itemId);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load item";
+        setError(errorMessage);
+        console.error("Error selecting item:", err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loadItemTrace],
+  );
 
   // Load knowledge graph
   const loadKnowledgeGraph = useCallback(async (itemIds: string[]) => {

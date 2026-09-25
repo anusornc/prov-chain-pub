@@ -201,7 +201,10 @@ fn test_synthesized_pharma_storage_event_passes_ontology_admission() {
     let initial_length = blockchain.chain.len();
     let result = blockchain.add_block(synthesized_pharma_storage_event().to_string());
 
-    assert!(result.is_ok(), "synthesized pharma storage event should pass");
+    assert!(
+        result.is_ok(),
+        "synthesized pharma storage event should pass"
+    );
     assert_eq!(blockchain.chain.len(), initial_length + 1);
 }
 

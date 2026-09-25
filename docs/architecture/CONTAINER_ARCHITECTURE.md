@@ -1,31 +1,43 @@
-# ProvChainOrg Container Architecture Documentation
+# ProvChainOrg Target/Reference Container Architecture
 
-## C4 Model: Level 2 - Container Architecture
+## C4 Model: Level 2 - Target Container Architecture
 
-**Version:** 1.0
-**Last Updated:** 2026-01-28
+**Version:** 1.1
+**Last Updated:** 2026-08-31
 **Author:** Anusorn Chaikaew (Student Code: 640551018)
 **Thesis:** Enhancement of Blockchain with Embedded Ontology and Knowledge Graph for Data Traceability
+
+> **Scope and evidence boundary (2026-08-31):** this is the accepted target/reference container
+> architecture, not a description of an operational deployment. Unless a paragraph explicitly says
+> that a behavior is implemented and cites reproduced evidence, topology, interface, scaling,
+> transport-security, semantic-enforcement, synchronization, and deployment statements below are
+> requirements or planning inventory. In particular, horizontal REST scaling, any gRPC boundary,
+> activated TLS 1.3, PBFT selection, exact three-node replication/convergence, and complete
+> package-declared semantic Final Admission remain pending. The normative write contract is one
+> complete-envelope Final Admission followed by the Ledger Journal append plus `fsync` as the sole
+> commit point; the in-memory chain, Oxigraph, and indexes are rebuildable projections.
 
 ---
 
 ## 1. Container Overview
 
-ProvChainOrg is organized as a set of interconnected containers that provide scalability, modularity, and isolation. Each container represents a deployable unit with specific responsibilities.
+The target ProvChainOrg architecture separates responsibilities into the logical containers below.
+The boundaries support modular reasoning and future deployment isolation; they do not by themselves
+prove independent deployability, horizontal scalability, or operational isolation.
 
 ### 1.1 Container Definition
 
 In this context, a **container** is:
-- A deployable unit (Docker container or standalone process)
-- An independently scalable service
+- A target deployable unit (Docker container or standalone process)
+- A logical scaling boundary whose safe independent scaling must still be demonstrated
 - A logical boundary around related functionality
-- A runtime isolation boundary
+- A target runtime isolation boundary
 
 ### 1.2 Container Inventory
 
 | Container | Technology | Purpose | Scale |
 |-----------|-----------|---------|-------|
-| **Web API** | Axum + Tokio | REST API, WebSocket, JWT auth | Horizontal (multiple instances) |
+| **Web API** | Axum + Tokio | REST API, WebSocket, JWT auth | Target horizontal ingress; safety/evidence pending |
 | **Blockchain Core** | Rust + Tokio | Block management, consensus engine | Single instance per node |
 | **Semantic Layer** | SPACL `owl2-reasoner` + Oxigraph | Shared-ontology reasoning and validation | Single instance per node |
 | **RDF Store** | Oxigraph | Triple/quad storage, SPARQL queries | Single instance per node |
@@ -56,7 +68,7 @@ C4Container
     Rel(admin, web_api, "Manage", "HTTPS")
     Rel(admin, monitoring, "Monitor", "HTTPS")
 
-    Rel(web_api, blockchain, "Add Block", "gRPC/REST")
+    Rel(web_api, blockchain, "Submit unsigned request", "in-process today; bounded REST target")
     Rel(web_api, semantic, "Query", "SPARQL")
     Rel(web_api, rdf_store, "Direct Query", "SPARQL")
 
@@ -78,7 +90,7 @@ C4Container
 - WebSocket: tokio-tungstenite
 
 **Responsibilities:**
-- REST API endpoints for transaction submission
+- REST API endpoints for RDF dataset/block admission
 - SPARQL query interface
 - WebSocket for real-time updates
 - JWT authentication and authorization
@@ -93,14 +105,16 @@ C4Container
 | 9090 | HTTP | Metrics endpoint |
 
 **Dependencies:**
-- Blockchain Core (for transaction submission)
+- Blockchain Core (for RDF block admission)
 - RDF Store (for queries)
 - Semantic Layer (for validation)
 
 **Scaling:**
-- Horizontal scaling supported (stateless design)
-- Load balancer distributes requests
-- JWT shared via environment variable or secret store
+- Horizontal REST ingress is a target, not a validated current capability.
+- A load balancer may distribute read-only or preflight work only after implementation proves that
+  every write still enters the one per-ledger Proposal Coordinator and Final Admission boundary.
+- No Web API replica may own an independent signer, journal authority, replay set, or mutable ledger
+  state. JWT-secret distribution does not make ledger writes stateless or safe to scale.
 
 **Configuration:**
 ```toml
@@ -116,47 +130,53 @@ cors_origins = ["http://localhost:5173", "http://localhost:5174"]
 ### 3.2 Blockchain Core Container
 
 **Technology Stack:**
-- Language: Rust 1.70+
+- Language: Rust 1.87+
 - Runtime: Tokio
 - Cryptography: Ed25519 (ed25519-dalek)
-- Consensus: PoA / PBFT (switchable)
+- Consensus: PoA reference implementation candidate with three-node evidence pending; PBFT experimental opt-in
 
 **Responsibilities:**
 - Block creation and validation
-- Transaction pool management
-- Consensus protocol execution
+- RDF block proposal and admission
+- Consensus protocol integration
 - Chain state management
 - Block signature verification
 - P2P message handling
 
 **Key Components:**
 - State Manager: Maintains blockchain state
-- Consensus Engine: Executes PoA or PBFT
+- Consensus Engine: Contains the PoA reference candidate and an experimental PBFT skeleton; neither
+  code presence nor opt-in is convergence/finality evidence
 - Block Creator: Assembles new blocks
 - Block Validator: Verifies hashes and signatures
-- Transaction Pool: Holds pending transactions
+- Persistent Storage Adapter: Persists admitted blocks when enabled
 
 **Data Structures:**
 ```rust
 pub struct Blockchain {
     pub chain: Vec<Block>,
-    pub rdf_store: Arc<RDFStore>,
-    pub transaction_pool: TransactionPool,
-    pub consensus: Box<dyn ConsensusProtocol>,
+    pub rdf_store: RDFStore,
+    pub ontology_manager: Option<OntologyManager>,
+    pub shacl_validator: Option<ShaclValidator>,
+    pub governance: Governance,
     pub signing_key: SigningKey,
+    pub validator_public_key: String,
+    persistent_storage: Option<Arc<Mutex<PersistentStorage>>>,
 }
 ```
 
 **Interfaces:**
-- gRPC/REST API for block operations
+- Current in-process adapters and REST-facing handlers for block operations
+- A gRPC container boundary is not implemented or activated; any future gRPC/REST split must retain
+  the same bounded request, authentication, coordinator, Final Admission, and journal authority
 - P2P WebSocket for peer communication
 - Embedded RDF store access
 
 **Consensus Protocols:**
 | Protocol | Use Case | Performance |
 |----------|----------|-------------|
-| **PoA** | Authority networks, private chains | Fastest (~1s block time) |
-| **PBFT** | Public consortium, Byzantine fault tolerance | Slower (~3s block time) |
+| **PoA** | Authority networks, private chains | Reference path; exact three-node convergence/recovery evidence pending |
+| **PBFT** | Controlled research/experimental Byzantine-fault-tolerance work | Experimental opt-in; not production-claimed |
 
 **Scaling:**
 - Single instance per node (consensus requires identity)
@@ -166,6 +186,11 @@ pub struct Blockchain {
 ---
 
 ### 3.3 Semantic Layer Container
+
+> **Activation boundary:** current ontology/SPACL components and focused benchmarks are partial
+> implementation evidence only. Mandatory package selection, full staged-union SHACL, Candidate
+> Focus, deterministic bounds, and identical enforcement on local, follower, catch-up, privacy, and
+> bridge writes are target Final Admission requirements and remain pending end-to-end evidence.
 
 **Technology Stack:**
 - OWL2 Reasoner: `owl2-reasoner` from SPACL (git dependency)
@@ -177,22 +202,23 @@ pub struct Blockchain {
 - ontology-package loading and compatibility checks
 - SHACL constraint validation
 - SPACL-backed reasoning
-- network-wide semantic consistency via ontology hashes
+- current partial startup/discovery ontology-package hash checks; not complete admission enforcement
 - ontology management for permissioned traceability workflows
 
 **Key Capabilities:**
 | Feature | Description | Performance |
 |---------|-------------|-------------|
-| **Tableaux Reasoning** | SROIQ(D) description logic | 15-169 µs |
-| **Property Chains** | Transitive relationship inference | < 1ms |
-| **hasKey Constraints** | Key-based uniqueness validation | < 1ms |
-| **SHACL Validation** | Shape-based constraint checking | < 5ms |
+| **Tableaux Reasoning** | SROIQ(D) description logic through SPACL-backed paths | Evidence-scoped; see benchmark docs |
+| **Property Chains** | Transitive relationship inference | Evidence-scoped; see benchmark docs |
+| **hasKey Constraints** | Key-based uniqueness validation | Evidence-scoped; see benchmark docs |
+| **SHACL Validation** | Shape-based constraint checking | Evidence-scoped; see benchmark docs |
 
 **Integration Points:**
 - called by Blockchain Core during block validation
 - called by Web API for query enhancement
 - accesses RDF Store for ontology data
-- enforces the shared semantic contract used by participating organizations
+- target Final Admission enforces the shared semantic contract; current direct integration points
+  are partial and do not prove every ingress path
 
 **Ontology Support:**
 - Turtle, RDF/XML, N-Triples, OWL/Functional
@@ -227,10 +253,10 @@ Graph Naming Convention:
 **Performance Characteristics:**
 | Operation | Performance | Notes |
 |-----------|-------------|-------|
-| **Insert Triple** | < 1ms | Bulk operations supported |
-| **SPARQL SELECT** | 35 µs - 18 ms | Scales with dataset size |
-| **SPARQL CONSTRUCT** | < 5ms | Graph query performance |
-| **Graph Load** | < 100ms | For 1000-triple graphs |
+| **Insert Triple** | Evidence-scoped | Use current benchmark artifacts before citing latency |
+| **SPARQL SELECT** | Evidence-scoped | Scales with dataset size and query shape |
+| **SPARQL CONSTRUCT** | Evidence-scoped | Graph-query performance depends on workload |
+| **Graph Load** | Evidence-scoped | Depends on graph size and persistence mode |
 
 **Storage Configuration:**
 ```toml
@@ -252,16 +278,16 @@ cache_size = "1GB"
 **Responsibilities:**
 - Peer discovery and connection management
 - Block propagation
-- Transaction gossip
-- Consensus voting
+- RDF block proposal propagation
+- Consensus voting/attestation according to the active profile
 - Chain synchronization
 
 **Message Types:**
 | Message | Purpose | Frequency |
 |---------|---------|-----------|
 | **NewBlock** | Propagate newly created block | On block creation |
-| **NewTransaction** | Gossip pending transactions | Continuous |
-| **Vote** | Consensus voting (PBFT) | During consensus |
+| **BlockProposal** | Propagate candidate RDF block data when enabled | During block admission |
+| **Vote** | Legacy/experimental attestation message shape; not a validated PBFT path | Future controlled evidence only |
 | **SyncRequest** | Request chain state | On boot, when behind |
 | **SyncResponse** | Return chain state | In response to SyncRequest |
 
@@ -290,14 +316,14 @@ cache_size = "1GB"
 **Key Metrics:**
 | Metric | Type | Description |
 |--------|------|-------------|
-| **provchain_transactions_total** | Counter | Total transactions processed |
+| **provchain_transactions_total** | Counter | Total legacy transaction/RDF write records processed |
 | **provchain_blocks_created** | Counter | Total blocks created |
 | **provchain_spq_query_duration** | Histogram | SPARQL query latency |
 | **provchain_consensus_duration** | Histogram | Consensus round duration |
 | **provchain_peer_count** | Gauge | Active peer connections |
 
 **Dashboards:**
-- Blockchain Overview (blocks, transactions, peers)
+- Blockchain Overview (blocks, RDF writes, peers)
 - Performance (latency, throughput)
 - Semantic Layer (reasoning time, validation)
 - System Health (memory, CPU, disk)
@@ -306,47 +332,60 @@ cache_size = "1GB"
 
 ## 4. Container Interactions
 
-### 4.1 Transaction Submission Flow
+The sequences in this section are normative target/reference flows. They are not claims that the
+current runtime already implements complete-envelope admission, durable replication, or recovery.
+
+### 4.1 RDF Block Admission Flow
+
+This diagram is the accepted thesis-reference target from ADRs 0016-0026; implementation and
+end-to-end evidence remain pending. The current Web/API and blockchain helpers must not be read as
+already implementing this boundary.
 
 ```mermaid
 sequenceDiagram
     participant Client
-    participant WebAPI as Web API
-    participant Semantic as Semantic Layer
-    participant Blockchain as Blockchain Core
-    participant RDFStore as RDF Store
-    participant P2P as P2P Network
+    participant Adapter as Web/API Adapter
+    participant Coordinator as PoA Proposal Coordinator
+    participant Authority as Scheduled Authority
+    participant Admission as Final Admission
+    participant Journal as Ledger Journal
+    participant Projection as In-memory/Oxigraph/Indexes
+    participant Peer as Authenticated Peers
 
-    Client->>WebAPI: POST /api/transactions (RDF data)
-    WebAPI->>WebAPI: JWT Authentication
-
-    WebAPI->>Semantic: Validate with SHACL
-    Semantic->>RDFStore: Load ontology shapes
-    RDFStore-->>Semantic: Shapes loaded
-    Semantic-->>WebAPI: Validation result
-
-    WebAPI->>Blockchain: Add transaction
-    Blockchain->>Blockchain: Sign with Ed25519
-    Blockchain->>Blockchain: Add to pool
-
-    alt Consensus required
-        Blockchain->>P2P: Broadcast to peers
-        P2P->>Blockchain: Collect votes
+    Client->>Adapter: POST /api/datasets/import-turtle (RDF data)
+    Adapter->>Adapter: Authenticate and validate bounded request syntax
+    Adapter->>Coordinator: Unsigned ordinary-provenance request
+    Coordinator->>Coordinator: Serialize/coalesce + read-only complete preflight
+    Coordinator->>Coordinator: Select and durably fence one exact proposal body
+    Coordinator->>Authority: Exact fenced body for current PoA Turn
+    Authority-->>Admission: Exact signed Block Proposal
+    Admission->>Admission: Verify parent/profile/manifest/turn/signature
+    Admission->>Admission: Parse RDF + stage full committed union
+    Admission->>Admission: Enforce package-declared SHACL/focus/bounds
+    Admission->>Admission: Verify Post-State Commitment + complete envelope
+    alt Every gate passes
+        Admission->>Journal: Append complete Admitted Block Envelope + fsync
+        Journal-->>Admission: Committed
+        Journal->>Projection: Rebuild/update derived projections
+        Journal->>Peer: Replicate exact committed envelope + prefix
+        Admission-->>Adapter: Committed reference
+        Adapter-->>Client: Confirmation
+    else Any deterministic gate fails
+        Admission-->>Adapter: Rejected; no journal or projection mutation
+        Adapter-->>Client: Bounded rejection
     end
-
-    Blockchain->>Blockchain: Create block
-    Blockchain->>RDFStore: Persist triples
-    RDFStore-->>Blockchain: Persisted
-
-    Blockchain-->>WebAPI: Block hash
-    WebAPI-->>Client: Confirmation
 ```
 
 **Key Decision Points:**
-1. **SHACL Validation**: Fails fast if data violates constraints
-2. **Transaction Pool**: Holds transactions until consensus
-3. **Block Creation**: Batched by time (1s) or size limit
-4. **Persistence**: RDF triples stored before block commit
+1. **Adapter/preflight:** Read-only checks may reject early but cannot commit or mutate authority.
+2. **Consensus acceptance:** Only the Scheduled Authority may sign the fenced proposal for the PoA
+   Turn; a signature is eligible evidence, not commitment.
+3. **Final Admission:** One universal boundary verifies integrity, membership, state commitments,
+   and the active package's complete staged-union SHACL contract.
+4. **Commit:** One append of the complete Admitted Block Envelope plus `fsync` is the sole commit
+   point.
+5. **Projection:** In-memory chain, Oxigraph, and indexes update only after commit and are
+   rebuildable from Verified Journal Replay.
 
 ---
 
@@ -359,7 +398,7 @@ sequenceDiagram
     participant Semantic as Semantic Layer
     participant RDFStore as RDF Store
 
-    Client->>WebAPI: POST /api/query (SPARQL)
+    Client->>WebAPI: POST /api/sparql/query (JSON SPARQL request)
     WebAPI->>WebAPI: JWT Authentication
 
     alt OWL2 reasoning requested
@@ -383,34 +422,40 @@ sequenceDiagram
 
 ### 4.3 Block Synchronization Flow
 
+This is the accepted exact-envelope catch-up target. Current bare-block/metadata synchronization is
+nonconforming and does not establish three-node convergence.
+
+This is the accepted exact-envelope convergence target from ADR 0023; the current P2P sync code and
+legacy `three_node_validation_test.rs` do not constitute its evidence.
+
 ```mermaid
 sequenceDiagram
     participant NewNode as New Node
-    participant Peer as Existing Peer
-    participant Blockchain as Blockchain Core
-    participant RDFStore as RDF Store
+    participant Peer as Authenticated Existing Peer
+    participant Admission as Final Admission
+    participant Journal as Ledger Journal
+    participant Projection as In-memory/Oxigraph/Indexes
 
-    NewNode->>Peer: SyncRequest (block index)
-    Peer-->>NewNode: SyncResponse (block data)
-
-    NewNode->>Blockchain: Validate block
-    Blockchain->>Blockchain: Verify hash
-    Blockchain->>Blockchain: Verify signature
+    NewNode->>Peer: Bounded range request from verified prefix checkpoint
+    Peer-->>NewNode: Exact canonical envelopes + prefix evidence
+    NewNode->>Admission: Next exact envelope in order
+    Admission->>Admission: Verify parent/profile/manifest/PoA/signature
+    Admission->>Admission: Recompute state/package/full-union SHACL commitments
 
     alt Validation succeeds
-        Blockchain->>Blockchain: Check consensus
-        Blockchain->>RDFStore: Persist triples
-        Blockchain->>Blockchain: Add to chain
-        Blockchain-->>Peer: Acknowledge
+        Admission->>Journal: Append exact complete envelope + fsync
+        Journal->>Projection: Rebuild/update derived projections
+        NewNode-->>Peer: Signed Commit Receipt for envelope + prefix
     else Validation fails
-        Blockchain-->>Peer: Reject
+        Admission-->>Peer: Reject; no journal/projection mutation
     end
 ```
 
 **Sync Strategies:**
-1. **Full Sync**: Request all blocks from genesis
-2. **Header Sync**: Request block headers first, then bodies
-3. **State Sync**: Request current state, then recent blocks
+1. **Genesis-to-tip replay:** Verify and append every exact envelope in order.
+2. **Bounded range catch-up:** Resume only from a verified local prefix checkpoint.
+3. **No header/state shortcut:** Header-only or mutable state-snapshot trust is outside the current
+   reference contract and cannot establish convergence.
 
 ---
 
@@ -505,11 +550,11 @@ sequenceDiagram
 
 ---
 
-## 6. Deployment Architecture
+## 6. Target Deployment Topology — Future Work, Not Operational Evidence
 
 ### 6.1 Single-Node Deployment
 
-**Use Case:** Development, testing, small deployments
+**Use Case:** Development and controlled testing; any operational small deployment is future work
 
 ```
 ┌─────────────────────────────────────────┐
@@ -537,7 +582,8 @@ sequenceDiagram
 
 ### 6.2 Multi-Node Cluster Deployment
 
-**Use Case:** Production, consortium networks
+**Use Case:** Future target/reference topology for consortium networks; not operational deployment
+or pilot evidence
 
 ```
 ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
@@ -560,9 +606,11 @@ sequenceDiagram
 **Configuration:** `deploy/docker-compose.3node.yml`
 
 **Network Topology:**
-- Mesh network (all-to-all peer connections)
-- Minimum 3 nodes for PBFT fault tolerance
-- Recommended 5+ nodes for production
+- Target mesh network (all-to-all authenticated peer sessions); implementation/evidence pending
+- Three processes are the thesis-reference PoA evidence topology. PBFT is not required by that
+  topology and remains a separate experimental/future protocol milestone.
+- Controlled reference experiments use the PoA profile; no operational deployment claim is valid
+  until its exact three-node convergence/recovery campaign passes. PBFT remains experimental.
 
 ---
 
@@ -572,15 +620,23 @@ sequenceDiagram
 
 | Layer | Mechanism | Purpose |
 |-------|-----------|---------|
-| **Transport** | TLS 1.3 | Encrypt P2P communication |
+| **Transport** | Target TLS 1.3 | P2P transport encryption; activation/configuration/evidence pending |
 | **Application** | JWT | Authenticate API requests |
-| **Data** | ChaCha20-Poly1305 | Encrypt private triples |
-| **Blockchain** | Ed25519 | Sign blocks and transactions |
+| **Data** | ADR 0034 `ProtectedDataSuiteV1` | Accepted protected-payload contract; implementation inactive |
+| **Participant client** | ADR 0035 `ParticipantKeyCustodyV1` + ADR 0036 `ParticipantKeystoreSuiteV1` | Durable client-only private-key custody and accepted whole-snapshot suite; implementation/evidence pending |
+| **Blockchain** | Ed25519 | Sign blocks and validator assertions |
 
 **Security Boundaries:**
 - Public data: Accessible via SPARQL
-- Private data: Encrypted, owner-controlled
-- Admin operations: JWT with admin role
+- Protected data: One immutable ciphertext under a fresh per-object DEK; the accepted payload profile uses a one-use derived key, ChaCha20Poly1305, an all-zero 12-byte nonce, and raw `O` as associated data
+- Live Privacy Release: Returns ciphertext, exactly one applicable DEK envelope, and prefix-bound evidence for client-side decryption; the server never decrypts
+- Participant custody: Private keys and passphrases stay in a separate participant-side client under ADR 0036's bounded whole-snapshot commit/restore contract; node/server storage and backups never open or escrow them
+- Admin operations: JWT with admin role; administration does not confer privacy authority
+
+This `PrivacyControlV1` boundary is accepted architecture, not current implementation or profile
+activation. See
+[ADR 0034](./ADR/0034-pin-protected-data-suite-v1-and-canonical-privacy-encoding.md) and
+[ADR 0035](./ADR/0035-keep-participant-private-keys-in-durable-client-only-custody.md).
 
 ### 7.2 Observability
 
@@ -605,14 +661,17 @@ JWT_SECRET=32-character-minimum-secret-key
 # Optional
 PROVCHAIN_PORT=8080
 PROVCHAIN_PEERS=ws://peer1:8080,ws://peer2:8080
-PROVCHAIN_CONSENSUS=poa  # or pbft
+# Target/profile notation only; current environment-loader support is not asserted here.
+PROVCHAIN_CONSENSUS=poa
+# PBFT cannot be activated by changing this value alone. It remains experimental and requires the
+# explicit allow_experimental_pbft gate plus a future validated profile/implementation/evidence path.
 PROVCHAIN_DATA_DIR=./data/provchain
 ```
 
 **Configuration Files:**
 - `config/config.toml` - Main configuration
 - `config/ontology.toml` - Ontology settings
-- `config/production.toml` - Production deployment
+- `config/production.toml` - Production-target template; not operational deployment evidence
 
 ---
 
@@ -623,7 +682,8 @@ PROVCHAIN_DATA_DIR=./data/provchain
 - [Component Architecture](./COMPONENT_ARCHITECTURE.md) - C4 Level 3 (planned)
 
 ### Supporting
-- [Deployment Guide](../deployment/HANDS_ON_DEPLOYMENT_GUIDE.md)
+- [Local Execution Guide](../Run.md) (development/reference use only; operational deployment is future work)
+- [Shared-Ontology Network Working Plan](./SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md) (current implementation order and evidence boundary)
 - [Security Architecture](./SECURITY_ARCHITECTURE.md) (planned)
 - [Integration Architecture](./INTEGRATION_ARCHITECTURE.md) (planned)
 

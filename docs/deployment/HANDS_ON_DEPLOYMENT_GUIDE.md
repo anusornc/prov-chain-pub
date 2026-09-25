@@ -1,5 +1,16 @@
 # ProvChain-Org: Hands-On Deployment Guide
 
+> [!WARNING]
+> **QUARANTINED / SUPERSEDED — HISTORICAL ONLY (2026-08-31).** This document is
+> non-authoritative: its commands, results, and contracts have not been verified against the
+> current code and must not be used as current implementation, thesis, publication, or deployment
+> evidence. Operational deployment remains future work beyond the bounded reference-system
+> milestone. Use the current
+> [continuity record](../reviews/CODEX_CONTINUITY_MEMORY.md),
+> [thesis/code alignment review](../reviews/THESIS_CODE_ALIGNMENT_REVIEW_2026-07-10.md),
+> [working plan](../architecture/SHARED_ONTOLOGY_NETWORK_WORKING_PLAN.md), and
+> [paper evidence index](../paper_submission/PAPER_EVIDENCE_INDEX.md) instead.
+
 **Step-by-Step Guide to Deploy Your ProvChain-Org Blockchain**
 
 **Time Required:** 30-60 minutes

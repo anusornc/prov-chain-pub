@@ -81,26 +81,39 @@ Object.defineProperty(URL, "revokeObjectURL", {
   value: jest.fn(),
 });
 
-// Suppress console warnings in tests unless debugging
-const originalError = console.error;
+// Keep console output unsuppressed by default. Tests that exercise expected
+// negative paths should assert those messages with scoped spies instead of
+// hiding unexpected errors globally.
+
+// React 19 act-environment setup is loaded from setupActEnvironment.ts before
+// React initializes.
+
+// Suppress narrowly scoped React 19 / Jest environment compatibility warnings
+// that come from the current test harness rather than application behavior.
+// Unexpected console errors are still surfaced; expected application errors are
+// asserted with local spies.
+const originalConsoleError = console.error;
 beforeAll(() => {
   console.error = (...args: unknown[]) => {
-    if (
-      typeof args[0] === "string" &&
-      (args[0].includes("Warning: ReactDOM.render is deprecated") ||
-        args[0].includes("ReactDOMTestUtils.act is deprecated") ||
-        args[0].includes(
+    if (typeof args[0] === "string") {
+      const message = args[0];
+      if (
+        (message.includes("ReactDOMTestUtils.act") &&
+          message.includes("deprecated")) ||
+        message.includes(
           "The current testing environment is not configured to support act",
-        ))
-    ) {
-      return;
+        )
+      ) {
+        return;
+      }
     }
-    originalError.call(console, ...args);
+
+    originalConsoleError.call(console, ...args);
   };
 });
 
 afterAll(() => {
-  console.error = originalError;
+  console.error = originalConsoleError;
 });
 
 // Global test cleanup

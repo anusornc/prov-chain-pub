@@ -1,7 +1,10 @@
 //! HTTP handlers for REST API endpoints
 
+use crate::config::RuntimeMode;
 use crate::core::blockchain::Blockchain;
+use crate::transaction::transaction::Transaction;
 use crate::wallet::WalletManager;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -19,6 +22,8 @@ pub struct AppState {
     pub blockchain: Arc<RwLock<Blockchain>>,
     pub network_peers: Arc<std::sync::atomic::AtomicU64>,
     pub wallet_manager: Arc<RwLock<WalletManager>>,
+    pub pending_transactions: Arc<RwLock<HashMap<String, Transaction>>>,
+    pub runtime_mode: RuntimeMode,
 }
 
 impl AppState {
@@ -35,7 +40,22 @@ impl AppState {
             blockchain: Arc::new(RwLock::new(blockchain)),
             network_peers: Arc::new(std::sync::atomic::AtomicU64::new(0)),
             wallet_manager: Arc::new(RwLock::new(wallet_manager)),
+            pending_transactions: Arc::new(RwLock::new(HashMap::new())),
+            runtime_mode: RuntimeMode::Production,
         })
+    }
+
+    /// Create a new AppState with the given blockchain and runtime mode.
+    ///
+    /// # Errors
+    /// Returns an error if the wallet manager fails to initialize
+    pub fn with_runtime_mode(
+        blockchain: Blockchain,
+        runtime_mode: RuntimeMode,
+    ) -> anyhow::Result<Self> {
+        let mut state = Self::new(blockchain)?;
+        state.runtime_mode = runtime_mode;
+        Ok(state)
     }
 
     /// Create a new AppState with the given blockchain and peer count
@@ -50,6 +70,8 @@ impl AppState {
             blockchain: Arc::new(RwLock::new(blockchain)),
             network_peers: Arc::new(std::sync::atomic::AtomicU64::new(peer_count)),
             wallet_manager: Arc::new(RwLock::new(wallet_manager)),
+            pending_transactions: Arc::new(RwLock::new(HashMap::new())),
+            runtime_mode: RuntimeMode::Production,
         })
     }
 }

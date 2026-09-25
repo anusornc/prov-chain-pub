@@ -21,9 +21,7 @@ use tokio::time::sleep;
 #[path = "../benchmark-toolkit/research-benchmarks/src/workloads/provchain_queries.rs"]
 mod provchain_queries;
 
-use provchain_queries::{
-    aggregation_by_producer_query, entity_lookup_query, multi_hop_query,
-};
+use provchain_queries::{aggregation_by_producer_query, entity_lookup_query, multi_hop_query};
 
 const TEST_JWT_SECRET: &str = "test-jwt-secret-key-min-32-chars-for-benchmark-queries";
 const TEST_BOOTSTRAP_TOKEN: &str = "test-bootstrap-token-for-benchmark-queries";
@@ -207,6 +205,7 @@ async fn seed_minimal_benchmark_graph(client: &Client, base_url: &str, token: &s
     Ok(())
 }
 
+#[allow(clippy::await_holding_lock)]
 #[tokio::test]
 async fn test_benchmark_entity_lookup_query_contract() -> Result<()> {
     let _guard = env_lock().lock().unwrap_or_else(|error| error.into_inner());
@@ -218,13 +217,19 @@ async fn test_benchmark_entity_lookup_query_contract() -> Result<()> {
     let auth = login_admin(&client, &base_url).await?;
     seed_minimal_benchmark_graph(&client, &base_url, &auth.token).await?;
 
-    let response =
-        query_sparql(&client, &base_url, &auth.token, entity_lookup_query("BATCH001")).await?;
+    let response = query_sparql(
+        &client,
+        &base_url,
+        &auth.token,
+        entity_lookup_query("BATCH001"),
+    )
+    .await?;
     assert_eq!(response.result_count, 1);
 
     Ok(())
 }
 
+#[allow(clippy::await_holding_lock)]
 #[tokio::test]
 async fn test_benchmark_multi_hop_query_contract() -> Result<()> {
     let _guard = env_lock().lock().unwrap_or_else(|error| error.into_inner());
@@ -243,6 +248,7 @@ async fn test_benchmark_multi_hop_query_contract() -> Result<()> {
     Ok(())
 }
 
+#[allow(clippy::await_holding_lock)]
 #[tokio::test]
 async fn test_benchmark_aggregation_query_contract() -> Result<()> {
     let _guard = env_lock().lock().unwrap_or_else(|error| error.into_inner());
@@ -254,8 +260,13 @@ async fn test_benchmark_aggregation_query_contract() -> Result<()> {
     let auth = login_admin(&client, &base_url).await?;
     seed_minimal_benchmark_graph(&client, &base_url, &auth.token).await?;
 
-    let response =
-        query_sparql(&client, &base_url, &auth.token, aggregation_by_producer_query()).await?;
+    let response = query_sparql(
+        &client,
+        &base_url,
+        &auth.token,
+        aggregation_by_producer_query(),
+    )
+    .await?;
     assert_eq!(response.result_count, 1);
 
     Ok(())

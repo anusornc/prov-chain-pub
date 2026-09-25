@@ -105,6 +105,10 @@ const AnalyticsDashboard: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+    // loadMockAnalyticsData is a local demo-data fallback helper; keeping the
+    // dependency scoped to user-selected filters avoids reloading on helper
+    // identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const loadMockAnalyticsData = () => {

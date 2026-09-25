@@ -3,7 +3,7 @@ name = "benchmark-runner"
 version = "0.1.0"
 edition = "2021"
 authors = ["ProvChain-Org Research Team"]
-description = "Automated benchmark orchestrator comparing ProvChain-Org with other systems"
+description = "Legacy non-evidence benchmark runner retained for historical ProvChain-Org comparisons"
 
 [dependencies]
 # Async runtime
@@ -59,7 +59,7 @@ criterion = "0.5"
 
 [[bin]]
 name = "benchmark-runner"
-path = "src/main.rs"
+path = "main.rs"
 
 [profile.release]
 opt-level = 3

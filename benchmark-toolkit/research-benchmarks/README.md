@@ -1,15 +1,20 @@
 # ProvChain-Org Benchmark Suite
 
+Current active benchmark harness for Docker/adaptor campaigns and paper-facing evidence.
+
+Publication and thesis claims must use curated exports documented by `docs/benchmarking/BENCHMARK_EVIDENCE_BOUNDARY_2026-05-11.md`. Do not use the legacy portable runner under `benchmark-toolkit/src/` as evidence.
+
 Automated benchmark infrastructure for comparing ProvChain-Org (blockchain with embedded ontology) against traditional systems like Neo4j, Hyperledger Fabric, Ethereum, and FlureeDB.
 
 ## Overview
 
-This benchmark suite is designed to validate the thesis research objectives:
+This benchmark suite is designed to measure thesis research objectives with
+family-scoped evidence:
 
-1. **Query Performance**: Prove better SPARQL query performance with embedded ontology
-2. **Cross-Chain Interchange**: Demonstrate multi-chain data sync capability
-3. **Permission Control Efficiency**: Show minimal overhead from data access control
-4. **Comparative Metrics**: Complete performance comparison across all systems
+1. **Query Performance**: measure trace-query behavior for supported comparator paths
+2. **Cross-Chain Interchange**: exercise documented bridge/admission scenarios where implemented
+3. **Permission Control Efficiency**: measure policy/access-control workloads within their caveats
+4. **Comparative Metrics**: export family-scoped metrics without a single global winner claim
 
 ## Architecture
 
@@ -75,9 +80,14 @@ docker compose -f benchmark-toolkit/docker-compose.trace.yml --profile fluree up
 
 ห้ามใช้ `latest` เป็นหลักฐาน benchmark
 
-### Phase 1: Quick Comparison (30 minutes)
+### Legacy Quick Comparison (30 minutes, non-evidence)
 
-Compare ProvChain-Org vs Neo4j:
+This historical quick comparison is retained for local smoke/debug context only.
+Do not use its `benchmark/results/summary.md` output for thesis or paper claims.
+Use curated exports under `docs/benchmarking/data/` or
+`docs/benchmarking/data/reference/` for evidence.
+
+Compare ProvChain-Org vs Neo4j locally:
 
 ```bash
 # Navigate to deploy directory
@@ -89,7 +99,7 @@ docker-compose -f docker-compose.benchmark-comparison.yml up -d
 # Run benchmarks
 docker-compose -f docker-compose.benchmark-comparison.yml run --rm benchmark-runner --all
 
-# View results
+# View local non-evidence smoke results
 cat ../benchmark/results/summary.md
 
 # Access Grafana Dashboard
@@ -146,7 +156,7 @@ WHERE {
 
 ### Scenario 1: Query Performance
 
-**Goal**: Prove better SPARQL query performance with embedded ontology
+**Goal**: Measure trace-query latency/throughput for the supported RDF and translated graph-model comparator paths
 
 Tests:
 1. Simple product lookup (by batch ID)
@@ -161,7 +171,7 @@ Tests:
 
 ### Scenario 2: Write Performance
 
-**Goal**: Compare transaction throughput with traditional systems
+**Goal**: Compare ledger/write-path behavior only for systems and workloads with curated campaign exports
 
 Tests:
 1. Single-threaded write (1000 transactions)
@@ -175,7 +185,7 @@ Tests:
 
 ### Scenario 3: Permission Control Overhead
 
-**Goal**: Show minimal overhead from data access control
+**Goal**: Measure access-control overhead within the documented policy workload caveats
 
 Tests:
 1. Write without permission check (baseline)
@@ -208,13 +218,13 @@ benchmark/results/
 - **improvement_percent**: Percentage improvement vs baseline
 - **winner**: Which system performed better
 
-**Example Summary**:
+**Legacy Example Summary**:
 ```
 ### Query Performance
-- **ProvChain-Org**: 45.23 ms (22.11 ops/sec)
-- **Neo4j**: 67.89 ms (14.73 ops/sec)
-- **Improvement**: 33.4%
-- **Winner**: ProvChain-Org
+- Use curated campaign exports under `docs/benchmarking/data/` or
+  `docs/benchmarking/data/reference/`.
+- Interpret each row only inside its benchmark family and caveats.
+- Do not cite legacy portable-runner summaries as thesis/paper evidence.
 ```
 
 ## Monitoring
@@ -355,22 +365,23 @@ python scripts/generate_thesis_figures.py
 
 ### Documenting Methodology
 
-Add to thesis:
+Use a claim-bounded thesis template:
 
 ```markdown
 ## Performance Evaluation
 
 ### Experimental Setup
 
-We compared ProvChain-Org against Neo4j graph database using
-RDF/N-Triples datasets with 1000 triples representing food supply
-chain transactions. All benchmarks were conducted on a system with
-8GB RAM and Docker 24.0.
+We evaluated ProvChain-Org on the <benchmark family> workload using
+the curated export <artifact path>. The campaign status, runtime
+context, comparator role, and caveats are recorded in the export.
 
 ### Results
 
-ProvChain-Org demonstrated 33.4% faster query performance compared
-to Neo4j for multi-hop traceability queries (45.23ms vs 67.89ms).
+The result supports only the <trace-query / semantic-admission /
+ledger-write / policy / diagnostic> claim stated by the evidence
+artifact. It must not be generalized to unrelated benchmark families
+or production deployment readiness.
 ```
 
 ## Architecture Decisions

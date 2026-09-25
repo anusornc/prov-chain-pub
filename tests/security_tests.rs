@@ -15,6 +15,16 @@ const TEST_BOOTSTRAP_TOKEN: &str = "test-bootstrap-token-for-security-tests";
 const ADMIN_USERNAME: &str = "adminroot";
 const ADMIN_PASSWORD: &str = "AdminRootPassword123!";
 
+fn should_skip_profiled_ignored_test(env_var: &str, description: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+        _ => {
+            eprintln!("skipping ignored {description}; set {env_var}=1 to run this profile");
+            true
+        }
+    }
+}
+
 /// Test helper for setting up a test server with authentication
 async fn setup_test_server_with_auth() -> Result<(u16, tokio::task::JoinHandle<()>)> {
     // Set JWT_SECRET for tests (required for authentication to work)
@@ -416,6 +426,12 @@ async fn test_input_validation() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_rate_limiting() -> Result<()> {
+    if should_skip_profiled_ignored_test(
+        "PROVCHAIN_RUN_LOAD_TESTS",
+        "rate-limiting security load test",
+    ) {
+        return Ok(());
+    }
     let (port, _server_handle) = setup_test_server_with_auth().await?;
     let base_url = format!("http://localhost:{}", port);
     let client = Client::new();
@@ -670,61 +686,61 @@ async fn test_data_integrity_protection() -> Result<()> {
 
     let token = bootstrap_and_login(&client, &base_url).await?;
 
-        // Add legitimate data
-        let response = client
-            .post(format!("{}/api/blockchain/add-triple", base_url))
-            .header("Authorization", format!("Bearer {}", token))
-            .json(&json!({
-                "subject": "http://example.org/batch001",
-                "predicate": "http://provchain.org/trace#product",
-                "object": "Legitimate Product"
-            }))
-            .send()
-            .await?;
+    // Add legitimate data
+    let response = client
+        .post(format!("{}/api/blockchain/add-triple", base_url))
+        .header("Authorization", format!("Bearer {}", token))
+        .json(&json!({
+            "subject": "http://example.org/batch001",
+            "predicate": "http://provchain.org/trace#product",
+            "object": "Legitimate Product"
+        }))
+        .send()
+        .await?;
 
-        let add_status = response.status();
-        println!("Add triple response status: {}", add_status);
-        if !add_status.is_success() {
-            let add_text = response.text().await?;
-            println!("Add triple error response text: {}", add_text);
-        }
-        assert!(add_status.is_success());
+    let add_status = response.status();
+    println!("Add triple response status: {}", add_status);
+    if !add_status.is_success() {
+        let add_text = response.text().await?;
+        println!("Add triple error response text: {}", add_text);
+    }
+    assert!(add_status.is_success());
 
-        // Verify blockchain integrity
-        let stats_response = client
-            .get(format!("{}/api/blockchain/status", base_url))
-            .header("Authorization", format!("Bearer {}", token))
-            .send()
-            .await?;
+    // Verify blockchain integrity
+    let stats_response = client
+        .get(format!("{}/api/blockchain/status", base_url))
+        .header("Authorization", format!("Bearer {}", token))
+        .send()
+        .await?;
 
-        let stats_status = stats_response.status();
-        println!("Stats response status: {}", stats_status);
-        assert!(stats_status.is_success());
+    let stats_status = stats_response.status();
+    println!("Stats response status: {}", stats_status);
+    assert!(stats_status.is_success());
 
-        if !stats_status.is_success() {
-            let stats_text = stats_response.text().await?;
-            println!("Stats error response text: {}", stats_text);
-        } else {
-            let stats: serde_json::Value = stats_response.json().await?;
+    if !stats_status.is_success() {
+        let stats_text = stats_response.text().await?;
+        println!("Stats error response text: {}", stats_text);
+    } else {
+        let stats: serde_json::Value = stats_response.json().await?;
 
-            // Verify blockchain is valid (should be at least 1, but could be more due to demo data)
-            assert!(stats["total_blocks"].as_u64().unwrap() >= 1);
-        }
+        // Verify blockchain is valid (should be at least 1, but could be more due to demo data)
+        assert!(stats["total_blocks"].as_u64().unwrap() >= 1);
+    }
 
-        // Test attempts to modify existing blocks (should be impossible)
-        let tamper_response = client
-            .put(format!("{}/api/blockchain/block/0", base_url))
-            .header("Authorization", format!("Bearer {}", token))
-            .json(&json!({
-                "data": "Tampered data"
-            }))
-            .send()
-            .await?;
+    // Test attempts to modify existing blocks (should be impossible)
+    let tamper_response = client
+        .put(format!("{}/api/blockchain/block/0", base_url))
+        .header("Authorization", format!("Bearer {}", token))
+        .json(&json!({
+            "data": "Tampered data"
+        }))
+        .send()
+        .await?;
 
-        // Should not allow modification of existing blocks
-        assert!(
-            tamper_response.status().is_client_error()
-                || tamper_response.status() == reqwest::StatusCode::NOT_FOUND
-        );
+    // Should not allow modification of existing blocks
+    assert!(
+        tamper_response.status().is_client_error()
+            || tamper_response.status() == reqwest::StatusCode::NOT_FOUND
+    );
     Ok(())
 }

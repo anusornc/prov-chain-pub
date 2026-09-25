@@ -2,8 +2,16 @@
 
 **Document Version:** 1.0
 **Date:** 2026-01-02
-**Status:** Ready for Deployment
+**Status:** Research-grade deployment foundation; production readiness bounded by current audit evidence
 **Author:** Rust Analysis Agent
+
+> **Claim correction (2026-08-31):** this document is a deployment plan, not deployment or
+> three-node convergence evidence. The July 2026 thesis-code alignment review supersedes older
+> production-support wording: PoA is a reference implementation candidate with exact three-node
+> convergence/recovery evidence pending; operational deployment and pilot controls remain future
+> milestones, and PBFT remains experimental. Any later checkmark, readiness label, deployment-time
+> estimate, or recommendation is inventory/planning material only and is not a current thesis,
+> paper, security, scalability, or production result.
 
 ---
 
@@ -12,20 +20,25 @@
 ProvChain-Org is a **distributed blockchain system with semantic capabilities** built in Rust, combining:
 - **Blockchain technology** for immutable traceability
 - **OWL2 ontology reasoning** for semantic validation
-- **Proof-of-Authority (PoA) consensus** with PBFT support
-- **Production-ready monitoring** (Prometheus, Grafana, Jaeger)
+- **Proof-of-Authority (PoA) consensus** as the reference implementation candidate, with exact three-node convergence/recovery evidence pending and PBFT retained as experimental opt-in
+- **Deployment monitoring foundation** (Prometheus, Grafana, Jaeger)
 
-The system is already well-architected for distributed deployment with existing 3-node configurations.
+The repository contains distributed-deployment and three-node configuration scaffolding; those
+artifacts are not proof of converged operation.
 
 ### Key Findings
 
 ✅ **Architecture**: Modern Rust workspace with 26 modules, clean separation of concerns
-✅ **Consensus**: Proof-of-Authority with dynamic rotation and performance tracking
-✅ **Networking**: WebSocket-based P2P with peer discovery and blockchain sync
-✅ **Production-Ready**: Docker support, monitoring stack, health checks built-in
-✅ **Tested**: Existing `three_node_validation_test.rs` proves 3-node viability
+⏳ **Consensus**: PoA code/configuration candidate exists; exact authority scheduling, durable
+commit, and three-node convergence/recovery evidence remain pending
+⏳ **Networking**: WebSocket P2P scaffolding exists; authenticated membership and exact-envelope
+replication/convergence evidence remain pending
+⏳ **Deployment Foundation**: Docker, monitoring, and health-check configurations exist; no
+operational deployment result is claimed
+⏳ **Testing**: `three_node_validation_test.rs` is legacy test scaffolding and does not prove
+three-process convergence or deployment viability
 
-### Deployment Readiness: ⭐⭐⭐⭐⭐ (5/5)
+### Deployment Readiness: Not rated; operational and pilot evidence remain future work
 
 ---
 
@@ -402,21 +415,34 @@ debug = true            # Debug info for profiling
 
 ---
 
-## 3. Network Communication & Consensus
+## 3. Network Communication & Consensus — Superseded Sketch and Accepted Target
+
+> **Superseded target-state quarantine (2026-08-31):** this section originated as a January 2026
+> deployment sketch. Type names, configuration fragments, commands, and present-tense verbs below
+> are retained as historical inventory or future test-plan material; they are not evidence that the
+> runtime performs the depicted follower admission, commitment, synchronization, security, or
+> recovery behavior. The accepted target contract is: every write reaches one Final Admission
+> boundary; only append plus `fsync` of the complete Admitted Block Envelope in the Ledger Journal
+> commits; the in-memory chain, Oxigraph, and indexes are rebuildable projections; replication sends
+> exact committed envelope bytes; and each follower independently passes those bytes through Final
+> Admission before its own journal commit. Three matching Commit Receipts are convergence evidence,
+> not PBFT votes or another commit point. Implementation and three-process crash/recovery evidence
+> remain pending under ADRs 0016-0023.
 
 ### Consensus Architecture
 
-ProvChain-Org supports two consensus protocols:
+The repository contains PoA candidate code and an experimental PBFT skeleton. Their presence does
+not establish either complete protocol or operational consensus evidence.
 
-#### 1. Proof of Authority (PoA) - Primary
+#### 1. Proof of Authority (PoA) - Reference Candidate
 
-**Overview:**
+**Historical intended characteristics (not measured or end-to-end evidence):**
 - Designated authority nodes create blocks
 - Round-robin rotation among authorities
 - Performance-based reputation system
 - Low latency, high throughput
 
-**Key Components:**
+**Historical code-shape inventory (not the accepted end-to-end protocol):**
 ```rust
 ProofOfAuthority {
     authority_keypair: Ed25519 keypair for signing
@@ -437,32 +463,38 @@ AuthorityPerformance {
 }
 ```
 
-**Authority Selection Logic:**
+**Superseded historical selection sketch:**
 1. Authorities are ordered in `authority_rotation_order`
 2. Current authority creates blocks for configured interval (default 10s)
 3. After interval, rotate to next authority in order
 4. If authority misses slot (no block created), reputation decreases
 5. Performance tracking influences future governance decisions
 
-**Block Creation Flow:**
+**Accepted target proposal, commit, and follower flow (implementation/evidence pending):**
 ```
-Authority Node:
-1. Check if current time >= last_block_time + block_interval
-2. If yes, create block with pending transactions
-3. Sign block with authority_keypair
-4. Broadcast BlockProposal to all peers
-5. Update authority_state and performance metrics
+Scheduled Authority:
+1. Submit an unsigned request to the one per-ledger PoA Proposal Coordinator.
+2. Complete non-mutating preflight, select one body, persist the crash-safe Signing Fence, and sign
+   at most that exact proposal for the PoA Turn.
+3. Present the signed proposal to the same Final Admission used by every ingress path.
+4. Final Admission verifies parent/profile/manifest/turn/signature, integrity and post-state,
+   package-declared full staged-union SHACL/focus/bounds, and the complete envelope.
+5. Append plus fsync of the complete Admitted Block Envelope to the Ledger Journal is the sole
+   local commit point.
+6. Update or rebuild in-memory/Oxigraph/index projections only after commit, then replicate the
+   unchanged committed envelope and prefix.
 
-Regular Node:
-1. Receive BlockProposal message
-2. Validate block signature (must be current authority)
-3. Validate block timing (within acceptable range)
-4. Validate block structure and transactions
-5. If valid, add to blockchain and forward to peers
-6. If invalid, reject and log error
+Follower:
+1. Receive exact envelope bytes through an Authenticated Peer Session.
+2. Independently pass the unchanged envelope through Final Admission; never reconstruct from RDF,
+   metadata, height, or a process-local block.
+3. Commit only through its own journal append plus fsync; rejection mutates neither journal nor
+   projections.
+4. Issue a Commit Receipt only after its own commit. Matching receipts report convergence but do
+   not authorize or undo commitment.
 ```
 
-**Configuration:**
+**Historical illustrative configuration (not activation or convergence evidence):**
 ```toml
 [consensus]
 is_authority = true                    # This node can create blocks
@@ -475,22 +507,23 @@ block_interval = 10                    # Seconds between blocks
 max_block_size = 1048576              # 1 MB
 ```
 
-#### 2. PBFT (Practical Byzantine Fault Tolerance) - Secondary
+#### 2. PBFT (Practical Byzantine Fault Tolerance) - Experimental
 
 **Overview:**
-- Byzantine fault-tolerant consensus
+- Experimental Byzantine fault-tolerant consensus path
 - Requires 3f+1 nodes to tolerate f failures
-- More complex, higher latency, but handles malicious nodes
+- More complex and higher latency; not currently claimed production-ready
 
 **Use Cases:**
-- High-security environments
-- Untrusted validator sets
-- Regulatory compliance requirements
+- Research and controlled test environments
+- Future hardening work for untrusted validator sets
+- Architectural extensibility demonstrations
 
 **Configuration:**
 ```toml
 [consensus]
-protocol = "pbft"         # Switch from PoA to PBFT
+protocol = "pbft"         # Experimental; requires explicit opt-in
+allow_experimental_pbft = true
 pbft_timeout = 30         # Consensus timeout (seconds)
 pbft_view_change = true   # Enable view changes
 ```
@@ -589,28 +622,27 @@ PeerInfo {
 
 #### Blockchain Synchronization
 
-**Sync Protocol:**
+**Accepted target exact-envelope synchronization (implementation/evidence pending):**
 ```
 New Node Joins:
-1. Connect to bootstrap peer
-2. Request blockchain length: GET /api/blockchain/length
-3. Compare with local blockchain length
-4. If remote > local:
-   a. Request missing blocks in chunks (100 blocks/request)
-   b. Validate each block before adding
-   c. Repeat until synchronized
-5. Subscribe to BlockProposal messages for new blocks
-
-Block Validation:
-- Verify block hash matches calculated hash
-- Verify previous_hash links to existing block
-- Verify authority signature (PoA)
-- Verify block timestamp is valid
-- Verify transactions are well-formed
-- Run semantic validation (OWL2/SHACL)
+1. Establish an Authenticated Peer Session and compare the exact ledger position plus Ledger Prefix
+   Hash, not chain length alone.
+2. Request a bounded contiguous range anchored to the last verified matching prefix.
+3. Receive exact canonical Admitted Block Envelope bytes and prefix evidence; never rebuild a block
+   from RDF, metadata, or a mutable state snapshot.
+4. Pass each envelope in order through the same Final Admission gates, including active membership,
+   Scheduled Authority/PoA turn, integrity/post-state, and package-declared full-union SHACL.
+5. Commit each accepted envelope only through local Ledger Journal append plus fsync, then rebuild
+   derived projections and issue the deterministic Commit Receipt.
+6. Treat a gap as a bounded catch-up obligation and a conflicting committed position/prefix as
+   divergence or equivocation; never overwrite, rewind, longest-chain-select, or timestamp-select.
 ```
 
-**Sync States:**
+The current metadata/bare-block synchronization path is nonconforming and does not prove this flow.
+The following enum is retained only as historical code-shape inventory; `Synchronized` cannot mean
+Network Convergence without matching exact-envelope/prefix receipts from all three reference nodes.
+
+**Historical sync-state enum:**
 ```rust
 enum SyncState {
     Syncing { current: u64, target: u64 },
@@ -652,24 +684,35 @@ send_buffer_size = 65536  # 64 KB
 recv_buffer_size = 65536  # 64 KB
 ```
 
-### Security Considerations
+### Security Considerations — Target Requirements, Not Current Deployment Evidence
 
 #### Cryptographic Security
-- **Signatures**: Ed25519 (256-bit security)
-- **Encryption**: ChaCha20-Poly1305 (256-bit keys)
-- **Hashing**: SHA-256 for block hashes
+- **Signatures**: Ed25519 primitives exist, but Block Proposal, Node Identity, membership,
+  participant, and bridge-receipt uses require their separately pinned transcripts and evidence;
+  key size is not a security-strength or protocol-conformance claim.
+- **Encryption**: low-level ChaCha-family helpers exist. The complete ADR 0027-0036 durable privacy
+  lifecycle, `ProtectedDataSuiteV1`, client-only custody, snapshot durability, and crash evidence
+  remain pending and inactive.
+- **Hashing**: SHA-256 primitives exist; only the accepted canonical envelope, proposal, prefix,
+  state-commitment, and domain-hash contracts define authoritative use.
 
 #### Network Security
-- **TLS/SSL**: Recommended for production (wss://)
-- **Firewall**: Restrict to known peer IPs
-- **DDoS Protection**: Rate limiting on API endpoints
-- **Authentication**: JWT tokens for API access
+- **TLS 1.3**: target transport control whose activation, certificate/peer-identity binding, and
+  reproduced evidence remain pending; a `wss://` plan is not proof of deployment.
+- **Firewall/DDoS controls**: future operational and pilot controls, not results in this report.
+- **Authentication**: JWT covers API principals only and cannot substitute for governance-signed
+  membership or mutual Node Identity challenge-response on peer sessions.
 
 #### Consensus Security
-- **Authority Verification**: Only authorized public keys can create blocks
-- **Signature Verification**: All blocks must be signed by valid authority
-- **Replay Protection**: Block timestamps prevent replay attacks
-- **Chain Validation**: Full blockchain validation on startup
+- **Authority verification target**: the active signed manifest and Network Profile select the one
+  Scheduled Authority for the exact PoA Turn; current code/evidence remains incomplete.
+- **Signature verification target**: the proposal signature is eligibility evidence only; it never
+  commits or bypasses Final Admission.
+- **Replay/equivocation target**: parent/prefix/turn binding, the Signing Fence, exact journal
+  history, and deterministic replay state fail closed. Timestamps do not prevent replay and do not
+  choose among conflicting proposals.
+- **Recovery validation target**: Verified Journal Replay checks every exact committed envelope and
+  rebuilds projections; a generic startup scan is not substitute evidence.
 
 ---
 
@@ -1243,9 +1286,9 @@ cargo bench -- --save-baseline baseline_v1
 | Test | Command | Expected Result |
 |------|---------|-----------------|
 | Health Check | `curl http://10.0.1.10:8080/health` | `{"status":"healthy"}` |
-| Peer Count | `curl http://10.0.1.10:8080/api/peers \| jq 'length'` | `2` (for 3-node) |
-| Consensus Status | `curl http://10.0.1.10:8080/api/consensus/stats` | `is_authority: true` |
-| Blockchain Length | `curl http://10.0.1.10:8080/api/blockchain/dump \| jq 'length'` | `>= 1` (genesis) |
+| Peer Count | `curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status \| jq '.peer_count'` | configured peer count |
+| Consensus Status | verify node config/logs for authority role | no public consensus-governance HTTP API is currently exposed |
+| Blockchain Length | `curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status \| jq '.total_blocks'` | `>= 1` (genesis) |
 
 **Automated Script:**
 ```bash
@@ -1253,6 +1296,7 @@ cargo bench -- --save-baseline baseline_v1
 # test_phase1_health.sh
 
 NODES=("10.0.1.10" "10.0.1.11" "10.0.1.12")
+TOKEN="${TOKEN:?Set TOKEN to a valid JWT before running protected API checks}"
 PASS=0
 FAIL=0
 
@@ -1281,13 +1325,12 @@ exit $FAIL
 
 1. **Submit Transaction to Authority**
 ```bash
-curl -X POST http://10.0.1.10:8080/api/transactions \
+curl -X POST http://10.0.1.10:8080/api/blockchain/add-triple \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "data": "@prefix ex: <http://test.org/> . ex:test1 ex:prop \"value\" ."
-  }'
+  -d '{"subject":"http://test.org/test1","predicate":"http://test.org/prop","object":"value","graph_name":null,"privacy_key_id":null}'
 
-# Expected: {"status":"accepted","tx_id":"..."}
+# Expected: JSON response indicating the triple/block was accepted
 ```
 
 2. **Wait for Block Creation**
@@ -1296,8 +1339,8 @@ curl -X POST http://10.0.1.10:8080/api/transactions \
 sleep 15
 
 # Verify block was created
-curl http://10.0.1.10:8080/api/blockchain/dump | jq '.[-1]'
-# Should show latest block with transaction
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/blocks | jq '.[-1]'
+# Should show latest block
 ```
 
 3. **Verify Synchronization Across Nodes**
@@ -1305,7 +1348,7 @@ curl http://10.0.1.10:8080/api/blockchain/dump | jq '.[-1]'
 # Get blockchain hashes from all nodes
 for ip in 10.0.1.10 10.0.1.11 10.0.1.12; do
   echo "Node $ip:"
-  curl -s http://$ip:8080/api/blockchain/dump | \
+  curl -s -H "Authorization: Bearer $TOKEN" http://$ip:8080/api/blockchain/blocks | \
     jq -r '.[] | .hash' | \
     tail -5
 done
@@ -1316,9 +1359,10 @@ done
 4. **Query Blockchain Data**
 ```bash
 # SPARQL query
-curl -X POST http://10.0.1.10:8080/api/query \
-  -H "Content-Type: application/sparql-query" \
-  -d 'SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10'
+curl -X POST http://10.0.1.10:8080/api/sparql/query \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10","format":"json"}'
 
 # Should return triples from blockchain
 ```
@@ -1332,23 +1376,25 @@ set -e
 
 AUTHORITY="10.0.1.10"
 NODES=("10.0.1.10" "10.0.1.11" "10.0.1.12")
+TOKEN="${TOKEN:?Set TOKEN to a valid JWT before running protected API checks}"
 
 echo "=== Phase 2: Blockchain Operations ==="
 
 # 1. Get initial blockchain lengths
 echo "1. Recording initial state..."
 for node in "${NODES[@]}"; do
-  length=$(curl -s http://$node:8080/api/blockchain/dump | jq 'length')
+  length=$(curl -s -H "Authorization: Bearer $TOKEN" http://$node:8080/api/blockchain/status | jq '.total_blocks')
   echo "Node $node: $length blocks"
 done
 
 # 2. Submit transaction
 echo "2. Submitting test transaction..."
-tx_response=$(curl -s -X POST http://$AUTHORITY:8080/api/transactions \
+tx_response=$(curl -s -X POST http://$AUTHORITY:8080/api/blockchain/add-triple \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"data":"<http://test> <http://prop> \"ops_test\" ."}')
+  -d '{"subject":"http://test","predicate":"http://prop","object":"ops_test","graph_name":null,"privacy_key_id":null}')
 
-if echo "$tx_response" | grep -q "accepted"; then
+if echo "$tx_response" | grep -q "\"success\":true"; then
   echo "✓ Transaction accepted"
 else
   echo "✗ Transaction rejected"
@@ -1364,7 +1410,7 @@ echo "4. Verifying blockchain sync..."
 declare -a new_lengths
 for i in "${!NODES[@]}"; do
   node="${NODES[$i]}"
-  new_length=$(curl -s http://$node:8080/api/blockchain/dump | jq 'length')
+  new_length=$(curl -s -H "Authorization: Bearer $TOKEN" http://$node:8080/api/blockchain/status | jq '.total_blocks')
   new_lengths[$i]=$new_length
   echo "Node $node: $new_length blocks"
 done
@@ -1381,7 +1427,7 @@ fi
 # 5. Verify blockchain integrity
 echo "5. Validating blockchain integrity..."
 for node in "${NODES[@]}"; do
-  valid=$(curl -s http://$node:8080/api/blockchain/validate | jq -r '.valid')
+  valid=$(curl -s -H "Authorization: Bearer $TOKEN" http://$node:8080/api/blockchain/validate | jq -r '.valid')
   if [ "$valid" == "true" ]; then
     echo "✓ Node $node: valid"
   else
@@ -1397,25 +1443,26 @@ echo "=== Phase 2 Complete: All operations successful ==="
 
 **Test Scenarios:**
 
-1. **Monitor Authority Rotation**
+1. **Monitor Block Height Progression**
 ```bash
-# Watch consensus rounds increment
+# Watch total_blocks while submitting/admitting blocks
 for i in {1..10}; do
-  round=$(curl -s http://10.0.1.10:8080/api/consensus/stats | jq '.current_round')
-  echo "Round $round (iteration $i)"
+  round=$(curl -s -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status | jq '.total_blocks')
+  echo "Observed total_blocks=$round (iteration $i)"
   sleep 12  # Slightly longer than block_interval
 done
 
-# Rounds should increment: 1, 2, 3, 4...
+# total_blocks should increase when new blocks are admitted
 ```
 
 2. **Rapid Transaction Submission**
 ```bash
 # Submit 20 transactions rapidly
 for i in {1..20}; do
-  curl -X POST http://10.0.1.10:8080/api/transactions \
+  curl -X POST http://10.0.1.10:8080/api/blockchain/add-triple \
+    -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"data\":\"<http://test/$i> <http://prop> \\\"$i\\\" .\"}" &
+    -d "{\"subject\":\"http://test/$i\",\"predicate\":\"http://prop\",\"object\":\"$i\",\"graph_name\":null,\"privacy_key_id\":null}" &
 done
 wait
 
@@ -1424,7 +1471,7 @@ sleep 30
 
 # Verify all nodes have same blockchain length
 for ip in 10.0.1.10 10.0.1.11 10.0.1.12; do
-  length=$(curl -s http://$ip:8080/api/blockchain/dump | jq 'length')
+  length=$(curl -s -H "Authorization: Bearer $TOKEN" http://$ip:8080/api/blockchain/blocks | jq '.total_blocks // .peer_count // length')
   echo "Node $ip: $length blocks"
 done
 ```
@@ -1436,7 +1483,7 @@ curl http://10.0.1.10:9090/metrics | grep provchain
 
 # Key metrics to check:
 # - provchain_blocks_total (should be increasing)
-# - provchain_peers_connected (should be 2)
+# - provchain_peers_connected (check peer_count)
 # - provchain_transaction_latency_seconds (should be < 1.0)
 # - provchain_consensus_round (should be increasing)
 ```
@@ -1460,13 +1507,14 @@ curl http://10.0.1.10:8080/health
 # Should still return healthy
 
 # Submit transaction
-curl -X POST http://10.0.1.10:8080/api/transactions \
+curl -X POST http://10.0.1.10:8080/api/blockchain/add-triple \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"data":"<http://resilience> <http://test> \"1\" ."}'
+  -d '{"subject":"http://resilience","predicate":"http://test","object":"1","graph_name":null,"privacy_key_id":null}'
 
 # Verify block created
 sleep 15
-curl http://10.0.1.10:8080/api/blockchain/dump | jq '.[-1]'
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/blocks | jq '.[-1]'
 
 # Restart failed node
 ssh vm3 "docker-compose up -d"  # or systemctl start
@@ -1475,7 +1523,7 @@ ssh vm3 "docker-compose up -d"  # or systemctl start
 sleep 30
 
 # Verify node caught up
-curl http://10.0.1.12:8080/api/blockchain/dump | jq 'length'
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.12:8080/api/blockchain/blocks | jq '.total_blocks // .peer_count // length'
 # Should match other nodes
 ```
 
@@ -1486,7 +1534,7 @@ ssh vm2 "sudo iptables -A INPUT -s 10.0.1.10 -j DROP"
 ssh vm2 "sudo iptables -A OUTPUT -d 10.0.1.10 -j DROP"
 
 # Observe behavior (should see disconnected peer)
-curl http://10.0.1.10:8080/api/peers | jq 'length'
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status | jq '.total_blocks // .peer_count // length'
 # Should show 1 peer instead of 2
 
 # Restore connectivity
@@ -1494,7 +1542,7 @@ ssh vm2 "sudo iptables -F"
 
 # Verify reconnection
 sleep 10
-curl http://10.0.1.10:8080/api/peers | jq 'length'
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status | jq '.total_blocks // .peer_count // length'
 # Should show 2 peers again
 ```
 
@@ -1513,7 +1561,7 @@ ssh vm1 "docker-compose up -d"
 
 # Verify block creation resumes
 sleep 15
-curl http://10.0.1.11:8080/api/blockchain/dump | jq '.[-1]'
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.11:8080/api/blockchain/blocks | jq '.[-1]'
 # Should show new block after authority restart
 ```
 
@@ -1530,6 +1578,7 @@ set -e
 NODES=("10.0.1.10" "10.0.1.11" "10.0.1.12")
 AUTHORITY="${NODES[0]}"
 API_PORT=8080
+TOKEN="${TOKEN:?Set TOKEN to a valid JWT before running protected API checks}"
 TOTAL_TESTS=0
 PASSED_TESTS=0
 FAILED_TESTS=0
@@ -1575,7 +1624,7 @@ for node in "${NODES[@]}"; do
 done
 
 # Check peer connectivity
-peers=$(curl -s http://$AUTHORITY:$API_PORT/api/peers | jq 'length')
+peers=$(curl -s -H "Authorization: Bearer $TOKEN" http://$AUTHORITY:$API_PORT/api/blockchain/status | jq '.peer_count')
 if [ "$peers" -eq 2 ]; then
   test_pass "All peers connected ($peers/2)"
 else
@@ -1588,19 +1637,20 @@ section "Phase 2: Blockchain Operations"
 # Record initial lengths
 declare -a initial_lengths
 for i in "${!NODES[@]}"; do
-  length=$(curl -s http://${NODES[$i]}:$API_PORT/api/blockchain/dump | jq 'length')
+  length=$(curl -s -H "Authorization: Bearer $TOKEN" http://${NODES[$i]}:$API_PORT/api/blockchain/status | jq '.total_blocks')
   initial_lengths[$i]=$length
 done
 
 # Submit transaction
-tx_response=$(curl -s -X POST http://$AUTHORITY:$API_PORT/api/transactions \
+tx_response=$(curl -s -X POST http://$AUTHORITY:$API_PORT/api/blockchain/add-triple \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"data":"<http://validation> <http://test> \"suite\" ."}')
+  -d '{"subject":"http://validation","predicate":"http://test","object":"suite","graph_name":null,"privacy_key_id":null}')
 
-if echo "$tx_response" | grep -q "accepted"; then
-  test_pass "Transaction accepted"
+if echo "$tx_response" | grep -q "\"success\":true"; then
+  test_pass "Triple accepted"
 else
-  test_fail "Transaction rejected"
+  test_fail "Triple rejected"
 fi
 
 # Wait for block
@@ -1610,7 +1660,7 @@ sleep 15
 # Verify synchronization
 declare -a new_lengths
 for i in "${!NODES[@]}"; do
-  length=$(curl -s http://${NODES[$i]}:$API_PORT/api/blockchain/dump | jq 'length')
+  length=$(curl -s -H "Authorization: Bearer $TOKEN" http://${NODES[$i]}:$API_PORT/api/blockchain/status | jq '.total_blocks')
   new_lengths[$i]=$length
 done
 
@@ -1625,29 +1675,29 @@ fi
 # Phase 3: Consensus
 section "Phase 3: Consensus Validation"
 
-authority_status=$(curl -s http://$AUTHORITY:$API_PORT/api/consensus/stats | jq -r '.is_authority')
-if [ "$authority_status" == "true" ]; then
-  test_pass "Authority node operational"
+authority_status=$(curl -s -H "Authorization: Bearer $TOKEN" http://$AUTHORITY:$API_PORT/api/blockchain/status | jq -r '.network_status')
+if [ "$authority_status" == "healthy" ]; then
+  test_pass "Authority node status endpoint operational"
 else
-  test_fail "Authority node not detected"
+  test_fail "Authority node status endpoint not healthy"
 fi
 
 # Check consensus round progression
-round1=$(curl -s http://$AUTHORITY:$API_PORT/api/consensus/stats | jq '.current_round')
+round1=$(curl -s -H "Authorization: Bearer $TOKEN" http://$AUTHORITY:$API_PORT/api/blockchain/status | jq '.total_blocks')
 sleep 12
-round2=$(curl -s http://$AUTHORITY:$API_PORT/api/consensus/stats | jq '.current_round')
+round2=$(curl -s -H "Authorization: Bearer $TOKEN" http://$AUTHORITY:$API_PORT/api/blockchain/status | jq '.total_blocks')
 
 if [ "$round2" -gt "$round1" ]; then
-  test_pass "Consensus rounds progressing ($round1 -> $round2)"
+  test_pass "Block height progressing ($round1 -> $round2)"
 else
-  test_fail "Consensus rounds not progressing"
+  test_fail "Block height not progressing"
 fi
 
 # Phase 4: Integrity
 section "Phase 4: Blockchain Integrity"
 
 for node in "${NODES[@]}"; do
-  valid=$(curl -s http://$node:$API_PORT/api/blockchain/validate | jq -r '.valid')
+  valid=$(curl -s -H "Authorization: Bearer $TOKEN" http://$node:$API_PORT/api/blockchain/validate | jq -r '.valid')
   if [ "$valid" == "true" ]; then
     test_pass "Node $node blockchain valid"
   else
@@ -1681,11 +1731,12 @@ sudo apt-get install apache2-utils
 
 # Load test API endpoint (100 requests, 10 concurrent)
 ab -n 100 -c 10 -p transaction.json -T application/json \
-  http://10.0.1.10:8080/api/transactions
+  -H "Authorization: Bearer $TOKEN" \
+  http://10.0.1.10:8080/api/blockchain/add-triple
 
 # Transaction payload file
 cat > transaction.json <<EOF
-{"data":"<http://load> <http://test> \"value\" ."}
+{"subject":"http://load","predicate":"http://test","object":"value","graph_name":null,"privacy_key_id":null}
 EOF
 
 # Expected results:
@@ -1819,12 +1870,12 @@ Use this checklist to ensure complete deployment:
   - `curl http://10.0.1.11:8080/health`
   - `curl http://10.0.1.12:8080/health`
 - [ ] Verify peer connections
-  - `curl http://10.0.1.10:8080/api/peers | jq 'length'` (should be 2)
+  - `curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status | jq '.peer_count'` (check peer_count)
 - [ ] Check consensus status
-  - `curl http://10.0.1.10:8080/api/consensus/stats`
-  - Verify `is_authority: true` for VM-1
+  - `curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status`
+  - Verify `network_status: healthy` for VM-1
 - [ ] Verify blockchain initialization
-  - `curl http://10.0.1.10:8080/api/blockchain/dump | jq 'length'`
+  - `curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/blocks | jq '.total_blocks // .peer_count // length'`
   - Should show at least genesis block (length >= 1)
 
 ### Post-Deployment Validation
@@ -1973,8 +2024,8 @@ provchain_transaction_pool_size                            # Pending transaction
 provchain_transaction_latency_seconds                      # Processing time
 
 # API Metrics
-provchain_http_requests_total{method="POST",path="/api/transactions"}
-provchain_http_request_duration_seconds{method="GET",path="/api/blockchain/dump"}
+provchain_http_requests_total{method="POST",path="/api/blockchain/add-triple"}
+provchain_http_request_duration_seconds{method="GET",path="/api/blockchain/blocks"}
 provchain_http_errors_total{code="500"}
 
 # System Metrics
@@ -2091,7 +2142,7 @@ sum(provchain_peers_connected) by (node_id)
 ```
 1. Open Jaeger UI: http://10.0.1.10:16686
 2. Select service: "provchain-node1"
-3. Select operation: "POST /api/transactions"
+3. Select operation: "POST /api/blockchain/add-triple" or "POST /api/datasets/import-turtle"
 4. Click "Find Traces"
 5. Click on a trace to see detailed spans
 ```
@@ -2357,7 +2408,7 @@ readinessProbe:
 #### Issue 1: Nodes Not Connecting
 
 **Symptoms:**
-- `curl http://10.0.1.10:8080/api/peers | jq 'length'` returns `0`
+- `curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status | jq '.total_blocks // .peer_count // length'` returns `0`
 - Logs show "Connection refused" or "Connection timeout"
 
 **Diagnosis:**
@@ -2410,24 +2461,24 @@ docker network inspect provchain_network
 **Symptoms:**
 - Different blockchain lengths across nodes
 - Logs show "Block validation failed"
-- `curl http://10.0.1.10:8080/api/blockchain/validate` returns `valid: false`
+- `curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/validate` returns `valid: false`
 
 **Diagnosis:**
 ```bash
 # Check blockchain lengths
 for ip in 10.0.1.10 10.0.1.11 10.0.1.12; do
   echo "Node $ip:"
-  curl -s http://$ip:8080/api/blockchain/dump | jq 'length'
+  curl -s -H "Authorization: Bearer $TOKEN" http://$ip:8080/api/blockchain/blocks | jq '.total_blocks // .peer_count // length'
 done
 
 # Check last block hashes
 for ip in 10.0.1.10 10.0.1.11 10.0.1.12; do
   echo "Node $ip:"
-  curl -s http://$ip:8080/api/blockchain/dump | jq -r '.[-1].hash'
+  curl -s -H "Authorization: Bearer $TOKEN" http://$ip:8080/api/blockchain/blocks | jq -r '.[-1].hash'
 done
 
 # Validate blockchain integrity
-curl http://10.0.1.10:8080/api/blockchain/validate | jq '.'
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/validate | jq '.'
 ```
 
 **Solutions:**
@@ -2475,9 +2526,9 @@ curl http://10.0.1.10:8080/api/blockchain/validate | jq '.'
 
 **Diagnosis:**
 ```bash
-# Check if node is authority
-curl http://10.0.1.10:8080/api/consensus/stats | jq '.is_authority'
-# Should return: true
+# Check authority setting from config/logs; no public consensus role API is exposed
+grep -R "is_authority" config/*.toml
+docker logs provchain-node1 | grep -i authority
 
 # Check authority keypair is loaded
 docker exec provchain-node1 ls -l /app/keys/authority.key
@@ -2488,9 +2539,9 @@ ls -l /opt/provchain/keys/authority.key
 docker logs provchain-node1 | grep -i authority
 
 # Check consensus round progression
-curl http://10.0.1.10:8080/api/consensus/stats | jq '.current_round'
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status | jq '.total_blocks'
 sleep 12  # Wait block_interval + 2s
-curl http://10.0.1.10:8080/api/consensus/stats | jq '.current_round'
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status | jq '.total_blocks'
 # Should have incremented
 ```
 
@@ -2650,7 +2701,7 @@ du -sh /var/log/
 **Diagnosis:**
 ```bash
 # Test API response time
-time curl http://10.0.1.10:8080/api/blockchain/dump
+time curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/blocks
 
 # Check Prometheus metrics
 curl http://10.0.1.10:9090/api/v1/query?query=provchain_http_request_duration_seconds
@@ -2692,7 +2743,7 @@ iostat -x 1
 **Diagnosis:**
 ```bash
 # Test WebSocket connection
-wscat -c ws://10.0.1.10:8080/api/ws
+wscat -c ws://10.0.1.10:8080/ws
 
 # Check nginx/proxy config (if using reverse proxy)
 cat /etc/nginx/sites-available/provchain
@@ -2704,7 +2755,7 @@ docker network inspect provchain_network
 **Solutions:**
 1. **Configure nginx for WebSocket**:
    ```nginx
-   location /api/ws {
+   location /ws {
      proxy_pass http://backend;
      proxy_http_version 1.1;
      proxy_set_header Upgrade $http_upgrade;
@@ -2726,8 +2777,8 @@ docker network inspect provchain_network
 ```bash
 # === Node Status ===
 curl http://10.0.1.10:8080/health
-curl http://10.0.1.10:8080/api/consensus/stats
-curl http://10.0.1.10:8080/api/peers
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/status
 
 # === Logs ===
 docker logs -f provchain-node1
@@ -2744,9 +2795,9 @@ netstat -tulpn | grep 8080
 traceroute 10.0.1.11
 
 # === Blockchain ===
-curl http://10.0.1.10:8080/api/blockchain/dump | jq '.'
-curl http://10.0.1.10:8080/api/blockchain/validate
-curl http://10.0.1.10:8080/api/blockchain/dump | jq 'length'
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/blocks | jq '.'
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/validate
+curl -H "Authorization: Bearer $TOKEN" http://10.0.1.10:8080/api/blockchain/blocks | jq '.total_blocks // .peer_count // length'
 
 # === System ===
 top
@@ -3210,7 +3261,7 @@ journalctl -u provchain -n 100
    );
 
    let app = Router::new()
-       .route("/api/transactions", post(handle_transaction))
+       .route("/api/blockchain/add-triple", post(add_triple))
        .layer(GovernorLayer { config: governor_conf });
    ```
 
@@ -3241,56 +3292,47 @@ journalctl -u provchain -n 100
 
 ```
 GET  /health                          # Health check
-GET  /api/status                      # Detailed status
-GET  /api/version                     # Application version
+GET  /api/blockchain/status           # Detailed blockchain/node status
 ```
 
 #### Blockchain Operations
 
 ```
-GET  /api/blockchain/dump             # Get all blocks
+GET  /api/blockchain/blocks           # Get all blocks
 GET  /api/blockchain/validate         # Validate integrity
-GET  /api/blockchain/block/:index     # Get specific block
-GET  /api/blockchain/length           # Get blockchain length
+GET  /api/blockchain/blocks/:index    # Get specific block
+GET  /api/blockchain/status           # Get blockchain status including total_blocks
 ```
 
 #### Transactions
 
 ```
-POST /api/transactions                # Submit new transaction
-GET  /api/transactions/:id            # Get transaction by ID
-GET  /api/transactions/pending        # Get pending transactions
+POST /api/transactions/create         # Create transaction object
+POST /api/transactions/sign           # Sign transaction object
+POST /api/transactions/submit         # Submit signed transaction object
+GET  /api/transactions/recent         # Get recent transactions
 ```
 
 #### Consensus
 
-```
-GET  /api/consensus/stats             # Consensus status
-GET  /api/consensus/authorities       # List authorities
-POST /api/consensus/add-authority     # Add new authority (governance)
-POST /api/consensus/remove-authority  # Remove authority (governance)
-```
+No public consensus-governance HTTP routes are currently exposed. Verify consensus role and authority settings through node configuration and logs; use `GET /api/blockchain/status` only for general node health/blockchain status.
 
 #### Peer Management
 
-```
-GET  /api/peers                       # Connected peers
-POST /api/peers/connect               # Connect to peer manually
-POST /api/peers/disconnect            # Disconnect peer
-```
+No standalone peer-management HTTP routes are currently exposed. `GET /api/blockchain/status` reports `peer_count`.
 
 #### Query
 
 ```
-POST /api/query                       # Execute SPARQL query
-  Content-Type: application/sparql-query
-  Body: SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10
+POST /api/sparql/query                # Execute SPARQL query
+  Content-Type: application/json
+  Body: {"query":"SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10","format":"json"}
 ```
 
 #### WebSocket
 
 ```
-WS   /api/ws                          # Real-time updates
+WS   /ws                              # Real-time updates
   Messages:
     - block_added: New block notification
     - transaction_added: New transaction
@@ -3490,23 +3532,30 @@ Issue: Performance degraded
 
 ## Summary
 
-ProvChain-Org is **production-ready** with excellent infrastructure:
+ProvChain-Org has a strong **research-grade deployment foundation**, but the
+current claim boundary is not full production readiness:
 
 ✅ **Well-Architected**: 26 Rust modules, clean separation of concerns
-✅ **Battle-Tested**: Existing 3-node validation test
-✅ **Production-Ready**: Monitoring, health checks, Docker support
+⏳ **Three-node evidence**: Configuration/test scaffolding exists; exact process-level convergence and recovery remain pending
+⏳ **Deployment Foundation**: Monitoring, health-check, and Docker configurations exist; operation is not validated here
 ✅ **Documented**: Comprehensive configs and deployment guides
-✅ **Secure**: Ed25519 signing, ChaCha20-Poly1305 encryption, JWT auth
-✅ **Scalable**: Can expand beyond 3 nodes with minimal changes
+⏳ **Security**: Cryptographic/authentication components exist; authenticated membership, durable privacy lifecycle, and production-control evidence remain pending
+⏳ **Scalability**: Multi-node scalability is an unevaluated future claim
 
-**Total Time to Deploy:** 2-4 hours (Docker Compose) | 1-2 days (Kubernetes)
+Current claim boundary: PoA is the reference implementation candidate, but exact three-node
+convergence and crash/recovery evidence are pending. PBFT, cross-chain bridge operation, the full
+private-data lifecycle, operational deployment, and pilot controls remain experimental,
+architecture-only, or future milestones until their required evidence is complete.
 
-**Recommended First Deployment:**
+**Historical planning estimate only, not reproduced evidence:** 2-4 hours (Docker Compose) |
+1-2 days (Kubernetes)
+
+**Suggested controlled experiment, not a production recommendation:**
 1. Choose AWS (best value)
 2. Use Docker Compose (fastest)
 3. Start with t3.medium (2 vCPU, 4 GB) for all nodes (save cost during testing)
 4. Run validation suite
-5. Upgrade to recommended specs for production
+5. Record evidence before proposing any production specification
 
 **Next Steps:**
 1. Provision VMs

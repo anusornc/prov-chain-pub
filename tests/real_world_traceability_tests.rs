@@ -155,6 +155,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_real_world_entity_linking() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         // Load test data with intentional duplicates
         let test_data = std::fs::read_to_string("tests/data/real_world_entity_linking_test.ttl")?;
 
@@ -241,6 +247,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_large_scale_entity_linking_performance() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         let mut knowledge_graph = create_large_knowledge_graph_with_duplicates(10000, 0.15)?; // 15% duplicates
         let entity_linker = EntityLinker::new();
 
@@ -271,6 +283,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_supply_chain_risk_assessment() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         let knowledge_graph = create_complex_supply_chain_graph()?;
         let graph_db = GraphDatabase::new(knowledge_graph);
 
@@ -321,6 +339,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_graph_embeddings_and_similarity() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         let knowledge_graph = create_complex_supply_chain_graph()?;
         let mut graph_db = GraphDatabase::new(knowledge_graph);
 
@@ -374,6 +398,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_temporal_graph_evolution() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         // Create blockchain with temporal data
         let mut blockchain = Blockchain::new();
         let mut rdf_store = RDFStore::new();
@@ -418,6 +448,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_fsma_compliance_traceability() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         let blockchain = create_food_safety_blockchain()?;
         let traceability_engine = create_traceability_engine(blockchain)?;
 
@@ -488,6 +524,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_conflict_minerals_compliance() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         let blockchain = create_electronics_supply_chain_blockchain()?;
         let traceability_engine = create_traceability_engine(blockchain)?;
 
@@ -543,6 +585,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_pharmaceutical_cold_chain_compliance() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         let blockchain = create_pharmaceutical_blockchain()?;
         let traceability_engine = create_traceability_engine(blockchain)?;
 
@@ -609,6 +657,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_graph_quality_validation() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         let knowledge_graph = create_complex_supply_chain_graph()?;
         let graph_db = GraphDatabase::new(knowledge_graph);
         let quality_validator = GraphQualityValidator::new(graph_db);
@@ -664,6 +718,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_real_time_graph_updates() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         let mut graph_stream_processor = create_graph_stream_processor()?;
 
         // Simulate real-time block processing
@@ -719,6 +779,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_predictive_quality_analytics() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         let knowledge_graph = create_historical_quality_data_graph()?;
         let mut graph_db = GraphDatabase::new(knowledge_graph);
 
@@ -776,6 +842,12 @@ mod tests {
     #[test]
     #[ignore]
     fn test_multi_industry_integration() -> Result<()> {
+        if should_skip_profiled_ignored_test(
+            "PROVCHAIN_RUN_PERF_TESTS",
+            "real-world traceability evidence tests",
+        ) {
+            return Ok(());
+        }
         // Create integrated supply chain spanning multiple industries
         let food_blockchain = create_food_safety_blockchain()?;
         let pharma_blockchain = create_pharmaceutical_blockchain()?;
@@ -2046,5 +2118,14 @@ impl GraphStreamProcessor {
             significant_changes,
             processing_time: start.elapsed(),
         })
+    }
+}
+fn should_skip_profiled_ignored_test(env_var: &str, description: &str) -> bool {
+    match std::env::var(env_var) {
+        Ok(value) if matches!(value.as_str(), "1" | "true" | "TRUE" | "yes" | "YES") => false,
+        _ => {
+            eprintln!("skipping ignored {description}; set {env_var}=1 to run this profile");
+            true
+        }
     }
 }

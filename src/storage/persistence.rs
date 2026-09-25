@@ -303,7 +303,7 @@ impl PersistentStorage {
         // Verify magic bytes
         let mut magic = [0u8; 14];
         reader.read_exact(&mut magic)?;
-        if &magic != WAL_MAGIC {
+        if magic.as_slice() != WAL_MAGIC {
             return Err(anyhow::anyhow!("Invalid WAL file format"));
         }
 
@@ -615,7 +615,7 @@ impl PersistentStorage {
             .with_context(|| format!("Failed to write chain index to {}", temp_path.display()))?;
 
         fs::rename(&temp_path, &self.chain_index_path)
-            .with_context(|| format!("Failed to rename chain index file"))?;
+            .context("Failed to rename chain index file")?;
 
         Ok(())
     }

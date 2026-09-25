@@ -8,4 +8,5 @@ core_shacl_path = "src/semantic/shapes/core.shacl.ttl"
 domain_shacl_path = "src/semantic/shapes/core.shacl.ttl"
 mappings = []
 validation_mode = "strict"
-package_hash = "720781c9daf1935b8cb2929d7448240767dc205b35236eeed1fc3819af4c28fc"
+semantic_execution_profile_id = "provchain.semantic-execution.v1"
+package_hash = "70e4fdd190887944531a9c984020af6fc0afeb7aff3a6a26972dbfd6d2ae9a9f"

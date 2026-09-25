@@ -27,8 +27,8 @@ fn test_simple_blockchain_persistence() {
 
     // Verify all blocks were loaded correctly (this was the bug that is now fixed)
     assert_eq!(
-        blockchain2.chain.len(), 
-        2, 
+        blockchain2.chain.len(),
+        2,
         "Expected 2 blocks (genesis + 1 added), but found {}. Persistence may not be working correctly.",
         blockchain2.chain.len()
     );

@@ -1,5 +1,5 @@
-import React from "react";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import React, { act } from "react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthProvider, useAuth } from "../AuthContext";
 import { createMockFetchResponse } from "../../test-utils/test-utils";
@@ -29,7 +29,9 @@ const TestComponent: React.FC = () => {
       <div data-testid="token-data">{token || "null"}</div>
 
       <button
-        onClick={() => login("testuser", "testpass")}
+        onClick={async () => {
+          await login("testuser", "testpass");
+        }}
         data-testid="login-button"
       >
         Login
@@ -81,7 +83,7 @@ describe("AuthContext", () => {
     });
 
     test("should validate existing token on mount", async () => {
-      const mockToken = "valid.jwt.token";
+      const mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsInJvbGUiOiJhZG1pbiJ9.signature";
       localStorageMock.getItem.mockReturnValue(mockToken);
 
       // Mock successful token validation
@@ -243,6 +245,9 @@ describe("AuthContext", () => {
     });
 
     test("should handle network error during login", async () => {
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
       localStorageMock.getItem.mockReturnValue(null);
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
@@ -271,12 +276,17 @@ describe("AuthContext", () => {
       );
 
       expect(localStorageMock.setItem).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Login error:",
+        expect.any(Error),
+      );
+      consoleErrorSpy.mockRestore();
     });
   });
 
   describe("Logout Functionality", () => {
     test("should handle logout correctly", async () => {
-      const mockToken = "valid.jwt.token";
+      const mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsInJvbGUiOiJhZG1pbiJ9.signature";
       localStorageMock.getItem.mockReturnValue(mockToken);
 
       mockFetch.mockResolvedValueOnce(
@@ -338,6 +348,9 @@ describe("AuthContext", () => {
     });
 
     test("should handle invalid JWT token", async () => {
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
       const mockToken = "invalid.token";
       localStorageMock.getItem.mockReturnValue(mockToken);
 
@@ -359,12 +372,20 @@ describe("AuthContext", () => {
       // Should still be authenticated because token validation succeeded
       // but user data should be empty due to parsing failure
       expect(screen.getByTestId("auth-state")).toHaveTextContent("true");
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Failed to parse JWT:",
+        expect.any(Error),
+      );
+      consoleErrorSpy.mockRestore();
     });
   });
 
   describe("Error Handling", () => {
     test("should handle token validation error", async () => {
-      const mockToken = "valid.jwt.token";
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+      const mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsInJvbGUiOiJhZG1pbiJ9.signature";
       localStorageMock.getItem.mockReturnValue(mockToken);
 
       mockFetch.mockRejectedValueOnce(new Error("Network error"));
@@ -387,6 +408,11 @@ describe("AuthContext", () => {
         },
         { timeout: 3000 },
       );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Token validation failed:",
+        expect.any(Error),
+      );
+      consoleErrorSpy.mockRestore();
     });
   });
 
