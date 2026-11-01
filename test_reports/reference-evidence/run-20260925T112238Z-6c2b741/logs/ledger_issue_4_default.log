@@ -1,0 +1,15 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running tests/ledger_issue_4.rs (target/debug/deps/ledger_issue_4-84c3077d6a4b7d45)
+
+running 8 tests
+test valid_governance_manifest_activates_reference_node_before_ledger_admission ... ok
+test abandoned_handshakes_are_ttl_pruned_and_globally_bounded ... ok
+test two_authorized_nodes_complete_fresh_mutual_identity_proof ... ok
+test unauthenticated_transports_are_quarantined_from_ordinary_peer_messages ... ok
+test handshake_rejects_replay_stale_modified_identity_and_manifest_attempts ... ok
+test peer_authentication_does_not_grant_validator_signer_authorization ... ok
+test invalid_startup_contracts_fail_before_the_ledger_or_network_can_activate ... ok
+test session_capabilities_are_transport_bound_single_use_and_identity_unique ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+

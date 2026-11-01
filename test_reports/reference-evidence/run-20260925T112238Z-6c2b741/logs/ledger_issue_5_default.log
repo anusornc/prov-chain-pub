@@ -1,0 +1,16 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running tests/ledger_issue_5.rs (target/debug/deps/ledger_issue_5-88d2de67214520ad)
+
+running 9 tests
+test deterministic_envelope_size_failure_does_not_begin_selection_or_signing ... ok
+test every_node_derives_the_same_scheduled_authority_from_height_and_manifest_bound_order ... ok
+test a_non_signing_node_preserves_rejected_proposal_identity_across_restart ... ok
+test deterministic_final_admission_rejection_stalls_without_replacement ... ok
+test distinct_signed_proposals_for_one_turn_are_equivocation_not_timestamp_fork_choice ... ok
+test out_of_turn_validator_is_rejected_and_a_missed_turn_does_not_take_over ... ok
+test lost_response_restart_recovers_the_exact_fenced_proposal_without_a_second_commit ... ok
+test concurrent_identical_requests_coalesce_and_conflicts_cannot_replace_the_selected_body ... ok
+test block_interval_is_preflighted_for_local_and_received_signed_proposals ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+

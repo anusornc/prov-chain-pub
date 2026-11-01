@@ -1,0 +1,354 @@
+{
+  "schema": "reference-evidence-manifest-v1",
+  "run": {
+    "started_utc": "20260925T111706Z",
+    "output_dir": "run-20260925T111706Z-1e08ea4",
+    "workflow": "scripts/run_reference_evidence.sh",
+    "verdict": "pass",
+    "failed_command_ids": [],
+    "non_identical_vectors": []
+  },
+  "environment": {
+    "schema": "reference-evidence-environment-v1",
+    "workflow": "scripts/run_reference_evidence.sh",
+    "started_utc": "20260925T111706Z",
+    "git_commit": "1e08ea43fe6070041ff20b9ffd84e14cfe6fe651",
+    "git_describe": "1e08ea4",
+    "git_branch": "main",
+    "tracked_files_modified": "0",
+    "cargo_version": "cargo 1.91.1 (ea2d97820 2025-10-10)",
+    "rustc_version": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+    "cargo_lock_sha256": "1eb6c24d12774230bd779227468d0533e4964123d37e9ed2acd1a917995a7ce5",
+    "os_kernel": "Linux 6.8.0-1047-gcp x86_64",
+    "os_release": "PRETTY_NAME=\"Ubuntu 22.04.5 LTS\"",
+    "filesystem_repo": "ext2/ext3",
+    "filesystem_tmp": "ext2/ext3",
+    "cpu_count": "48",
+    "mem_total_kb": "32512092",
+    "locale_lang": "en_US.UTF-8"
+  },
+  "commands": [
+    {
+      "id": "suite:ledger_issue_2:default",
+      "command": "cargo test --test ledger_issue_2",
+      "log": "logs/ledger_issue_2_default.log",
+      "exit_code": 0,
+      "duration_seconds": 2.216,
+      "log_sha256": "c3adb4db1c597899af5a1d350cffcc9476704c1cbbe1520cde469ebda940df87",
+      "log_bytes": 987,
+      "tests_passed": 9,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_3:default",
+      "command": "cargo test --test ledger_issue_3",
+      "log": "logs/ledger_issue_3_default.log",
+      "exit_code": 0,
+      "duration_seconds": 5.725,
+      "log_sha256": "6356dabeffaca38e05ea33f986a6e876add6eb49a5b97252b8780504afeeb556",
+      "log_bytes": 624,
+      "tests_passed": 3,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_4:default",
+      "command": "cargo test --test ledger_issue_4",
+      "log": "logs/ledger_issue_4_default.log",
+      "exit_code": 0,
+      "duration_seconds": 2.007,
+      "log_sha256": "37fd0992f7c8bd50f279dd1b788c3a9db70ea74d2056a5e8fd3f37f7f10c578a",
+      "log_bytes": 974,
+      "tests_passed": 8,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_5:default",
+      "command": "cargo test --test ledger_issue_5",
+      "log": "logs/ledger_issue_5_default.log",
+      "exit_code": 0,
+      "duration_seconds": 2.296,
+      "log_sha256": "5e662f4644cca918061139154be2a7a118ce9f27bce35bc4222d47e162450f17",
+      "log_bytes": 1128,
+      "tests_passed": 9,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_6:default",
+      "command": "cargo test --test ledger_issue_6",
+      "log": "logs/ledger_issue_6_default.log",
+      "exit_code": 0,
+      "duration_seconds": 3.476,
+      "log_sha256": "a67122cb1b9860a9e327c868ced9e0aa6eb3e4fd5770673e29d18f140ea76771",
+      "log_bytes": 990,
+      "tests_passed": 6,
+      "tests_failed": 0,
+      "tests_ignored": 1,
+      "test_result_lines": [
+        "test result: ok. 6 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_7:default",
+      "command": "cargo test --test ledger_issue_7",
+      "log": "logs/ledger_issue_7_default.log",
+      "exit_code": 0,
+      "duration_seconds": 12.934,
+      "log_sha256": "7959b1431f05dda587b3b3f645e500ef624d930cd2efd52f418c5ec2ff7147a6",
+      "log_bytes": 2335,
+      "tests_passed": 26,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_10:default",
+      "command": "cargo test --test ledger_issue_10",
+      "log": "logs/ledger_issue_10_default.log",
+      "exit_code": 0,
+      "duration_seconds": 1.726,
+      "log_sha256": "38ce8668cf315d2b2073309f3b2fb31459106cc0d5fe6bc237ebae18feec7986",
+      "log_bytes": 418,
+      "tests_passed": 1,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_11:default",
+      "command": "cargo test --test ledger_issue_11",
+      "log": "logs/ledger_issue_11_default.log",
+      "exit_code": 0,
+      "duration_seconds": 3.723,
+      "log_sha256": "9594fcfa66f5014b02a225596fc522b2fca1c32e9ce7e492976cd57af12a1f99",
+      "log_bytes": 671,
+      "tests_passed": 4,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_12:default",
+      "command": "cargo test --test ledger_issue_12",
+      "log": "logs/ledger_issue_12_default.log",
+      "exit_code": 0,
+      "duration_seconds": 1.713,
+      "log_sha256": "ec04b6df4e60ad9d56a2e7d05aa774c0709121b665b6cb616102bae02bdc40d2",
+      "log_bytes": 758,
+      "tests_passed": 6,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_8:privacy-conformance",
+      "command": "cargo test --features privacy-conformance --test ledger_issue_8",
+      "log": "logs/ledger_issue_8_privacy-conformance.log",
+      "exit_code": 0,
+      "duration_seconds": 10.667,
+      "log_sha256": "fd05347da46c74170db36da9114ef4657c84d8bbfc9677de79fb8357a9a77d9d",
+      "log_bytes": 1332,
+      "tests_passed": 11,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_9:privacy-conformance",
+      "command": "cargo test --features privacy-conformance --test ledger_issue_9",
+      "log": "logs/ledger_issue_9_privacy-conformance.log",
+      "exit_code": 0,
+      "duration_seconds": 176.684,
+      "log_sha256": "158765f22d4e3b038b7694378830d7c693be7ef2762a5668eefe6c5bcc391db8",
+      "log_bytes": 1066,
+      "tests_passed": 6,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_11:bridge-conformance",
+      "command": "cargo test --features bridge-conformance --test ledger_issue_11",
+      "log": "logs/ledger_issue_11_bridge-conformance.log",
+      "exit_code": 0,
+      "duration_seconds": 12.101,
+      "log_sha256": "a057ac5c75055f91cbcace5f3638e1a0b52e83400c862d5f45727c49059bffb0",
+      "log_bytes": 759,
+      "tests_passed": 5,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "suite:ledger_issue_12:bridge-conformance",
+      "command": "cargo test --features bridge-conformance --test ledger_issue_12",
+      "log": "logs/ledger_issue_12_bridge-conformance.log",
+      "exit_code": 0,
+      "duration_seconds": 5.388,
+      "log_sha256": "dd16b51a2ba3141513fad1e1f6df502b28d35a360cdd5e2fdca277d69ed25908",
+      "log_bytes": 900,
+      "tests_passed": 7,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"
+      ]
+    },
+    {
+      "id": "gate:clippy:default",
+      "command": "cargo clippy --all-targets",
+      "log": "logs/clippy_default.log",
+      "exit_code": 0,
+      "duration_seconds": 15.979,
+      "log_sha256": "1a46a2483091932b58cd3596c4912cc2e9e92e00ac629f99cbf54e5fa2c45e81",
+      "log_bytes": 133,
+      "tests_passed": 0,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [],
+      "clippy_warnings": 0,
+      "clippy_errors": 0
+    },
+    {
+      "id": "gate:clippy:all-features",
+      "command": "cargo clippy --all-targets --features bridge-conformance,privacy-conformance",
+      "log": "logs/clippy_all_features.log",
+      "exit_code": 0,
+      "duration_seconds": 16.131,
+      "log_sha256": "fd070135db53dcb7e7755347f15e22615559d5deb3d140ce2dd5e50bea957d93",
+      "log_bytes": 133,
+      "tests_passed": 0,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": [],
+      "clippy_warnings": 0,
+      "clippy_errors": 0
+    },
+    {
+      "id": "gate:rustfmt",
+      "command": "cargo fmt --check",
+      "log": "logs/fmt_check.log",
+      "exit_code": 0,
+      "duration_seconds": 1.339,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log_bytes": 0,
+      "tests_passed": 0,
+      "tests_failed": 0,
+      "tests_ignored": 0,
+      "test_result_lines": []
+    }
+  ],
+  "vectors": [
+    {
+      "fixture": "tests/vectors/bridge_export_v1.json",
+      "generator": "scripts/generate_bridge_export_vectors.py",
+      "generator_exit_code": 0,
+      "checked_in_sha256": "7c2f9ba2eb72e700b33430f42b5ada8ba143204068262c05d0ade60ca7b84b34",
+      "regenerated_sha256": "7c2f9ba2eb72e700b33430f42b5ada8ba143204068262c05d0ade60ca7b84b34",
+      "regeneration_byte_identical": true
+    },
+    {
+      "fixture": "tests/vectors/privacy_lifecycle_v1.json",
+      "generator": "scripts/generate_privacy_lifecycle_vectors.py",
+      "generator_exit_code": 0,
+      "checked_in_sha256": "863098c71db0018d3f09f7a1abe2303bafa52744386167facf1b397e2c49ebc3",
+      "regenerated_sha256": "863098c71db0018d3f09f7a1abe2303bafa52744386167facf1b397e2c49ebc3",
+      "regeneration_byte_identical": true
+    },
+    {
+      "fixture": "tests/vectors/protected_object_v1.json",
+      "generator": "scripts/generate_protected_object_vectors.py",
+      "generator_exit_code": 0,
+      "checked_in_sha256": "edfd4cc8a2f852f12c2ccf85d6daae0040bfb9b50be5141a40f4bf608e8a9b1c",
+      "regenerated_sha256": "edfd4cc8a2f852f12c2ccf85d6daae0040bfb9b50be5141a40f4bf608e8a9b1c",
+      "regeneration_byte_identical": true
+    },
+    {
+      "fixture": "tests/vectors/privacy_grant_v1.json",
+      "generator": "scripts/generate_privacy_grant_vectors.py",
+      "generator_exit_code": 0,
+      "checked_in_sha256": "cd1f0def4c87f14c8fb50aa4f285927c422b4bc39598728d42dd36797490614c",
+      "regenerated_sha256": "cd1f0def4c87f14c8fb50aa4f285927c422b4bc39598728d42dd36797490614c",
+      "regeneration_byte_identical": true
+    }
+  ],
+  "provenance": [
+    {
+      "file": "provenance/cargo_lock.sha256",
+      "sha256": "5865d7d2254234db98b5b513e19b027931e61c135e662d7bd97af0c8476401e0"
+    },
+    {
+      "file": "provenance/cargo_version.txt",
+      "sha256": "c43fbe5f8cae7a0247183777f1cddb8064ce94d57246f3261300f7767f72404a"
+    },
+    {
+      "file": "provenance/git_branch.txt",
+      "sha256": "6403203dd5a0867eb14d104ee8a73730bd72dd9ad92e78d996a6dba0a5dcfc01"
+    },
+    {
+      "file": "provenance/git_commit.txt",
+      "sha256": "3f24cb2ef6956ad15f908343dffa03ec0982d2f30185403761495e7edf8a8673"
+    },
+    {
+      "file": "provenance/git_describe.txt",
+      "sha256": "ef8c2ed64f1c3d493678af0cfa5d7e5bd5b3d080a64789e64c80ba087590c363"
+    },
+    {
+      "file": "provenance/git_status_full.txt",
+      "sha256": "3b5ae9fabdae20a5655aaf1dc54f52cac30d1253e9c3dcb0277bc97ee5adf30a"
+    },
+    {
+      "file": "provenance/git_tracked_changes.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "provenance/os_release.txt",
+      "sha256": "e91ca01bed706b34552976cd50e815fd6e3ef6205a51039370ecf3367748b8ef"
+    },
+    {
+      "file": "provenance/rustc_verbose.txt",
+      "sha256": "cae60fd35dea4f1b72721c2d08ba1223ab08ad2176cd9aca106563a30908a4e0"
+    },
+    {
+      "file": "provenance/uname.txt",
+      "sha256": "982d41382bcb360c630768f13d17cac483e1d3c2cb204f6a40a37d06e9bbaf68"
+    }
+  ],
+  "summary": {
+    "tests_passed": 101,
+    "tests_failed": 0,
+    "tests_ignored": 1,
+    "clippy_warnings_default": 0,
+    "clippy_warnings_all_features": 0,
+    "rustfmt_clean": true
+  }
+}

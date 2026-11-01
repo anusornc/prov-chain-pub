@@ -1,0 +1,55 @@
+{
+  "schema": "reference-evidence-rerun-comparison-v1",
+  "run_a": {
+    "dir": "run-20260925T111706Z-1e08ea4",
+    "started_utc": "20260925T111706Z",
+    "revision": "1e08ea43fe6070041ff20b9ffd84e14cfe6fe651"
+  },
+  "run_b": {
+    "dir": "run-20260925T112238Z-6c2b741",
+    "started_utc": "20260925T112238Z",
+    "revision": "6c2b741d1d26b9441932a5b3c3b6deeb179cca8a"
+  },
+  "same_revision": false,
+  "command_ids_compared": 16,
+  "command_ids_matching": [
+    "gate:clippy:all-features",
+    "gate:clippy:default",
+    "gate:rustfmt",
+    "suite:ledger_issue_10:default",
+    "suite:ledger_issue_11:bridge-conformance",
+    "suite:ledger_issue_11:default",
+    "suite:ledger_issue_12:bridge-conformance",
+    "suite:ledger_issue_12:default",
+    "suite:ledger_issue_2:default",
+    "suite:ledger_issue_3:default",
+    "suite:ledger_issue_4:default",
+    "suite:ledger_issue_5:default",
+    "suite:ledger_issue_6:default",
+    "suite:ledger_issue_7:default",
+    "suite:ledger_issue_8:privacy-conformance",
+    "suite:ledger_issue_9:privacy-conformance"
+  ],
+  "command_ids_only_in_a": [],
+  "command_ids_only_in_b": [],
+  "vectors": [
+    {
+      "fixture": "tests/vectors/bridge_export_v1.json",
+      "stable_across_runs": true
+    },
+    {
+      "fixture": "tests/vectors/privacy_grant_v1.json",
+      "stable_across_runs": true
+    },
+    {
+      "fixture": "tests/vectors/privacy_lifecycle_v1.json",
+      "stable_across_runs": true
+    },
+    {
+      "fixture": "tests/vectors/protected_object_v1.json",
+      "stable_across_runs": true
+    }
+  ],
+  "canonical_artifacts_stable": true,
+  "divergences": []
+}

@@ -1,0 +1,16 @@
+suite:ledger_issue_2:default	ledger_issue_2_default.log	0	0.699	cargo test --test ledger_issue_2
+suite:ledger_issue_3:default	ledger_issue_3_default.log	0	4.229	cargo test --test ledger_issue_3
+suite:ledger_issue_4:default	ledger_issue_4_default.log	0	0.512	cargo test --test ledger_issue_4
+suite:ledger_issue_5:default	ledger_issue_5_default.log	0	0.794	cargo test --test ledger_issue_5
+suite:ledger_issue_6:default	ledger_issue_6_default.log	0	1.932	cargo test --test ledger_issue_6
+suite:ledger_issue_7:default	ledger_issue_7_default.log	0	11.391	cargo test --test ledger_issue_7
+suite:ledger_issue_10:default	ledger_issue_10_default.log	0	0.470	cargo test --test ledger_issue_10
+suite:ledger_issue_11:default	ledger_issue_11_default.log	0	2.142	cargo test --test ledger_issue_11
+suite:ledger_issue_12:default	ledger_issue_12_default.log	0	1.704	cargo test --test ledger_issue_12
+suite:ledger_issue_8:privacy-conformance	ledger_issue_8_privacy-conformance.log	0	0.673	cargo test --features privacy-conformance --test ledger_issue_8
+suite:ledger_issue_9:privacy-conformance	ledger_issue_9_privacy-conformance.log	0	174.679	cargo test --features privacy-conformance --test ledger_issue_9
+suite:ledger_issue_11:bridge-conformance	ledger_issue_11_bridge-conformance.log	0	2.142	cargo test --features bridge-conformance --test ledger_issue_11
+suite:ledger_issue_12:bridge-conformance	ledger_issue_12_bridge-conformance.log	0	3.854	cargo test --features bridge-conformance --test ledger_issue_12
+gate:clippy:default	clippy_default.log	0	0.555	cargo clippy --all-targets
+gate:clippy:all-features	clippy_all_features.log	0	0.507	cargo clippy --all-targets --features bridge-conformance,privacy-conformance
+gate:rustfmt	fmt_check.log	0	1.322	cargo fmt --check

@@ -1,0 +1,15 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running tests/ledger_issue_9.rs (target/debug/deps/ledger_issue_9-f4ba647a31679df1)
+
+running 6 tests
+test public_final_admission_accepts_exact_ciphertext_without_any_private_key ... ok
+test independent_protected_object_vectors_self_open_and_reject_context_tampering ... ok
+test converged_grant_release_is_opaque_and_revocation_is_prefix_bound ... ok
+test exact_replication_artifacts_exclude_controlled_client_secrets ... ok
+test custody_crash_boundaries_require_deterministic_recovery_before_disclosure has been running for over 60 seconds
+test generated_custody_is_durable_before_disclosure_and_constructs_real_objects has been running for over 60 seconds
+test custody_crash_boundaries_require_deterministic_recovery_before_disclosure ... ok
+test generated_custody_is_durable_before_disclosure_and_constructs_real_objects ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 174.28s
+

@@ -1,0 +1,17 @@
+   Compiling provchain-org v0.1.0 (/home/cit/provchain-org)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.84s
+     Running tests/ledger_issue_2.rs (target/debug/deps/ledger_issue_2-03cc3bc69f47d679)
+
+running 9 tests
+test journal_has_one_process_owner_at_a_time ... ok
+test journal_corruption_is_detected_without_rebuilding_from_unverified_bytes ... ok
+test noncanonical_and_tampered_envelopes_are_rejected ... ok
+test deterministic_rejections_leave_the_authoritative_journal_unchanged ... ok
+test post_state_commitment_is_invariant_to_blank_node_labels ... ok
+test ordinary_candidate_commits_one_canonical_envelope_and_replays_projections ... ok
+test blank_nodes_are_scoped_per_payload_before_state_union ... ok
+test post_state_commitment_is_for_the_full_public_dataset_not_turtle_order ... ok
+test torn_tail_requires_explicit_recovery_without_duplicate_commit ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+

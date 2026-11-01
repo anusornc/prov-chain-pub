@@ -1,0 +1,19 @@
+   Compiling provchain-org v0.1.0 (/home/cit/provchain-org)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.29s
+     Running tests/ledger_issue_8.rs (target/debug/deps/ledger_issue_8-0dfabf99871f05bc)
+
+running 11 tests
+test canonical_decoder_rejects_ambiguous_unknown_malformed_and_unimplemented_forms ... ok
+test register_principal_has_exact_closed_canonical_bytes_and_independent_proofs ... ok
+test registration_verifies_both_proofs_and_stages_one_atomic_effective_state_delta ... ok
+test authorization_rotation_is_contiguous_and_self_revocation_freezes_participant_control ... ok
+test version_gaps_wrong_purpose_authorizers_and_global_key_reuse_are_rejected ... ok
+test wrapping_rotation_preserves_only_exact_historical_release_and_revocation_is_terminal ... ok
+test checked_in_cross_implementation_vectors_match_active_lifecycle_surface ... ok
+test invalid_privacy_proof_rejects_and_exact_retry_is_idempotent_without_mutation ... ok
+test final_admission_commits_control_only_bytes_and_replay_rebuilds_identical_privacy_state ... ok
+test privacy_bootstrap_key_cannot_reuse_consensus_or_membership_trust_roles ... ok
+test poa_replicates_one_exact_privacy_envelope_and_three_nodes_rebuild_identical_state ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+

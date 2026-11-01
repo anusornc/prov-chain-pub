@@ -1,0 +1,14 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running tests/ledger_issue_6.rs (target/debug/deps/ledger_issue_6-d7736cb6b169a53d)
+
+running 7 tests
+test issue6_reference_node_process_worker ... ignored, subprocess entrypoint used only by the Issue #6 process campaign
+test follower_final_admits_the_exact_producer_envelope_and_receipts_follow_local_fsync ... ok
+test three_identity_signed_matching_receipts_are_evidence_of_network_convergence ... ok
+test producer_and_follower_restart_recover_exact_records_and_lost_receipts ... ok
+test divergent_prefix_fails_closed_without_first_wins_timestamp_or_projection_history ... ok
+test three_independent_reference_node_processes_commit_byte_identical_journals ... ok
+test partitioned_node_rejoins_with_bounded_exact_prefix_sync_and_retry_is_idempotent ... ok
+
+test result: ok. 6 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.53s
+

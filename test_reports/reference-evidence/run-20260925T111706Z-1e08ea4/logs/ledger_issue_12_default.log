@@ -1,0 +1,13 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running tests/ledger_issue_12.rs (target/debug/deps/ledger_issue_12-84fec59b0083bc50)
+
+running 6 tests
+test target_activation_rejects_source_or_semantic_trust_substitution ... ok
+test active_target_trust_substitution_and_out_of_turn_signer_fail_closed ... ok
+test target_origin_codec_rejects_noncanonical_and_oversized_evidence ... ok
+test valid_vector_import_commits_once_and_replay_returns_already_imported ... ok
+test invalid_evidence_consumes_no_id_and_changed_same_id_is_replay_conflict ... ok
+test exact_target_envelope_replication_converges_bridge_state_after_partition ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.31s
+

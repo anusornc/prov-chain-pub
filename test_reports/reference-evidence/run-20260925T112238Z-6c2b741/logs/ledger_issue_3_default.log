@@ -1,0 +1,10 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running tests/ledger_issue_3.rs (target/debug/deps/ledger_issue_3-69bd5e7e8a98a91e)
+
+running 3 tests
+test exact_candidate_retry_across_all_adapters_has_one_commit_and_one_response_identity ... ok
+test every_supported_adapter_commits_the_same_candidate_as_identical_envelope_bytes ... ok
+test every_precommit_rejection_is_identical_and_preserves_all_authoritative_and_projected_state ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.83s
+

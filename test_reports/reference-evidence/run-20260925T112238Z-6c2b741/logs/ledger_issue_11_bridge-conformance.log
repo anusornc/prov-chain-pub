@@ -1,0 +1,12 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running tests/ledger_issue_11.rs (target/debug/deps/ledger_issue_11-2bbeb53cc51f9389)
+
+running 5 tests
+test closed_bridge_codec_rejects_tag_count_order_transfer_scheme_and_bound_mutations ... ok
+test source_bridge_activation_rejects_a_different_live_profile ... ok
+test source_final_admission_commits_one_exact_target_bound_declaration ... ok
+test source_declaration_obeys_journal_commit_crash_and_response_loss_boundaries ... ok
+test export_requires_exactly_three_pinned_durable_receipts_and_reproduces_source_bytes ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.74s
+

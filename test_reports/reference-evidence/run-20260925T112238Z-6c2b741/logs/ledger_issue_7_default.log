@@ -1,0 +1,33 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.35s
+     Running tests/ledger_issue_7.rs (target/debug/deps/ledger_issue_7-eb8446fed25142af)
+
+running 26 tests
+test semantic_execution_profile_selection_must_be_explicit_in_both_manifests ... ok
+test declared_constraints_cannot_be_silently_dropped_from_the_execution_plan ... ok
+test a_nonconforming_committed_parent_is_node_incapacity_not_candidate_rejection ... ok
+test unsupported_validating_construct_fails_package_activation ... ok
+test ledger_open_rejects_a_package_or_execution_profile_mismatch ... ok
+test package_identity_is_path_independent_and_activation_binds_executable_assets ... ok
+test blank_node_labels_are_document_local_across_shape_artifacts ... ok
+test missing_empty_malformed_or_wrong_digest_assets_fail_activation ... ok
+test custom_constraints_and_ill_typed_profile_parameters_fail_activation ... ok
+test subclass_entailment_selects_focus_and_evaluates_class_constraints ... ok
+test semantic_rejection_issues_neither_journal_frame_nor_commit_receipt ... ok
+test integer_range_comparison_does_not_lose_precision ... ok
+test in_and_has_value_compare_complete_rdf_terms ... ok
+test unknown_asserted_classes_are_deterministic_nonconformance_not_engine_failure ... ok
+test temporal_range_comparison_is_pinned_and_complete ... ok
+test semantic_data_graph_excludes_package_artifacts_and_inferred_triples ... ok
+test pattern_uses_xpath_regex_and_the_sparql_string_form_of_iris ... ok
+test document_local_blank_nodes_do_not_merge_across_staged_graphs ... ok
+test datatype_rejects_ill_typed_sparql_supported_literals ... ok
+test restart_reconstructs_semantic_parent_state_from_verified_journal_history ... ok
+test final_admission_validates_full_staged_union_and_requires_candidate_focus ... ok
+test supported_constraint_matrix_uses_rdf_terms_and_pinned_comparisons ... ok
+test checked_in_default_package_activates_under_its_declared_profile ... ok
+test three_reference_nodes_agree_after_independent_admission_and_exact_catch_up ... ok
+test every_ordinary_ingress_observes_identical_semantic_verdict_and_envelope ... ok
+test deterministic_focus_work_bound_rejects_without_node_incapacity ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.99s
+
