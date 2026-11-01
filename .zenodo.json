@@ -1,0 +1,35 @@
+{
+  "title": "ProvChain: A Shared-Ontology Semantic Blockchain Framework for Traceability (reference release)",
+  "creators": [
+    {
+      "name": "Chaikaew, Anusorn",
+      "affiliation": "Department of Computer Science, Faculty of Science, Chiang Mai University"
+    },
+    {
+      "name": "Osiriphun, Sukhuntha",
+      "affiliation": "Department of Food Science and Technology, Faculty of Agro-Industry, Chiang Mai University"
+    },
+    {
+      "name": "Chouvatut, Varin",
+      "affiliation": "Department of Computer Science, Faculty of Science, Chiang Mai University"
+    },
+    {
+      "name": "Boonchieng, Ekkarat",
+      "affiliation": "Department of Computer Science, Faculty of Science, Chiang Mai University"
+    }
+  ],
+  "description": "<p>Reference release of ProvChain, a permissioned blockchain research prototype in which participating organizations share ontology packages as semantic contracts for traceability events and provenance validation. This release contains the Rust reference system (durable journal behind one fail-closed Final Admission boundary, governance-authenticated membership with three-node Proof-of-Authority convergence, package-declared staged-union SHACL enforcement with SPACL-backed subclass reasoning, participant-controlled privacy lifecycle, and a bounded receipt-backed bridge), ontology packages and SHACL validation assets, GS1/EPCIS-oriented example payloads, public benchmark artifacts, and the end-to-end reference-system correctness-campaign evidence archive (recorded runs, conformance vectors, raw logs, hashes, and mechanically derived manifests) under <code>test_reports/reference-evidence/</code>.</p>",
+  "license": "MIT",
+  "keywords": [
+    "blockchain",
+    "ontology",
+    "SHACL",
+    "RDF",
+    "semantic web",
+    "GS1 EPCIS",
+    "supply chain traceability",
+    "provenance"
+  ],
+  "communities": [],
+  "upload_type": "software"
+}
